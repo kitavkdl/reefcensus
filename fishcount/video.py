@@ -1,12 +1,13 @@
-"""Video helpers: re-encode to the analysis rate, read frames, crop tiles. Uses the ffmpeg binary shipped in
-~/meta-smoke/pylib (imageio_ffmpeg) and OpenCV for frame access."""
+"""Video helpers: re-encode to the analysis rate, read frames, crop tiles. Uses the ffmpeg binary shipped with
+imageio-ffmpeg and OpenCV for frame access (pip install -r requirements.txt; ~/meta-smoke/pylib also works)."""
 import os, re, subprocess, sys
 
 sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))
 import cv2
 import numpy as np
 
-FFMPEG = os.path.expanduser("~/meta-smoke/pylib/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2")
+import imageio_ffmpeg
+FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def ingest(src, dst, fps=5, max_w=1920, max_seconds=600):
