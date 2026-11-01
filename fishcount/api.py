@@ -1,0 +1,156 @@
+"""Meta Model API clients (SAM 3.1 video, Muse Spark chat) with a disk cache and a spend ledger.
+Every paid call goes through `_guard()`, which refuses to exceed BUDGET_USD (env FISH_BUDGET, default $1)
+for the lifetime of the ledger file. The API key is read only from ~/.config/meta-api/key and never printed."""
+import base64, hashlib, json, os, sys, time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))   # numpy, cv2, requests, meta_sam_parser
+import requests
+
+BASE = "https://api.meta.ai/v1"
+KEYFILE = os.path.expanduser("~/.config/meta-api/key")
+CACHE = os.path.join(ROOT, "cache")
+LEDGER = os.path.join(CACHE, "ledger.jsonl")
+SAM_PER_FRAME = 0.20 / 1000
+SAM_MIN_FRAMES = 50
+SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
+SPARK_MODEL = os.environ.get("FISH_SPARK_MODEL", "muse-spark-1.3")
+
+
+class BudgetExceeded(RuntimeError):
+    pass
+
+
+def _key():
+    k = open(KEYFILE).read().strip()
+    if not k:
+        raise RuntimeError("empty key file")
+    return k
+
+
+def spent():
+    if not os.path.exists(LEDGER):
+        return 0.0
+    return sum(json.loads(l)["usd"] for l in open(LEDGER) if l.strip())
+
+
+def _guard(est):
+    budget = float(os.environ.get("FISH_BUDGET", "1.0"))
+    if spent() + est > budget:
+        raise BudgetExceeded(f"would spend ${spent() + est:.3f} > budget ${budget:.2f} (set FISH_BUDGET)")
+
+
+def _log(kind, usd, note):
+    os.makedirs(CACHE, exist_ok=True)
+    with open(LEDGER, "a") as f:
+        f.write(json.dumps({"t": time.time(), "kind": kind, "usd": usd, "note": note}) + "\n")
+
+
+def _cache_path(kind, payload):
+    h = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:24]
+    return os.path.join(CACHE, f"{kind}_{h}.json")
+
+
+def file_sha(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()[:24]
+
+
+# ---------------- SAM 3.1 ----------------
+def sam_video(clip_path, prompt, n_frames, offline=False):
+    """Track `prompt` through the clip. Returns the raw output_text (one line per frame with objects).
+    Cached by (clip content hash, prompt). offline=True never calls the network (raises if not cached)."""
+    payload = {"clip": file_sha(clip_path), "prompt": prompt}
+    cp = _cache_path("sam", payload)
+    if os.path.exists(cp):
+        return json.load(open(cp))["output_text"]
+    if offline:
+        raise FileNotFoundError(f"not cached: SAM {prompt!r} on {clip_path}")
+    est = max(SAM_MIN_FRAMES, n_frames) * SAM_PER_FRAME
+    _guard(est)
+    key = _key()
+    with open(clip_path, "rb") as fh:
+        r = requests.post(f"{BASE}/files", headers={"Authorization": f"Bearer {key}"},
+                          data={"purpose": "user_data", "expires_after[anchor]": "created_at", "expires_after[seconds]": "86400"},
+                          files={"file": (os.path.basename(clip_path), fh, "video/mp4")}, timeout=(30, 600))
+    r.raise_for_status()
+    fid = r.json()["id"]
+    body = {"model": "sam-3.1", "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
+            "input": [{"type": "message", "role": "user", "content": [
+                {"type": "input_text", "text": prompt}, {"type": "input_video", "file_id": fid}]}]}
+    text, usage, status = [], None, "unknown"
+    with requests.post(f"{BASE}/responses", headers={"Authorization": f"Bearer {key}", "Accept": "text/event-stream"},
+                       json=body, stream=True, timeout=(30, 900)) as r:
+        if r.status_code >= 300:
+            raise RuntimeError(f"SAM HTTP {r.status_code}: {r.text[:300]}")
+        for raw in r.iter_lines(decode_unicode=True):
+            if not raw or not raw.startswith("data:"):
+                continue
+            d = raw[5:].strip()
+            if d == "[DONE]":
+                break
+            try:
+                ev = json.loads(d)
+            except ValueError:
+                continue
+            t = ev.get("type")
+            if t == "response.output_text.delta":
+                text.append(ev.get("delta", ""))
+            elif t == "response.completed":
+                status, usage = "completed", (ev.get("response") or {}).get("usage")
+            elif t in ("response.failed", "response.incomplete", "error"):
+                status = t
+    billed = (usage or {}).get("video_frames_processed") or max(SAM_MIN_FRAMES, n_frames)
+    _log("sam", billed * SAM_PER_FRAME, f"{os.path.basename(clip_path)}:{prompt}")
+    if status != "completed":
+        raise RuntimeError(f"SAM status {status}")
+    out = "".join(text)
+    json.dump({"payload": payload, "output_text": out, "usage": usage}, open(cp, "w"))
+    return out
+
+
+# ---------------- Muse Spark ----------------
+def img_data_url(jpg_bytes):
+    return "data:image/jpeg;base64," + base64.b64encode(jpg_bytes).decode()
+
+
+def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False):
+    """One chat call with optional JPEG images (bytes). Returns the reply text. Cached by content."""
+    content = [{"type": "text", "text": prompt}] + [
+        {"type": "image_url", "image_url": {"url": img_data_url(b)}} for b in images]
+    payload = {"model": SPARK_MODEL, "messages": [{"role": "user", "content": content}], "max_tokens": max_tokens}
+    if effort:
+        payload["reasoning_effort"] = effort
+    cp = _cache_path("spark", payload)
+    if os.path.exists(cp):
+        return json.load(open(cp))["text"]
+    if offline:
+        raise FileNotFoundError("not cached: spark call")
+    _guard(0.02)
+    r = requests.post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
+    if r.status_code >= 300:
+        raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
+    j = r.json()
+    u = j.get("usage") or {}
+    usd = u.get("prompt_tokens", 0) * SPARK_IN + u.get("completion_tokens", 0) * SPARK_OUT
+    _log("spark", usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
+    text = j["choices"][0]["message"]["content"] or ""
+    if not text.strip():
+        raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
+    json.dump({"text": text, "usage": u}, open(cp, "w"))
+    return text
+
+
+def parse_json(text):
+    """Pull the first JSON object/array out of a model reply (tolerates ```json fences)."""
+    s = text.strip()
+    if "```" in s:
+        s = s.split("```")[1]
+        s = s[4:] if s.startswith("json") else s
+    i = min([p for p in (s.find("{"), s.find("[")) if p >= 0], default=-1)
+    if i < 0:
+        raise ValueError("no JSON in reply")
+    return json.JSONDecoder().raw_decode(s[i:])[0]
