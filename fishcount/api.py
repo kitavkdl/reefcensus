@@ -1,7 +1,7 @@
 """Meta Model API clients (SAM 3.1 video, Muse Spark chat) with a disk cache and a spend ledger.
 Every paid call goes through `_guard()`, which refuses to exceed BUDGET_USD (env FISH_BUDGET, default $1)
 for the lifetime of the ledger file. The API key is read only from ~/.config/meta-api/key and never printed."""
-import base64, hashlib, json, os, sys, time
+import base64, hashlib, json, os, sys, threading, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))   # numpy, cv2, requests, meta_sam_parser
@@ -40,7 +40,15 @@ def _guard(est):
         raise BudgetExceeded(f"would spend ${spent() + est:.3f} > budget ${budget:.2f} (set FISH_BUDGET)")
 
 
+_tl = threading.local()     # per-thread spend, so parallel calls don't bill each other
+
+
+def thread_spent():
+    return getattr(_tl, "usd", 0.0)
+
+
 def _log(kind, usd, note):
+    _tl.usd = thread_spent() + usd
     os.makedirs(CACHE, exist_ok=True)
     with open(LEDGER, "a") as f:
         f.write(json.dumps({"t": time.time(), "kind": kind, "usd": usd, "note": note}) + "\n")
