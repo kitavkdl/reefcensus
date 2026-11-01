@@ -3,3 +3,6 @@ cache/
 __pycache__/
 *.mp4
 *.mov
+spikes/*/data/
+spikes/*/clips/*.frames/
+spikes/*/clips/*.txt
