@@ -9,6 +9,7 @@ import cv2, numpy as np   # render put ~/meta-smoke/pylib on sys.path
 
 RUNS = os.path.join(api.ROOT, "runs")
 TILE_SCALE = 1.5   # a 2/3 block comes back to the clip's own size; SAM resizes internally anyway
+CELL_SCALE = 3     # one 3x3 cell blown up to the clip's size: the closer look when a block finds nothing
 CELLS = ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"]
 
 SCOUT_PROMPT = """You are assisting a marine ecologist counting animals in underwater survey video. The image is a contact sheet of {n} frames from one clip (frame index in each top-left label).
@@ -89,6 +90,14 @@ def cell_box(cell, W, H, pad=0.15):
     x1, y1 = min(W, (c + 1) * w + pad * w), min(H, (r + 1) * h + pad * h)
     ev = lambda v: int(v) // 2 * 2
     return ev(x0), ev(y0), ev(x1 - x0), ev(y1 - y0)
+
+
+def cell_tile(cell, W, H):
+    """Exactly one 3x3 cell (x, y, w, h), even sizes. 11/2 s002: a ~40 px red crustacean was 0 in the 2x2 block
+    at 1.5x but tracked in this cell at 3x."""
+    r, c = divmod(CELLS.index(cell), 3)
+    w, h = W // 3 // 2 * 2, H // 3 // 2 * 2
+    return c * w, r * h, w, h
 
 
 def block_box(cell, W, H):
@@ -308,7 +317,7 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
         if (f["maxn_full"] or 0) < int(o.get("approx_max_count") or 1):
             ladder = ([f["word"]] if f["word"] else []) + [w for w in words if w != f["word"]]
             for cell in [c for c in o.get("cells", []) if c in CELLS][:2]:
-                jobs.append(dict(kind="zoom", name=f"d{i}z-{cell}", what=o["what"], words=ladder[:2], cell=cell))
+                jobs.append(dict(kind="zoom", name=f"d{i}z-{cell}", what=o["what"], words=ladder[:2], ladder=ladder[:3], cell=cell))
     for j, sg in enumerate(signs):
         guess = (sg.get("possible_animal") or "").lower()
         if sg.get("region") not in CELLS or "unknown" in guess:
@@ -359,6 +368,62 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
                 results.append((jb["name"], word, d, txt, jb["box"]))
             log.append(entry)
             run.stage("recover", f"{jb['kind']} {jb['cell'] or 'reversed'}: " + ", ".join(f"'{t['word']}' {t['frames']} frames" for t in tried))
+    closer = [dict(jb, kind="cell", name=jb["name"].replace("z-", "c-"), words=jb["ladder"]) for jb in todo
+              if jb["kind"] == "zoom" and not any(e["kind"] == "zoom" and e["what"] == jb["what"] and e["cell"] == jb["cell"] and e["word"] for e in log)]
+    if closer:
+        log += closer_look(run, clip, inf, closer, results, max_usd, offline)
+    return log
+
+
+def closer_look(run, clip, inf, jobs, results, max_usd, offline):
+    """A block found nothing: crop just the cell Spark named at 3x and try every word, keeping the one tracked in
+    the most frames (11/2 s002: 'crab' fired 5 frames on the nautilus' shell edge, 'shrimp' 12 frames on the real
+    crustacean; stopping at the first hit would keep the wrong one). Then the same word on the reversed cell
+    back-fills the frames before SAM recognised it (s002: 12 -> 58 of 60 frames, one track)."""
+    n, W, H = inf["n_frames"], inf["width"], inf["height"]
+    jobs = jobs[:2]
+    est = sum(len(jb["words"]) + 1 for jb in jobs) * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    if run.status["billed_usd"] + est > max_usd and not offline:
+        run.stage("recover", f"skipped closer look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        return []
+    run.stage("recover", "closer look, one cell at 3x: " + ", ".join(f"{jb['what']} in {jb['cell']} {jb['words']}" for jb in jobs))
+
+    def one(jb):
+        box = cell_tile(jb["cell"], W, H)
+        path = run.path(f"tile_{jb['name']}.mp4")
+        video.crop_tile(clip, path, box, scale=CELL_SCALE)
+        tried, best = [], (0, None, "")
+        for w in jb["words"]:
+            try:
+                txt = _counted(run, api.sam_video, path, w, n, offline=offline)
+            except FileNotFoundError:   # free replay of a run made before this step existed
+                tried.append(dict(word=w, frames=None, note="not cached"))
+                return jb, box, (0, None, ""), tried, ""
+            k = sum(1 for ds in tracks.parse_boxes(txt).values() if ds)
+            tried.append(dict(word=w, frames=k))
+            if k > best[0]:
+                best = (k, w, txt)
+        rev = ""
+        if best[1]:
+            rp = run.path(f"tile_{jb['name']}_rev.mp4")
+            video.reverse(path, rp)
+            rev = tracks.reverse_text(_counted(run, api.sam_video, rp, best[1], n, offline=offline), n)
+        return jb, box, best, tried, rev
+
+    log = []
+    with cf.ThreadPoolExecutor(2) as ex:
+        for jb, box, (k, word, txt), tried, rev in ex.map(one, jobs):
+            entry = dict(kind="cell", what=jb["what"], cell=jb["cell"], tried=tried, word=word)
+            if word:
+                fw = tracks.from_tile(tracks.parse_boxes(txt), box, CELL_SCALE)
+                bw = tracks.from_tile(tracks.parse_boxes(rev), box, CELL_SCALE)
+                results.append((jb["name"], word, fw, txt, box))
+                results.append((jb["name"] + "rev", word, bw, rev, box))
+                both = {f for f, ds in list(fw.items()) + list(bw.items()) if ds}
+                entry.update(frames=len(both), max_per_frame=max(tracks.max_per_frame(fw), tracks.max_per_frame(bw)))
+            log.append(entry)
+            run.stage("recover", f"cell {jb['cell']} 3x: " + ", ".join(f"'{t['word']}' {t['frames'] if t['frames'] is not None else 'not cached'}" + (" frames" if t["frames"] is not None else "") for t in tried)
+                      + (f"; '{word}' reversed fills {entry['frames']} of {n} frames" if word else ""))
     return log
 
 

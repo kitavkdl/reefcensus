@@ -229,11 +229,11 @@ function drawFound() {
       ...missed.map((d, i) => [i ? "; " : "", el("b", {}, d.what), ` (tried ${d.tried.map((t) => t.word).join(", ")})`]))] : []));
 }
 
-const KIND = { backfill: "Played backwards", zoom: "Zoomed in", sign: "Checked a sign" };
+const KIND = { backfill: "Played backwards", zoom: "Zoomed in", cell: "Closer look", sign: "Checked a sign" };
 function drawSecond() {
   const run = state.run;
   const steps = (run.recovered || []).map((r) => {
-    const where = r.cell ? `${r.cell} block` : "whole clip";
+    const where = r.kind === "cell" ? `${r.cell} cell at 3x, best word then played backwards` : r.cell ? `${r.cell} block` : "whole clip";
     const res = r.word
       ? `'${r.word}' tracked in ${r.frames} frames, up to ${r.max_per_frame} at once`
       : `nothing with ${r.tried.map((t) => `'${t.word}'`).join(", ")}`;

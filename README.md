@@ -9,6 +9,9 @@ and a short queue of uncertain tracks for a human to confirm. Built during the M
 - **Discovery** (`--discover`): SAM finds nothing for a vague word like "animal" — it only sees what you name.
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
   names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
+- **Closer look**: when Spark names a small animal and a 2x2-cell zoom still finds nothing, the one cell Spark pointed
+  at is blown up 3x, every word is tried and the one tracked longest wins (the first hit can be a false one), then
+  that word on the reversed cell back-fills the start. Nautilus clip s002: a ~40 px red crustacean, 0 -> 60/60 frames.
 - **One animal, two boxes**: separate passes (whole frame, reversed clip, zoom tiles) can box the same shrimp twice
   (body only and body with legs). Masks find the candidates (one mask lying >=80% inside another); Spark is shown both
   outlines and decides "same animal or two?" — masks alone can't, because SAM sometimes draws one mask over two
