@@ -48,11 +48,26 @@ python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (r
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 15 tests, including an exact
+offline replay of the s004 demo run.
+
 The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
 of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits). Until the queue
 is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
 New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used, so all saved runs replay for $0).
+
+## Finding what you didn't ask for (measured)
+Four nautilus BRUV clips (12 s each), request = "fish" only. Before looking at any output, every non-fish animal in
+four frames per clip was listed by eye at taxon level (not an expert's list): 7 taxa.
+
+| | result |
+|---|---|
+| Spark names it | 7 of 7 |
+| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look: 2 of at least 4 counted) |
+| something wrong counted | 0 (Spark once proposed a shrimp that isn't there; no word found it, and the motion box that drifted onto the trap mesh was rejected by a second look) |
+| SAM "fish" alone | 0 of 7 — it only sees what it is told |
+| motion look, added | s001: 2 nautiluses no word ever found (night, wire trap). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
 
 ## How well it counts (measured)
 Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames, IoU >= 0.3. MaxN over the annotated
@@ -72,6 +87,7 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   track from one crop, and a faint fish behind seagrass was "only seagrass and water", so a 36-frame track left the
   count. Showing three crops of the same track (early, middle, late; for the peak check, just before and after)
   fixed it, the same way it lets Spark tell a sediment cloud from an animal below.
+- A third of the tracks go to the human queue: the counts are what a reviewer confirms, not a final census.
 - Honest baseline: dropping every track shorter than 4 frames (no model call) gives exactly the same numbers on these
   clips, so here the checks match a well-chosen heuristic rather than beat it; their own value shows in discovery
   (names, duplicates, the trap net). The 97.4% counts queued tracks as accepted; rejecting them all gives 84.2%.
@@ -83,19 +99,6 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds. Earlier, 6 of 12
   "false-positive" tracks were checked by eye and all 6 were real luderick the annotators left unboxed, so precision
   is a lower bound.
-- A third of the tracks go to the human queue: the counts are what a reviewer confirms, not a final census.
-
-## Finding what you didn't ask for (measured)
-Four nautilus BRUV clips (12 s each), request = "fish" only. Before looking at any output, every non-fish animal in
-four frames per clip was listed by eye at taxon level (not an expert's list): 7 taxa.
-
-| | result |
-|---|---|
-| Spark names it | 7 of 7 |
-| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look: 2 of at least 4 counted) |
-| something wrong counted | 0 (Spark once proposed a shrimp that isn't there; no word found it, and the motion box that drifted onto the trap mesh was rejected by a second look) |
-| SAM "fish" alone | 0 of 7 — it only sees what it is told |
-| motion look, added | s001: 2 nautiluses no word ever found (night, wire trap). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — PANGAEA doi:10.1594/PANGAEA.926930,
