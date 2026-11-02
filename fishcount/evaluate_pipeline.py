@@ -45,7 +45,7 @@ def main():
         gt = {int(k): [(x, y, x + w, y + h) for x, y, w, h, *_ in v]
               for k, v in json.load(open(f"{SMOKE}/{c['gt']}"))["frames"].items()}
         clip = f"{SMOKE}/{c['path']}"
-        sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(api.sam_video(clip, "fish", c["n_frames"], offline=True)).items()}
+        sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(api.sam_video(clip, "fish", c["n_frames"], offline=not a.run)).items()}
         rp = os.path.join(RUNS, f"{a.tag}_{cid}", "result.json")
         if a.run and not os.path.exists(rp):
             pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.2)
