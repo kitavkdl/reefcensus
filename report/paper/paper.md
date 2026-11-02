@@ -298,8 +298,10 @@ frame where it nests.
 
 **A4 Peak-frame check.** For each label, every box in its MaxN frame $t^\star$ is shown with the same track three
 frames before and after, "this frame" always in the middle. Spark answers whether the middle crop shows "a whole or
-partial ⟨label⟩"; the prompt asks for "true" when a crop is too blurry to tell, a deliberate bias toward keeping
-boxes, and the question names the label, so a real animal of another species can be rejected (§7.5). A rejected box
+partial ⟨name⟩"; the prompt asks for "true" when a crop is too blurry to tell, a deliberate bias toward keeping
+boxes. For a label whose tracks all come from the requested word, ⟨name⟩ is that word ("fish"), not the species A1
+proposed; for a discovered animal it is the animal's name ("hagfish"). Asking about the species removed real fish of
+another species (§7.5), which led to this rule in the final version. A rejected box
 removes that track for ±1 s, the MaxN curve is recomputed, and the new peak is checked, for up to three rounds. This audit exists because a per-track audit can
 pass every track while the peak frame is wrong: in an early run on nautilus clip s004, most "shrimp" boxes in the peak
 frame sat on hagfish bodies although each track had passed A1.
@@ -367,7 +369,9 @@ to the point where the audits would start. Without audits there are no species l
 under SAM's word ("eel", "shrimp"). Further ablations of discovery components come from the development history
 (§7.3).
 
-**Protocol.** Results are from the final version (v16 code; luderick run tag eval6). All luderick variants in §7.1 are
+**Protocol.** Results are from v16 code (luderick run tag eval6) unless marked V6. The final code (V6) differs only
+in the A4 question for word-prompted tracks (§4.6); it reproduces every v16 count exactly (luderick run eval7, and
+offline replays of the four discovery runs, all of whose calls hit the v16 cache). All luderick variants in §7.1 are
 saved runs of earlier versions of the same code, re-scored with one scorer. Every number in this paper is produced by
 a script in the repository from saved runs and cached model replies (§10 says which of them a fresh clone can
 reproduce), except where a sentence says it is a development
@@ -526,7 +530,8 @@ case we therefore repeated the judgement on the saved sheets (below).
 | V2 | three moments per track; peak box with the track before/after, judged frame in the middle | 97.4% | 79.2% | 4/6 | 2 | 7/27 |
 | V3 | V2 with 2-px borders and captions in the prompt | 97.4% | 79.2% | 4/6 | 2 | 10/27 |
 | V4 | V2, but when a track starts or ends at the judged frame, that frame moves to the strip's edge (no repeated crop) | 96.3% | 79.0% | **5/6** | **1** | 9/27 |
-| V5 (final) | V2 layout restored; A2 and relabelling added (inactive on this task) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
+| V5 | V2 layout restored; A2 and relabelling added (inactive on this task) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
+| V6 (final) | V5, but A4 asks about the requested category ("fish"), not A1's species | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
 
 ![**Figure 4.** The same SAM tracks audited with five sheet designs. Recall is drawn as dots because its axis does
 not start at zero. V4 has the best MaxN score and the worst recall of the three-moment designs; see text.](figures/ablation.png){.half}
@@ -552,13 +557,15 @@ layout. Data: `report/paper/data/repeat_peak_f35.json`.</div>
 |---|--:|--:|--:|
 | V4: judged frame at the strip's edge | 5 of 9 | 0 of 9 | 4 of 9 |
 | V5: judged frame in the middle | 0 of 9 | 2 of 9 | 7 of 9 |
+| V6: middle, question names the category ("fish") | 0 of 9 | 0 of 9 | 9 of 9 |
 
 With the frame at the edge, Spark failed to see an animal in 5 of 9 calls; in the middle, never (Fisher exact test,
 two-sided p = 0.029). The position of the frame therefore changes whether the faint body is seen as a fish. Whether
 the track survives is a weaker effect (removed in 5 of 9 vs. 2 of 9, p = 0.33), because in the middle layout Spark
 sometimes recognised the fish but answered that it was "other fish" than the label being checked ("striped
-seabream"), which also removes it (§7.5). The single runs of Table 4 thus each show one draw: V5's 97.4% is the
-outcome in 7 of 9 calls, V4's 96.3% in 5 of 9. The direction agrees with reports that multi-image VLMs weigh inputs
+seabream"), which also removes it (§7.5). Asking about the requested category instead (V6) removed that path: the
+fish was kept in all nine calls. The single runs of Table 4 thus each show one draw: V4's 96.3% is the outcome in 5
+of 9 calls, V5's 97.4% in 7 of 9, and V6's 97.4% in 9 of 9. The direction agrees with reports that multi-image VLMs weigh inputs
 differently by position (Tian et al., 2025); their setting is separate images, ours is crops within one composite
 sheet, so we call the effect similar rather than the same.
 
@@ -669,8 +676,8 @@ peak, but a label with a single short appearance would have been lost. And becau
 a real fish of another species can be rejected for not being that species: on the frame-35 sheet Spark twice
 answered "other fish" for a fish under the label "striped seabream" (Table 4b). Under the current rule such a track
 is removed from the peak frame and is not moved to another label, so a per-species check silently lowers the total.
-Asking "an animal of the requested category?" in A4 and leaving the species to A1 would remove this path; we have not
-yet tested that change.
+The final version (V6) asks A4 about the requested category for word-prompted tracks and leaves the species to A1;
+on the same sheet the fish was then kept in 9 of 9 calls (Table 4b), and every saved count is unchanged.
 
 **Malformed output.** During development Spark twice returned replies that were not valid JSON (for example
 `{ polo":1 }:`); because one was cached, every replay failed. A reply that fails its schema check is now never

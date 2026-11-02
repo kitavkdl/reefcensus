@@ -8,7 +8,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.a
 sys.path.insert(0, ROOT)
 from fishcount import api  # noqa: E402
 
-CASES = [("V4", "3ea6a8c", "eval5_fish_20190618_9"), ("V5", "53e690a", "eval6_fish_20190618_9")]
+CASES = [("V4", "3ea6a8c", "eval5_fish_20190618_9"), ("V5", "53e690a", "eval6_fish_20190618_9"),
+         ("V5-category", "acd979a", "eval7_fish_20190618_9")]
 OUT = os.path.join(ROOT, "report/paper/data/repeat_peak_f35.json")
 
 
@@ -65,7 +66,7 @@ def main():
     out = json.load(open(OUT)) if os.path.exists(OUT) else {}
     for v, run, pr, sheet, cp in found:
         out.setdefault(v, {"run": run, "original": json.load(open(cp))["text"], "repeats": []})
-        for i in range(a.n):
+        for i in range(a.n - len(out[v]["repeats"])):     # top up to n repeats per layout
             text = fresh(payload(pr, sheet))      # the identical payload, sent again without the cache
             out[v]["repeats"].append(text)
             print(v, i, text[:300].replace("\n", " "))

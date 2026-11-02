@@ -5,7 +5,7 @@ Rows:
   merge only           runs/ablnoaudit_*: full pipeline with every audit disabled, replayed from cache
   merge + min length k merge only, then drop tracks shorter than k frames (no model call; the 11/2 review's baseline)
   SAM conf >= c        raw SAM boxes above a confidence cut-off (no model call)
-  V1..V5               runs/{eval,eval3,eval4,eval5,eval6}_*  (V5 = final)
+  V1..V6               runs/{eval,eval3,eval4,eval5,eval6,eval7}_*  (V5 = v16 code, V6 = final: A4 asks the requested category)
   V5 queue accepted    = V5 as reported (a queued track keeps its "(unidentified)" label and is counted)
   V5 queue rejected    = V5 with every queued track removed (a reviewer who rejects the whole queue)
 """
@@ -17,7 +17,7 @@ from fishcount import api, tracks, pipeline  # noqa: E402
 
 SMOKE = os.path.expanduser("~/meta-smoke")
 RUNS = os.path.join(ROOT, "runs")
-VERS = [("V1", "eval"), ("V2", "eval3"), ("V3", "eval4"), ("V4", "eval5"), ("V5", "eval6")]
+VERS = [("V1", "eval"), ("V2", "eval3"), ("V3", "eval4"), ("V4", "eval5"), ("V5", "eval6"), ("V6", "eval7")]
 
 
 def match(pred, gt, thr):
