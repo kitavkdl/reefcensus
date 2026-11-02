@@ -10,6 +10,9 @@ and a short queue of uncertain tracks for a human to confirm. Built during the M
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
   names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
 - All API calls are cached by content hash and metered against a budget (`FISH_BUDGET`, default $1).
+- SAM masks are decoded by a small C port of `meta_sam_parser`'s one_bit codec (`fishcount/_maskdec.c`, built with
+  `cc` on first use; ~1 ms a mask instead of ~1 s). Without a C compiler it falls back to `meta_sam_parser`.
+  `python3 spikes/maskcheck.py` checks it against the reference on every cached SAM output.
 
 ```
 pip install -r requirements.txt     # Meta API key in ~/.config/meta-api/key

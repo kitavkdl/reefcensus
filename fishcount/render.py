@@ -3,7 +3,7 @@ import os, re, subprocess, sys, tempfile, zlib
 sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))
 import cv2
 import numpy as np
-from fishcount import video, tracks
+from fishcount import maskcodec, video, tracks
 
 def colour(track):
     """Stable per track across runs (built-in hash() of a str changes every process)."""
@@ -35,21 +35,8 @@ def square(img, side):
 
 
 def frame_masks(text, f):
-    """Decode only frame f's masks from a SAM output (fast: one line). Returns [(box, full-frame bool mask)]."""
-    from meta_sam_parser import video_segmentation_format, decode_mask_to_raster, CompletedOutcome
-    line = next((ln for ln in text.splitlines() if ln.startswith(f"<{f}f>")), None)
-    if not line:
-        return []
-    p = video_segmentation_format().create_parser()
-    p.push(line + "\n")
-    res = p.finish(CompletedOutcome()).result
-    out = []
-    for r in res.records:
-        if r.kind != "mask" or r.frame is None:
-            continue
-        a = np.frombuffer(decode_mask_to_raster(r.mask), np.uint8).reshape(r.mask.height, r.mask.width).astype(bool)
-        out.append(((r.bounds.left, r.bounds.top, r.bounds.right, r.bounds.bottom), a))
-    return out
+    """Decode only frame f's masks from a SAM output. Returns [(box, full-frame bool mask)]."""
+    return maskcodec.masks(text, f).get(f, [])
 
 
 def evidence(clip, raw, result, f, out_path):
@@ -130,17 +117,8 @@ def _masks_full(text, tile, masks, W, H):
 
 
 def all_masks(text):
-    """Every frame's masks from one SAM output in a single parser pass: {frame: [(box, bool mask)]}.
-    The parser is pure Python (~65 ms a mask), so annotate() runs one of these per source in parallel."""
-    from meta_sam_parser import video_segmentation_format, decode_mask_to_raster, CompletedOutcome
-    p = video_segmentation_format().create_parser()
-    p.push(text + "\n")
-    out = {}
-    for r in p.finish(CompletedOutcome()).result.records:
-        if r.kind == "mask" and r.frame is not None:
-            a = np.frombuffer(decode_mask_to_raster(r.mask), np.uint8).reshape(r.mask.height, r.mask.width).astype(bool)
-            out.setdefault(r.frame, []).append(((r.bounds.left, r.bounds.top, r.bounds.right, r.bounds.bottom), a))
-    return out
+    """Every frame's masks from one SAM output: {frame: [(box, bool mask)]}."""
+    return maskcodec.masks(text)
 
 
 def asked_labels(result):
@@ -161,10 +139,13 @@ def annotate(clip, raw, result, out_path):
     lab = lambda t: labels.get(t, trk[t]["label"]) if t in trk else None
     asked = asked_labels(result)
     is_asked = lambda l: l in asked
-    import concurrent.futures as cf
     srcs = [(text, tile) for text, tile in raw.values() if text]
-    with cf.ProcessPoolExecutor(min(6, len(srcs) or 1)) as ex:
-        decoded = list(ex.map(all_masks, [t for t, _ in srcs]))
+    if maskcodec.fast():      # C decoder: s003's 263 masks in ~1 s
+        decoded = [all_masks(t) for t, _ in srcs]
+    else:                     # reference decoder ~0.5 s a mask: one process per source
+        import concurrent.futures as cf
+        with cf.ProcessPoolExecutor(min(6, len(srcs) or 1)) as ex:
+            decoded = list(ex.map(all_masks, [t for t, _ in srcs]))
     tmp = tempfile.mkdtemp(dir=os.path.dirname(out_path))
     for f in range(n):
         img = imgs[f]
