@@ -149,8 +149,8 @@ no names: "looks like trap mesh, not animal". It is not counted.*
 - **Night footage behind a wire trap (s001) is the weakest case.** No word, zoom or 3x cell tracks a nautilus there;
   only the motion look does. It counts 2 of the 4+ a person sees: the nautilus inside the trap is never tracked, and
   Spark's audit is unsure about the blurriest one, which waits for a person.
-- **Duplicates are checked within one tracker word only.** A track renamed by the audit (s002: "shrimp" → "small red crab") is not compared with tracks found under another word, so one animal could in principle be counted under two names. In s002 a second red crustacean is held as "fish (unidentified)" for a person; we have not confirmed whether it is the same animal.
-- **The second look checks "animal or not", not the name.** In s004 it said "small fish" for a track the audit named caridean shrimp; the track counts as shrimp because the audit's species is used.
+- **Duplicates are found only when masks nest.** Nested pairs are checked within a tracker word and, since the final version, across words too (none on the four clips). Two tracks of one animal that never nest are not caught. In s002 a second red crustacean is held as "fish (unidentified)" for a person; it shares 42 frames with the counted crab without overlapping, so it is a different animal.
+- **The second look checks "animal or not", not the name.** In s004 it called both counted motion shrimp "fish" (0.6, 0.65) though the audit named them caridean shrimp; they count as shrimp because the audit's species is used.
 - **Spark is not deterministic.** The same input on a different sheet can get a different answer (section 3). Cached
   answers make a run reproducible; a fresh run can differ by a track.
 

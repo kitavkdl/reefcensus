@@ -829,47 +829,54 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
 
 
 def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8):
-    """Every nested pair in the clip (two counted detections of the same SAM word, one mask >= `contain` inside
-    the other) goes to Spark once, shown in the frame where it nests most, as "same animal or two?". For a
-    duplicate the smaller-mask track is removed from each frame where it nests inside the other.
-    Mutates `frames`; returns [dict(outer, inner, frame, containment, same, said)]."""
+    """Every nested pair in the clip (two counted detections, one mask >= `contain` inside the other) goes to Spark
+    once, shown in the frame where it nests most, as "same animal or two?". For a duplicate the smaller-mask track
+    is removed from each frame where it nests inside the other.
+    Pairs of the same SAM word go on sheets pairs_<n>.jpg; pairs of two different words (one animal found as "shrimp"
+    and renamed "small red crab", or a motion box on a word track) go on separate sheets pairsx_<n>.jpg, so adding
+    the cross-word check leaves every same-word sheet, and its cached answer, unchanged (11/2 review: duplicates
+    were only checked within one word). Mutates `frames`; returns [dict(outer, inner, frame, containment, same, said,
+    cross)]."""
     lab = lambda t: labels.get(t, trk[t]["label"])
-    best = {}   # (outer, inner) -> (containment, frame, outer mask, inner mask)
+    best, cross = {}, {}   # (outer, inner) -> (containment, frame, outer mask, inner mask)
     for f, ks in frames.items():
         ms = [maskdedupe.det_mask(dec, k["track"].split(":")[0], f, k["box"]) for k in ks]
         for i in range(len(ks)):
             for j in range(i + 1, len(ks)):
                 a, b = ks[i]["track"], ks[j]["track"]
-                if a == b or not (lab(a) and lab(b)) or trk[a]["label"] != trk[b]["label"] or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
+                if a == b or not (lab(a) and lab(b)) or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
                     continue
                 c = maskdedupe.containment(ms[i], ms[j])
                 if c is None or c < contain:
                     continue
+                into = best if trk[a]["label"] == trk[b]["label"] else cross
                 o, n_ = (i, j) if ms[i][0].sum() >= ms[j][0].sum() else (j, i)
                 key = (ks[o]["track"], ks[n_]["track"])
-                if key[::-1] in best:   # sizes swap between frames: keep one orientation per pair
+                if key[::-1] in into:   # sizes swap between frames: keep one orientation per pair
                     key, o, n_ = key[::-1], n_, o
-                if key not in best or c > best[key][0]:
-                    best[key] = (c, f, ms[o], ms[n_])
-    if not best:
-        return []
-    pairs = sorted(best, key=lambda k: best[k][1])
-    imgs = video.frames(clip, {best[k][1] for k in pairs})
-    tiles = [video.label(render.square(pair_tile(imgs[best[k][1]], best[k][2], best[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
-    said = {}
-    for i in range(0, len(tiles), 16):
-        sheet = video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)
-        open(run.path(f"pairs_{i // 16 + 1}.jpg"), "wb").write(sheet)
-        reply = _counted(run, api.spark, PAIR_PROMPT, [sheet], offline=offline, check=api.parse_json_list)
-        for v in api.parse_json_list(reply):
-            said[v.get("tile")] = v
+                if key not in into or c > into[key][0]:
+                    into[key] = (c, f, ms[o], ms[n_])
     out = []
-    for i, (o, in_) in enumerate(pairs):
-        v = said.get(f"P{i + 1}", {})
-        same = v.get("same_animal") is True
-        out.append(dict(outer=o, inner=in_, frame=best[(o, in_)][1], containment=round(best[(o, in_)][0], 2), same=same, said=v.get("what")))
-        if same:
-            drop_nested(frames, dec, o, in_, contain)
+    for found, prefix in ((best, "pairs"), (cross, "pairsx")):
+        if not found:
+            continue
+        pairs = sorted(found, key=lambda k: found[k][1])
+        imgs = video.frames(clip, {found[k][1] for k in pairs})
+        tiles = [video.label(render.square(pair_tile(imgs[found[k][1]], found[k][2], found[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
+        said = {}
+        for i in range(0, len(tiles), 16):
+            sheet = video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)
+            open(run.path(f"{prefix}_{i // 16 + 1}.jpg"), "wb").write(sheet)
+            reply = _counted(run, api.spark, PAIR_PROMPT, [sheet], offline=offline, check=api.parse_json_list)
+            for v in api.parse_json_list(reply):
+                said[v.get("tile")] = v
+        for i, (o, in_) in enumerate(pairs):
+            v = said.get(f"P{i + 1}", {})
+            same = v.get("same_animal") is True
+            out.append(dict(outer=o, inner=in_, frame=found[(o, in_)][1], containment=round(found[(o, in_)][0], 2),
+                            same=same, said=v.get("what"), cross=found is cross))
+            if same:
+                drop_nested(frames, dec, o, in_, contain)
     return out
 
 

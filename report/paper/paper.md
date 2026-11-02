@@ -289,9 +289,10 @@ Spark sees it again at three *other* moments (1/8, 1/2 and 7/8 along its path), 
 earlier steps, and must answer "animal" with confidence ≥ 0.5; species confidence remains A1's job. This step was
 added after the anchoring failure in §7.5.
 
-**A3 Same animal?** Two counted detections of the same word whose masks nest (one ≥ 80% inside the other) are found
+**A3 Same animal?** Two counted detections whose masks nest (one ≥ 80% inside the other) are found
 from the decoded masks; each pair is shown once, in the frame where it nests most, with both outlines drawn (red and
-cyan), and Spark answers whether the cyan outline marks the same single animal or a part of it. Masks find candidates;
+cyan). Pairs of the same segmenter word and pairs of two different words (for example a renamed track and a track of
+another word) go on separate sheets, the second kind only in the final version (V6). Spark answers whether the cyan outline marks the same single animal or a part of it. Masks find candidates;
 the judgement is needed because one mask can cover two real animals (a case we observed with two overlapping
 nautiluses, where a zoom pass found the rear one alone). For a duplicate, the smaller-mask track is removed from every
 frame where it nests.
@@ -531,7 +532,7 @@ case we therefore repeated the judgement on the saved sheets (below).
 | V3 | V2 with 2-px borders and captions in the prompt | 97.4% | 79.2% | 4/6 | 2 | 10/27 |
 | V4 | V2, but when a track starts or ends at the judged frame, that frame moves to the strip's edge (no repeated crop) | 96.3% | 79.0% | **5/6** | **1** | 9/27 |
 | V5 | V2 layout restored; A2 and relabelling added (inactive on this task) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
-| V6 (final) | V5, but A4 asks about the requested category ("fish"), not A1's species | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
+| V6 (final) | V5, but A4 asks about the requested category ("fish"), not A1's species; A3 also checks pairs across words (none here) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
 
 ![**Figure 4.** The same SAM tracks audited with five sheet designs. Recall is drawn as dots because its axis does
 not start at zero. V4 has the best MaxN score and the worst recall of the three-moment designs; see text.](figures/ablation.png){.half}
@@ -713,11 +714,11 @@ counted twice (for example body only vs. body with legs).](figures/pairs_s004.jp
   the motion residual helps only for a still camera and moving animals.
 * **The weakest case is night footage behind a wire trap (s001):** 2 of the 4 or more nautiluses are counted; the one
   inside the trap is never tracked, and the blurriest waits in the queue.
-* **Duplicates across names are not checked.** A3 compares masks within one segmenter word. A track renamed by A1
-  (s002 "shrimp" → "small red crab") is not compared with tracks found under another word, so one animal could be
-  counted under two names. In s002, the queued "fish (unidentified)" track that A1 called a red crab co-exists with
-  the counted crab for 42 frames without overlap, so it is not the same animal; the other queued track is
-  unidentified.
+* **Duplicates across names are found only when masks nest.** The final version also sends nested pairs of two
+  different words to A3 (on separate sheets, so the same-word judgements are unchanged); on the four discovery clips
+  there were none. Two tracks of one animal that overlap without nesting, or never share a frame, are not caught. In
+  s002, the queued "fish (unidentified)" track that A1 called a red crab co-exists with the counted crab for 42
+  frames without overlap, so it is not the same animal; the other queued track is unidentified.
 * **A2 checks "animal or not", not the name.** In s004 it named both counted motion shrimp "fish" (confidence 0.6
   and 0.65) although A1 had named them caridean shrimp; both count as shrimp.
 * **On single-category counting the audits do not beat a length rule** (Table 1); their measured value on luderick

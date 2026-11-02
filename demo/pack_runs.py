@@ -16,7 +16,7 @@ for rid in sys.argv[1:]:
         shutil.rmtree(dst)
     os.makedirs(dst)
     for f in os.listdir(src):
-        if f in KEEP or (f.startswith(("evidence_", "audit_", "verify_", "confirm_", "pairs_")) and f.endswith(".jpg")):
+        if f in KEEP or (f.startswith(("evidence_", "audit_", "verify_", "confirm_", "pairs_", "pairsx_")) and f.endswith(".jpg")):
             shutil.copy2(os.path.join(src, f), dst)
     if os.path.isdir(os.path.join(src, "thumbs")):
         shutil.copytree(os.path.join(src, "thumbs"), os.path.join(dst, "thumbs"))
