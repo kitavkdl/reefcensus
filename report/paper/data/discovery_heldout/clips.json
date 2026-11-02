@@ -1,0 +1,70 @@
+{
+ "note": "held-out discovery clips; window = 12 s centred on the file midpoint",
+ "clips": [
+  {
+   "id": "DH1",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/6/62/Deep-Coastal-Marine-Taphonomy-Investigation-into-Carcass-Decomposition-in-the-Saanich-Inlet-British-pone.0110710.s004.ogv",
+   "citation": "Anderson & Bell 2014, PLOS ONE 9(10):e110710, doi:10.1371/journal.pone.0110710, S4 (Carcass 2 Day 2)",
+   "licence": "CC BY 4.0",
+   "sha256": "065bcde68c955e77841cef6309da5d60b9dbe6c0732992a85fcd0dd50ac104e7",
+   "duration_s": 58.19,
+   "window_start_s": 23.1,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 720,
+   "height": 480
+  },
+  {
+   "id": "DH2",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Deep-Coastal-Marine-Taphonomy-Investigation-into-Carcass-Decomposition-in-the-Saanich-Inlet-British-pone.0110710.s001.ogv",
+   "citation": "Anderson & Bell 2014, PLOS ONE 9(10):e110710, S1 (Carcass 1 Day 0)",
+   "licence": "CC BY 4.0",
+   "sha256": "54b0babc688fe467d7f9b747421e244efbd0c9e077fc2a6d325050494864eda0",
+   "duration_s": 42.14,
+   "window_start_s": 15.07,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 720,
+   "height": 480
+  },
+  {
+   "id": "DH3",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/5/58/Deep-Coastal-Marine-Taphonomy-Investigation-into-Carcass-Decomposition-in-the-Saanich-Inlet-British-pone.0110710.s003.ogv",
+   "citation": "Anderson & Bell 2014, PLOS ONE 9(10):e110710, S3 (Carcass 1 Day 6)",
+   "licence": "CC BY 4.0",
+   "sha256": "7cd64c71f83122aa88c0e9bbd6ecc8dc59ae6e713fbc2d285197b7331a147f86",
+   "duration_s": 115.12,
+   "window_start_s": 51.56,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 640,
+   "height": 480
+  },
+  {
+   "id": "DH4",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Impact-of-Marine-Submergence-and-Season-on-Faunal-Colonization-and-Decomposition-of-Pig-Carcasses-pone.0149107.s002.ogv",
+   "citation": "Anderson & Bell 2016, PLOS ONE 11(3):e0149107, doi:10.1371/journal.pone.0149107, S2",
+   "licence": "CC BY 4.0",
+   "sha256": "08063bceac5c432940b4012bdbd8b3a55f2250e0f272c834296956baa0397caf",
+   "duration_s": 40.84,
+   "window_start_s": 14.42,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 640,
+   "height": 480
+  },
+  {
+   "id": "DH5",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/1/1c/Diversity-and-Composition-of-Demersal-Fishes-along-a-Depth-Gradient-Assessed-by-Baited-Remote-pone.0048522.s005.ogv",
+   "citation": "Zintzen et al. 2012, PLOS ONE 7(11):e48522, doi:10.1371/journal.pone.0048522, Video S1 (Commons file s005)",
+   "licence": "CC BY 2.5",
+   "sha256": "7a90a36e3f027a3859a2f9572f6e82846a0d95b771dac46d1b2ed9cc250186a4",
+   "duration_s": 613.4,
+   "window_start_s": 300.7,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 720,
+   "height": 406
+  }
+ ]
+}

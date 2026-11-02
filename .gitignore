@@ -10,3 +10,4 @@ demo/out/
 !demo/runs/*/annotated.mp4
 demo/site/
 .pylib
+spikes/DH/raw/
