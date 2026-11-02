@@ -98,3 +98,36 @@ the same 6 + 2 quota, with these further Commons API queries appended in this or
   20. `pone video invertebrates seabed`
 Naming animal groups in queries 9–14 favours clips with non-fish animals; that is the same direction rule (d)
 already takes and is disclosed. If these still give fewer than 6 + 2, the set is what they give.
+
+## Amendment 2 (2026-11-02 evening, before any reference list is committed and before any DH6–DH11 run)
+**Code freeze moves.** "Frozen at the commit that adds this file" (b510908) is replaced: the pipeline was changed
+after b510908 (decision of 11/2: the held-out sets are re-run on the final code instead of keeping old code). The
+code is now frozen at **`cbaf59b`**. Between b510908 and `cbaf59b`: A4's example of a different animal without the
+category word; cross-word same-animal candidates from containment 0.6; a second look naming another animal group
+queues the track (still counted); a peak-check "not a <name>" answer that names another animal of the same group
+keeps the box and queues the track (a part, a duplicate or a non-animal answer still removes it); animal-group MaxN
+rows; mid-confidence motion tracks get their own second look; automatic low-light brightening (median Lab L < 15 and
+mean < 35 — thresholds set from development clips; none of DH1–DH11 or the 24 luderick held-out clips is that dark,
+lowest DH1 23/66); discovery names reduced to their animal noun for SAM (a non-animal fallback word goes after Spark's
+search words); videos over 600 s split into segments; `FISH_LEDGER`; static demo page; and the scorer changes below.
+After `cbaf59b`, until the runs below are done, nothing under `fishcount/`, `web/` or `report/paper/scripts/score_*`,
+`fixed_vocab_heldout2.py` changes; only this file, the reference lists and prose are committed.
+
+**Scoring definitions, fixed before the reference lists.**
+- *Fish* = the word "fish" or any name of the pipeline's fish group (shark, ray, eel, goby, hagfish …): the run is
+  asked for fish, so a shark on a fish-only clip is not a discovery. (DH1–DH5 rescored: only DH5 "pink cusk-eel"
+  changes, to fish, as the paper already treated it.)
+- Metric 1 keeps *counted* = a row with a track that needs no review. Since `cbaf59b` a track can be in the MaxN and
+  queued at once (name disagreement, same-group peak doubt, mid-confidence second look); such rows are reported
+  as "in MaxN, queued", next to the protocol numbers, never merged into them.
+- Metric 3 is computed on counted rows as defined; the crop sheet also carries the "in MaxN, queued" non-fish rows,
+  and their animal / not-animal judgement is reported separately.
+
+**Run procedure (adds to "Runs").**
+- `FISH_BUDGET` is set right before each batch from the ledger at that moment (`python3 -c "from fishcount import api; print(api.spent())"` + cap), not from an earlier number.
+- `--zoom` has no effect with `--no-scout` (zoom cells come from the scout step); it stays in the command for parity
+  with DH1–DH5, and the paper says so.
+- **Re-runs of seen data on the frozen code**, after DH6–DH11, labelled "re-run of previously seen data": DH1–DH5 with
+  `--id DH<n>_frz` (never `DH<n>_eval`, which the DH1–DH5 scorer prefers over the archived first runs), and the 24
+  luderick held-out clips with `python3 fishcount/evaluate_pipeline.py --run --tag frz --manifest manifest_heldout.json`
+  (a new tag, so no old result is reused). Budget caps as above.
