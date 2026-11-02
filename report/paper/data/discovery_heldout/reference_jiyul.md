@@ -31,4 +31,5 @@ anemone or a sea star; it is reported with the sessile list, not in the primary 
 | DH4 | agree: none | — |
 | DH5 | agree: none | Jiyul adds the small shapes (unsure) |
 
-Union reference list (primary): DH1 crab-like; DH2 crab-like; DH3 crab-like, shrimp/lobster-like. Five taxa-in-clip.
+Union reference list (primary): DH1 crab-like; DH2 crab-like; DH3 crab-like, shrimp/lobster-like. Four taxa-in-clip
+(the first commit of this file said "five"; the list itself is unchanged, the total was miscounted).
