@@ -71,6 +71,9 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   track from one crop, and a faint fish behind seagrass was "only seagrass and water", so a 36-frame track left the
   count. Showing three crops of the same track (early, middle, late; for the peak check, just before and after)
   fixed it, the same way it lets Spark tell a sediment cloud from an animal below.
+- Honest baseline: dropping every track shorter than 4 frames (no model call) gives exactly the same numbers on these
+  clips, so here the checks match a well-chosen heuristic rather than beat it; their own value shows in discovery
+  (names, duplicates, the trap net). The 97.4% counts queued tracks as accepted; rejecting them all gives 84.2%.
 - Of the two MaxN misses left, 20190618_9 (9→10) is two real fish the annotators did not box in that frame (one cut
   by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds. Earlier, 6 of 12
   "false-positive" tracks were checked by eye and all 6 were real luderick the annotators left unboxed, so precision
@@ -91,8 +94,9 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — github.com/globalwetlands/luderick-seagrass
-- Monk, J., Barrett, N., Langlois, T. (2024) Curated underwater video highlights of marine protected areas,
-  IMAS, University of Tasmania, CC BY 4.0
+- "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
+  Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
+  "License: Not Specified"; used only for a vocabulary probe and one figure, licence to be confirmed with the custodian
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799,
   supplementary videos S1–S4, CC BY 4.0 (via Wikimedia Commons)
 

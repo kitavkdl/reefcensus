@@ -1,0 +1,41 @@
+{
+ "note": "luderick clips: Ditria et al. 2021, PANGAEA doi:10.1594/PANGAEA.926930, CC BY 4.0",
+ "clips": {
+  "fish_20190618_9": {
+   "n_frames": 107,
+   "width": 1920,
+   "height": 1080,
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_9.mov"
+  },
+  "fish_20190709_14": {
+   "n_frames": 265,
+   "width": 1920,
+   "height": 1080,
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_14.mov"
+  },
+  "fish_20190618_3": {
+   "n_frames": 58,
+   "width": 1920,
+   "height": 1080,
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_3.mov"
+  },
+  "fish_20190710_4": {
+   "n_frames": 63,
+   "width": 1920,
+   "height": 1080,
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_4.mov"
+  },
+  "fish_20190709_13": {
+   "n_frames": 105,
+   "width": 1920,
+   "height": 1080,
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_13.mov"
+  },
+  "fish_20190709_4": {
+   "n_frames": 67,
+   "width": 1920,
+   "height": 1080,
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_4.mov"
+  }
+ }
+}

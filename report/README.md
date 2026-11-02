@@ -16,8 +16,8 @@ two overlapping masks are one animal. Where no word works, a still camera's own 
 whether it is an animal, and SAM tracks it from a box with no word at all.
 
 Results (details in **Evaluation**):
-- **Counting, luderick (6 clips, 319 frames boxed by people):** recall 97.4% (the same as SAM alone: the checks throw away no real fish), precision 79.2% (a lower bound, see 4.1), MaxN within ±1 of the human count on all 6 clips and exact on 4; 9 of 27 tracks sent to a person.
-- **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with 0 false counts. SAM asked for "fish" alone found 0 of 7. The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
+- **Counting, luderick (6 clips, 319 frames boxed by people):** recall 97.4% (the same as SAM alone: the checks throw away no real fish), precision 79.2% (a lower bound, see 4.1), MaxN within ±1 of the human count on all 6 clips and exact on 4 (SAM alone: 2); 9 of 27 tracks sent to a person. A rule with no model call, dropping tracks shorter than 4 frames, gives exactly the same numbers, so on this one-species task the checks match a well-chosen heuristic rather than beat it. The 97.4% counts the queued tracks as accepted; if a reviewer rejected all of them, recall would be 84.2%.
+- **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net, and cost one nautilus in s001 (queued). The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
 - **Cost:** a 12 s clip costs about $0.02–0.25 in API calls; all answers are cached by content, so a rerun is free.
 
 ![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3.jpg)
@@ -90,7 +90,9 @@ is taken over the annotated frames only, for both columns.
 | **all** | **319** | **97.4% / 78.7%**, MaxN off by 1 on 4 of 6 | **97.4% / 79.2%**, MaxN off by 1 on 2 of 6 | **9 of 27** |
 
 - **The checks fix SAM's over-counts without losing fish.** On 20190618_3 and 20190709_4, SAM alone counts 3 where
-  people counted 2; the audit and peak check bring both to 2. Recall stays at SAM's 97.4%.
+  people counted 2; the audit brings both to 2 by rejecting a 2- and a 3-frame track. Recall stays at SAM's 97.4%.
+  Dropping every track shorter than 4 frames does exactly the same (3 frames fixes one clip, 5 or more lose fish), so
+  the checks' value on this task is matching the best threshold without tuning one (see the paper, Table 1).
 - **They did lose fish at first.** With one crop per track (its largest box), the audit called a faint fish behind
   seagrass "only seagrass and water" and a 36-frame track left the count; the peak check did the same to another
   faint fish in frame 35 of 20190618_9. Recall fell to 95.9%. Three crops of the same track (early / middle / late,
@@ -165,6 +167,7 @@ python3 web/server.py                                  # review screen, http://1
 
 ## Data
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0
-- Monk, J., Barrett, N., Langlois, T. (2024) Curated underwater video highlights of marine protected areas, IMAS,
-  University of Tasmania, CC BY 4.0
+- "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
+  Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
+  "License: Not Specified"; used only for a vocabulary probe and one figure, licence to be confirmed with the custodian
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0

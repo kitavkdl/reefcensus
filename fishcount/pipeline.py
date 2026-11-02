@@ -273,7 +273,10 @@ def confirm_motion(run, clip, frames, ts, offline):
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False):
+                 do_discover=False, do_motion=None):
+    """do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
+    counted unchecked). The paper's no-audit discovery baseline sets it explicitly."""
+    do_motion = (do_discover and do_audit) if do_motion is None else do_motion
     rid = rid or time.strftime("%m%d-%H%M%S")
     run = Run(rid)
     clip = run.path("clip.mp4")
@@ -355,7 +358,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
     recovered = recover(run, clip, inf, others, found, disc.get("signs", []), results, max_usd, offline) if do_discover else []
     moved = []
-    if do_discover and do_audit:    # unaudited motion tracks would be counted unchecked
+    if do_motion:
         try:
             moved = motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found])
         except MOTION_ERRORS as e:
@@ -917,7 +920,8 @@ def needs_review(v):
 
 def auto_labels(trk, verdicts):
     """Confident Spark verdicts set the species label; confident rejections drop the track; everything else keeps
-    "<category> (unidentified)" and goes to the human queue. A human edit overrides any of these."""
+    "<category> (unidentified)". Which tracks are queued is needs_review(): a confident yes without a species is
+    counted as "(unidentified)" but not queued (paper 4.7). A human edit overrides any of these."""
     out = {}
     for t, v in verdicts.items():
         conf = _conf(v)
