@@ -1,6 +1,8 @@
 """Held-out discovery evaluation (report/paper/discovery_heldout_protocol.md): list what each DH run counted, queued
 and cost, and draw the label-free evidence sheet for metric 3 (a person answers "is this an animal: yes / no" per
-crop without seeing any label). Reads runs/DH<n>_eval only; no API calls.
+crop without seeing any label). Reads runs/DH<n>_eval, or, in a fresh clone, the copies of result.json and
+status.json in report/paper/data/discovery_heldout/runs/DH<n>; no API calls. The crop sheet needs the run's clip.mp4
+and is redrawn only when it is present.
 
     python3 report/paper/scripts/score_discovery_heldout.py
 Writes report/paper/data/discovery_heldout/runs_summary.json and crops_sheet.jpg (crop numbers map to rows in the
@@ -23,8 +25,13 @@ def is_fish(label):
     return any(w in label.split(" (")[0].split() for w in FISHY)
 
 
+def run_dir(n):
+    live = os.path.join(ROOT, "runs", f"DH{n}_eval")
+    return live if os.path.exists(os.path.join(live, "result.json")) else os.path.join(OUT, "runs", f"DH{n}")
+
+
 def summarise(n):
-    rd = os.path.join(ROOT, "runs", f"DH{n}_eval")
+    rd = run_dir(n)
     r = json.load(open(os.path.join(rd, "result.json")))
     st = json.load(open(os.path.join(rd, "status.json")))
     labels, verdicts = r["auto_labels"], r["verdicts"]
@@ -68,7 +75,7 @@ def crop(n, row, size=360):
 
 
 if __name__ == "__main__":
-    res = [summarise(n) for n in range(1, 6) if os.path.exists(os.path.join(ROOT, "runs", f"DH{n}_eval", "result.json"))]
+    res = [summarise(n) for n in range(1, 6) if os.path.exists(os.path.join(run_dir(n), "result.json"))]
     tiles, k = [], 0
     for s in res:
         n = int(s["clip"][2:])
@@ -78,14 +85,15 @@ if __name__ == "__main__":
             if row["counted"] and row["non_fish"]:
                 k += 1
                 row["crop"] = k
-                t = crop(n, row)
-                cv2.putText(t, f"#{k}", (10, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 2, cv2.LINE_AA)
-                tiles.append(t)
+                if os.path.exists(os.path.join(ROOT, "runs", f"DH{n}_eval", "clip.mp4")):
+                    t = crop(n, row)
+                    cv2.putText(t, f"#{k}", (10, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 2, cv2.LINE_AA)
+                    tiles.append(t)
                 tag = f"  crop #{k}"
             print(f"   {'COUNTED' if row['counted'] else 'queued '} {row['label']!r} maxn {row['maxn']} "
                   f"conf {row['confidence']} {'non-fish' if row['non_fish'] else 'fish'}{tag}")
     json.dump(res, open(os.path.join(OUT, "runs_summary.json"), "w"), indent=1)
-    if tiles:
+    if len(tiles) == k and tiles:   # all crops drawn; never overwrite the judged sheet with a partial one
         cols = 4
         while len(tiles) % cols:
             tiles.append(np.zeros_like(tiles[0]))

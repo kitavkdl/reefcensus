@@ -1363,3 +1363,111 @@
 {"t": 1793612838.5470333, "kind": "spark", "usd": 0.00378225, "note": "in=1268 out=517"}
 {"t": 1793612838.9523845, "kind": "spark", "usd": 0.00414775, "note": "in=1268 out=603"}
 {"t": 1793612839.068518, "kind": "spark", "usd": 0.003234, "note": "in=1268 out=388"}
+{"t": 1793649150.6140249, "kind": "sam", "usd": 0.053000000000000005, "note": "fish_20190709_14.mp4:animal"}
+{"t": 1793649167.14411, "kind": "sam", "usd": 0.021400000000000002, "note": "fish_20190618_9.mp4:animal"}
+{"t": 1793649892.7194557, "kind": "spark", "usd": 0.007348, "note": "in=2373 out=1031"}
+{"t": 1793649898.5117378, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793649898.6955504, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793649905.634128, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:crab"}
+{"t": 1793649906.875042, "kind": "sam", "usd": 0.012, "note": "tile_d0z-left.mp4:crab"}
+{"t": 1793649907.0757532, "kind": "sam", "usd": 0.012, "note": "tile_d0z-center.mp4:crab"}
+{"t": 1793649913.8690898, "kind": "spark", "usd": 0.0064025, "note": "in=1569 out=1045"}
+{"t": 1793649924.82937, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<6f>1<|box;x1=120;y1=168;x2=176;y2=224;w=720;h=480|>"}
+{"t": 1793649926.9655745, "kind": "spark", "usd": 0.00238375, "note": "in=530 out=405"}
+{"t": 1793649929.3666916, "kind": "spark", "usd": 0.0032069999999999998, "note": "in=529 out=599"}
+{"t": 1793649931.6642213, "kind": "spark", "usd": 0.0023575000000000002, "note": "in=543 out=395"}
+{"t": 1793649934.0086942, "kind": "spark", "usd": 0.0018142499999999999, "note": "in=513 out=276"}
+{"t": 1793649942.1821058, "kind": "spark", "usd": 0.009864000000000001, "note": "in=2373 out=1623"}
+{"t": 1793649948.3347816, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793649948.64459, "kind": "sam", "usd": 0.012, "note": "clip.mp4:eel"}
+{"t": 1793649948.670263, "kind": "sam", "usd": 0.012, "note": "clip.mp4:anemone"}
+{"t": 1793649950.879322, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793649954.4505627, "kind": "sam", "usd": 0.012, "note": "clip.mp4:worm"}
+{"t": 1793649955.3819482, "kind": "sam", "usd": 0.012, "note": "clip.mp4:coral"}
+{"t": 1793649959.7537518, "kind": "sam", "usd": 0.012, "note": "clip.mp4:snake"}
+{"t": 1793649965.8682988, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:crab"}
+{"t": 1793649968.953958, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom.mp4:eel"}
+{"t": 1793649970.2289436, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:coral"}
+{"t": 1793649972.8497856, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom-left.mp4:eel"}
+{"t": 1793649973.696601, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom.mp4:worm"}
+{"t": 1793649981.369763, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom-left.mp4:worm"}
+{"t": 1793649986.0214407, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom.mp4:eel"}
+{"t": 1793649986.820542, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left.mp4:eel"}
+{"t": 1793649991.4279985, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom.mp4:worm"}
+{"t": 1793649992.93035, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left.mp4:worm"}
+{"t": 1793649996.3545377, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom.mp4:snake"}
+{"t": 1793649998.9834988, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left.mp4:snake"}
+{"t": 1793650005.9506826, "kind": "spark", "usd": 0.007958, "note": "in=1569 out=1411"}
+{"t": 1793650018.1263156, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<45f>1<|box;x1=320;y1=400;x2=416;y2=456;w=720;h=480|>"}
+{"t": 1793650027.0869548, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<16f>1<|box;x1=328;y1=344;x2=384;y2=392;w=720;h=480|>"}
+{"t": 1793650038.795019, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<16f>1<|box;x1=560;y1=352;x2=616;y2=400;w=720;h=480|>"}
+{"t": 1793650041.7724833, "kind": "spark", "usd": 0.0033745, "note": "in=544 out=634"}
+{"t": 1793650045.0639312, "kind": "spark", "usd": 0.00415325, "note": "in=538 out=819"}
+{"t": 1793650048.5981076, "kind": "spark", "usd": 0.004588, "note": "in=896 out=816"}
+{"t": 1793650050.0903635, "kind": "spark", "usd": 0.002388, "note": "in=513 out=411"}
+{"t": 1793650051.9844413, "kind": "spark", "usd": 0.0026855, "note": "in=513 out=481"}
+{"t": 1793650053.7985764, "kind": "spark", "usd": 0.0022775, "note": "in=513 out=385"}
+{"t": 1793650056.0835397, "kind": "spark", "usd": 0.0024725, "note": "in=516 out=430"}
+{"t": 1793650062.904483, "kind": "spark", "usd": 0.008869499999999999, "note": "in=2645 out=1309"}
+{"t": 1793650071.8236759, "kind": "spark", "usd": 0.01117725, "note": "in=2645 out=1852"}
+{"t": 1793650077.2381148, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793650077.4639199, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793650077.544238, "kind": "sam", "usd": 0.012, "note": "clip.mp4:starfish"}
+{"t": 1793650078.2554865, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793650082.3024924, "kind": "sam", "usd": 0.012, "note": "clip.mp4:prawn"}
+{"t": 1793650082.6220632, "kind": "sam", "usd": 0.012, "note": "clip.mp4:lobster"}
+{"t": 1793650083.8265948, "kind": "sam", "usd": 0.012, "note": "clip.mp4:star"}
+{"t": 1793650088.2643046, "kind": "sam", "usd": 0.012, "note": "clip.mp4:lobster"}
+{"t": 1793650088.3024297, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shell"}
+{"t": 1793650092.2125177, "kind": "sam", "usd": 0.012, "note": "clip.mp4:urchin"}
+{"t": 1793650099.458279, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom-right.mp4:starfish"}
+{"t": 1793650099.8571062, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom-left.mp4:crab"}
+{"t": 1793650100.9120505, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom.mp4:crab"}
+{"t": 1793650104.0307426, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom-left.mp4:lobster"}
+{"t": 1793650106.0304983, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom-right.mp4:star"}
+{"t": 1793650106.1651402, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom.mp4:lobster"}
+{"t": 1793650112.8331804, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom.mp4:crab"}
+{"t": 1793650118.4117534, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom.mp4:lobster"}
+{"t": 1793650118.8011796, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left.mp4:crab"}
+{"t": 1793650124.104625, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left.mp4:lobster"}
+{"t": 1793650127.250259, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom.mp4:shell"}
+{"t": 1793650132.1615508, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left.mp4:shell"}
+{"t": 1793650133.1052828, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom_rev.mp4:crab"}
+{"t": 1793650138.1726983, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left_rev.mp4:crab"}
+{"t": 1793650151.8336802, "kind": "spark", "usd": 0.01232275, "note": "in=1569 out=2438"}
+{"t": 1793650162.2442, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<44f>1<|box;x1=248;y1=248;x2=416;y2=368;w=640;h=480|>"}
+{"t": 1793650171.5468724, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<53f>1<|box;x1=200;y1=200;x2=256;y2=288;w=640;h=480|>"}
+{"t": 1793650183.3364086, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<7f>1<|box;x1=360;y1=392;x2=416;y2=448;w=640;h=480|>"}
+{"t": 1793650192.2868497, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<7f>1<|box;x1=432;y1=408;x2=488;y2=464;w=640;h=480|>"}
+{"t": 1793650201.4940138, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<37f>1<|box;x1=528;y1=312;x2=584;y2=368;w=640;h=480|>"}
+{"t": 1793650204.731656, "kind": "spark", "usd": 0.00565925, "note": "in=1532 out=881"}
+{"t": 1793650207.9237757, "kind": "spark", "usd": 0.0045335, "note": "in=543 out=907"}
+{"t": 1793650209.6086612, "kind": "spark", "usd": 0.00242425, "note": "in=542 out=411"}
+{"t": 1793650211.1752846, "kind": "spark", "usd": 0.0015295, "note": "in=513 out=209"}
+{"t": 1793650213.0670986, "kind": "spark", "usd": 0.00306025, "note": "in=874 out=463"}
+{"t": 1793650216.928365, "kind": "spark", "usd": 0.004577, "note": "in=2645 out=299"}
+{"t": 1793650223.486567, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793650229.1643014, "kind": "spark", "usd": 0.006810999999999999, "note": "in=2127 out=977"}
+{"t": 1793650234.4872003, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793650240.0100396, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793650240.224663, "kind": "sam", "usd": 0.012, "note": "clip.mp4:krill"}
+{"t": 1793650245.7110407, "kind": "sam", "usd": 0.012, "note": "clip.mp4:prawn"}
+{"t": 1793650251.0290515, "kind": "sam", "usd": 0.012, "note": "tile_d0z-center.mp4:shrimp"}
+{"t": 1793650251.303081, "kind": "sam", "usd": 0.012, "note": "tile_d0z-left.mp4:shrimp"}
+{"t": 1793650252.2093775, "kind": "sam", "usd": 0.012, "note": "tile_s0-center.mp4:fish"}
+{"t": 1793650258.6037745, "kind": "sam", "usd": 0.012, "note": "tile_d0z-left.mp4:krill"}
+{"t": 1793650258.8661559, "kind": "sam", "usd": 0.012, "note": "tile_d0z-center.mp4:krill"}
+{"t": 1793650264.1163335, "kind": "sam", "usd": 0.012, "note": "tile_d0c-center.mp4:shrimp"}
+{"t": 1793650266.7572322, "kind": "sam", "usd": 0.012, "note": "tile_d0c-left.mp4:shrimp"}
+{"t": 1793650270.0314515, "kind": "sam", "usd": 0.012, "note": "tile_d0c-center.mp4:krill"}
+{"t": 1793650272.035282, "kind": "sam", "usd": 0.012, "note": "tile_d0c-left.mp4:krill"}
+{"t": 1793650276.0031419, "kind": "sam", "usd": 0.012, "note": "tile_d0c-center.mp4:prawn"}
+{"t": 1793650277.3423293, "kind": "sam", "usd": 0.012, "note": "tile_d0c-left.mp4:prawn"}
+{"t": 1793650284.3125656, "kind": "spark", "usd": 0.008706, "note": "in=1569 out=1587"}
+{"t": 1793650292.3298736, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<35f>1<|box;x1=352;y1=280;x2=432;y2=336;w=720;h=406|>"}
+{"t": 1793650300.6152196, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<27f>1<|box;x1=384;y1=160;x2=440;y2=208;w=720;h=406|>"}
+{"t": 1793650314.4684289, "kind": "spark", "usd": 0.0069162500000000005, "note": "in=2252 out=965"}
+{"t": 1793650319.0567405, "kind": "spark", "usd": 0.0068460000000000005, "note": "in=1900 out=1052"}
+{"t": 1793650321.3734705, "kind": "spark", "usd": 0.0029769999999999996, "note": "in=481 out=559"}
+{"t": 1793650325.6623688, "kind": "spark", "usd": 0.00528475, "note": "in=1501 out=802"}
+{"t": 1793650326.8775206, "kind": "spark", "usd": 0.0018809999999999999, "note": "in=512 out=292"}

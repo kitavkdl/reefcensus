@@ -69,6 +69,18 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 | SAM "fish" alone | 0 of 7 — it only sees what it is told |
 | motion look, added | s001: 2 nautiluses no word ever found (night, wire trap). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
 
+**Five new videos, held out (measured).** Clips from three other studies (deep carcass cameras in British Columbia,
+a fish-only BRUV in New Zealand; CC BY), never used in development, run once with frozen code under a protocol
+committed first. Before the run two people marked, independently, the non-fish animals they could see: 4 animals over
+the five clips, none in two of them.
+
+| | result |
+|---|---|
+| Spark names it | 4 of 4 |
+| counted at the end | 3 of 4 (crabs in DH1, DH2, DH3); the 4th, a squat lobster no word could track, was followed by a motion box in all 60 frames and sent to a person to confirm |
+| something wrong counted | 0 (every counted crop judged an animal with its label hidden; nothing non-fish counted on the two clips without one) |
+| cost | $1.06 for all five |
+
 ## How well it counts (measured)
 Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames, IoU >= 0.3. MaxN over the annotated
 frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
@@ -105,9 +117,12 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   github.com/globalwetlands/luderick-seagrass
 - "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
   Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
-  "License: Not Specified"; used only for a vocabulary probe and one figure, licence to be confirmed with the custodian
+  "License: Not Specified"; used only for a vocabulary probe, licence to be confirmed with the custodian
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799,
   supplementary videos S1–S4, CC BY 4.0 (via Wikimedia Commons)
+- Held-out discovery clips (via Wikimedia Commons): Anderson, G.S. & Bell, L.S. (2014) PLOS ONE 9(10): e110710,
+  videos S4, S1, S3, CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, video S2, CC BY 4.0; Zintzen, V. et
+  al. (2012) PLOS ONE 7(10): e48522, Video S1, CC BY 2.5 (URLs and hashes in `report/paper/data/discovery_heldout/clips.json`)
 
 ## License
 MIT (code). Videos and datasets keep their own licenses above.

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T8\",\"is_target\":true,\"species\":\"squat lobster shrimp\",\"confidence\":0.5,\"reason\":\"late frame shows segmented shrimp body\"}]", "usage": {"completion_tokens": 907, "prompt_tokens": 543, "total_tokens": 1450, "completion_tokens_details": {"reasoning_tokens": 864}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -23,8 +23,10 @@ Reported as a range between rejecting and accepting the queue (a post-hoc summar
 Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of the 24 held-out clips; the
 boxes appear to omit faint fish (our non-expert reading), and a count without locations cannot be checked against them.
 On four nautilus clips requested as "fish", VLM naming finds six of seven untargeted taxa without any audit (seven with
-a motion cue), and the audits correct names, duplicates and one false taxon. All discovery clips were also used in
-development; we present a case study of an annotation accelerator, not a finished census.
+a motion cue), and the audits correct names, duplicates and one false taxon. On five held-out videos from other
+studies, run once with frozen code under a pre-committed protocol, the pipeline names all four non-fish animals that
+two people marked beforehand, counts three and sends the fourth to the person queue, and counts nothing that is not
+an animal. We present an annotation accelerator whose counts a person confirms, not a finished census.
 
 </div>
 
@@ -359,6 +361,23 @@ non-fish animal visible in frames 0, 20, 40 and 59 of each clip at taxon level: 
 in all four; a red crustacean in s002; shrimp and a hagfish in s004). This is a non-expert, taxon-level ground
 truth; it cannot score counts of individuals.
 
+**Held-out discovery data.** Five videos from other studies, never used in development and chosen by a rule written
+before any run (`report/paper/discovery_heldout_protocol.md`, committed first): three baited-camera clips from a
+carcass study at 95 m in Saanich Inlet, British Columbia (DH1–DH3; Anderson & Bell, 2014), one from a pig-carcass
+study in the Salish Sea (DH4; Anderson & Bell, 2016), both CC BY 4.0, and one fish-only BRUV clip from New Zealand
+(DH5; Zintzen et al., 2012, CC BY 2.5). Each clip is the 12 s centred on the file's midpoint at 5 fps. DH1–DH4 were
+selected because their source text names a non-fish animal, so they measure finding such animals, not how often
+they occur; DH5 measures false discoveries. Before the run, two people marked independently, at a coarse group level
+("crab-like", "shrimp-like"), the non-fish animal shapes they could see in frames 0, 20, 40 and 59: Jiyul Ahn (not a
+marine biologist), by circling shapes on the sheets, and Claude, the AI assistant used to write the code, in a
+committed file. The bait carcasses are not animals to find. The two lists agree on every mobile animal: crab-like in
+DH1, DH2 and DH3, shrimp/lobster-like crustaceans in DH3, none in DH4 and DH5 (four animals-in-clip). Sessile
+animals (an anemone-like animal in DH2, an anemone or sea star in DH3) are scored separately. The command is the
+development discovery command, run once. The protocol fixes the metrics: discovery recall (reference animals that
+end in a counted, non-queued row of the right group), the same for names Spark proposes, false discoveries (counted
+non-fish rows whose evidence crop shows no animal, judged by Jiyul Ahn from the crop alone with the label hidden),
+queue size and cost.
+
 **Vocabulary probes.** Three clips from the IMAS curated MPA video highlights (record on data.gov.au; see Data
 statement) were used only to probe SAM 3.1's response to prompt words.
 
@@ -399,8 +418,8 @@ reproduce), except where a sentence says it is a development
 observation. **The six luderick and four nautilus clips are development data.** The design was iterated on them:
 the faint fish in frame 35 of 20190618_9 and the s004 peak frame were used as regression checks for every change,
 and the final layout (V5) was chosen knowing the result of V4. For counting we added, after the second review, 24
-held-out luderick clips scored once with frozen code under a protocol committed before the run (§6.2). Discovery
-has no held-out data. The numbers below are those of a careful case study, not of a benchmark, and we make no claim
+held-out luderick clips scored once with frozen code under a protocol committed before the run (§6.2), and for
+discovery five held-out videos from other studies, run once in the same way (§6.3). The numbers below are those of a careful case study, not of a benchmark, and we make no claim
 beyond these clips.
 
 # Results
@@ -651,13 +670,43 @@ shrimp. In s001 the taxon is counted but the number (2) is below what a person s
 at the same zoom. Spark calls the shrimp animals and the sediment puffs not; the shrimp then go to SAM 3.1 as box
 prompts with no word.](figures/motion_s004.jpg){.half}
 
+**Held-out clips.** Table 3b is the one run on the five held-out videos (§5), with the request "fish" and the
+code frozen at the protocol commit.
+
+<div class="tablecap">**Table 3b.** Held-out discovery, one run. Reference = the non-fish animals both people marked
+before the run (sessile animals in brackets, scored separately). Queue = tracks sent to a person.</div>
+
+| clip | reference (not fish) | Spark named | counted (MaxN) | queue | cost |
+|-----|----------|----------|-----------|--:|--:|
+| DH1 (carcass, 95 m) | crab-like | crab | crab 1 | 1 | $0.10 |
+| DH2 (carcass, 95 m) | crab-like [anemone-like] | sea anemone, crab, eel | crab 1; [sea anemone 1] | 5 | $0.30 |
+| DH3 (carcass, 95 m) | crab-like; shrimp/lobster-like [radial animal] | spider crab, squat lobster shrimp, sunflower sea star | spider crab 3; squat lobster shrimp sent to the queue | 6 | $0.40 |
+| DH4 (pig carcass) | none | — | none | 0 | $0.02 |
+| DH5 (fish-only BRUV) | none | small shrimp | no non-fish animal | 14 | $0.24 |
+| **total** | **4 animals** | **4 of 4** | **3 of 4 counted, 1 queued; 0 false** | 26 | $1.06 |
+
+Spark names all four reference animals and the pipeline counts three. The fourth, DH3's shrimp-like crustaceans, is
+reached the way s004's bottom-edge shrimp were: "shrimp", "prawn" and "lobster" track 0 frames, the motion residual
+finds an "upright orange shrimp", and a box prompt tracks it in all 60 frames. A1 names it "squat lobster shrimp" at
+confidence 0.5, below the 0.7 a motion track needs to count, so it goes to the person queue with its name and
+evidence instead of into the count (§4.7). Every counted non-fish row shows an animal: shown the evidence crops with
+the labels hidden (`report/paper/data/discovery_heldout/crops_sheet.jpg`), Jiyul Ahn called all four of them
+animals; DH2's crab box also covers the carcass it sits on, which does not change the count. On the two clips without
+a non-fish animal nothing non-fish was counted. DH4 produced no track. In DH5 the counted rows are "fish
+(unidentified)" (MaxN 8) and "pink cusk-eel" (1), a fish whose name matches the species caption burned into that
+video; Spark's "small shrimp" there, like its "eel" in DH2 and s003's "large striped shrimp", was tracked by no word
+and counted nowhere. Of the sessile animals, DH2's is counted as "sea anemone"; DH3's is named "sunflower sea star",
+and "starfish", "star" and "urchin" track 0 frames. The per-clip rows, evidence crops and judgement are in
+`report/paper/data/discovery_heldout/`.
+
 ## Cost and time
 
 All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
 SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens). The repeated-call experiment of
 §7.1 added 24 Spark calls ($0.14), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
-SAM calls ($0.55) and the Spark-alone counting baseline 765 Spark calls ($2.47), for a ledger total of $6.62 over
-1,365 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+SAM calls ($0.55), the Spark-alone counting baseline 765 Spark calls ($2.47), two vocabulary probes on luderick
+clips 2 SAM calls ($0.07) and the held-out discovery runs 106 calls ($1.06), for a ledger total of $7.75 over
+1,473 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -865,8 +914,8 @@ counted twice (for example body only vs. body with legs).](figures/pairs_s004.jp
 # Limitations
 
 * **Small samples.** Counting: six clips of one species in shallow seagrass, 319 annotated frames. Discovery: four
-  12-s clips, seven taxa, a non-expert list made from four frames per clip; the discovery results are a case study,
-  not a measured rate. No expert has confirmed the seven taxa or the species names the VLM gave ("chambered
+  12-s development clips (seven taxa) and five held-out clips (four animals), with reference lists made by
+  non-experts from four frames per clip. No expert has confirmed the seven taxa or the species names the VLM gave ("chambered
   nautilus", "caridean shrimp", "striped seabream"). Neither establishes performance on long deployments, dense schools or other habitats.
 * **Reference quality.** The luderick boxes were made for training a single-species detector and omit some real
   fish; precision is a lower bound and one remaining MaxN "error" is likely in the reference. The same omission means the
@@ -891,8 +940,8 @@ counted twice (for example body only vs. body with legs).](figures/pairs_s004.jp
 * **Species labels are unvalidated** (§7.5), and per-species MaxN can be fragmented across names.
 * **Development and test overlap.** The design was iterated on the same clips used for evaluation (the frame-35 case
   became a regression test, and V5 was chosen knowing V4). The 24 held-out luderick clips (§6.2) come from the same
-  estuary and cameras, are short and mostly hold one or two fish, and were scored once; discovery has no held-out
-  clips at all. Numbers should be read as a careful case study, not as a benchmark result.
+  estuary and cameras, are short and mostly hold one or two fish, and were scored once; the five held-out discovery
+  clips (§6.3) come from other studies and seas. Numbers should be read as a careful case study, not as a benchmark result.
 * **Single runs.** Apart from the repeated frame-35 judgement (Table 4b), each variant and each discovery clip was run
   once; a fresh run can move a track across a threshold.
 * **Dependence on hosted models.** Both models were accessed through an API whose versions may change; cached
@@ -914,7 +963,8 @@ a non-expert and is labelled as such everywhere it is used.
 The repository (MIT licence) contains the code, the prompts, the four final discovery runs with every sheet Spark
 judged (`demo/runs`), and a scoring bundle in `report/paper/data/`: the human boxes of the six luderick clips (from
 Ditria et al., 2021, CC BY 4.0), SAM 3.1's reply for "fish" on each clip, the `result.json` of every scored luderick
-run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the two frame-35 sheets, the replies of the
+run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the held-out discovery runs with both reference lists, the
+circled sheets and the label-free judgement (`data/discovery_heldout`), the two frame-35 sheets, the replies of the
 repeated calls, the per-frame replies of the Spark-alone baseline (`data/spark_count`), the fixed-vocabulary tracks
 (`data/fixed_vocab`) and a copy of the cost ledger. From a fresh clone, with no data download and no API key (Python 3 with NumPy, OpenCV and, for the figure,
 matplotlib),
@@ -923,11 +973,12 @@ matplotlib),
 python3 report/paper/scripts/rescore.py              # Tables 1, 1b, 4, 5: baselines, queue bounds, intervals
 python3 report/paper/scripts/rescore_heldout.py      # Table 1c: held-out clips, MaxN range
 python3 report/paper/scripts/spark_count_rescore.py  # Table 1c Spark rows, per-frame agreement and MAE
+python3 report/paper/scripts/score_discovery_heldout.py  # Table 3b: held-out discovery rows, queue, cost
 python3 report/paper/scripts/ledger_summary.py       # cost paragraph (§6.4)
 python3 report/paper/scripts/fig_ablation.py         # Figure 5
 ```
 
-reproduces the counting and cost numbers of §6.1, §6.2, §6.4 and §7.1–7.2; we checked this in a clone with the live
+reproduces the counting and cost numbers of §6.1, §6.2, §6.4 and §7.1–7.2 and Table 3b; we checked this in a clone with the live
 run files and video paths absent. Re-running the pipeline itself needs the source videos (luderick from PANGAEA, nautilus from the PLOS ONE
 supplement) and either the model-reply cache of our runs (`cache/`, 12 MB, in the repository) for a
 free, exact replay, or an API key and a spend cap for a live run, which can differ by a track (§7.5):
@@ -949,12 +1000,21 @@ Hyperparameters are listed in Appendix B.
   automated identification and counting of fish in unconstrained marine environments. PANGAEA,
   doi:10.1594/PANGAEA.926930. CC BY 4.0. Data report: *Frontiers in Marine Science* 8:629485.
 * **Nautilus:** supplementary videos S1–S4 of Barord et al. (2014), *PLoS ONE* 9(6):e100799, CC BY.
+* **Held-out discovery:** Wikimedia Commons copies of PLOS ONE supplementary videos: S4, S1 and S3 of Anderson & Bell
+  (2014) (DH1–DH3) and S2 of Anderson & Bell (2016) (DH4), CC BY 4.0; Video S1 of Zintzen et al. (2012) (DH5),
+  CC BY 2.5. URLs and SHA-256 hashes are in `report/paper/data/discovery_heldout/clips.json`.
 * **IMAS:** "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian
   Ocean Data Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247), accessed November 2026.
   The record lists no authors and "License: Not Specified"; preferred citation and licence to be confirmed with the
   data custodian.
 
 # References
+
+Anderson, G.S., Bell, L.S. (2014). Deep coastal marine taphonomy: investigation into carcass decomposition in the
+Saanich Inlet, British Columbia using a baited camera. *PLoS ONE* 9(10): e110710. doi:10.1371/journal.pone.0110710.
+
+Anderson, G.S., Bell, L.S. (2016). Impact of marine submergence and season on faunal colonization and decomposition
+of pig carcasses in the Salish Sea. *PLoS ONE* 11(3): e0149107. doi:10.1371/journal.pone.0149107.
 
 Atil, B., Aykent, S., Chittams, A., Fu, L., Passonneau, R.J., Radcliffe, E., et al. (2024). Non-determinism of
 "deterministic" LLM settings. arXiv:2408.04667.
@@ -1186,6 +1246,10 @@ MT-Bench and Chatbot Arena. *NeurIPS 2023 Datasets and Benchmarks*. arXiv:2306.0
 
 Zheng, Z., Liang, H., Hua, B.-S., Wong, Y.H., Ang, P., Chui, A.P.Y., Yeung, S.-K. (2024b). CoralSCOP: segment any
 coral image on this planet. *CVPR 2024*, 28170–28180.
+
+Zintzen, V., Anderson, M.J., Roberts, C.D., Harvey, E.S., Stewart, A.L., Struthers, C.D. (2012). Diversity and
+composition of demersal fishes along a depth gradient assessed by baited remote underwater stereo-video. *PLoS ONE*
+7(10): e48522. doi:10.1371/journal.pone.0048522.
 
 Zurowietz, M., Langenkämper, D., Hosking, B., Ruhl, H.A., Nattkemper, T.W. (2018). MAIA — a machine learning assisted
 image annotation method for environmental monitoring and exploration. *PLoS ONE* 13(11): e0207498.

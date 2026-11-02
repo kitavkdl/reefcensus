@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T2\",\"is_target\":false,\"species\":\"crab\",\"confidence\":0.75,\"reason\":\"Crab claws visible not fish\"}]", "usage": {"completion_tokens": 599, "prompt_tokens": 529, "total_tokens": 1128, "completion_tokens_details": {"reasoning_tokens": 557}, "prompt_tokens_details": {"cached_tokens": 0}}}

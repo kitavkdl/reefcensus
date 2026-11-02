@@ -19,6 +19,7 @@ Results (details in **Evaluation**):
 - **Counting, luderick (6 clips, 319 frames boxed by people):** recall 97.4% (the same as SAM alone: the checks throw away no real fish), precision 79.2% (a lower bound, see 4.1), MaxN within ±1 of the human count on all 6 clips and exact on 4 (SAM alone: 2); 9 of 27 tracks sent to a person. A rule with no model call, dropping tracks shorter than 4 frames, gives exactly the same numbers, so on this one-species task the checks match a well-chosen heuristic rather than beat it. The 97.4% counts the queued tracks as accepted; if a reviewer rejected all of them, recall would be 84.2%.
 - **Held out (24 luderick clips never used in development, frozen code, one run, protocol committed first):** recall 98.9%, MaxN exact on 20 of 24 with the queue accepted (SAM alone and the length rule: 19); with the queue rejected every clip is within ±1 (recall 95.6%). The review screen shows MaxN as the range between those two cases until the queue is checked; it contains the human MaxN on 22 of 24 held-out clips (5 of 6 in development), a summary added after the run. Same estuary as the development clips.
 - **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net, and cost one nautilus in s001 (queued). The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
+- **Finding what was not asked for, held out (5 new videos from other studies, frozen code, one run, protocol committed first):** Spark named all 4 non-fish animals two people had marked before the run; 3 were counted and the 4th (a squat lobster that no word tracked, followed by a motion box in all 60 frames) was sent to a person to confirm. 0 false discoveries: every counted crop was judged an animal with its label hidden, and nothing non-fish was counted on the two clips without one. $1.06 for all five.
 - **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.27 (discovery) in API calls; all answers are cached by content, so a rerun is free.
 
 ![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3_luderick.jpg)
@@ -141,8 +142,33 @@ shrimp animals and the sediment puffs not; the shrimp then go to SAM as box prom
 discovery step's guess "large striped shrimp", passed it at 0.75. Bottom: the same track at other moments, no label,
 no names: "looks like trap mesh, not animal". It is not counted.*
 
+### 4.3 Finding what was not asked for, on five new videos (held out)
+Five clips from other studies, never used in development: three deep carcass cameras at 95 m in Saanich Inlet, British
+Columbia (DH1–DH3, Anderson & Bell 2014), a pig carcass in the Salish Sea (DH4, Anderson & Bell 2016) and a fish-only
+New Zealand BRUV (DH5, Zintzen et al. 2012). The selection rule, metrics and command were committed before any run
+(`report/paper/discovery_heldout_protocol.md`); the code was frozen and each clip run once. Before the run two people
+marked, independently and at a coarse group level, the non-fish animals they could see in four frames per clip.
+
+| clip | marked by both (not fish) | Spark named | counted (MaxN) | to a person |
+|---|---|---|---|--:|
+| DH1 | crab-like | crab | **crab 1** | 1 |
+| DH2 | crab-like (+ an anemone-like animal) | sea anemone, crab, eel | **crab 1**, sea anemone 1 | 5 |
+| DH3 | crab-like; shrimp/lobster-like | spider crab, squat lobster shrimp, sunflower sea star | **spider crab 3**; the squat lobster, which no word tracked, was followed by a motion box in 60 of 60 frames and sent to a person (audit 0.5) | 6 |
+| DH4 | none | — | nothing | 0 |
+| DH5 | none (fish only) | small shrimp | no non-fish animal | 14 |
+
+| measure | result |
+|---|---|
+| Spark names it | **4 of 4** |
+| counted | **3 of 4**, the 4th waiting for a person |
+| false discoveries | **0** (every counted crop judged an animal by a person who did not see the label) |
+| cost | $1.06 for all five |
+
+Rows, evidence crops, both reference lists and the judgement: `report/paper/data/discovery_heldout/`
+(`python3 report/paper/scripts/score_discovery_heldout.py`).
+
 ## 5. Limits
-- **Small samples.** Discovery: 4 clips, 7 taxa, non-expert ground truth. Counting: 6 clips of one species in
+- **Small samples.** Discovery: 4 development clips (7 taxa) and 5 held-out clips (4 animals), non-expert ground truth. Counting: 6 clips of one species in
   shallow seagrass. Neither says how the pipeline does on long deployments or crowded schools.
 - **Precision is a lower bound.** Six of twelve "false-positive" luderick tracks were checked by eye and all six were
   real fish the annotators left unboxed.
@@ -164,6 +190,7 @@ export FISH_BUDGET=1.0             # hard cap on total spend (USD)
 python3 fishcount/evaluate.py                          # SAM "fish" alone vs. luderick boxes
 python3 fishcount/evaluate_pipeline.py --run --tag t1  # full pipeline vs. the same boxes (runs t1_<clip>)
 python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom   # discovery run
+python3 report/paper/scripts/score_discovery_heldout.py   # held-out discovery table (no API, no video needed)
 python3 web/server.py                                  # review screen, http://127.0.0.1:8793
 ```
 
@@ -171,5 +198,8 @@ python3 web/server.py                                  # review screen, http://1
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0, PANGAEA doi:10.1594/PANGAEA.926930
 - "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
   Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
-  "License: Not Specified"; used only for a vocabulary probe and one figure, licence to be confirmed with the custodian
+  "License: Not Specified"; used only for a vocabulary probe, licence to be confirmed with the custodian
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0
+- Held-out discovery clips (Wikimedia Commons copies): Anderson & Bell (2014) PLOS ONE 9(10): e110710, S4/S1/S3,
+  CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, S2, CC BY 4.0; Zintzen et al. (2012) PLOS ONE 7(10):
+  e48522, Video S1, CC BY 2.5
