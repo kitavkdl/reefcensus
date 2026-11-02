@@ -1514,3 +1514,189 @@
 {"t": 1793652605.9086385, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
 {"t": 1793652610.4455144, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
 {"t": 1793652616.334598, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652952.0595155, "kind": "spark", "usd": 0.00645975, "note": "in=2373 out=822"}
+{"t": 1793652957.0835247, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793652960.250491, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793652969.701792, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:crab"}
+{"t": 1793652976.0435991, "kind": "spark", "usd": 0.006309, "note": "in=1569 out=1023"}
+{"t": 1793652985.2572994, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<6f>1<|box;x1=120;y1=168;x2=176;y2=224;w=720;h=480|>"}
+{"t": 1793652987.0734782, "kind": "spark", "usd": 0.00238375, "note": "in=530 out=405"}
+{"t": 1793652989.2048717, "kind": "spark", "usd": 0.0025865, "note": "in=529 out=453"}
+{"t": 1793652990.5182695, "kind": "spark", "usd": 0.0016527500000000001, "note": "in=513 out=238"}
+{"t": 1793652997.2639499, "kind": "spark", "usd": 0.00813, "note": "in=2373 out=1215"}
+{"t": 1793653002.105575, "kind": "spark", "usd": 0.005443, "note": "paper repeat_peak in=1546 out=826"}
+{"t": 1793653004.808616, "kind": "spark", "usd": 0.01119425, "note": "in=2373 out=1936"}
+{"t": 1793653010.8236506, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793653011.2331991, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793653011.4593077, "kind": "sam", "usd": 0.012, "note": "clip.mp4:anemone"}
+{"t": 1793653013.703051, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shell"}
+{"t": 1793653019.6917076, "kind": "sam", "usd": 0.012, "note": "clip.mp4:scallop"}
+{"t": 1793653019.739802, "kind": "sam", "usd": 0.012, "note": "clip.mp4:jellyfish"}
+{"t": 1793653022.307722, "kind": "spark", "usd": 0.00566825, "note": "paper repeat_peak in=1546 out=879"}
+{"t": 1793653025.9528906, "kind": "sam", "usd": 0.012, "note": "clip.mp4:coral"}
+{"t": 1793653026.794037, "kind": "spark", "usd": 0.0064035, "note": "paper repeat_peak in=1546 out=1052"}
+{"t": 1793653028.278441, "kind": "sam", "usd": 0.012, "note": "clip.mp4:clam"}
+{"t": 1793653031.275973, "kind": "spark", "usd": 0.00595725, "note": "paper repeat_peak in=1546 out=947"}
+{"t": 1793653034.793384, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:coral"}
+{"t": 1793653035.278927, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:crab"}
+{"t": 1793653035.9186263, "kind": "spark", "usd": 0.00616975, "note": "paper repeat_peak in=1546 out=997"}
+{"t": 1793653037.8305478, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom.mp4:shell"}
+{"t": 1793653040.8982804, "kind": "sam", "usd": 0.012, "note": "tile_s0-left.mp4:crab"}
+{"t": 1793653040.96085, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom-left.mp4:shell"}
+{"t": 1793653043.0846026, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom.mp4:scallop"}
+{"t": 1793653043.2097256, "kind": "spark", "usd": 0.0086645, "note": "paper repeat_peak in=1546 out=1584"}
+{"t": 1793653047.112149, "kind": "spark", "usd": 0.00595725, "note": "paper repeat_peak in=1546 out=947"}
+{"t": 1793653047.188839, "kind": "sam", "usd": 0.012, "note": "tile_d2z-bottom-left.mp4:scallop"}
+{"t": 1793653051.6551318, "kind": "spark", "usd": 0.00645875, "note": "paper repeat_peak in=1546 out=1065"}
+{"t": 1793653052.6042285, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left.mp4:shell"}
+{"t": 1793653053.373861, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom.mp4:shell"}
+{"t": 1793653055.3658934, "kind": "spark", "usd": 0.005222, "note": "paper repeat_peak in=1546 out=774"}
+{"t": 1793653059.3649812, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom.mp4:scallop"}
+{"t": 1793653059.5482194, "kind": "spark", "usd": 0.0058425000000000005, "note": "paper repeat_peak in=1546 out=920"}
+{"t": 1793653060.2745736, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left.mp4:scallop"}
+{"t": 1793653063.7596922, "kind": "spark", "usd": 0.005655500000000001, "note": "paper repeat_peak in=1546 out=876"}
+{"t": 1793653064.9689548, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left.mp4:clam"}
+{"t": 1793653066.097246, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom.mp4:clam"}
+{"t": 1793653067.857298, "kind": "spark", "usd": 0.00606775, "note": "paper repeat_peak in=1546 out=973"}
+{"t": 1793653069.98075, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom-left_rev.mp4:scallop"}
+{"t": 1793653072.6094835, "kind": "spark", "usd": 0.00642475, "note": "paper repeat_peak in=1546 out=1057"}
+{"t": 1793653073.458975, "kind": "sam", "usd": 0.012, "note": "tile_d2c-bottom_rev.mp4:scallop"}
+{"t": 1793653076.6221886, "kind": "spark", "usd": 0.00604225, "note": "paper repeat_peak in=1546 out=967"}
+{"t": 1793653079.4475455, "kind": "spark", "usd": 0.006381250000000001, "note": "in=1569 out=1040"}
+{"t": 1793653080.4797053, "kind": "spark", "usd": 0.0057575000000000005, "note": "paper repeat_peak in=1546 out=900"}
+{"t": 1793653084.7678874, "kind": "spark", "usd": 0.00568525, "note": "paper repeat_peak in=1546 out=883"}
+{"t": 1793653089.3629422, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<25f>1<|box;x1=160;y1=336;x2=216;y2=416;w=720;h=480|>"}
+{"t": 1793653089.694944, "kind": "spark", "usd": 0.00719825, "note": "paper repeat_peak in=1546 out=1239"}
+{"t": 1793653092.8304875, "kind": "spark", "usd": 0.00455575, "note": "paper repeat_peak in=1506 out=629"}
+{"t": 1793653098.2556794, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<16f>1<|box;x1=560;y1=352;x2=616;y2=400;w=720;h=480|>"}
+{"t": 1793653099.7502115, "kind": "spark", "usd": 0.0072715, "note": "paper repeat_peak in=1506 out=1268"}
+{"t": 1793653104.8995097, "kind": "spark", "usd": 0.006519250000000001, "note": "paper repeat_peak in=1506 out=1091"}
+{"t": 1793653108.8073008, "kind": "spark", "usd": 0.00561825, "note": "paper repeat_peak in=1506 out=879"}
+{"t": 1793653111.615245, "kind": "spark", "usd": 0.0049425, "note": "paper repeat_peak in=1506 out=720"}
+{"t": 1793653117.8914676, "kind": "spark", "usd": 0.007747499999999999, "note": "paper repeat_peak in=1506 out=1380"}
+{"t": 1793653123.1550112, "kind": "spark", "usd": 0.006548999999999999, "note": "paper repeat_peak in=1506 out=1098"}
+{"t": 1793653129.212791, "kind": "spark", "usd": 0.00748825, "note": "paper repeat_peak in=1506 out=1319"}
+{"t": 1793653133.6142716, "kind": "spark", "usd": 0.0057627500000000005, "note": "paper repeat_peak in=1506 out=913"}
+{"t": 1793653138.1287558, "kind": "spark", "usd": 0.006000750000000001, "note": "paper repeat_peak in=1506 out=969"}
+{"t": 1793653143.6575239, "kind": "spark", "usd": 0.005937, "note": "paper repeat_peak in=1506 out=954"}
+{"t": 1793653147.1128242, "kind": "spark", "usd": 0.00534625, "note": "paper repeat_peak in=1506 out=815"}
+{"t": 1793653151.36102, "kind": "spark", "usd": 0.005631000000000001, "note": "paper repeat_peak in=1506 out=882"}
+{"t": 1793653156.0645022, "kind": "spark", "usd": 0.005860499999999999, "note": "paper repeat_peak in=1506 out=936"}
+{"t": 1793653160.7694917, "kind": "spark", "usd": 0.00561825, "note": "paper repeat_peak in=1506 out=879"}
+{"t": 1793653164.8147268, "kind": "spark", "usd": 0.005699, "note": "paper repeat_peak in=1506 out=898"}
+{"t": 1793653167.9087322, "kind": "spark", "usd": 0.00477675, "note": "paper repeat_peak in=1506 out=681"}
+{"t": 1793653170.6614225, "kind": "spark", "usd": 0.00401175, "note": "paper repeat_peak in=1506 out=501"}
+{"t": 1793653174.6698713, "kind": "spark", "usd": 0.0055205, "note": "paper repeat_peak in=1506 out=856"}
+{"t": 1793653178.1484537, "kind": "spark", "usd": 0.00511675, "note": "paper repeat_peak in=1506 out=761"}
+{"t": 1793653182.0241838, "kind": "spark", "usd": 0.00562675, "note": "paper repeat_peak in=1506 out=881"}
+{"t": 1793653185.403231, "kind": "spark", "usd": 0.00487025, "note": "paper repeat_peak in=1506 out=703"}
+{"t": 1793653190.2196577, "kind": "spark", "usd": 0.006702, "note": "paper repeat_peak in=1506 out=1134"}
+{"t": 1793653192.8533309, "kind": "spark", "usd": 0.0045260000000000005, "note": "paper repeat_peak in=1506 out=622"}
+{"t": 1793653196.1934602, "kind": "spark", "usd": 0.00475975, "note": "paper repeat_peak in=1506 out=677"}
+{"t": 1793653199.236029, "kind": "spark", "usd": 0.0047427500000000004, "note": "paper repeat_peak in=1506 out=673"}
+{"t": 1793653204.283385, "kind": "spark", "usd": 0.005971000000000001, "note": "paper repeat_peak in=1506 out=962"}
+{"t": 1793653206.9130454, "kind": "spark", "usd": 0.00407125, "note": "paper repeat_peak in=1506 out=515"}
+{"t": 1793653209.497975, "kind": "spark", "usd": 0.00442825, "note": "paper repeat_peak in=1506 out=599"}
+{"t": 1793653213.7928023, "kind": "spark", "usd": 0.00553325, "note": "paper repeat_peak in=1506 out=859"}
+{"t": 1793653220.8277102, "kind": "spark", "usd": 0.00850825, "note": "paper repeat_peak in=1506 out=1559"}
+{"t": 1793653228.8798702, "kind": "spark", "usd": 0.008861, "note": "paper repeat_peak in=1506 out=1642"}
+{"t": 1793653286.5189574, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<44f>1<|box;x1=336;y1=320;x2=392;y2=376;w=720;h=480|>"}
+{"t": 1793653290.3737373, "kind": "spark", "usd": 0.004462, "note": "in=547 out=889"}
+{"t": 1793653293.6447456, "kind": "spark", "usd": 0.0035875, "note": "in=541 out=685"}
+{"t": 1793653297.144128, "kind": "spark", "usd": 0.003667, "note": "in=540 out=704"}
+{"t": 1793653300.0844915, "kind": "spark", "usd": 0.00337375, "note": "in=540 out=635"}
+{"t": 1793653302.912321, "kind": "spark", "usd": 0.0036562499999999998, "note": "in=545 out=700"}
+{"t": 1793653304.624049, "kind": "spark", "usd": 0.0023455, "note": "in=513 out=401"}
+{"t": 1793653306.4533653, "kind": "spark", "usd": 0.00236675, "note": "in=513 out=406"}
+{"t": 1793653307.829068, "kind": "spark", "usd": 0.0018227500000000002, "note": "in=513 out=278"}
+{"t": 1793653309.2172494, "kind": "spark", "usd": 0.00191025, "note": "in=515 out=298"}
+{"t": 1793653311.4115715, "kind": "spark", "usd": 0.0019625000000000003, "note": "in=516 out=310"}
+{"t": 1793653319.525764, "kind": "spark", "usd": 0.0102465, "note": "in=2645 out=1633"}
+{"t": 1793653324.7323098, "kind": "sam", "usd": 0.012, "note": "clip.mp4:starfish"}
+{"t": 1793653325.0664132, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793653325.1822863, "kind": "sam", "usd": 0.012, "note": "clip.mp4:eel"}
+{"t": 1793653325.2597194, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793653329.9859428, "kind": "sam", "usd": 0.012, "note": "clip.mp4:worm"}
+{"t": 1793653331.6912446, "kind": "sam", "usd": 0.012, "note": "clip.mp4:spider"}
+{"t": 1793653333.2256997, "kind": "sam", "usd": 0.012, "note": "clip.mp4:star"}
+{"t": 1793653336.2278285, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793653336.7914069, "kind": "sam", "usd": 0.012, "note": "clip.mp4:snake"}
+{"t": 1793653339.4602182, "kind": "sam", "usd": 0.012, "note": "clip.mp4:urchin"}
+{"t": 1793653344.8143554, "kind": "spark", "usd": 0.00437275, "note": "paper repeat_peak fixexample in=1499 out=588"}
+{"t": 1793653345.3633463, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom.mp4:crab"}
+{"t": 1793653346.3466554, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom-left.mp4:crab"}
+{"t": 1793653347.1241097, "kind": "spark", "usd": 0.0042665, "note": "paper repeat_peak fixexample in=1499 out=563"}
+{"t": 1793653347.2000768, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:starfish"}
+{"t": 1793653349.7823071, "kind": "spark", "usd": 0.0038925, "note": "paper repeat_peak fixexample in=1499 out=475"}
+{"t": 1793653350.3027697, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom.mp4:spider"}
+{"t": 1793653351.4603012, "kind": "sam", "usd": 0.012, "note": "tile_d0z-bottom-left.mp4:spider"}
+{"t": 1793653352.5400248, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:star"}
+{"t": 1793653352.713902, "kind": "spark", "usd": 0.0043175, "note": "paper repeat_peak fixexample in=1499 out=575"}
+{"t": 1793653356.4587028, "kind": "spark", "usd": 0.00448325, "note": "paper repeat_peak fixexample in=1499 out=614"}
+{"t": 1793653358.4513648, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom.mp4:crab"}
+{"t": 1793653358.5056877, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left.mp4:crab"}
+{"t": 1793653359.5065367, "kind": "spark", "usd": 0.00451725, "note": "paper repeat_peak fixexample in=1499 out=622"}
+{"t": 1793653361.7079105, "kind": "spark", "usd": 0.0040880000000000005, "note": "paper repeat_peak fixexample in=1499 out=521"}
+{"t": 1793653363.6854787, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left.mp4:spider"}
+{"t": 1793653364.5156624, "kind": "spark", "usd": 0.00406675, "note": "paper repeat_peak fixexample in=1499 out=516"}
+{"t": 1793653365.7507503, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom.mp4:spider"}
+{"t": 1793653367.5265129, "kind": "spark", "usd": 0.0048275, "note": "paper repeat_peak fixexample in=1499 out=695"}
+{"t": 1793653368.480965, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left.mp4:shrimp"}
+{"t": 1793653369.6903975, "kind": "spark", "usd": 0.00365875, "note": "paper repeat_peak fixexample in=1499 out=420"}
+{"t": 1793653370.85719, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom.mp4:shrimp"}
+{"t": 1793653373.1299942, "kind": "spark", "usd": 0.00496775, "note": "paper repeat_peak fixexample in=1499 out=728"}
+{"t": 1793653374.4284818, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom-left_rev.mp4:spider"}
+{"t": 1793653375.2646601, "kind": "spark", "usd": 0.00384575, "note": "paper repeat_peak fixexample in=1499 out=464"}
+{"t": 1793653376.9859943, "kind": "sam", "usd": 0.012, "note": "tile_d0c-bottom_rev.mp4:crab"}
+{"t": 1793653378.9273772, "kind": "spark", "usd": 0.00461075, "note": "paper repeat_peak fixexample in=1499 out=644"}
+{"t": 1793653380.4318585, "kind": "spark", "usd": 0.00359075, "note": "paper repeat_peak fixexample in=1499 out=404"}
+{"t": 1793653382.9677992, "kind": "spark", "usd": 0.0043685, "note": "paper repeat_peak fixexample in=1499 out=587"}
+{"t": 1793653384.652756, "kind": "spark", "usd": 0.007737, "note": "in=1569 out=1359"}
+{"t": 1793653385.8564825, "kind": "spark", "usd": 0.0044535, "note": "paper repeat_peak fixexample in=1499 out=607"}
+{"t": 1793653388.7371051, "kind": "spark", "usd": 0.00444925, "note": "paper repeat_peak fixexample in=1499 out=606"}
+{"t": 1793653392.1264646, "kind": "spark", "usd": 0.00451725, "note": "paper repeat_peak fixexample in=1499 out=622"}
+{"t": 1793653392.663626, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<49f>1<|box;x1=216;y1=264;x2=288;y2=336;w=640;h=480|>"}
+{"t": 1793653394.420578, "kind": "spark", "usd": 0.0041815, "note": "paper repeat_peak fixexample in=1499 out=543"}
+{"t": 1793653396.756998, "kind": "spark", "usd": 0.00406675, "note": "paper repeat_peak fixexample in=1499 out=516"}
+{"t": 1793653399.0047295, "kind": "spark", "usd": 0.0038712500000000006, "note": "paper repeat_peak fixexample in=1499 out=470"}
+{"t": 1793653400.987989, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<53f>1<|box;x1=200;y1=200;x2=256;y2=288;w=640;h=480|>"}
+{"t": 1793653402.0245662, "kind": "spark", "usd": 0.004564, "note": "paper repeat_peak fixexample in=1499 out=633"}
+{"t": 1793653405.0587065, "kind": "spark", "usd": 0.004551250000000001, "note": "paper repeat_peak fixexample in=1499 out=630"}
+{"t": 1793653407.4965672, "kind": "spark", "usd": 0.00427925, "note": "paper repeat_peak fixexample in=1499 out=566"}
+{"t": 1793653410.0562353, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<7f>1<|box;x1=360;y1=392;x2=416;y2=448;w=640;h=480|>"}
+{"t": 1793653410.3449326, "kind": "spark", "usd": 0.004615, "note": "paper repeat_peak fixexample in=1499 out=645"}
+{"t": 1793653418.6100404, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<37f>1<|box;x1=528;y1=312;x2=584;y2=368;w=640;h=480|>"}
+{"t": 1793653424.4315012, "kind": "spark", "usd": 0.00619075, "note": "in=1182 out=1109"}
+{"t": 1793653427.966112, "kind": "spark", "usd": 0.00394375, "note": "in=537 out=770"}
+{"t": 1793653433.1189923, "kind": "spark", "usd": 0.0051975, "note": "in=537 out=1065"}
+{"t": 1793653436.0806496, "kind": "spark", "usd": 0.00344525, "note": "in=536 out=653"}
+{"t": 1793653439.3155153, "kind": "spark", "usd": 0.00423175, "note": "in=543 out=836"}
+{"t": 1793653443.7522528, "kind": "spark", "usd": 0.0048955000000000005, "note": "in=513 out=1001"}
+{"t": 1793653446.242806, "kind": "spark", "usd": 0.00252825, "note": "in=513 out=444"}
+{"t": 1793653448.5393155, "kind": "spark", "usd": 0.0028537500000000004, "note": "in=515 out=520"}
+{"t": 1793653451.6853666, "kind": "spark", "usd": 0.00360775, "note": "in=513 out=698"}
+{"t": 1793653454.9320107, "kind": "spark", "usd": 0.005172, "note": "in=2645 out=439"}
+{"t": 1793653487.0630128, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793653494.6732895, "kind": "spark", "usd": 0.0078565, "note": "in=2127 out=1223"}
+{"t": 1793653500.1764705, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793653501.5929227, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793653507.2827873, "kind": "sam", "usd": 0.012, "note": "clip.mp4:krill"}
+{"t": 1793653512.66053, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793653518.904352, "kind": "sam", "usd": 0.012, "note": "tile_d0z-center.mp4:shrimp"}
+{"t": 1793653519.1715014, "kind": "sam", "usd": 0.012, "note": "tile_d0z-top.mp4:shrimp"}
+{"t": 1793653521.1180656, "kind": "sam", "usd": 0.012, "note": "tile_s0-left.mp4:fish"}
+{"t": 1793653523.7665172, "kind": "sam", "usd": 0.012, "note": "tile_d0z-center.mp4:krill"}
+{"t": 1793653525.11168, "kind": "sam", "usd": 0.012, "note": "tile_d0z-top.mp4:krill"}
+{"t": 1793653530.458004, "kind": "sam", "usd": 0.012, "note": "tile_d0c-top.mp4:shrimp"}
+{"t": 1793653531.6658003, "kind": "sam", "usd": 0.012, "note": "tile_d0c-center.mp4:shrimp"}
+{"t": 1793653534.9057648, "kind": "sam", "usd": 0.012, "note": "tile_d0c-top.mp4:krill"}
+{"t": 1793653539.5009797, "kind": "sam", "usd": 0.012, "note": "tile_d0c-center.mp4:krill"}
+{"t": 1793653539.9293787, "kind": "sam", "usd": 0.012, "note": "tile_d0c-top.mp4:crab"}
+{"t": 1793653546.692957, "kind": "sam", "usd": 0.012, "note": "tile_d0c-center.mp4:crab"}
+{"t": 1793653553.0514433, "kind": "spark", "usd": 0.00662275, "note": "in=1225 out=1198"}
+{"t": 1793653561.2235935, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<35f>1<|box;x1=352;y1=280;x2=432;y2=336;w=720;h=406|>"}
+{"t": 1793653571.8106387, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<27f>1<|box;x1=384;y1=160;x2=440;y2=208;w=720;h=406|>"}
+{"t": 1793653577.492412, "kind": "spark", "usd": 0.00750225, "note": "in=2255 out=1102"}
+{"t": 1793653583.3906307, "kind": "spark", "usd": 0.00622275, "note": "in=1177 out=1118"}
+{"t": 1793653586.3071823, "kind": "spark", "usd": 0.00301225, "note": "in=533 out=552"}
+{"t": 1793653589.8384464, "kind": "spark", "usd": 0.004745, "note": "in=1501 out=675"}

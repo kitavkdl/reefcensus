@@ -71,7 +71,7 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 
 **Five new videos, held out (measured).** Clips from three other studies (deep carcass cameras in British Columbia,
 a fish-only BRUV in New Zealand; CC BY), never used in development, run once with frozen code under a protocol
-committed first. Before the run two people marked, independently, the non-fish animals they could see: 4 animals over
+committed first. Before the run the author and, separately, an AI assistant (Claude) marked the non-fish animals they could see: 4 animals over
 the five clips, none in two of them.
 
 | | result |

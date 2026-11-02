@@ -9,6 +9,7 @@ COPY = os.path.join(ROOT, "report/paper/data/ledger.jsonl")
 T_HELDOUT = 1793610643      # held-out protocol commit 06f1f01 (git log -1 --format=%ct); held-out runs start after it
 T_FIXED = 1793611190              # fixed-vocabulary baseline launched (date +%s just before the run)
 T_SPARKCOUNT = 1793612367         # Spark-alone counting protocol commit a814c9d; probe and runs after it
+T_DHRERUN = 1793652641             # last commit before the uncached second DH run (aecedfa)
 T_DISCHELD = 1793648572           # held-out discovery protocol commit c4c60d0; DH runs after it
 
 
@@ -22,9 +23,10 @@ def main():
     fixed = [r for r in rows if T_FIXED <= r["t"] < T_SPARKCOUNT]
     probe = [r for r in rows if r["t"] >= T_SPARKCOUNT and r["kind"] == "sam" and r.get("note", "").endswith((":animal", ":luderick"))]
     scount = [r for r in rows if T_SPARKCOUNT <= r["t"] < T_DISCHELD and r not in probe]
-    dheld = [r for r in rows if r["t"] >= T_DISCHELD and r not in probe]
+    dheld = [r for r in rows if T_DISCHELD <= r["t"] < T_DHRERUN and r not in probe and r not in rep]
+    rerun = [r for r in rows if r["t"] >= T_DHRERUN and r not in probe and r not in rep]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
-           and r not in probe and r not in dheld]
+           and r not in probe and r not in dheld and r not in rerun]
     show("development + evaluation", dev)
     show("repeated-call experiment", rep)
     show("held-out runs", held)
@@ -32,6 +34,7 @@ def main():
     show("Spark-alone counting baseline", scount)
     show("vocabulary probes (animal, luderick)", probe)
     show("held-out discovery runs", dheld)
+    show("held-out discovery, second uncached run", rerun)
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
     tin = [int(r["note"].split("in=")[1].split()[0]) for r in sp if "in=" in r.get("note", "")]

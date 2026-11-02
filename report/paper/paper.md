@@ -27,7 +27,7 @@ boxes appear to omit faint fish on several of those clips (Figure 3), and a coun
 On four nautilus clips requested as "fish", VLM naming finds six of seven untargeted taxa without any audit (seven with
 a motion cue), and the audits correct names, duplicates and one false taxon. On five held-out videos from other
 studies, run once with frozen code under a pre-committed protocol, the pipeline names all four non-fish animals that
-two people marked beforehand, counts three and sends the fourth to the person queue, and counts nothing that is not
+the author and, separately, an AI assistant marked beforehand, counts three and sends the fourth to the person queue, and counts nothing that is not
 an animal. We present an annotation accelerator whose counts a person confirms, not a finished census.
 
 </div>
@@ -369,7 +369,7 @@ carcass study at 95 m in Saanich Inlet, British Columbia (DH1–DH3; Anderson & 
 study in the Salish Sea (DH4; Anderson & Bell, 2016), both CC BY 4.0, and one fish-only BRUV clip from New Zealand
 (DH5; Zintzen et al., 2012, CC BY 2.5). Each clip is the 12 s centred on the file's midpoint at 5 fps. DH1–DH4 were
 selected because their source text names a non-fish animal, so they measure finding such animals, not how often
-they occur; DH5 measures false discoveries. Before the run, two people marked independently, at a coarse group level
+they occur; DH5 measures false discoveries. Before the run, two markers listed independently, at a coarse group level
 ("crab-like", "shrimp-like"), the non-fish animal shapes they could see in frames 0, 20, 40 and 59: Jiyul Ahn (not a
 marine biologist), by circling shapes on the sheets, and Claude, the AI assistant used to write the code, in a
 committed file. The bait carcasses are not animals to find. The two lists agree on every mobile animal: crab-like in
@@ -686,7 +686,7 @@ prompts with no word.](figures/motion_s004.jpg){.half}
 **Held-out clips.** Table 3b is the one run on the five held-out videos (§5), with the request "fish" and the
 code frozen at the protocol commit.
 
-<div class="tablecap">**Table 3b.** Held-out discovery, one run. Reference = the non-fish animals both people marked
+<div class="tablecap">**Table 3b.** Held-out discovery, one run. Reference = the non-fish animals both markers listed
 before the run (sessile animals in brackets, scored separately). Queue = tracks sent to a person.</div>
 
 | clip | reference (not fish) | Spark named | counted (MaxN) | queue | cost |
@@ -712,13 +712,22 @@ and counted nowhere. Of the sessile animals, DH2's is counted as "sea anemone"; 
 and "starfish", "star" and "urchin" track 0 frames. The per-clip rows, evidence crops and judgement are in
 `report/paper/data/discovery_heldout/`.
 
+**A second run.** After scoring, we ran the same command once more on the five clips with an empty cache
+(`runs/DH*_rerun`, 112 calls, $1.08), so every model call was fresh. It counted the same three crab-like animals and
+DH2's anemone, again counted no false discovery, and again sent DH3's shrimp-like animal to the queue (found by the
+motion residual as a "vertical red shrimp", tracked in 60 of 60 frames, A1 confidence 0.5). Spark's proposed names
+differed in wording (DH3: "crab", "starfish", "eel"; DH5: "tiny swimming crustaceans", tracked by no word), and the
+queue held 27 tracks against 26.
+
 ## Cost and time
 
 All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
 SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens). The repeated-call experiment of
-§7.1 added 73 Spark calls ($0.43, one call lost to an interrupted script), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
+§7.1 added 98 Spark calls ($0.54, including the 25 calls of the example test in §7.5 and one call lost to an
+interrupted script), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
 SAM calls ($0.55), the Spark-alone counting baseline 765 Spark calls ($2.47), the vocabulary probes of §7.4 45 SAM
-calls ($0.62) and the held-out discovery runs 106 calls ($1.06), for a ledger total of $8.30 over 1,516 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+calls ($0.62), the held-out discovery runs 106 calls ($1.06) and their uncached second run 112 calls ($1.08), for a
+ledger total of $9.78 over 1,702 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
