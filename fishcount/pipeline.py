@@ -249,9 +249,9 @@ def confirm_motion(run, clip, frames, ts, offline):
     for t in ts:
         p = paths[t]
         L = len(p)
-        idx = sorted({min(L - 1, L // 8), L // 2, max(0, L - 1 - L // 8)})
-        if len(idx) < 3 and L >= 3:
-            idx = sorted(set(idx) | {0, L - 1})[:3]
+        # always three crops (a frame repeats on a 1-2 frame track): motion.layout needs equal-sized groups
+        # (11/2 review: a 2-frame motion track made a 2-crop group and np.vstack killed the run)
+        idx = [min(L - 1, L // 8), L // 2, max(0, L - 1 - L // 8)]
         trios[t] = [(p[j][0], _ibox(p[j][1])) for j in idx]
     imgs = video.frames(clip, {f for t in ts for f, _ in trios[t]})
     for i, t in enumerate(ts):
@@ -260,8 +260,15 @@ def confirm_motion(run, clip, frames, ts, offline):
     del imgs
     sheet = motion.layout(groups)
     open(run.path("confirm_1.jpg"), "wb").write(sheet)
-    reply = _counted(run, api.spark, CONFIRM_PROMPT, [sheet], offline=offline, check=api.parse_json_list)
-    got = {v.get("tile"): v for v in api.parse_json_list(reply)}
+    want = set(names.values())
+
+    def every_tile(text):     # a reply that skips a tile is not cached (it would silently drop that track forever)
+        got_ = {str(v.get("tile", "")).upper() for v in api.parse_json_list(text) if isinstance(v, dict)}
+        if not want <= got_:
+            raise ValueError(f"confirm reply misses {sorted(want - got_)}")
+        return True
+    reply = _counted(run, api.spark, CONFIRM_PROMPT, [sheet], offline=offline, check=every_tile)
+    got = {str(v.get("tile", "")).upper(): v for v in api.parse_json_list(reply) if isinstance(v, dict)}
     return {t: got.get(names[t], {}) for t in ts}
 
 
@@ -375,7 +382,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     labels = auto_labels(trk, verdicts)
     # every word of every discovered name: "small red crab on seabed" must match an audit "small red crab" (11/2 s002 v13:
     # norm_label kept only "seabed", so the red crab the discovery step had named was dropped as "not a shrimp")
-    seen = {norm_label(w) for f in found for w in (f["what"] or "").split()} - {None}
+    seen = {_head(f["what"]) for f in found} - {None}
     for t, v in verdicts.items():
         # a discovered track (word ladder) that the audit confidently calls another animal the discovery step had
         # also named is that animal: two looks agree (s002: 'shrimp' word -> audit "small red crab", 0.7)
@@ -399,7 +406,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         if trk[t]["source"].startswith("m") and needs_review(v):
             labels[t] = None
     if do_audit:
-        sure = [t for t in verdicts if trk[t]["source"].startswith("m") and labels.get(t)]
+        for f in os.listdir(run.path()):
+            if f.startswith("confirm_") and f.endswith(".jpg"):
+                os.remove(run.path(f))
+        # motion tracks, and discovered tracks relabelled from a primed audit (its context lists the discovery names)
+        sure = [t for t in verdicts if labels.get(t) and (trk[t]["source"].startswith("m") or verdicts[t].get("relabelled"))]
         if sure:
             said = confirm_motion(run, clip, frames, sure, offline)
             for t in sure:
@@ -409,7 +420,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 # job, so a plain yes is enough here (11/2 s004 v14: two shrimp the eye confirms got yes at 0.6/0.65)
                 if not (c.get("is_animal") is True and _conf(c) >= 0.5):
                     labels[t] = None
-            run.stage("audit", f"second look at {len(sure)} motion track(s) before they count: "
+            run.stage("audit", f"second look at {len(sure)} motion or renamed track(s) before they count: "
                       + ", ".join(f"{verdicts[t]['name']} {'yes' if labels[t] else 'no'} ({said.get(t, {}).get('reason', 'no answer')})" for t in sure))
     for mv in moved:
         if mv.get("source"):
@@ -514,6 +525,18 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
     if closer:
         log += closer_look(run, clip, inf, closer, results, max_usd, offline)
     return log
+
+
+def _head(name):
+    """Head noun of a discovered name: last word before a place phrase. "small red crab on seabed" -> "crab"
+    (norm_label alone gave "seabed"; 11/2 review: matching every word would let an audit species "seabed" or "bait"
+    relabel a weed track into a counted row)."""
+    ws = re.sub(r"[^a-z ]", " ", (name or "").lower()).split()
+    for i, w in enumerate(ws):
+        if w in ("on", "at", "in", "near", "by", "under", "over", "with", "from", "behind", "inside", "beside", "among"):
+            ws = ws[:i]
+            break
+    return norm_label(" ".join(ws))
 
 
 def norm_label(name):
@@ -828,7 +851,9 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
     tiles = [video.label(render.square(pair_tile(imgs[best[k][1]], best[k][2], best[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
     said = {}
     for i in range(0, len(tiles), 16):
-        reply = _counted(run, api.spark, PAIR_PROMPT, [video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)], offline=offline, check=api.parse_json_list)
+        sheet = video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)
+        open(run.path(f"pairs_{i // 16 + 1}.jpg"), "wb").write(sheet)
+        reply = _counted(run, api.spark, PAIR_PROMPT, [sheet], offline=offline, check=api.parse_json_list)
         for v in api.parse_json_list(reply):
             said[v.get("tile")] = v
     out = []
@@ -877,7 +902,17 @@ def _conf(v):
 
 
 def needs_review(v):
-    return not v or _conf(v) < 0.7 or v.get("is_target") is False
+    """True = the track sits in the human queue. A confirmed second look decides for motion and relabelled tracks:
+    a relabelled track is counted under its new name, so it must not also wait as "not a <label>" (11/2 review), and
+    a track the second look rejected must stay where a person can restore it."""
+    if not v:
+        return True
+    c = v.get("confirm")
+    if c is not None:
+        return not (c.get("is_animal") is True and _conf(c) >= 0.5) or _conf(v) < 0.7
+    if v.get("relabelled"):
+        return False
+    return _conf(v) < 0.7 or v.get("is_target") is False
 
 
 def auto_labels(trk, verdicts):

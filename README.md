@@ -24,7 +24,8 @@ Technical report with every measurement and what it changed in the design: [repo
   ones Spark calls animals go to SAM 3.1 as a **box prompt with no word**, and SAM tracks the animal both ways through
   the clip. Nautilus clip s004: a shrimp at the bottom edge that no word, tile or reversed pass ever tracked, 55/60
   frames from one box. A motion track counts only when the audit is confident and a second Spark look (other moments,
-  no label, no earlier names) still sees an animal; otherwise it waits in the human queue.
+  no label, no earlier names) still sees an animal; otherwise it waits in the human queue. The same second look gates
+  a discovered track that the audit renamed to another animal the discovery step had named.
 - All API calls are cached by content hash and metered against a budget (`FISH_BUDGET`, default $1). A Spark reply
   that is not valid JSON is never cached and is asked once more.
 - SAM masks are decoded by a small C port of `meta_sam_parser`'s one_bit codec (`fishcount/_maskdec.c`, built with

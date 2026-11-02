@@ -4,7 +4,7 @@ MaxN is taken over the human-annotated frames only, for both, so the two are com
   python3 fishcount/evaluate_pipeline.py [--run] [--tag eval3]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, tracks
+from fishcount import api, tracks, pipeline
 
 SMOKE = os.path.expanduser("~/meta-smoke")
 RUNS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runs")
@@ -47,13 +47,12 @@ def main():
         sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(api.sam_video(clip, "fish", c["n_frames"], offline=True)).items()}
         rp = os.path.join(RUNS, f"{a.tag}_{cid}", "result.json")
         if a.run and not os.path.exists(rp):
-            from fishcount import pipeline
             pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.2)
         res = json.load(open(rp)) if os.path.exists(rp) else None
         r = dict(clip=cid, frames=len(gt), sam=score(sam, gt))
         if res:
             r["pipe"] = score(pipeline_boxes(res), gt)
-            r["queue"] = sum(1 for v in res["verdicts"].values() if not v or v.get("confidence", 0) < 0.7 or v.get("is_target") is False)
+            r["queue"] = sum(1 for v in res["verdicts"].values() if pipeline.needs_review(v))
             r["tracks"] = len(res["tracks"])
             r["dups"] = sum(d["same"] for d in res.get("duplicates", []))
         rows.append(r)

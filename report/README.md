@@ -45,6 +45,7 @@ video ──► SAM 3.1 "fish" (whole frame, reversed clip, optional 2x2 zoom ti
    ├─► motion: pixels that keep changing outside every box (no model) ──► Spark, 3 crops per spot:
    │         animal or sediment? ──► animals → SAM box prompt, no word
    │         counted only if the audit is confident AND a second Spark look (other moments, no label) agrees
+   │         (the same second look also gates a track the audit renamed to another discovered animal)
    │
    ├─► merge + re-join broken track IDs
    ├─► Spark audit: 3 crops per track (early / middle / late) → species, is it the target, confidence
@@ -112,7 +113,7 @@ a non-expert list: 7 taxa over the four clips.
 | clip | animals a person listed (not fish) | reefcensus final count (MaxN) | how it was found |
 |---|---|---|---|
 | s001 (night, wire trap) | nautilus: 1 inside the trap, 3+ outside | **nautilus 2** | no word, zoom or 3x cell tracked anything; motion look → Spark "nautilus" → SAM box prompts (56 and 60 of 60 frames), audit 0.95 / 0.9, second look yes. A third motion track (audit 0.55) waits for a person |
-| s002 | nautilus 1; red crustaceans 2 (by the rope, by the bait) | nautilus 1; **small red crab 1** | Spark: "small red crab on seabed". The word "shrimp" tracked it in a 3x cell; the audit said "small red crab, not shrimp" (0.7), which matches the discovery name, so the track is relabelled. The crustacean at the bait is held as "fish (unidentified)" for a person |
+| s002 | nautilus 1; red crustaceans 2 (by the rope, by the bait) | nautilus 1; **small red crab 1** | Spark: "small red crab on seabed". The word "shrimp" tracked it in a 3x cell; the audit said "small red crab, not shrimp" (0.7), which matches the discovery name, so the track is relabelled; the unprimed second look agrees ("small red crab with legs shifts"). The crustacean at the bait is held as "fish (unidentified)" for a person |
 | s003 | nautilus 3–4 | nautilus 3 | word "nautilus" + zoom tiles. Spark also proposed a "large striped shrimp" that is not there: no word tracked it, and the motion box later audited under that name was rejected by the second look (figure below) |
 | s004 | nautilus 1; shrimp 10+; one grey eel-like animal (hagfish) | nautilus 1; caridean shrimp 12 (+3 unidentified); hagfish 1 | "hagfish" 0 frames → "eel" 24 frames, labelled hagfish. Two shrimp at the bottom edge only through motion boxes (tracked in 55 and 30 frames) |
 
@@ -146,6 +147,8 @@ no names: "looks like trap mesh, not animal". It is not counted.*
 - **Night footage behind a wire trap (s001) is the weakest case.** No word, zoom or 3x cell tracks a nautilus there;
   only the motion look does. It counts 2 of the 4+ a person sees: the nautilus inside the trap is never tracked, and
   Spark's audit is unsure about the blurriest one, which waits for a person.
+- **Duplicates are checked within one tracker word only.** A track renamed by the audit (s002: "shrimp" → "small red crab") is not compared with tracks found under another word, so one animal could in principle be counted under two names. In s002 a second red crustacean is held as "fish (unidentified)" for a person; we have not confirmed whether it is the same animal.
+- **The second look checks "animal or not", not the name.** In s004 it said "small fish" for a track the audit named caridean shrimp; the track counts as shrimp because the audit's species is used.
 - **Spark is not deterministic.** The same input on a different sheet can get a different answer (section 3). Cached
   answers make a run reproducible; a fresh run can differ by a track.
 
