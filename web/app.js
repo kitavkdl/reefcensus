@@ -3,7 +3,7 @@
 
 const STAGES = [
   ["ingest", "Read video"], ["scout", "Spark scouts"], ["discover", "Spark looks wider"], ["track", "SAM tracks"],
-  ["recover", "Second look"], ["audit", "Spark audits"], ["verify", "Peak check"], ["render", "Draw"], ["done", "Done"],
+  ["recover", "Second look"], ["motion", "Motion look"], ["audit", "Spark audits"], ["verify", "Peak check"], ["render", "Draw"], ["done", "Done"],
 ];
 const $ = (id) => document.getElementById(id);
 const state = { id: null, run: null, status: null, lastStage: null, poll: null, fps: 5, n: 0 };
@@ -217,6 +217,9 @@ function drawFound() {
     if (d && d.tried?.length)
       extra.push(el("div", { class: "ladder" }, "SAM words tried:",
         ...d.tried.map((t) => el("span", { class: t.frames ? "hit" : "miss", title: `${t.frames} frames` }, t.word))));
+    const fromMotion = Object.entries(run.tracks || {}).some(([t, v]) => v.source.startsWith("m") && labelOf(run, t) === name);
+    if (fromMotion)
+      extra.push(el("div", { class: "ladder" }, "Includes an animal no word found: it moved, Spark said it was alive, and SAM tracked a box drawn on it."));
     if (name.endsWith("(unidentified)"))
       extra.push(el("div", { class: "ladder" }, "Spark could not name these with confidence; they wait in Needs a person."));
     return countRow(name, m, "found", extra);
@@ -229,10 +232,31 @@ function drawFound() {
       ...missed.map((d, i) => [i ? "; " : "", el("b", {}, d.what), ` (tried ${d.tried.map((t) => t.word).join(", ")})`]))] : []));
 }
 
-const KIND = { backfill: "Played backwards", zoom: "Zoomed in", cell: "Closer look", sign: "Checked a sign" };
+const labelOf = (run, t) => {
+  const r = run.review || {}, a = run.auto_labels || {};
+  return t in r ? r[t] : t in a ? a[t] : run.tracks[t].label;
+};
+const KIND = { backfill: "Played backwards", zoom: "Zoomed in", cell: "Closer look", sign: "Checked a sign", motion: "Motion look", "motion-scan": "Motion look" };
+function motionStep(run, r) {
+  if (r.kind === "motion-scan") {
+    if (r.note) return el("span", { class: "none" }, "Movement outside every box: not saved for this clip, skipped in the free replay");
+    const sheet = `/runs/${encodeURIComponent(run.id)}/motion_sheet.jpg`;
+    return el("span", { class: r.animals ? "" : "none" }, `${r.candidates} moving spot${r.candidates === 1 ? "" : "s"} where nothing was boxed; Spark looked at ${r.shown}`,
+      r.shown ? [" (", el("a", { href: sheet, target: "_blank" }, "sheet"), ")"] : "",
+      `, called ${r.animals} ${r.animals === 1 ? "an animal" : "animals"}` + (r.said?.length ? `: ${r.said.map((v) => `${v.tile} ${v.is_animal ? "" : "no, "}${v.what || "?"}`).join("; ")}` : ""));
+  }
+  const res = r.word
+    ? `SAM tracked the box (no word) in ${r.frames} frames as '${r.word}'` + (r.absorbed_into ? `, joined an existing '${r.absorbed_into}' track` : "")
+      + (r.overlapped ? `; ${r.overlapped} frames already tracked were dropped` : "")
+      + (r.counted === false ? ". Spark's audit doubted it, so it waits in Needs a person, not in the count" : "")
+    : r.note?.startsWith("already") ? `the same animal an earlier box was already following (${r.note.slice(19).trim()}), no second call`
+    : r.note ? `box prompt failed (${r.note})` : "SAM found nothing new from the box";
+  return el("span", { class: r.word ? "" : "none" }, `${r.tile ? r.tile + " " : ""}${r.what}, frame ${r.frame}: ${res}`);
+}
 function drawSecond() {
   const run = state.run;
   const steps = (run.recovered || []).map((r) => {
+    if (r.kind === "motion" || r.kind === "motion-scan") return el("li", {}, el("span", { class: "kind" }, KIND[r.kind]), motionStep(run, r));
     const where = r.kind === "cell" ? `${r.cell} cell at 3x, best word then played backwards` : r.cell ? `${r.cell} block` : "whole clip";
     const res = r.word
       ? `'${r.word}' tracked in ${r.frames} frames, up to ${r.max_per_frame} at once`

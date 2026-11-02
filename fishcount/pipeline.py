@@ -2,9 +2,10 @@
 -> audit (Spark) -> metrics -> evidence frames.  Each stage writes into runs/<id>/ and updates status.json,
 which the web UI polls.
   python3 fishcount/pipeline.py <video> [--offline] [--no-scout] [--no-audit] [--zoom] [--prompts fish ...]"""
-import argparse, concurrent.futures as cf, json, os, shutil, sys, threading, time
+import argparse, concurrent.futures as cf, hashlib, json, os, re, shutil, sys, threading, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, tracks, video, render, maskdedupe
+from fishcount import api, tracks, video, render, maskdedupe, motion
+import requests
 import cv2, numpy as np   # render put ~/meta-smoke/pylib on sys.path
 
 RUNS = os.path.join(api.ROOT, "runs")
@@ -47,6 +48,15 @@ PAIR_PROMPT = """Each tile is a crop from one frame of underwater survey video w
 For every tile return ONLY a JSON list: [{{"tile":"P1","same_animal":true|false,"what":"<=8 words"}}]
 same_animal = true when the cyan outline marks the same single animal as the red one (or a part of it, for example its body without the legs or its head). false when the cyan outline marks a different individual, for example a second animal next to, behind or in front of the first, even if the red outline also spills over it."""
 
+
+# 11/2 s004: a shrimp that no word, tile or reversed pass ever tracked moved against the still seabed; a box drawn
+# on it (no word at all) made SAM track it in 57 of 60 frames. Movement only says "look here", so Spark decides.
+MOTION_PROMPT = """Each tile (M1, M2, ...) is a crop from one frame of underwater survey video. The orange rectangle marks a spot where something moved and no detector has boxed anything yet.
+For every tile return ONLY a JSON list: [{{"tile":"M1","is_animal":true|false,"name":"one plain everyday English noun (shrimp, crab, fish, eel, worm, starfish, snail, octopus) or none","what":"<=8 words","confidence":0.0-1.0}}]
+Black areas are outside the picture: an animal cut off by the edge of the picture still counts.
+is_animal = the rectangle mainly holds a living animal, even a small, pale, blurry or partly hidden one. Answer false for sand or sediment clouds, shadows, bubbles, bait or a bait bag, rope, net, rock, seagrass, empty water, or a tentacle, fin or tail of a bigger animal whose body is clearly elsewhere in the tile."""
+MOTION_VERSION = "v3"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
+MOTION_ERRORS = (FileNotFoundError, RuntimeError, ValueError, KeyError, TypeError, AttributeError, requests.RequestException)
 
 class Run:
     def __init__(self, rid):
@@ -255,6 +265,13 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             if word:
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
     recovered = recover(run, clip, inf, others, found, disc.get("signs", []), results, max_usd, offline) if do_discover else []
+    moved = []
+    if do_discover and do_audit:    # unaudited motion tracks would be counted unchecked
+        try:
+            moved = motion_look(run, clip, inf, results, max_usd, offline)
+        except MOTION_ERRORS as e:
+            run.stage("motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}")
+        recovered += moved
     raw = {name: (txt, tile) for name, _, _, txt, tile in results}   # tile=None: full-frame text (masks drawable)
     sources = [(name, label, d) for name, label, d, _, _ in results]
     frames, trk = tracks.merge(sources)
@@ -274,6 +291,15 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         run.stage("audit", f"{n_flag} of {len(verdicts)} tracks need a human look")
 
     labels = auto_labels(trk, verdicts)
+    for t, v in verdicts.items():
+        # a motion track rests on two weak signals (it moved; Spark thought one crop looked alive), so any audit
+        # rejection keeps it out of the count. It stays in Needs a person, where a human can restore it.
+        if trk[t]["source"].startswith("m") and v.get("is_target") is False:
+            labels[t] = None
+    for mv in moved:
+        if mv.get("source"):
+            mine_t = [t for t, v in trk.items() if v["source"] == mv["source"]]
+            mv["counted"] = any(labels.get(t, trk[t]["label"]) for t in mine_t)
     dups = []
     if do_audit:
         dec = maskdedupe.decode_sources(raw, inf["width"], inf["height"])
@@ -372,6 +398,164 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
               if jb["kind"] == "zoom" and not any(e["kind"] == "zoom" and e["what"] == jb["what"] and e["cell"] == jb["cell"] and e["word"] for e in log)]
     if closer:
         log += closer_look(run, clip, inf, closer, results, max_usd, offline)
+    return log
+
+
+def norm_label(name):
+    """Spark's name -> one SAM-style label: lowercase last word, plural dropped, vague words refused."""
+    ws = re.sub(r"[^a-z ]", " ", (name or "").lower()).split()
+    if not ws:
+        return None
+    w = ws[-1]
+    if w in ("none", "unknown", "animal", "creature", "thing", "object", "organism", "unclear"):
+        return None
+    if len(w) > 4 and w.endswith("ies"):
+        w = w[:-3] + "y"                       # jellies -> jelly
+    elif len(w) > 4 and w.endswith(("shes", "ches", "xes")):
+        w = w[:-2]                             # fishes -> fish
+    elif len(w) > 3 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
+        w = w[:-1]
+    return w
+
+
+def _absorb(d, prior, thr=0.3, min_frames=3):
+    """A motion track lying on an existing track (IoU >= thr) in `min_frames` or more frames takes that track's
+    label (11/2 review: 'crab' over a tracked 'shrimp' in a few frames was counted twice under two names). The
+    overlapping frames are removed either way; merge() only catches IoU >= 0.5 and only within one label."""
+    hits, out = {}, {}
+    for f, ds in d.items():
+        keep, hit_here = [], set()
+        for det in ds:
+            best = max(((tracks.iou(det["box"], k["box"]), lab) for _, lab, pd, _, _ in prior for k in pd.get(f, [])),
+                       key=lambda t: t[0], default=(0, None))
+            if best[0] >= thr:
+                hit_here.add(best[1])
+            else:
+                keep.append(det)
+        for lab in hit_here:
+            hits[lab] = hits.get(lab, 0) + 1
+        out[f] = keep
+    lab, n = max(hits.items(), key=lambda t: t[1], default=(None, 0))
+    return out, (lab if n >= min_frames else None), sum(1 for f, ds in d.items() if len(out[f]) < len(ds))
+
+
+def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=3, min_conf=0.6):
+    """Look where pixels moved but nothing was boxed (fishcount/motion.py): up to `k` spots go to Spark on one
+    sheet; up to `max_boxes` it calls animals go to SAM as box prompts, no word. Appends ("m<i>", label, dets,
+    text, None) to `results`; returns log entries for the UI. Spark's verdict and the chosen boxes are cached per
+    clip (cache/motion_<sha>_<ver>.json), so a free replay does not depend on re-deriving the same sheet bytes."""
+    n, W, H = inf["n_frames"], inf["width"], inf["height"]
+    known = {}
+    for _, _, d, _, _ in results:            # +-3 frames: a box SAM lost for a frame still covers its animal
+        for f, ds in d.items():
+            for g in range(max(0, f - 3), min(n, f + 4)):
+                known.setdefault(g, []).extend(list(det["box"]) for det in ds)
+    # keyed by what decides the spots (clip, boxes already found, prompt), so a free replay of the same run finds
+    # it and a run with other prompts does not reuse it
+    kb = json.dumps(sorted((f, sorted([round(v) for v in b] for b in bs)) for f, bs in known.items()))
+    key = hashlib.sha256((api.file_sha(clip) + kb + MOTION_PROMPT + MOTION_VERSION).encode()).hexdigest()[:24]
+    cpath = os.path.join(api.CACHE, f"motion_{key}.json")
+    sheet_jpg = run.path("motion_sheet.jpg")
+    est = 0.02 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    if run.status["billed_usd"] + est > max_usd and not offline:
+        run.stage("motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        return []
+    if os.path.exists(cpath):
+        mc = json.load(open(cpath))
+        if mc.get("sheet"):
+            shutil.copy(os.path.join(api.CACHE, mc["sheet"]), sheet_jpg)
+        run.stage("motion", f"motion look (saved): {mc['n_candidates']} moving spots outside every box, Spark saw {len(mc['said'])}")
+    elif offline:
+        run.stage("motion", "motion look not cached for this clip: skipped in the free replay")
+        return [dict(kind="motion-scan", what="Movement outside every box", tried=[], word=None, note="not cached")]
+    else:
+        run.stage("motion", "looking for movement outside every box (pixels only, no model)")
+        cands, _ = motion.candidates(clip, known)
+        picks = motion.pick(cands, k=k)
+        said, meta, sheet_name = {}, [], None
+        if picks:
+            jpg, meta = motion.sheet(clip, picks, W, H)
+            sheet_name = f"motion_{key}.jpg"
+            open(os.path.join(api.CACHE, sheet_name), "wb").write(jpg)
+            open(sheet_jpg, "wb").write(jpg)
+            run.stage("motion", f"{len(cands)} moving spots outside every box; Muse Spark looks at the {len(picks)} longest-lived")
+            reply = _counted(run, api.spark, MOTION_PROMPT, [jpg], offline=offline)
+            got = api.parse_json(reply)
+            for v in (got if isinstance(got, list) else [got]):
+                if isinstance(v, dict):
+                    said[str(v.get("tile"))] = v
+            if not any(f"M{i}" in said for i, _, _ in meta):
+                raise ValueError(f"Spark's motion reply named no tile: {reply[:120]!r}")   # not cached: retried next run
+        mc = dict(n_candidates=len(cands), sheet=sheet_name,
+                  said=[dict(said.get(f"M{i}", {}), tile=f"M{i}", frame=t, box=b) for i, t, b in meta])
+        with open(cpath + ".tmp", "w") as fh:
+            json.dump(mc, fh)
+        os.replace(cpath + ".tmp", cpath)
+    def conf(v):
+        try:
+            return float(v.get("confidence") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    chosen = []
+    # most confident first (11/2 review: in sheet order three boxes used the cap before a likelier spot was tried)
+    for v in sorted(mc["said"], key=lambda v: -conf(v)):
+        lab = norm_label(v.get("name") if isinstance(v.get("name"), str) else "")
+        if v.get("is_animal") is not True or conf(v) < min_conf or not lab:
+            continue
+        # two spots on one animal (11/2 review): one SAM call, not two
+        if any(abs(v["frame"] - c["frame"]) <= 5 and tracks.overlap(v["box"], c["box"]) > 0 for c in chosen):
+            continue
+        chosen.append(dict(v, label=lab))
+        if len(chosen) >= max_boxes + 2:    # spare ones in case an earlier box already followed the animal
+            break
+    log = [dict(kind="motion-scan", what="Movement outside every box", tried=[], word=None, candidates=mc["n_candidates"],
+                shown=len(mc["said"]), animals=sum(1 for v in mc["said"] if v.get("is_animal") is True),
+                said=[dict(tile=v["tile"], is_animal=v.get("is_animal"), what=v.get("what"), confidence=v.get("confidence")) for v in mc["said"]])]
+    if not chosen:
+        run.stage("motion", "Spark: none of the moving spots is an animal")
+        return log
+    run.stage("motion", "SAM 3.1 tracks from a box, no word: " + ", ".join(f"{c['tile']} {c['what']} (frame {c['frame']})" for c in chosen))
+
+    def one(c):
+        prompt = motion.box_prompt(c["frame"], c["box"], W, H)
+        return c, _counted(run, api.sam_video, clip, prompt, n, offline=offline)
+
+    # one at a time: SAM tracks a box both ways through the clip, so a later spot may be the animal an earlier box
+    # already followed (11/2 s004: M4 at frame 34 and M7 at frame 50 were one red shrimp) -> skip, no second call
+    prior, mine, calls = list(results), [], 0
+    for i, c in enumerate(chosen):
+        entry = dict(kind="motion", tile=c["tile"], what=c.get("what") or c["label"], cell=None, frame=c["frame"], box=c["box"],
+                     tried=[dict(word="box", frames=None)], word=None)
+        if calls >= max_boxes:      # failed calls count too: the estimate above covers max_boxes
+            break
+        same = next((t for t, d in mine if any(tracks.overlap(c["box"], k["box"]) >= 0.3 for k in d.get(c["frame"], []))), None)
+        if same:
+            entry.update(note=f"already followed by {same}")
+            log.append(entry)
+            run.stage("motion", f"{c['tile']}: already followed by the {same} box, no second call")
+            continue
+        calls += 1
+        try:
+            _, txt = one(c)
+        except MOTION_ERRORS as e:
+            entry["note"] = f"{type(e).__name__}: {str(e)[:120]}"
+            log.append(entry)
+            run.stage("motion", f"{c['tile']}: SAM box prompt failed ({entry['note']})")
+            continue
+        d0 = tracks.parse_boxes(txt)
+        d, took, clash = _absorb(d0, prior)
+        label = took or c["label"]
+        k_frames = sum(1 for ds in d.values() if ds)
+        entry.update(word=label if k_frames else None, frames=k_frames, max_per_frame=tracks.max_per_frame(d),
+                     raw_frames=sum(1 for ds in d0.values() if ds), overlapped=clash, absorbed_into=took)
+        entry["tried"] = [dict(word="box", frames=k_frames)]
+        mine.append((c["tile"], d0))
+        if k_frames:
+            results.append((f"m{i}", label, d, txt, None))
+            entry["source"] = f"m{i}"
+        log.append(entry)
+        run.stage("motion", f"{c['tile']} box -> '{label}' tracked in {k_frames} of {n} frames"
+                  + (f" ({clash} frames already tracked removed" + (f", joined '{took}')" if took else ")") if clash else ""))
     return log
 
 

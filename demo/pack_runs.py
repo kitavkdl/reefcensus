@@ -1,5 +1,5 @@
 """Copy finished runs into demo/runs/ (committed) so the review screen works from a fresh clone with no API key.
-Only what the screen shows is copied: result.json, status.json, review.json if any, evidence jpgs, thumbs/,
+Only what the screen shows is copied: result.json, status.json, review.json if any, evidence jpgs, motion_sheet.jpg, thumbs/,
 annotated.mp4 (~2 MB a run). web/server.py seeds runs/ from demo/runs/ on start.
 
     python3 demo/pack_runs.py L1_s002_v8 L1_s003_v8 L1_s004_v8
@@ -7,7 +7,7 @@ annotated.mp4 (~2 MB a run). web/server.py seeds runs/ from demo/runs/ on start.
 import os, shutil, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-KEEP = ("result.json", "status.json", "review.json", "annotated.mp4")
+KEEP = ("result.json", "status.json", "review.json", "annotated.mp4", "motion_sheet.jpg")
 
 for rid in sys.argv[1:]:
     src, dst = os.path.join(ROOT, "runs", rid), os.path.join(ROOT, "demo", "runs", rid)

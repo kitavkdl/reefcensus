@@ -11,35 +11,55 @@ pass had tracked; a box on one (frame 32) tracked it in 57 of 60 frames, before 
 the candidates were sediment, shadows, bait and nautilus tentacles; on a busy reef clip (IMAS TF_52) they were too
 many to be useful. Hence Spark decides, and at most a few boxes go to SAM.
 """
+from fishcount import video   # puts ~/meta-smoke/pylib (cv2) on sys.path
 import cv2
 import numpy as np
 
-from fishcount import video
-
 SCALE = 0.5                 # analysis scale (1920x1080 -> 960x540)
+GRID = 8                    # prompt boxes snap to this grid (stable cache keys)
+LONG = 200                  # clips longer than this are analysed at 1/3 scale and a sparser median (memory)
 
 
-def _frames(clip, scale=SCALE):
-    n = video.info(clip)["n_frames"]
-    fr = video.frames(clip, list(range(n)))
-    return [cv2.resize(fr[i], None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA) for i in range(n)]
+def _frames(clip, scale):
+    """Every frame, shrunk while reading (a 600-frame clip at full size would be ~3.7 GB). Returns (frames, sx, sy)
+    where sx, sy map analysis pixels back to full-frame pixels."""
+    inf = video.info(clip)
+    w, h = round(inf["width"] * scale), round(inf["height"] * scale)
+    out, cap = [], cv2.VideoCapture(clip)
+    while True:
+        ok, f = cap.read()
+        if not ok:
+            break
+        out.append(cv2.resize(f, (w, h), interpolation=cv2.INTER_AREA))
+    cap.release()
+    return out, inf["width"] / w, inf["height"] / h
 
 
-def candidates(clip, known, gap=2, min_area=12, max_area=2500, link=14, pad=6, scale=SCALE):
+def _lab(f):
+    return cv2.cvtColor(f, cv2.COLOR_BGR2LAB).astype(np.float32)
+
+
+def candidates(clip, known, gap=2, min_area=12, max_area=2500, link=14, pad=6, scale=None):
     """Blob tracks in full-resolution coordinates. `known` = {frame: [[x0,y0,x1,y1], ...]} full-res boxes already
     found; a blob whose centre is inside one (plus `pad` px at analysis scale) is marked inside for that frame."""
-    frames = _frames(clip, scale)
-    lab = [cv2.cvtColor(f, cv2.COLOR_BGR2LAB).astype(np.float32) for f in frames]
-    bgl = cv2.cvtColor(np.median(np.stack(frames), axis=0).astype(np.uint8), cv2.COLOR_BGR2LAB).astype(np.float32)
-    dists = [cv2.GaussianBlur(np.linalg.norm(l - bgl, axis=2), (5, 5), 0) for l in lab]
-    allv = np.concatenate([d[::4, ::4].ravel() for d in dists])
+    n = video.info(clip)["n_frames"]
+    scale = scale or (SCALE if n <= LONG else SCALE * 2 / 3)
+    if scale != SCALE:      # areas are in analysis pixels; keep them meaning the same animal size
+        k = (scale / SCALE) ** 2
+        min_area, max_area, link, pad = max(4, int(min_area * k)), int(max_area * k), link * scale / SCALE, pad * scale / SCALE
+    frames, sx, sy = _frames(clip, scale)
+    step = 1 if len(frames) <= LONG else 3
+    bgl = _lab(np.median(np.stack(frames[::step]), axis=0).astype(np.uint8))
+    dist = lambda f: cv2.GaussianBlur(np.linalg.norm(_lab(f) - bgl, axis=2), (5, 5), 0)
+    allv = np.concatenate([dist(f)[::4, ::4].ravel() for f in frames])     # pass 1: threshold only
     med = float(np.median(allv))
     thr = max(8.0, med + 6 * (float(np.median(np.abs(allv - med))) + 1e-6))
-    ks = {f: [[v * scale for v in b] for b in bs] for f, bs in known.items()}
+    ks = {f: [[b[0] / sx, b[1] / sy, b[2] / sx, b[3] / sy] for b in bs] for f, bs in known.items()}
     done, live = [], []
-    for t, d in enumerate(dists):
+    for t in range(len(frames)):                                            # pass 2: blobs
+        d = dist(frames[t])
         a, b = max(0, t - gap), min(len(frames) - 1, t + gap)
-        moved = cv2.GaussianBlur(np.linalg.norm(lab[b] - lab[a], axis=2), (5, 5), 0) > thr * 0.8
+        moved = cv2.GaussianBlur(np.linalg.norm(_lab(frames[b]) - _lab(frames[a]), axis=2), (5, 5), 0) > thr * 0.8
         m = ((d > thr) & moved).astype(np.uint8)
         m = cv2.dilate(cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)), np.ones((3, 3), np.uint8))
         n, cc, st, cen = cv2.connectedComponentsWithStats(m, 8)
@@ -71,11 +91,10 @@ def candidates(clip, known, gap=2, min_area=12, max_area=2500, link=14, pad=6, s
         live = nxt
     out = []
     for tr in done + live:
-        s = 1 / scale
         out.append(dict(first=tr[0]["t"], last=tr[-1]["t"], n=len(tr),
                         inside=round(sum(b["inside"] for b in tr) / len(tr), 2),
-                        area=int(np.median([b["area"] for b in tr])),
-                        path=[[b["t"], [round(v * s) for v in b["box"]]] for b in tr]))
+                        area=int(np.median([b["area"] for b in tr]) * (SCALE / scale) ** 2),
+                        path=[[b["t"], [round(b["box"][0] * sx), round(b["box"][1] * sy), round(b["box"][2] * sx), round(b["box"][3] * sy)]] for b in tr]))
     return out, thr
 
 
@@ -93,7 +112,9 @@ def prompt_box(c, W, H, grow=0.4, min_side=48):
     _, t, (x0, y0, x1, y1) = areas[len(areas) // 2]
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     w, h = max(min_side, (x1 - x0) * (1 + grow)), max(min_side, (y1 - y0) * (1 + grow))
-    bx = [int(max(0, cx - w / 2)), int(max(0, cy - h / 2)), int(min(W - 2, cx + w / 2)), int(min(H - 2, cy + h / 2))]
+    g = GRID
+    bx = [max(0, int(cx - w / 2) // g * g), max(0, int(cy - h / 2) // g * g),
+          min(W - 2, -(-int(cx + w / 2) // g) * g), min(H - 2, -(-int(cy + h / 2) // g) * g)]
     return t, bx
 
 
@@ -112,7 +133,10 @@ def sheet(clip, picks, W, H, side=240):
         img = fr[t].copy()
         cv2.rectangle(img, (x0, y0), (x1, y1), (29, 85, 242), 2)
         cx, cy, half = (x0 + x1) // 2, (y0 + y1) // 2, max(x1 - x0, y1 - y0)
-        crop = img[max(0, cy - half):cy + half, max(0, cx - half):cx + half]
+        # pad with black instead of clipping: 11/2 s004 a shrimp at the bottom edge came out stretched and cut, and
+        # Spark called it "part of an animal reaching in from outside"
+        img = cv2.copyMakeBorder(img, half, half, half, half, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+        crop = img[cy:cy + 2 * half, cx:cx + 2 * half]
         tile = cv2.resize(crop, (side, side), interpolation=cv2.INTER_CUBIC)
         cv2.rectangle(tile, (0, 0), (52, 34), (0, 0, 0), -1)
         cv2.putText(tile, f"M{i + 1}", (4, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
