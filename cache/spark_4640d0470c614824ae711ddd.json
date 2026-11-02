@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"chambered nautilus\",\"confidence\":0.7,\"reason\":\"Striped shell pattern, not crab\"}]", "usage": {"completion_tokens": 623, "prompt_tokens": 536, "total_tokens": 1159, "completion_tokens_details": {"reasoning_tokens": 578}, "prompt_tokens_details": {"cached_tokens": 0}}}

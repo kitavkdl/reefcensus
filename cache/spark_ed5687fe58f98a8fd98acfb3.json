@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":true,\"name\":\"fish\",\"confidence\":0.6,\"reason\":\"pale body moves and changes shape\"}]", "usage": {"completion_tokens": 720, "prompt_tokens": 543, "total_tokens": 1263, "completion_tokens_details": {"reasoning_tokens": 678}, "prompt_tokens_details": {"cached_tokens": 0}}}

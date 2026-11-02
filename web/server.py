@@ -107,16 +107,22 @@ def effective(rid):
         mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
         ev = f"evidence_{pipeline.api_safe(name)}.jpg"
         mm["evidence"] = ev if os.path.exists(os.path.join(d, ev)) else None
+    # same-frame totals per animal group; the low end of the range drops the unreviewed queue as for labels
+    gm = pipeline.group_metrics(m, v["fps"])
+    glo = pipeline.group_metrics(lo, v["fps"], min_labels=1) if open_q else {}
+    for g, gg in gm.items():
+        gg["maxn_confirmed"] = glo.get(g, {}).get("maxn", 0) if open_q else gg["maxn"]
     queue = []
     for t, vd in res.get("verdicts", {}).items():
         if pipeline.needs_review(vd) or t in review:
             queue.append(dict(track=t, name=vd.get("name"), thumb=f"thumbs/{vd.get('name')}.jpg", trio=f"thumbs/{vd.get('name')}_trio.jpg",
                               has_trio=os.path.exists(os.path.join(d, "thumbs", f"{vd.get('name')}_trio.jpg")), species=vd.get("species"),
-                              confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=vd.get("reason"),
+                              confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=(f"Name in doubt: audit and the unprimed second look disagree ({vd['name_disagrees']}). " if vd.get("name_disagrees") else "")
+                              + (f"Peak check saw another animal ({vd['peak_doubt']}). " if vd.get("peak_doubt") else "") + (vd.get("reason") or ""),
                               category=res["tracks"][t]["label"], auto=res["auto_labels"].get(t),
                               reviewed=t in review, label=labels.get(t)))
     out = {k: v for k, v in res.items() if k != "frames"}
-    out.update(metrics=m, origin=origins(res, labels), queue=queue, review=review,
+    out.update(metrics=m, group_metrics=gm, origin=origins(res, labels), queue=queue, review=review,
                annotated=os.path.exists(os.path.join(d, "annotated.mp4")),
                n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]))
     return out
@@ -205,6 +211,10 @@ def export_csv(rid):
     for name, m in sorted(e["metrics"].items(), key=lambda kv: -kv[1]["maxn"]):
         w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
                     m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"]])
+    # group rows: same-frame totals over the labels listed in origin (e.g. "group: caridean shrimp + shrimp (unidentified)")
+    for g, m in sorted(e.get("group_metrics", {}).items(), key=lambda kv: -kv[1]["maxn"]):
+        w.writerow([cell(f"all {g}" + ("" if g == "fish" else "s")), "group: " + " + ".join(m["labels"]), m["maxn"], m["maxn_confirmed"], m["maxn_time"], m["maxn_frame"],
+                    m["first_time"], m["tracks"], "", "", e["source"], e["n_reviewed"]])
     return buf.getvalue()
 
 

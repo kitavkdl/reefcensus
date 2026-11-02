@@ -183,6 +183,7 @@ Rows, evidence crops, both reference lists and the judgement: `report/paper/data
 pip install -r requirements.txt
 export META_API_KEY=...            # or .env; not needed for cached replays
 export FISH_BUDGET=1.0             # hard cap on total spend (USD)
+# FISH_LEDGER=<path>               # optional: another spend ledger (e.g. the main checkout's, from a git worktree)
 python3 fishcount/evaluate.py                          # SAM "fish" alone vs. luderick boxes
 python3 fishcount/evaluate_pipeline.py --run --tag t1  # full pipeline vs. the same boxes (runs t1_<clip>)
 python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom   # discovery run

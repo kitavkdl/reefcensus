@@ -39,9 +39,11 @@ is_target = the tile really shows a whole or partial {target} (not seagrass, roc
 # "only seagrass and water" and its whole 36-frame track left the count. Three crops show the same body moving.
 # 11/1 s004: per-track audit saw one crop per track (its largest box) and passed them all, yet in the MaxN frame
 # most "shrimp" boxes sat on hagfish bodies. So the frame that sets each MaxN is checked box by box.
+# 11/2 (paper Table 4b): the example "part of an eel, hagfish or fish" named the category itself, and a real fish of
+# another species was called "other fish" in 4 of 25 calls; "an eel or hagfish" kept it in 25 of 25.
 VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ... Each tile shows that frame in the middle ("this frame", orange box) and the same tracked object about half a second before and after (left, right) at the same zoom.
 For every tile return ONLY a JSON list: [{{"tile":"D1","is_target":true|false,"what_it_is":"<=6 words"}}]
-is_target = the middle crop mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
+is_target = the middle crop mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel or hagfish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
 
 # 11/2 luderick 20190618_9 frame 35: a single crop of a faint fish behind seagrass was called "seagrass and water"
 # and the fish left 11 frames. The before/after crops show the same body moving.
@@ -67,6 +69,7 @@ is_animal = the rectangle mainly holds a living animal, even a small, pale, blur
 CONFIRM_PROMPT = """Each group (C1, C2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops), same zoom; the orange rectangle marks the object. The tracker was started from a moving spot, so it may have locked onto something that is not an animal.
 For every group return ONLY a JSON list: [{{"tile":"C1","is_animal":true|false,"name":"one plain noun or none","confidence":0.0-1.0,"reason":"<=10 words"}}]
 is_animal = the rectangle holds the same living animal in the crops (a whole one or most of one; small, pale or blurry is fine). Answer false when it holds a part of a trap, net, mesh, rope, cans, bait, rock, seagrass, a shadow, sediment or empty water, or only a tentacle, fin or tail of a bigger animal whose body is elsewhere. Things fixed to the trap or seabed keep the same place against them in every crop; an animal changes place or pose. Be honest: if you cannot see an animal, answer false."""
+COUNT_MIDCONF_MOTION = True   # see run_pipeline: mid-confidence motion tracks get a second look of their own
 MOTION_VERSION = "v7"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
     """check= for the motion sheet: JSON naming at least one M tile (else not cached, asked once more)."""
@@ -240,7 +243,7 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
 
 
-def confirm_motion(run, clip, frames, ts, offline):
+def confirm_motion(run, clip, frames, ts, offline, sheet_no=1):
     """Second look at motion tracks the audit would count: crops at other moments than the audit's (the path's first
     and last eighth and its middle), no label and no earlier names in the prompt. Saved as confirm_<n>.jpg."""
     paths = _paths(frames)
@@ -259,7 +262,7 @@ def confirm_motion(run, clip, frames, ts, offline):
         groups.append(motion.trio(imgs, trios[t], names[t], half=_half(trios[t]), words=("first", "middle", "last")[:len(trios[t])]))
     del imgs
     sheet = motion.layout(groups)
-    open(run.path("confirm_1.jpg"), "wb").write(sheet)
+    open(run.path(f"confirm_{sheet_no}.jpg"), "wb").write(sheet)
     want = set(names.values())
 
     def every_tile(text):     # a reply that skips a tile is not cached (it would silently drop that track forever)
@@ -273,9 +276,11 @@ def confirm_motion(run, clip, frames, ts, offline):
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None):
+                 do_discover=False, do_motion=None, lowlight="auto"):
     """do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
-    counted unchecked). The paper's no-audit discovery baseline sets it explicitly."""
+    counted unchecked). The paper's no-audit discovery baseline sets it explicitly.
+    lowlight: "auto" brightens only a dark clip (video.is_dark), "on" always, "off" never; the original is kept as
+    clip_original.mp4 and the decision with the brightness numbers goes into result["video"]["lowlight"]."""
     do_motion = (do_discover and do_audit) if do_motion is None else do_motion
     rid = rid or time.strftime("%m%d-%H%M%S")
     run = Run(rid)
@@ -285,7 +290,14 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         shutil.copy(src, clip)      # already analysis-ready (keeps the cache key stable)
     else:
         video.ingest(src, clip)
+    light = video.light_stats(clip)
+    light.update(mode=lowlight, brightened=lowlight == "on" or (lowlight == "auto" and video.is_dark(light)))
+    if light["brightened"]:
+        os.replace(clip, run.path("clip_original.mp4"))
+        video.brighten(run.path("clip_original.mp4"), clip)
+        run.stage("ingest", f"dark clip (median L {light['median_l']}, mean {light['mean_l']}): brightened with gamma 0.5 + CLAHE")
     inf = video.info(clip)
+    inf["lowlight"] = light
     run.status["video"] = inf
     run.stage("ingest", f"{inf['n_frames']} frames {inf['width']}x{inf['height']}")
 
@@ -314,8 +326,10 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         run.save("discover.json", disc)
         used = {q for _, q in plist}
         for o in disc.get("others", []):
-            # 11/1 s003: 'shell' found nothing but Spark's own name 'nautilus' tracked, so a short name goes first
-            name = o.get("what", "").strip().lower().split()[-1:] if len(o.get("what", "").split()) <= 2 else []
+            # 11/1 s003: 'shell' found nothing but Spark's own name 'nautilus' tracked, so its name goes first, as its
+            # head noun: a long name was skipped entirely before (11/2 long-video segment 2: "chambered nautilus
+            # clustered on bait" never tried "nautilus", and all six tracks went to the queue)
+            name = [h] if (h := short_name(o.get("what", ""))) else []
             words = []
             for w in name + o.get("search_words", []):
                 w = w.strip().lower()
@@ -383,6 +397,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         run.stage("audit", f"{n_flag} of {len(verdicts)} tracks need a human look")
 
     labels = auto_labels(trk, verdicts)
+    maybe = []      # motion tracks with a mid-confidence audit yes (COUNT_MIDCONF_MOTION)
     # every word of every discovered name: "small red crab on seabed" must match an audit "small red crab" (11/2 s002 v13:
     # norm_label kept only "seabed", so the red crab the discovery step had named was dropped as "not a shrimp")
     seen = {_head(f["what"]) for f in found} - {None}
@@ -408,6 +423,12 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         # 11/2 s004 v11: a box that drifted onto net mesh and hagfish got "obscured shrimp", confidence 0.4.
         if trk[t]["source"].startswith("m") and needs_review(v):
             labels[t] = None
+            # 11/2 s001: a third motion nautilus had audit 0.55 ("blurry pale shell") and waited in the queue. A
+            # mid-confidence (0.5-0.7) yes whose species is in a group the discovery step had named gets the unprimed
+            # second look too, on its own sheet (confirm_2) so the first sheet's cached answers stay as they were.
+            if (COUNT_MIDCONF_MOTION and v.get("is_target") is not False and 0.5 <= _conf(v) < 0.7
+                    and name_group(v.get("species")) and name_group(v.get("species")) in {name_group(f["what"]) for f in found}):
+                maybe.append(t)
     if do_audit:
         for f in os.listdir(run.path()):
             if f.startswith("confirm_") and f.endswith(".jpg"):
@@ -423,8 +444,26 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 # job, so a plain yes is enough here (11/2 s004 v14: two shrimp the eye confirms got yes at 0.6/0.65)
                 if not (c.get("is_animal") is True and _conf(c) >= 0.5):
                     labels[t] = None
+                # the second look sees no names, so a different animal group from it (s004 v16: audit "caridean
+                # shrimp", second look "fish") puts the name in doubt but not the animal: the track still counts under
+                # the audit's name and also waits in the queue, where a person can rename it
+                elif name_disagreement(verdicts[t].get("species") or labels[t], c.get("name")):
+                    verdicts[t]["name_disagrees"] = name_disagreement(verdicts[t].get("species") or labels[t], c.get("name"))
             run.stage("audit", f"second look at {len(sure)} motion or renamed track(s) before they count: "
                       + ", ".join(f"{verdicts[t]['name']} {'yes' if labels[t] else 'no'} ({said.get(t, {}).get('reason', 'no answer')})" for t in sure))
+        if maybe:
+            said = confirm_motion(run, clip, frames, maybe, offline, sheet_no=2)
+            for t in maybe:
+                c = said.get(t, {})
+                verdicts[t]["confirm"] = c
+                # counted only on a confident second-look yes that names no other animal group; it stays in the queue
+                # (audit < 0.7), so a person still sees it
+                if (c.get("is_animal") is True and _conf(c) >= 0.7
+                        and not name_disagreement(verdicts[t].get("species"), c.get("name"))):
+                    labels[t] = verdicts[t]["species"].lower()
+                    verdicts[t]["midconf_counted"] = True
+            run.stage("audit", f"second look at {len(maybe)} mid-confidence motion track(s): "
+                      + ", ".join(f"{verdicts[t]['name']} {'counted' if labels.get(t) else 'not counted'} ({said.get(t, {}).get('reason', 'no answer')})" for t in maybe))
     for mv in moved:
         if mv.get("source"):
             mine_t = [t for t, v in trk.items() if v["source"] == mv["source"]]
@@ -437,12 +476,16 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             run.stage("verify", f"Muse Spark looks at {len(dups)} pairs of nested outlines: {sum(d['same'] for d in dups)} are one animal counted twice"
                       + "".join(f"; kept apart: {d['said']}" for d in dups if not d["same"]))
     checks = verify_peaks(run, clip, frames, trk, labels, inf["n_frames"], inf["fps"], offline) if do_audit else []
+    for c in checks:
+        for q in c.get("queue", []):
+            if q["track"] in verdicts:
+                verdicts[q["track"]]["peak_doubt"] = f"peak frame {c['frame']}, asked '{c['label']}': {q['said']}"
     m = tracks.metrics(frames, trk, inf["n_frames"], inf["fps"], labels)
     for name, mm in m.items():
         mm["peak_checked"] = any(c["label"] == name and c["frame"] == mm["maxn_frame"] for c in checks)
     result = dict(id=rid, source=os.path.basename(src), video=inf, prompts=plist, jobs=[dict(name=j[0], label=j[1], prompt=j[2], tile=j[4]) for j in jobs], scout=sc,
                   tracks={t: dict(v, n=len(v["frames"]), first=min(v["frames"]), last=max(v["frames"]), frames=None) for t, v in trk.items()},
-                  verdicts=verdicts, auto_labels=labels, metrics=m,
+                  verdicts=verdicts, auto_labels=labels, metrics=m, group_metrics=group_metrics(m, inf["fps"]),
                   discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks, duplicates=dups,
                   frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
     run.save("result.json", result)
@@ -540,6 +583,88 @@ def _head(name):
             ws = ws[:i]
             break
     return norm_label(" ".join(ws))
+
+
+# Coarse animal groups for comparing two names of one track. Only clear group differences count as a disagreement
+# (a "fish" against a "shrimp"); a name outside this list never does.
+NAME_GROUPS = {
+    "fish": ("fish", "eel", "hagfish", "shark", "ray", "seabream", "bream", "luderick", "grouper", "snapper", "wrasse",
+             "goby", "blenny", "cod", "rockfish", "flatfish", "flounder", "skate", "lamprey", "perch", "mullet"),
+    "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish",
+                   "caridean", "copepod", "barnacle", "squat"),
+    "cephalopod": ("nautilus", "octopus", "squid", "cuttlefish", "cephalopod"),
+    "gastropod": ("snail", "whelk", "slug", "nudibranch", "gastropod", "limpet"),
+    "echinoderm": ("starfish", "star", "urchin", "cucumber", "brittlestar", "echinoderm", "crinoid"),
+    "worm": ("worm", "polychaete", "tubeworm", "annelid"),
+    "cnidarian": ("anemone", "jellyfish", "jelly", "coral", "hydroid", "cnidarian"),
+}
+_GROUP_OF = {w: g for g, ws in NAME_GROUPS.items() for w in ws}
+
+
+def short_name(name):
+    """The animal noun of a discovery name, for SAM: words before a place preposition, then from the end the first
+    known animal word (NAME_GROUPS), else the last word that is not a participle ("clustered", "swimming") or vague.
+    "chambered nautilus clustered on bait" -> nautilus, "small red crab on seabed" -> crab."""
+    ws = re.sub(r"[^a-z ]", " ", (name or "").lower()).split()
+    for i, w in enumerate(ws):
+        if w in ("on", "at", "in", "near", "by", "under", "over", "with", "from", "behind", "inside", "beside", "among"):
+            ws = ws[:i]
+            break
+    cand = [norm_label(w) for w in ws]
+    for w in reversed(cand):
+        if w in _GROUP_OF:
+            return w
+    for w in reversed(cand):
+        if w and not w.endswith(("ed", "ing")) and len(w) > 2:
+            return w
+    return None
+
+
+def name_group(name):
+    """The coarse group of a name, by its head noun and then any of its words ("caridean shrimp" -> crustacean);
+    None when no word is known."""
+    head = _head(name)
+    if head in _GROUP_OF:
+        return _GROUP_OF[head]
+    for w in re.sub(r"[^a-z ]", " ", (name or "").lower()).split():
+        w = norm_label(w)
+        if w in _GROUP_OF:
+            return _GROUP_OF[w]
+    return None
+
+
+def group_metrics(m, fps, min_labels=2):
+    """Same-frame totals per coarse animal group (NAME_GROUPS) over the per-label metrics `m`: one track has one
+    label, so the per-frame counts of the labels in a group add up ("caridean shrimp" 12 + "shrimp (unidentified)" 3
+    peaking in one frame is 15 crustaceans). Only groups covering `min_labels` or more labels are returned (a group
+    of one label is that label's row). Labels outside NAME_GROUPS are left out. The per-label rows are unchanged."""
+    groups = {}
+    for name in m:
+        g = name_group(name)
+        if g:
+            groups.setdefault(g, []).append(name)
+    out = {}
+    for g, names in sorted(groups.items()):
+        if len(names) < min_labels:
+            continue
+        n = max(len(m[x]["curve"]) for x in names)
+        c = [sum(m[x]["curve"][i] for x in names if i < len(m[x]["curve"])) for i in range(n)]
+        top = max(c) if c else 0
+        firsts = [m[x]["first_frame"] for x in names if m[x]["first_frame"] is not None]
+        first = min(firsts) if firsts else None
+        out[g] = dict(labels=sorted(names), maxn=top, maxn_frame=c.index(top) if top else None,
+                      maxn_time=round(c.index(top) / fps, 2) if top else None, first_frame=first,
+                      first_time=round(first / fps, 2) if first is not None else None,
+                      tracks=sum(m[x]["tracks"] for x in names), curve=c)
+    return out
+
+
+def name_disagreement(audit_name, second_name):
+    """'<audit> vs <second look>' when both names fall in known, different groups; else None."""
+    a, b = name_group(audit_name), name_group(second_name)
+    if a and b and a != b:
+        return f"{audit_name} vs {second_name}"
+    return None
 
 
 def norm_label(name):
@@ -817,18 +942,28 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
                 for v in api.parse_json_list(reply):
                     said[v.get("tile")] = v
             bad = [(k, said[f"D{i + 1}"]) for i, k in enumerate(ks) if said.get(f"D{i + 1}", {}).get("is_target") is False]
+            # "not a <name>" but the same coarse group as the word asked ("other fish" under a fish label): the box is
+            # what was asked for, so it stays and the track goes to the queue for its species (it used to leave the count
+            # silently, paper 7.1). Another group or no animal (a nautilus track's box on "sea anemone" tentacles, a
+            # pipe) is removed from this label's peak as before: in s002 that track is a nautilus again by frame 6,
+            # and queuing it would have put a clear nautilus at "0-1 until checked" (tested 11/2, fixes branch).
+            wg = name_group(word) or name_group(name)
+            same_g = [(k, v) for k, v in bad if wg and name_group(v.get("what_it_is")) == wg]
+            bad = [(k, v) for k, v in bad if (k, v) not in same_g]
             drop = {k["track"] for k, _ in bad}
             for g in range(max(0, f - window), f + window + 1):
                 if g in frames:
                     frames[g] = [k for k in frames[g] if k["track"] not in drop]
             log.append(dict(label=name, frame=f, checked=len(ks), kept=len(ks) - len(bad),
-                            rejected=[dict(track=k["track"], box=[round(x) for x in k["box"]], said=v.get("what_it_is")) for k, v in bad]))
+                            rejected=[dict(track=k["track"], box=[round(x) for x in k["box"]], said=v.get("what_it_is")) for k, v in bad],
+                            kept_same_group=[dict(track=k["track"], said=v.get("what_it_is")) for k, v in same_g],
+                            queue=[dict(track=k["track"], said=v.get("what_it_is")) for k, v in same_g]))
             run.stage("verify", f"{name}: Spark checks all {len(ks)} boxes in peak frame {f} (with the track just before and after), rejects {len(bad)}"
                       + (": " + "; ".join(sorted({v.get('what_it_is', '?') for _, v in bad})) if bad else ""))
     return log
 
 
-def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8):
+def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8, contain_cross=0.6):
     """Every nested pair in the clip (two counted detections, one mask >= `contain` inside the other) goes to Spark
     once, shown in the frame where it nests most, as "same animal or two?". For a duplicate the smaller-mask track
     is removed from each frame where it nests inside the other.
@@ -836,7 +971,10 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
     and renamed "small red crab", or a motion box on a word track) go on separate sheets pairsx_<n>.jpg, so adding
     the cross-word check leaves every same-word sheet, and its cached answer, unchanged (11/2 review: duplicates
     were only checked within one word). Mutates `frames`; returns [dict(outer, inner, frame, containment, same, said,
-    cross)]."""
+    cross)].
+    Two different words on one animal rarely give one mask inside the other: each word's mask covers a different
+    part or extent of the body, so cross-word pairs are sent to Spark from `contain_cross` (0.6) instead of 0.8. Spark
+    still decides; the lower bar only lets more cross-word candidates be asked (11/2: none were found at 0.8)."""
     lab = lambda t: labels.get(t, trk[t]["label"])
     best, cross = {}, {}   # (outer, inner) -> (containment, frame, outer mask, inner mask)
     for f, ks in frames.items():
@@ -847,9 +985,10 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
                 if a == b or not (lab(a) and lab(b)) or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
                     continue
                 c = maskdedupe.containment(ms[i], ms[j])
-                if c is None or c < contain:
+                same_word = trk[a]["label"] == trk[b]["label"]
+                if c is None or c < (contain if same_word else contain_cross):
                     continue
-                into = best if trk[a]["label"] == trk[b]["label"] else cross
+                into = best if same_word else cross
                 o, n_ = (i, j) if ms[i][0].sum() >= ms[j][0].sum() else (j, i)
                 key = (ks[o]["track"], ks[n_]["track"])
                 if key[::-1] in into:   # sizes swap between frames: keep one orientation per pair
@@ -876,7 +1015,7 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
             out.append(dict(outer=o, inner=in_, frame=found[(o, in_)][1], containment=round(found[(o, in_)][0], 2),
                             same=same, said=v.get("what"), cross=found is cross))
             if same:
-                drop_nested(frames, dec, o, in_, contain)
+                drop_nested(frames, dec, o, in_, contain if found is best else contain_cross)
     return out
 
 
@@ -921,6 +1060,8 @@ def needs_review(v):
     a track the second look rejected must stay where a person can restore it."""
     if not v:
         return True
+    if v.get("peak_doubt") or v.get("name_disagrees"):   # a later look named another animal: a person decides the name
+        return True
     c = v.get("confirm")
     if c is not None:
         return not (c.get("is_animal") is True and _conf(c) >= 0.5) or _conf(v) < 0.7
@@ -960,6 +1101,7 @@ if __name__ == "__main__":
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--max-usd", type=float, default=1.0)
+    ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
     a = ap.parse_args()
-    r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover)
+    r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover, lowlight=a.lowlight)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

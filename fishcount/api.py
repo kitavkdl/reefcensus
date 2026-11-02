@@ -26,7 +26,9 @@ def _load_dotenv(path=os.path.join(ROOT, ".env")):
 
 _load_dotenv()
 CACHE = os.environ.get("FISH_CACHE_DIR") or os.path.join(ROOT, "cache")   # FISH_CACHE_DIR=<empty dir>: a fresh, uncached run
-LEDGER = os.path.join(ROOT, "cache", "ledger.jsonl")                        # one spend ledger whatever the cache
+# one spend ledger whatever the cache; FISH_LEDGER points a git worktree (its own ROOT) at the main checkout's ledger,
+# so a branch's spend is not split into a second copy that FISH_BUDGET never sees
+LEDGER = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache", "ledger.jsonl")
 SAM_PER_FRAME = 0.20 / 1000
 SAM_MIN_FRAMES = 50
 SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6

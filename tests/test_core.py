@@ -149,6 +149,50 @@ class MaskCodec(unittest.TestCase):
             self.skipTest("no cached one_bit masks found")
 
 
+class NameDisagreement(unittest.TestCase):
+    """A second look (no names shown) that names a different animal group queues the track but keeps it counted."""
+
+    def test_groups(self):
+        from fishcount import pipeline as P
+        self.assertIsNone(P.name_disagreement("small red crab", "crab"))
+        self.assertIsNone(P.name_disagreement("hagfish", "eel"))
+        self.assertIsNone(P.name_disagreement("large striped shrimp", "none"))
+        self.assertEqual(P.name_disagreement("caridean shrimp", "fish"), "caridean shrimp vs fish")
+
+    def test_queue(self):
+        from fishcount import pipeline as P
+        ok = {"confidence": 0.7, "species": "caridean shrimp", "confirm": {"is_animal": True, "confidence": 0.6}}
+        self.assertFalse(P.needs_review(ok))
+        self.assertTrue(P.needs_review(dict(ok, name_disagrees="caridean shrimp vs fish")))
+
+
+class GroupMetrics(unittest.TestCase):
+    def test_same_frame_sum(self):
+        from fishcount import pipeline as P
+        m = {"caridean shrimp": dict(curve=[1, 3, 2], first_frame=0, tracks=3),
+             "shrimp (unidentified)": dict(curve=[0, 0, 2], first_frame=2, tracks=2),
+             "hagfish": dict(curve=[1, 1, 0], first_frame=0, tracks=1)}
+        g = P.group_metrics(m, 5.0)
+        self.assertEqual(list(g), ["crustacean"])          # a one-label group is that label's own row
+        self.assertEqual((g["crustacean"]["maxn"], g["crustacean"]["maxn_frame"]), (4, 2))
+
+
+class LowLight(unittest.TestCase):
+    def test_threshold(self):
+        from fishcount import video
+        self.assertTrue(video.is_dark(dict(median_l=5.0, mean_l=26.5)))     # s001 night trap
+        self.assertFalse(video.is_dark(dict(median_l=26.0, mean_l=42.0)))   # s004, nearest lit clip
+        self.assertFalse(video.is_dark(dict(median_l=None, mean_l=None)))
+
+
+class ShortName(unittest.TestCase):
+    def test_head_noun(self):
+        from fishcount import pipeline as P
+        self.assertEqual(P.short_name("chambered nautilus clustered on bait"), "nautilus")
+        self.assertEqual(P.short_name("small red crab on seabed"), "crab")
+        self.assertEqual(P.short_name("hagfish"), "hagfish")
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")
