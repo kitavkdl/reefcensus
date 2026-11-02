@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T4\",\"is_target\":false,\"species\":\"nautilus\",\"confidence\":0.7,\"reason\":\"Striped coiled nautilus shell, not gastropod snail\"}]", "usage": {"completion_tokens": 906, "prompt_tokens": 530, "total_tokens": 1436, "completion_tokens_details": {"reasoning_tokens": 858}, "prompt_tokens_details": {"cached_tokens": 0}}}
