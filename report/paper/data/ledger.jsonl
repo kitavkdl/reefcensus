@@ -1471,3 +1471,46 @@
 {"t": 1793650321.3734705, "kind": "spark", "usd": 0.0029769999999999996, "note": "in=481 out=559"}
 {"t": 1793650325.6623688, "kind": "spark", "usd": 0.00528475, "note": "in=1501 out=802"}
 {"t": 1793650326.8775206, "kind": "spark", "usd": 0.0018809999999999999, "note": "in=512 out=292"}
+{"t": 1793652044.3002553, "kind": "sam", "usd": 0.021400000000000002, "note": "fish_20190618_9.mp4:luderick"}
+{"t": 1793652117.860713, "kind": "sam", "usd": 0.053000000000000005, "note": "fish_20190709_14.mp4:luderick"}
+{"t": 1793652141.4647312, "kind": "sam", "usd": 0.011600000000000001, "note": "fish_20190618_3.mp4:animal"}
+{"t": 1793652161.6633554, "kind": "sam", "usd": 0.011600000000000001, "note": "fish_20190618_3.mp4:luderick"}
+{"t": 1793652186.9541855, "kind": "sam", "usd": 0.0126, "note": "fish_20190710_4.mp4:animal"}
+{"t": 1793652208.584891, "kind": "sam", "usd": 0.0126, "note": "fish_20190710_4.mp4:luderick"}
+{"t": 1793652239.1111958, "kind": "sam", "usd": 0.021, "note": "fish_20190709_13.mp4:animal"}
+{"t": 1793652262.72787, "kind": "sam", "usd": 0.021, "note": "fish_20190709_13.mp4:luderick"}
+{"t": 1793652276.771375, "kind": "sam", "usd": 0.0134, "note": "fish_20190709_4.mp4:animal"}
+{"t": 1793652289.9537404, "kind": "sam", "usd": 0.0134, "note": "fish_20190709_4.mp4:luderick"}
+{"t": 1793652300.903431, "kind": "sam", "usd": 0.01, "note": "fish_20190618_1.mp4:animal"}
+{"t": 1793652305.0993705, "kind": "sam", "usd": 0.01, "note": "fish_20190618_10.mp4:animal"}
+{"t": 1793652315.4669175, "kind": "sam", "usd": 0.01, "note": "fish_20190618_11.mp4:animal"}
+{"t": 1793652324.539401, "kind": "sam", "usd": 0.01, "note": "fish_20190618_2.mp4:animal"}
+{"t": 1793652333.8412247, "kind": "sam", "usd": 0.01, "note": "fish_20190618_4.mp4:animal"}
+{"t": 1793652339.0843704, "kind": "sam", "usd": 0.01, "note": "fish_20190618_5.mp4:animal"}
+{"t": 1793652347.281222, "kind": "sam", "usd": 0.01, "note": "fish_20190618_6.mp4:animal"}
+{"t": 1793652358.2046053, "kind": "sam", "usd": 0.01, "note": "fish_20190618_7.mp4:animal"}
+{"t": 1793652380.685379, "kind": "sam", "usd": 0.01, "note": "fish_20190618_8.mp4:animal"}
+{"t": 1793652394.3665009, "kind": "sam", "usd": 0.01, "note": "fish_20190709_11.mp4:animal"}
+{"t": 1793652403.3701572, "kind": "sam", "usd": 0.01, "note": "fish_20190709_15.mp4:animal"}
+{"t": 1793652412.799495, "kind": "sam", "usd": 0.01, "note": "fish_20190709_17.mp4:animal"}
+{"t": 1793652426.494199, "kind": "sam", "usd": 0.01, "note": "fish_20190709_2.mp4:animal"}
+{"t": 1793652435.0517857, "kind": "sam", "usd": 0.01, "note": "fish_20190709_3.mp4:animal"}
+{"t": 1793652439.2488422, "kind": "sam", "usd": 0.01, "note": "fish_20190709_8.mp4:animal"}
+{"t": 1793652443.6099026, "kind": "sam", "usd": 0.01, "note": "fish_20190709_9.mp4:animal"}
+{"t": 1793652457.8966463, "kind": "sam", "usd": 0.01, "note": "fish_20190710_1.mp4:animal"}
+{"t": 1793652471.0023968, "kind": "sam", "usd": 0.01, "note": "fish_20190710_2.mp4:animal"}
+{"t": 1793652479.3377206, "kind": "sam", "usd": 0.01, "note": "fish_20190710_3.mp4:animal"}
+{"t": 1793652499.1177347, "kind": "sam", "usd": 0.010400000000000001, "note": "fish_20190710_5.mp4:animal"}
+{"t": 1793652525.3453662, "kind": "sam", "usd": 0.012400000000000001, "note": "fish_20190710_6.mp4:animal"}
+{"t": 1793652545.4168482, "kind": "sam", "usd": 0.0102, "note": "fish_20190710_7.mp4:animal"}
+{"t": 1793652550.5323725, "kind": "sam", "usd": 0.01, "note": "fish_20190710_8.mp4:animal"}
+{"t": 1793652555.2626057, "kind": "sam", "usd": 0.01, "note": "fish_20190710_9.mp4:animal"}
+{"t": 1793652563.0609515, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652571.0427914, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652578.8380423, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652587.7654397, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652593.4882283, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652599.7084324, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652605.9086385, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652610.4455144, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}
+{"t": 1793652616.334598, "kind": "sam", "usd": 0.012, "note": "clip.mp4:animal"}

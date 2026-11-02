@@ -20,7 +20,7 @@ def main():
     rep = [r for r in rows if r.get("note", "").startswith("paper repeat_peak")]
     held = [r for r in rows if r["t"] >= T_HELDOUT and (T_FIXED is None or r["t"] < T_FIXED) and r not in rep]
     fixed = [r for r in rows if T_FIXED <= r["t"] < T_SPARKCOUNT]
-    probe = [r for r in rows if r["t"] >= T_SPARKCOUNT and r["kind"] == "sam" and r.get("note", "").endswith(":animal")]
+    probe = [r for r in rows if r["t"] >= T_SPARKCOUNT and r["kind"] == "sam" and r.get("note", "").endswith((":animal", ":luderick"))]
     scount = [r for r in rows if T_SPARKCOUNT <= r["t"] < T_DISCHELD and r not in probe]
     dheld = [r for r in rows if r["t"] >= T_DISCHELD and r not in probe]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
@@ -30,7 +30,7 @@ def main():
     show("held-out runs", held)
     show("fixed-vocabulary baseline", fixed)
     show("Spark-alone counting baseline", scount)
-    show("vocabulary probes (luderick)", probe)
+    show("vocabulary probes (animal, luderick)", probe)
     show("held-out discovery runs", dheld)
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]

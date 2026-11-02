@@ -1,0 +1,576 @@
+[
+ {
+  "group": "luderick dev",
+  "clip": "fish_20190618_9",
+  "frames": 107,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 107,
+   "max_per_frame": 10
+  },
+  "luderick": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "luderick dev",
+  "clip": "fish_20190709_14",
+  "frames": 265,
+  "animal": {
+   "frames_with_box": 184,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 263,
+   "max_per_frame": 2
+  },
+  "luderick": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "luderick dev",
+  "clip": "fish_20190618_3",
+  "frames": 58,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 58,
+   "max_per_frame": 3
+  },
+  "luderick": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "luderick dev",
+  "clip": "fish_20190710_4",
+  "frames": 63,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 63,
+   "max_per_frame": 1
+  },
+  "luderick": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "luderick dev",
+  "clip": "fish_20190709_13",
+  "frames": 105,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 88,
+   "max_per_frame": 2
+  },
+  "luderick": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "luderick dev",
+  "clip": "fish_20190709_4",
+  "frames": 67,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 60,
+   "max_per_frame": 3
+  },
+  "luderick": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_1",
+  "frames": 31,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 31,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_10",
+  "frames": 11,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 11,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_11",
+  "frames": 21,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 21,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_2",
+  "frames": 19,
+  "animal": {
+   "frames_with_box": 17,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 19,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_4",
+  "frames": 22,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 22,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_5",
+  "frames": 8,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 8,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_6",
+  "frames": 16,
+  "animal": {
+   "frames_with_box": 16,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 16,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_7",
+  "frames": 17,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 17,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190618_8",
+  "frames": 50,
+  "animal": {
+   "frames_with_box": 49,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 50,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_11",
+  "frames": 42,
+  "animal": {
+   "frames_with_box": 3,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 42,
+   "max_per_frame": 5
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_15",
+  "frames": 24,
+  "animal": {
+   "frames_with_box": 1,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 24,
+   "max_per_frame": 3
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_17",
+  "frames": 30,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 30,
+   "max_per_frame": 8
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_2",
+  "frames": 38,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 38,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_3",
+  "frames": 37,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 30,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_8",
+  "frames": 6,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 5,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190709_9",
+  "frames": 13,
+  "animal": {
+   "frames_with_box": 2,
+   "max_per_frame": 1
+  },
+  "fish": {
+   "frames_with_box": 13,
+   "max_per_frame": 5
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_1",
+  "frames": 46,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 46,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_2",
+  "frames": 33,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 33,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_3",
+  "frames": 24,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 21,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_5",
+  "frames": 52,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 50,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_6",
+  "frames": 62,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 62,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_7",
+  "frames": 51,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 44,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_8",
+  "frames": 12,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 12,
+   "max_per_frame": 1
+  }
+ },
+ {
+  "group": "luderick held-out",
+  "clip": "fish_20190710_9",
+  "frames": 11,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  },
+  "fish": {
+   "frames_with_box": 10,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "nautilus",
+  "clip": "s001",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 2,
+   "max_per_frame": 2,
+   "counted_nonfish": [
+    "nautilus"
+   ],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "nautilus",
+  "clip": "s002",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 58,
+   "max_per_frame": 3,
+   "counted_nonfish": [
+    "chambered nautilus",
+    "small red crab"
+   ],
+   "overlaps": [
+    "chambered nautilus",
+    "small red crab"
+   ]
+  },
+  "fish": {
+   "frames_with_box": 58,
+   "max_per_frame": 2
+  }
+ },
+ {
+  "group": "nautilus",
+  "clip": "s003",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0,
+   "counted_nonfish": [
+    "chambered nautilus"
+   ],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "nautilus",
+  "clip": "s004",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0,
+   "counted_nonfish": [
+    "caridean shrimp",
+    "chambered nautilus",
+    "hagfish"
+   ],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "held-out discovery",
+  "clip": "DH1",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0,
+   "counted_nonfish": [
+    "crab"
+   ],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "held-out discovery",
+  "clip": "DH2",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 38,
+   "max_per_frame": 1,
+   "counted_nonfish": [
+    "crab",
+    "sea anemone"
+   ],
+   "overlaps": [
+    "crab"
+   ]
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "held-out discovery",
+  "clip": "DH3",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0,
+   "counted_nonfish": [
+    "spider crab"
+   ],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "held-out discovery",
+  "clip": "DH4",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0,
+   "counted_nonfish": [],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 0,
+   "max_per_frame": 0
+  }
+ },
+ {
+  "group": "held-out discovery",
+  "clip": "DH5",
+  "frames": 60,
+  "animal": {
+   "frames_with_box": 0,
+   "max_per_frame": 0,
+   "counted_nonfish": [
+    "pink cusk-eel"
+   ],
+   "overlaps": []
+  },
+  "fish": {
+   "frames_with_box": 58,
+   "max_per_frame": 8
+  }
+ }
+]
