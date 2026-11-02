@@ -954,7 +954,7 @@ traceable to a frame and every doubtful track in front of a person. The main ris
 MaxN can be wrong for reasons that are invisible in a table (a wrongly rejected faint animal, a split species name),
 and survey counts feed management decisions. We mitigate this by reporting the queue as part of the output and by
 publishing failure cases alongside successes. The footage contains no people. We used only openly published research
-footage; the IMAS clips were used only for a vocabulary probe and Figure 1, and the dataset record lists no licence
+footage; the IMAS clips were used only for a vocabulary probe, and the dataset record lists no licence
 (see Data statement), which we flag for resolution before wider distribution. The discovery ground truth was made by
 a non-expert and is labelled as such everywhere it is used.
 
