@@ -48,17 +48,12 @@ def evidence(clip, raw, result, f, out_path):
     names = {t: v.get("name", "") for t, v in result.get("verdicts", {}).items()}
     over = img.copy()
     for name, (text, tile) in raw.items():
-        if tile:   # tile masks are in upscaled crop coordinates; boxes are drawn below instead
-            continue
-        for box, m in frame_masks(text, f):
+        # 11/2: tile masks used to be skipped here (boxes only) though annotate() maps them back; same helper now
+        for box, m, x0, y0 in _masks_full(text, tile, frame_masks(text, f), W, H):
             hit = max(kept, key=lambda k: tracks.iou(k["box"], box), default=None)
             if not hit or tracks.iou(hit["box"], box) < 0.5 or hit["track"] in drop:
                 continue
-            x0, y0 = int(round(box[0])), int(round(box[1]))
-            x1, y1 = min(W, x0 + m.shape[1]), min(H, y0 + m.shape[0])
-            col = colour(hit["track"])
-            region = over[y0:y1, x0:x1]
-            region[m[: y1 - y0, : x1 - x0]] = col
+            over[y0:y0 + m.shape[0], x0:x0 + m.shape[1]][m] = colour(hit["track"])
     img = cv2.addWeighted(over, 0.45, img, 0.55, 0)
     n, placed = 0, []
     for k in kept:

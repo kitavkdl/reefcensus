@@ -243,6 +243,11 @@ function drawSecond() {
   const peaks = (run.peak_checks || []).map((c) => el("li", {}, el("span", { class: "kind" }, "Peak check"),
     el("span", {}, `${c.label}, frame ${c.frame}: Spark looked at ${c.checked} box${c.checked === 1 ? "" : "es"}, kept ${c.kept}`
       + (c.rejected.length ? `. Removed: ${c.rejected.map((x) => x.said).join("; ")}` : ""))));
+  const dups = run.duplicates || [];
+  const same = dups.filter((d) => d.same).length;
+  if (dups.length) peaks.unshift(el("li", {}, el("span", { class: "kind" }, "Same animal?"),
+    el("span", {}, `Spark compared ${dups.length} pair${dups.length === 1 ? "" : "s"} of nested outlines: ${same} ${same === 1 ? "was one animal" : "were one animal"} boxed twice (removed from the count)`
+      + (dups.length > same ? `. Kept apart: ${dups.filter((d) => !d.same).map((d) => d.said).join("; ")}` : ""))));
   const signs = run.signs || [];
   $("secondPanel").replaceChildren(
     el("h2", {}, "Second look", el("small", {}, "SAM recognises an animal late or misses it in a crowded frame, so the pipeline tries again.")),

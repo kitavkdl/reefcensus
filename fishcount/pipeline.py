@@ -4,7 +4,8 @@ which the web UI polls.
   python3 fishcount/pipeline.py <video> [--offline] [--no-scout] [--no-audit] [--zoom] [--prompts fish ...]"""
 import argparse, concurrent.futures as cf, json, os, shutil, sys, threading, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, tracks, video, render
+from fishcount import api, tracks, video, render, maskdedupe
+import cv2, numpy as np   # render put ~/meta-smoke/pylib on sys.path
 
 RUNS = os.path.join(api.ROOT, "runs")
 TILE_SCALE = 1.5   # a 2/3 block comes back to the clip's own size; SAM resizes internally anyway
@@ -37,6 +38,13 @@ is_target = the tile really shows a whole or partial {target} (not seagrass, roc
 VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ...
 For every tile return ONLY a JSON list: [{{"tile":"D1","is_target":true|false,"what_it_is":"<=6 words"}}]
 is_target = the tile mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. If it is too blurry to tell, answer true and say "unclear"."""
+
+# 11/2 s004 frame 24: the same shrimp was boxed twice by different passes (body only + body with legs), so it was
+# counted twice. Masks find the candidates (one mask >=80% inside the other), but cannot tell a duplicate from
+# s003's case: SAM drew one mask over two nautiluses and a zoom tile found the rear one alone (both counts right).
+PAIR_PROMPT = """Each tile is a crop from one frame of underwater survey video with two outlines drawn on it: a RED outline and a CYAN outline, made by an automatic tracker. Tiles are labelled P1, P2, ...
+For every tile return ONLY a JSON list: [{{"tile":"P1","same_animal":true|false,"what":"<=8 words"}}]
+same_animal = true when the cyan outline marks the same single animal as the red one (or a part of it, for example its body without the legs or its head). false when the cyan outline marks a different individual, for example a second animal next to, behind or in front of the first, even if the red outline also spills over it."""
 
 
 class Run:
@@ -257,6 +265,13 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         run.stage("audit", f"{n_flag} of {len(verdicts)} tracks need a human look")
 
     labels = auto_labels(trk, verdicts)
+    dups = []
+    if do_audit:
+        dec = maskdedupe.decode_sources(raw, inf["width"], inf["height"])
+        dups = same_animal_pairs(run, clip, frames, trk, labels, dec, offline)
+        if dups:
+            run.stage("verify", f"Muse Spark looks at {len(dups)} pairs of nested outlines: {sum(d['same'] for d in dups)} are one animal counted twice"
+                      + "".join(f"; kept apart: {d['said']}" for d in dups if not d["same"]))
     checks = verify_peaks(run, clip, frames, trk, labels, inf["n_frames"], inf["fps"], offline) if do_audit else []
     m = tracks.metrics(frames, trk, inf["n_frames"], inf["fps"], labels)
     for name, mm in m.items():
@@ -264,7 +279,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     result = dict(id=rid, source=os.path.basename(src), video=inf, prompts=plist, jobs=[dict(name=j[0], label=j[1], prompt=j[2], tile=j[4]) for j in jobs], scout=sc,
                   tracks={t: dict(v, n=len(v["frames"]), first=min(v["frames"]), last=max(v["frames"]), frames=None) for t, v in trk.items()},
                   verdicts=verdicts, auto_labels=labels, metrics=m,
-                  discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks,
+                  discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks, duplicates=dups,
                   frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
     run.save("result.json", result)
     run.stage("render", "drawing evidence frames")
@@ -380,6 +395,77 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
             run.stage("verify", f"{name}: Spark checks all {len(ks)} boxes in peak frame {f}, rejects {len(bad)}"
                       + (": " + "; ".join(sorted({v.get('what_it_is', '?') for _, v in bad})) if bad else ""))
     return log
+
+
+def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8):
+    """Every nested pair in the clip (two counted detections of the same SAM word, one mask >= `contain` inside
+    the other) goes to Spark once, shown in the frame where it nests most, as "same animal or two?". For a
+    duplicate the smaller-mask track is removed from each frame where it nests inside the other.
+    Mutates `frames`; returns [dict(outer, inner, frame, containment, same, said)]."""
+    lab = lambda t: labels.get(t, trk[t]["label"])
+    best = {}   # (outer, inner) -> (containment, frame, outer mask, inner mask)
+    for f, ks in frames.items():
+        ms = [maskdedupe.det_mask(dec, k["track"].split(":")[0], f, k["box"]) for k in ks]
+        for i in range(len(ks)):
+            for j in range(i + 1, len(ks)):
+                a, b = ks[i]["track"], ks[j]["track"]
+                if a == b or not (lab(a) and lab(b)) or trk[a]["label"] != trk[b]["label"] or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
+                    continue
+                c = maskdedupe.containment(ms[i], ms[j])
+                if c is None or c < contain:
+                    continue
+                o, n_ = (i, j) if ms[i][0].sum() >= ms[j][0].sum() else (j, i)
+                key = (ks[o]["track"], ks[n_]["track"])
+                if key[::-1] in best:   # sizes swap between frames: keep one orientation per pair
+                    key, o, n_ = key[::-1], n_, o
+                if key not in best or c > best[key][0]:
+                    best[key] = (c, f, ms[o], ms[n_])
+    if not best:
+        return []
+    pairs = sorted(best, key=lambda k: best[k][1])
+    imgs = video.frames(clip, {best[k][1] for k in pairs})
+    tiles = [video.label(render.square(pair_tile(imgs[best[k][1]], best[k][2], best[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
+    said = {}
+    for i in range(0, len(tiles), 16):
+        reply = _counted(run, api.spark, PAIR_PROMPT, [video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)], offline=offline)
+        for v in api.parse_json(reply):
+            said[v.get("tile")] = v
+    out = []
+    for i, (o, in_) in enumerate(pairs):
+        v = said.get(f"P{i + 1}", {})
+        same = v.get("same_animal") is True
+        out.append(dict(outer=o, inner=in_, frame=best[(o, in_)][1], containment=round(best[(o, in_)][0], 2), same=same, said=v.get("what")))
+        if same:
+            drop_nested(frames, dec, o, in_, contain)
+    return out
+
+
+def pair_tile(img, mo, mi, pad=0.3):
+    """Crop around a nested pair with the outer mask outlined red and the inner one cyan."""
+    H, W = img.shape[:2]
+    out = img.copy()
+    boxes = []
+    for (m, x0, y0), col in ((mo, (0, 0, 255)), (mi, (255, 255, 0))):
+        cs, _ = cv2.findContours(m.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(out, [c + (x0, y0) for c in cs], -1, col, 3)
+        boxes.append((x0, y0, x0 + m.shape[1], y0 + m.shape[0]))
+    x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    return render.crop(out, (x0, y0, x1, y1), pad=pad, min_side=96)
+
+
+def drop_nested(frames, dec, outer, inner, contain):
+    """Remove `inner` from each frame where both tracks are present and inner's mask lies inside outer's."""
+    for g, ks in frames.items():
+        ko = next((k for k in ks if k["track"] == outer), None)
+        ki = next((k for k in ks if k["track"] == inner), None)
+        if not ko or not ki:
+            continue
+        mo = maskdedupe.det_mask(dec, outer.split(":")[0], g, ko["box"])
+        mi = maskdedupe.det_mask(dec, inner.split(":")[0], g, ki["box"])
+        c = maskdedupe.containment(mo, mi)
+        if c is not None and c >= contain:
+            frames[g] = [k for k in ks if k is not ki]
 
 
 def needs_review(v):

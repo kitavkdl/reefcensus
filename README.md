@@ -9,6 +9,10 @@ and a short queue of uncertain tracks for a human to confirm. Built during the M
 - **Discovery** (`--discover`): SAM finds nothing for a vague word like "animal" — it only sees what you name.
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
   names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
+- **One animal, two boxes**: separate passes (whole frame, reversed clip, zoom tiles) can box the same shrimp twice
+  (body only and body with legs). Masks find the candidates (one mask lying >=80% inside another); Spark is shown both
+  outlines and decides "same animal or two?" — masks alone can't, because SAM sometimes draws one mask over two
+  animals and a zoom tile then finds the rear one on its own. Duplicates are removed before MaxN is taken.
 - All API calls are cached by content hash and metered against a budget (`FISH_BUDGET`, default $1).
 - SAM masks are decoded by a small C port of `meta_sam_parser`'s one_bit codec (`fishcount/_maskdec.c`, built with
   `cc` on first use; ~1 ms a mask instead of ~1 s). Without a C compiler it falls back to `meta_sam_parser`.
