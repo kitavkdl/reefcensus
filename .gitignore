@@ -11,3 +11,16 @@ demo/out/
 demo/site/
 .pylib
 spikes/DH/raw/
+
+# spikes/: scratch outputs (evidence/peek images, logs, file lists, big raw data); tracked files are unaffected
+spikes/**/*.jpg
+spikes/**/*.png
+spikes/**/*.log
+spikes/B/concat*.txt
+spikes/B/list*.txt
+spikes/B/data2h/
+spikes/B/srs/
+# build output of report/paper/build.sh
+report/paper/paper.html
+spikes/L1/out/L1run_*.txt
+spikes/L1/out/s00?_*__*.txt
