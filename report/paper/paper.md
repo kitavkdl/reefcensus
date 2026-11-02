@@ -19,6 +19,7 @@ against model-free baselines and against the VLM counting on its own. On countin
 development clips and are exact on one clip more than it (20 vs 19 of 24) on held-out clips scored once under a
 pre-committed protocol; since audits only remove tracks, neither the audits nor the length rule can raise box recall
 above the segmenter's. The human queue holds most of the tracks behind the large count disagreements, together with real fish the VLM was unsure of.
+Reported as a range between rejecting and accepting the queue (a post-hoc summary), MaxN contains the human count on 22 of the 24 held-out clips.
 Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of the 24 held-out clips; the
 boxes appear to omit faint fish (our non-expert reading), and a count without locations cannot be checked against them.
 On four nautilus clips requested as "fish", VLM naming finds six of seven untargeted taxa without any audit (seven with
@@ -332,6 +333,13 @@ The outputs are per-label MaxN and first arrival, an evidence frame per label wi
 counted masks, an annotated video, a CSV, and a review screen that shows each queued track at three moments. Prompts
 are reproduced verbatim in Appendix A; thresholds are listed in Appendix B.
 
+While the queue is open, the review screen and the CSV give MaxN as a range. The low end leaves out every queued
+track no person has reviewed, so only confident verdicts and human edits count; the high end is the count as
+reported, with queued "(unidentified)" tracks counted. Each review narrows the range and an empty queue leaves one
+number. Removed tracks are in neither end, so a reviewer who restores one can raise the count above the high end. In
+the demonstration runs the range is a single number for every label except the two "(unidentified)" rows (s002 fish
+0–2, s004 shrimp 0–3).
+
 # Experimental setup
 
 **Counting data (luderick).** Six clips from the luderick seagrass dataset (Ditria et al., 2021; PANGAEA
@@ -439,7 +447,9 @@ them, recall would fall to 84.2% (exact MaxN 3/6, Σ|err| 4), and to 0% on 20190
 queued at confidence 0.6 and 0.65. Matching each queued track to the human boxes shows why the queue cannot simply
 be dropped (Table 1b): the queue holds real fish that Spark was unsure about (p0:9 in 20190618_9, confidence 0.55,
 matches all 44 of its boxes in annotated frames), tracks that match nothing (p0:11, 0 of 12), and the two short
-tracks A1 removed (no boxes in annotated frames). The size of the queue is also noisy (§7.1).
+tracks A1 removed (no boxes in annotated frames). The size of the queue is also noisy (§7.1). Between the two
+cases lies the MaxN range of §4.7; it contains the human MaxN on 5 of 6 clips. The exception, 20190710_4 (1 against
+2), is a fish that neither end counts.
 
 <div class="tablecap">**Table 1b.** Queued luderick tracks: boxes in annotated frames that match a human box, and
 the A1 verdict.</div>
@@ -510,6 +520,11 @@ rather than false detections (our own non-expert reading, consistent with the pr
 result therefore repeats the development finding in a weaker form: the audits do not beat the segmenter or a length
 rule on box metrics, and their useful output on this task is the queue, which contains most of the tracks behind
 the clip-level over-counts, but also real fish Spark was unsure of; it narrows a person's work rather than replacing it.
+Read as the range of §4.7, from queue rejected to queue accepted, the held-out MaxN is a single number on 19 of 24
+clips and contains the human MaxN on 22 (mean width 0.46). Both misses lie above the human count: 20190709_11 (3–4
+against 2) and 20190709_17 (3–7 against 2), the clip whose peak frame shows unboxed fish. The widest ranges (3–7,
+1–5) are on the two clips with the largest over-counts, so the width points a reviewer to them. The range was defined
+after these results were seen; it summarises the two protocol rows above and is not a protocol measure.
 
 **The VLM alone gives counts that cannot be checked.** The second review asked whether Spark could replace the
 segmenter. Under a protocol committed before any call (`report/paper/spark_count_protocol.md`), Spark counted the
@@ -905,7 +920,7 @@ matplotlib),
 
 ```
 python3 report/paper/scripts/rescore.py              # Tables 1, 1b, 4, 5: baselines, queue bounds, intervals
-python3 report/paper/scripts/rescore_heldout.py      # Table 1c: held-out clips
+python3 report/paper/scripts/rescore_heldout.py      # Table 1c: held-out clips, MaxN range
 python3 report/paper/scripts/spark_count_rescore.py  # Table 1c Spark rows, per-frame agreement and MAE
 python3 report/paper/scripts/ledger_summary.py       # cost paragraph (§6.4)
 python3 report/paper/scripts/fig_ablation.py         # Figure 5

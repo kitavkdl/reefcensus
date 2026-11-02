@@ -50,7 +50,8 @@ python3 web/server.py                    # review screen on http://127.0.0.1:879
 
 The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
-of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits).
+of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits). Until the queue
+is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
 New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used, so all saved runs replay for $0).
 
 ## How well it counts (measured)

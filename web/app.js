@@ -192,6 +192,12 @@ function countRow(name, m, origin, extra = []) {
       el("span", {}, `first seen ${secs(m.first_time)}`),
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `peak at ${secs(m.maxn_time)}`) : null,
       m.peak_checked ? el("span", { class: "checked" }, "Spark checked every box in the peak frame") : null),
+    // the server's lower end leaves out queued tracks nobody has reviewed; reviewing them closes the range
+    m.maxn_confirmed != null && m.maxn_confirmed < m.maxn
+      ? el("div", { class: "range" }, "Until a person checks the queue: ",
+        el("span", { class: "num" }, `${m.maxn_confirmed}–${m.maxn}`),
+        ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
+      : null,
     ...extra);
 }
 
@@ -225,7 +231,8 @@ function drawFound() {
       const g = groupTotal(rows, name);
       if (g) extra.push(el("div", { class: "climb" }, `All ${g.head} together: `, el("span", { class: "num" }, g.maxn),
         ` in one frame (${g.parts.join(" + ")}) `,
-        el("button", { class: "jump", onclick: () => seek(g.frame) }, `at ${secs(g.frame / state.fps)}`)));
+        el("button", { class: "jump", onclick: () => seek(g.frame) }, `at ${secs(g.frame / state.fps)}`),
+        g.low < g.maxn ? `; ${g.low} before the queue is checked` : ""));
     }
     return countRow(name, m, "found", extra);
   });
@@ -245,7 +252,9 @@ function groupTotal(rows, name) {
   const sum = members[0][1].curve.map((_, i) => members.reduce((s, [, m]) => s + (m.curve[i] || 0), 0));
   const maxn = Math.max(...sum), frame = sum.indexOf(maxn);
   const parts = members.map(([n, m]) => `${m.curve[frame] || 0} ${n === name ? "unidentified" : n.slice(0, -head.length).trim()}`);
-  return { head, maxn, frame, parts };
+  const conf = (m) => m.curve_confirmed || m.curve;
+  const low = Math.max(...sum.map((_, i) => members.reduce((s, [, m]) => s + (conf(m)[i] || 0), 0)));
+  return { head, maxn, frame, parts, low };
 }
 
 const labelOf = (run, t) => {

@@ -174,6 +174,14 @@ def main():
         s = systems(c)
         a = match(s["V5"], c["gt"], 0.3); b = match(s["V5 queue rejected"], c["gt"], 0.3)
         print(f"{c['cid']:20s} accepted {a[0] / (a[0] + a[1]):6.1%}  rejected {b[0] / (b[0] + b[1]):6.1%}")
+    print("\n== MaxN range on the review screen: low = V5 queue rejected (unreviewed queued tracks left out), high = V5 ==")
+    k = 0
+    for c in clips:
+        s = systems(c); h = match(s["V5"], c["gt"], 0.3)[3]
+        lo, hi = match(s["V5 queue rejected"], c["gt"], 0.3)[4], match(s["V5"], c["gt"], 0.3)[4]
+        k += lo <= h <= hi
+        print(f"{c['cid']:20s} human {h}  range {lo}-{hi}{'' if lo <= h <= hi else '  OUTSIDE'}")
+    print(f"range holds the human MaxN on {k}/{len(clips)} clips")
     print("\n== queued tracks in V5 (IoU 0.3): boxes in annotated frames matched / total, verdict ==")
     for c in clips:
         r = c["runs"]["eval6"]

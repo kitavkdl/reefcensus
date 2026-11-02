@@ -95,8 +95,15 @@ def effective(rid):
     frames = {int(f): ks for f, ks in res["frames"].items()}
     v = res["video"]
     m = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], labels) if review else res["metrics"]
+    # MaxN as a range: the lower end drops every queued track no person has looked at yet (only confident Spark
+    # answers and human edits remain); the upper end is the count above. Reviewing the queue closes the range.
+    open_q = {t for t, vd in res.get("verdicts", {}).items() if pipeline.needs_review(vd) and t not in review}
+    lo = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], {**labels, **{t: None for t in open_q}}) if open_q else {}
     checked = {(c["label"], c["frame"]) for c in res.get("peak_checks", [])}
     for name, mm in m.items():
+        mm["maxn_confirmed"] = lo.get(name, {}).get("maxn", 0) if open_q else mm["maxn"]
+        if open_q and lo.get(name, {}).get("curve") != mm["curve"]:
+            mm["curve_confirmed"] = lo[name]["curve"] if name in lo else [0] * len(mm["curve"])
         mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
         ev = f"evidence_{pipeline.api_safe(name)}.jpg"
         mm["evidence"] = ev if os.path.exists(os.path.join(d, ev)) else None
@@ -191,10 +198,12 @@ def export_csv(rid):
     e = effective(rid)
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["label", "origin", "maxn", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks", "peak_frame_checked", "evidence_frame", "source", "human_edits"])
+    # maxn_confirmed = the low end of the MaxN range: queued tracks nobody has reviewed yet are left out
+    w.writerow(["label", "origin", "maxn", "maxn_confirmed", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks", "peak_frame_checked",
+                "evidence_frame", "source", "human_edits"])
     cell = lambda v: "'" + v if isinstance(v, str) and v[:1] in "=+-@" else v    # no formulas from model text
     for name, m in sorted(e["metrics"].items(), key=lambda kv: -kv[1]["maxn"]):
-        w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
+        w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
                     m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"]])
     return buf.getvalue()
 

@@ -108,6 +108,8 @@ button, input, select { font: inherit; color: inherit; }
 .count .tally { height: 28px; display: block; }
 .count .facts { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 2px var(--s3); }
 .count .jump { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline dotted; cursor: pointer; }
+.range { grid-column: 1 / -1; font-size: 14px; border: 1px dashed var(--rule); border-radius: 3px; padding: 4px 8px; margin-top: 4px; }
+.range .num { font-size: 17px; font-weight: 700; }
 .climb { grid-column: 1 / -1; font-size: 14px; background: var(--found-tint); border-radius: 3px; padding: 4px 8px; margin-top: 4px; }
 .climb .num { font-size: 17px; font-weight: 700; }
 .ladder { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--ink-2); margin-top: 2px; }

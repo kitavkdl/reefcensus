@@ -36,7 +36,7 @@ def boxes(res, keep):
 def main():
     man = json.load(open(f"{B}/manifest.json"))
     live = os.path.exists(f"{SMOKE}/clips/manifest_heldout.json")
-    tot = {}
+    tot = {}; rng = []
     order = ["SAM alone", f"min length {K}", "audited", "queue rejected"]
     print(f"{'clip':18s} " + " | ".join(f"{n:>22s}" for n in order) + "  queued")
     for cid, c in man["clips"].items():
@@ -60,17 +60,25 @@ def main():
         sysm = {"SAM alone": {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(txt).items()},
                 f"min length {K}": boxes(ra, lambda t: ra["tracks"][t]["n"] >= K),
                 "audited": boxes(rv, lambda t: True), "queue rejected": boxes(rv, lambda t: t not in q)}
-        cells = []
+        cells = []; mx = {}
         for n in order:
-            tp, fn, fp, mg, mp = match(sysm[n], gt)
+            tp, fn, fp, mg, mp = match(sysm[n], gt); mx[n] = mp
             T = tot.setdefault(n, [0, 0, 0, 0, 0, 0]); T[0] += tp; T[1] += fn; T[2] += fp
             T[3] += mg == mp; T[4] += abs(mg - mp) <= 1; T[5] += abs(mg - mp)
             cells.append(f"{tp / max(1, tp + fn):4.0%} {tp / max(1, tp + fp):4.0%} {mg}->{mp}")
         print(f"{cid:18s} " + " | ".join(f"{x:>22s}" for x in cells) + f"  {len(q)}/{len(rv['verdicts'])}")
+        rng.append((cid, mg, mx["queue rejected"], mx["audited"]))
     n = len(man["clips"])
     for k in order:
         tp, fn, fp, ex, w1, se = tot[k]
         print(f"{k:16s} recall {tp / (tp + fn):.1%}  precision {tp / (tp + fp):.1%}  exact {ex}/{n}  within1 {w1}/{n}  sum|err| {se}")
+    # the review screen's MaxN range: low = queue rejected (unreviewed queued tracks left out), high = audited as reported
+    inside = [c for c, h, lo, hi in rng if lo <= h <= hi]
+    print(f"\nMaxN range [queue rejected, audited] holds the human MaxN on {len(inside)}/{n} clips; "
+          f"single value on {sum(lo == hi for _, _, lo, hi in rng)}/{n}; mean width {sum(hi - lo for *_, lo, hi in rng) / n:.2f}")
+    for c, h, lo, hi in rng:
+        if lo != hi or not lo <= h <= hi:
+            print(f"  {c:18s} human {h}  range {lo}-{hi}{'' if lo <= h <= hi else '  OUTSIDE'}")
 
 
 main()
