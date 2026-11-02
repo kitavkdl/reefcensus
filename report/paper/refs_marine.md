@@ -67,7 +67,7 @@ Whitmarsh, S.K., Fairweather, P.G., Huveneers, C. (2017; online 2016). What is B
 - Usable claim: standard review of BRUV methods and uses; the supporting citation for "MaxN is the most common BRUV metric". Do not attribute any specific number to it.
 
 ### 7. Kilfoil, Campbell, Heithaus & Zhang 2021 [A, abstract page]
-Kilfoil, J.P., Campbell, M.D., Heithaus, M.R., Zhang, Y. (2021). The influence of shark behavior and environmental conditions on baited remote underwater video survey results. *Ecological Modelling* 447 (article number not read). IDEAS page: https://ideas.repec.org/a/eee/ecomod/v447y2021ics0304380021000788.html
+Kilfoil, J.P., Campbell, M.D., Heithaus, M.R., Zhang, Y. (2021). The influence of shark behavior and environmental conditions on baited remote underwater video survey results. *Ecological Modelling* 447: 109507, doi:10.1016/j.ecolmodel.2021.109507 (DOI read from the IDEAS page 11/2; Elsevier article numbers equal the DOI suffix). IDEAS page: https://ideas.repec.org/a/eee/ecomod/v447y2021ics0304380021000788.html
 - verified: opened the IDEAS/RePEc abstract page and read the abstract (journal volume/year from the URL and page header; DOI not read).
 - Usable claim: individual-based simulation of a 60-min BRUV targeting elasmobranchs finds that "density as well as non-density-related factors were highly significant in predicting camera counts, regardless of the camera's FOV or count metric used" (abstract; MaxN and MeanCount both affected by swimming speed, bait attraction, plume size, visibility). A recent critique of MaxN/MeanCount as density indices.
 

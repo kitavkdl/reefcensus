@@ -1,5 +1,5 @@
 ---
-title: "Ask for Fish, Find the Hagfish: Auditing a Promptable Video Segmenter with a Vision-Language Model for Open-Set Abundance Counts in Baited Underwater Video"
+title: "Ask for Fish, Find the Hagfish: Failure Modes of a VLM-Audited Promptable Segmenter for Abundance Counts in Baited Underwater Video"
 author: "reefcensus team · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 2 Nov 2026"
 lang: en
 ---
@@ -7,31 +7,20 @@ lang: en
 <div class="abstract">
 
 **Abstract.** Baited remote underwater video (BRUV) surveys report abundance as MaxN, the largest number of
-individuals of a species visible in a single frame, and that number is still produced by people watching every hour
-of footage. Automated counters in this area are trained for a fixed species list, while the manual standard asks for
-every animal the camera sees. We study what happens when two general-purpose models are combined instead: SAM 3.1, a
-promptable video segmenter that tracks whatever a short noun names, and Muse Spark, a vision-language model (VLM) that
-can name and judge what it sees but cannot track. We first measure where each fails on BRUV footage. SAM 3.1 returned
-zero detections for the hypernym "animal" and for descriptive names such as "pink seabream" on clips where "fish"
-returned 13–16 per frame, and a rare name ("hagfish", 0 frames) can fail where a basic-level neighbour works ("eel",
-24 frames). The VLM, used as an auditor, adopts candidate names placed in its prompt and changes its verdict with the
-layout of the sheet it is shown. We then build a pipeline around these measurements: the VLM proposes basic-level
-nouns for animals nobody asked about, a pixel-only motion residual proposes boxes where no noun works, SAM tracks
-both, and the VLM audits every track at three moments, every box in the frame that sets each MaxN, and every pair of
-nested masks; tracks that rest on weak evidence are counted only after a second, unprimed look agrees. On six luderick
-clips with 543 human boxes, the audits keep the segmenter's recall (97.4%, counting the human queue as accepted) and
-make MaxN exact on four clips instead of two (both within ±1 on all six), but a model-free rule, dropping tracks
-shorter than four frames, gives exactly the same result: on this single-category task the audits matched the best
-short-track threshold, they did not beat it. If a reviewer rejected every queued track, recall would fall to 84.2%.
-On four nautilus clips where the request was only "fish", the pipeline named and counted all seven non-fish taxa a
-person listed, against zero of seven for SAM prompted with "fish"; Spark's naming with SAM and no audits already
-reaches seven of seven, so the audits' contribution there is different: correct names ("hagfish" for the segmenter's
-"eel"), duplicate shrimp removed (six nested pairs), and one false taxon (trap mesh) removed, at the cost of one real nautilus
-fewer in the hardest clip. A design ablation and repeated calls on the same saved sheet show that the layout of the
-evidence changes what the auditor sees: with the judged frame at the edge of a three-crop strip, Spark called a faint
-fish "seagrass" in 5 of 9 calls, with it in the middle in 0 of 9. All evaluation clips were also used during
-development; we report a case study of an annotation accelerator whose output is a queue for a person, not a
-finished census.
+individuals of a species visible in one frame, and people still produce it by watching the footage. We analyse what
+happens when two general-purpose models are combined for this task without training: SAM 3.1, a promptable video
+segmenter that tracks whatever a short noun names, and Muse Spark, a vision-language model (VLM) that can name and
+judge but cannot track. The paper is organised around measured failure modes. The segmenter responds only to
+basic-level nouns (it returned nothing for "animal" on clips where "fish" returned 13–16 detections per frame), so
+animals nobody asked about are invisible to it unless the VLM names them. The VLM, used as an auditor, adopts names
+placed in its prompt and changes its verdict with the layout of the evidence it is shown. We build a pipeline around
+these observations, in which the VLM names, translates and audits and a person reviews a queue, and evaluate it
+against model-free baselines. On counting luderick, the audits match a tuned minimum-track-length rule on six
+development clips and are within one clip of it on 24 held-out clips scored once under a pre-committed protocol;
+neither beats the segmenter on box recall, and the queue isolates the tracks behind every large count disagreement.
+On four nautilus clips requested as "fish", VLM naming finds six of seven untargeted taxa without any audit (seven with
+a motion cue), and the audits correct names, duplicates and one false taxon. All discovery clips were also used in
+development; we present a case study of an annotation accelerator, not a finished census.
 
 </div>
 
@@ -69,7 +58,7 @@ This paper is an analysis of combining the two for open-set abundance counting, 
 modes rather than around a model. Our contributions are:
 
 1. **Measurements of what a promptable video segmenter responds to on BRUV footage.** On our clips SAM 3.1 returned
-   nothing for a hypernym ("animal") or a descriptive name ("pink seabream"), a rare name could fail where a
+   nothing for a hypernym ("animal", three clips) or a descriptive name ("pink seabream", a single call), a rare name could fail where a
    basic-level neighbour worked ("hagfish" vs. "eel"), word-prompted tracks began only once an animal was clear
    (a reversed pass recovered 16 → 60 frames for one nautilus), and a box prompt with no word tracked an animal no
    word or zoom ever found (§7.4).
@@ -114,7 +103,7 @@ and identified for manual labelling". Motion has been used to generate fish cand
 detector (Salman et al., 2020) and background modelling with a false-positive filter is a classic approach for fixed
 underwater cameras (Giordano et al., 2016). Datasets such as DeepFish (Saleh et al., 2020), FishNet (Khan et al.,
 2023) and the luderick seagrass set (Ditria et al., 2021) support this line. Marine segmentation foundation models
-are typically fine-tuned: CoralSCOP for coral stills (Zheng et al., 2024), Dual-SAM for single-image marine animals
+are typically fine-tuned: CoralSCOP for coral stills (Zheng et al., 2024b), Dual-SAM for single-image marine animals
 (Zhang et al., 2024), SAM-U for underwater video after a reported 13-point J&F drop of open-air models (Zhao et al.,
 2026). SAM-family models have been used on BRUV footage in a training-free pipeline (Kavasidis et al., 2025) and as an
 annotation aid (Sánchez et al., 2026). To our knowledge no prior BRUV work names and counts untargeted taxa without a
@@ -144,7 +133,7 @@ Shtedritski et al., 2023), and cropping helps with small subjects (Zhang et al.,
 documented: object hallucination (Rohrbach et al., 2018; Li et al., 2023), sycophancy (Sharma et al., 2024; Li et
 al., 2025), flips after a single misleading cue in 65% of cases (Dang et al., 2024), anchoring that is not fixed by
 telling the model to ignore the anchor (Lou and Sun, 2024), sensitivity to option order (Pezeshkpour and Hruschka,
-2024; Zheng et al., 2024) and to image position in multi-image inputs (Tian et al., 2025), and run-to-run
+2024; Zheng et al., 2024a) and to image position in multi-image inputs (Tian et al., 2025), and run-to-run
 nondeterminism even at temperature zero (Atil et al., 2024; He, 2025). Self-correction without external feedback is
 unreliable (Huang et al., 2024); answering verification questions independently, so that "answers are not biased by
 other responses", reduces hallucination (Dhuliawala et al., 2023). Our second unprimed look follows that idea.
@@ -241,8 +230,9 @@ run in the cells Spark named; if an indirect sign names a suspected animal, its 
 ## Motion residual: looking where no word works
 
 A BRUV camera is still, so the background barely changes. We compute a per-clip median frame in CIELAB at half
-resolution, mark pixels whose colour distance from it exceeds a robust threshold (median + 6 × MAD, at least 8),
-link blobs across frames into short paths, and keep paths that live at least 6 frames, have a minimum area, and lie
+resolution, mark pixels whose colour distance from it exceeds a robust threshold (median + 6 × MAD, at least 8)
+and that also changed between frames t − 2 and t + 2 by more than 0.8 times that threshold, keep blobs of 12–2,500
+pixels at analysis scale, link blobs across frames into short paths, and keep paths that live at least 6 frames, have a minimum area, and lie
 mostly outside every box any word pass produced (boxes dilated by ±3 frames). Up to eight such spots, longest-lived
 and largest first, are shown to Spark as one sheet: each spot at three moments (early, at its median-size frame, late)
 at the same zoom. Spark answers per spot whether it is an animal, with a one-word name and a confidence; it is told
@@ -258,7 +248,7 @@ passes). A lower-priority detection that overlaps a kept one of the same label i
 track is aliased to the kept track if that happens on at least half its frames and the two never co-exist. The
 overlap test is plain IoU ≥ 0.5 only for zoom detections that do not touch their crop border; every other detection
 (full-frame, reversed, motion, or a crop-cut partial) is compared by the larger of IoU and containment (intersection
-over the smaller box), so that a partial animal inside a full box is recognised as the same animal. Before merging, a
+over the smaller box) minus 0.2, so that containment must reach 0.7 to count as the 0.5 overlap, and so that a partial animal inside a full box is recognised as the same animal. Before merging, a
 motion track that lies on an existing word track (IoU ≥ 0.3) in three or more frames takes that track's label and
 loses the overlapping frames, so one animal is not counted under a word and a motion guess. A box drawn around two
 animals that other passes boxed separately is removed. Fragmented tracks of the same label are re-joined when one
@@ -278,9 +268,10 @@ of the track so that the three crops are always three different moments). The pr
 a short context string, the names the discovery step proposed for this clip (on the luderick runs, where discovery
 is off, this string is effectively empty). Spark returns per track `is_target`, a species name, a confidence and a
 reason. Confidence ≥ 0.7 with a named species sets the label; a confident rejection (`is_target` false, ≥ 0.7)
-removes the track; every other track keeps the label "⟨word⟩ (unidentified)". This includes tracks Spark confidently
-calls the target but cannot name (species "unknown"), which are counted without being queued (6 of 27 luderick
-tracks); §4.7 lists which tracks are queued. For a discovered track, the question is asked about the animal Spark
+removes the track; every other word-prompted or discovered track keeps the label "⟨word⟩ (unidentified)" and is
+counted, including an unconfident rejection. Motion-seeded tracks follow a stricter rule (§4.7). The "(unidentified)"
+tracks include those Spark confidently calls the target but cannot name (species "unknown"), which are counted without
+being queued (6 of 27 luderick tracks); §4.7 lists which tracks are queued. For a discovered track, the question is asked about the animal Spark
 named ("hagfish"), not about SAM's word ("eel").
 
 **A2 Second, unprimed look.** Tracks seeded from motion rest on two weak signals (it moved; one sheet looked alive),
@@ -314,9 +305,19 @@ matches "crab", never "seabed") takes that name, subject to A2.
 ## Human queue and outputs
 
 A track is queued when it has no verdict, when its A1 confidence is below 0.7, when A1 rejected it (with any
-confidence, so that a person can restore a wrongly removed track), or when A2 did not confirm it. Queued tracks that
-were rejected are not counted but remain restorable; low-confidence tracks that were not rejected are counted as
-"⟨word⟩ (unidentified)" until a person decides; renamed tracks counted under their new name leave the queue. A track
+confidence, so that a person can restore a wrongly removed track), or when A2 did not confirm it. Whether a queued
+track counts depends on where it came from:
+
+* **Word-prompted and discovered tracks** are removed only by a confident rejection (A1 `is_target` false, ≥ 0.7),
+  which stays restorable from the queue. Every other queued track, *including an unconfident rejection*, is counted as
+  "⟨word⟩ (unidentified)" until a person decides. The segmenter responded to a noun, and we prefer a visible,
+  queued over-count to a silent miss. The cost is visible in s002 (§6.3), where a "fish" track A1 called "red crab"
+  at 0.5 is counted as fish.
+* **Motion-seeded tracks** count only when A1 accepts them with confidence ≥ 0.7 *and* A2 agrees; otherwise they are
+  queued and not counted. Such a track rests on movement plus one look at a small crop, and in development a motion box
+  that had drifted onto net mesh was audited as "obscured shrimp" at 0.4.
+
+Renamed tracks counted under their new name leave the queue. A track
 that A1 confidently accepts as the target without naming a species is counted as "(unidentified)" but not queued:
 the queue is for decisions that change a count, and species naming of such tracks is left to the per-label review.
 The queue therefore mixes two kinds of item: tracks counted on weak evidence, which a reviewer should confirm, and
@@ -331,8 +332,10 @@ are reproduced verbatim in Appendix A; thresholds are listed in Appendix B.
 
 **Counting data (luderick).** Six clips from the luderick seagrass dataset (Ditria et al., 2021; PANGAEA
 doi:10.1594/PANGAEA.926930, CC BY 4.0; seagrass in south-east Queensland estuaries, 1920×1080), 665 frames at 5 fps, of which 319 carry human
-boxes (543 boxes). The annotations were made for training detectors on luderick, so other fish and partially
-visible fish are not always boxed. For this task the pipeline runs with the request "fish" and without discovery or
+boxes (543 boxes: 527 luderick, 16 bream; we score both as "fish"). The annotations are on frames extracted at
+5 fps; we re-encode each video at 5 fps so that clip frame *i* is annotation frame *i* + 1, and score only annotated
+frames. The annotations were made for training detectors on luderick, so other fish and partially visible fish are
+not always boxed. For this task the pipeline runs with the request "fish" and without discovery or
 zoom, so it measures the effect of the audits on a single-category count.
 
 **Discovery data (nautilus).** The first 12 s (60 frames at 5 fps, 1920×1080) of each of the four supplementary
@@ -347,8 +350,8 @@ truth; it cannot score counts of individuals.
 statement) were used only to probe SAM 3.1's response to prompt words.
 
 **Metrics.** For counting we match predicted to human boxes per annotated frame, greedily in the order of the human
-boxes, at IoU ≥ 0.3 (sensitivity at 0.5 and 0.7 in §7.2), and report recall (with a 95% Wilson interval for the
-pooled boxes), precision, MaxN computed over the annotated frames only (for every system, so they are comparable),
+boxes, at IoU ≥ 0.3 (sensitivity at 0.5 and 0.7 in §7.2), and report recall (with a 95% percentile bootstrap over
+clips, since boxes within a track are not independent), precision, MaxN computed over the annotated frames only (for every system, so they are comparable),
 the number of clips with exact MaxN and with |error| ≤ 1, and the human queue as a fraction of tracks. MaxN depends
 only on how many boxes a system keeps per annotated frame, not on their labels or on the matching threshold. A queued
 track counted as "(unidentified)" is a box the system outputs, so the headline numbers assume a reviewer who accepts
@@ -362,7 +365,8 @@ the person's "red crustacean").
 confidence cut-offs* (0.5–0.8) on the same track; *merge and stitch without audits*, the full pipeline with A1–A4
 disabled, replayed from cache; and *merge plus a minimum track length* of k frames (k = 2–8), a model-free rule that
 removes short tracks. The length rule was suggested by an independent reviewer of our first draft, after the results
-were known, and its best k is chosen with the test labels, which favours the baseline. For discovery: *SAM "fish"
+were known; we report both its best k chosen with the test labels, which favours the baseline, and k chosen
+leave-one-clip-out. For discovery: *SAM "fish"
 alone*; *discovery without audits*, Spark's naming, the word ladder and zoom with A1–A4 disabled; and the same *plus
 the motion residual* (Spark's animal-or-not look on moving spots, then box prompts), still without A1–A4. Both
 no-audit variants are replays of the cached calls of the final runs, so they see exactly the same model replies up
@@ -370,16 +374,20 @@ to the point where the audits would start. Without audits there are no species l
 under SAM's word ("eel", "shrimp"). Further ablations of discovery components come from the development history
 (§7.3).
 
-**Protocol.** Results are from v16 code (luderick run tag eval6) unless marked V6. The final code (V6) differs only
-in the A4 question for word-prompted tracks (§4.6); it reproduces every v16 count exactly (luderick run eval7, and
-offline replays of the four discovery runs, all of whose calls hit the v16 cache). All luderick variants in §7.1 are
+**Protocol.** Results are from v16 code (luderick run tag eval6) unless marked V6. The final code (V6) differs from
+v16 in two places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6). It
+reproduces every v16 count exactly. Luderick run eval7 was made after the first change and before the second, which
+cannot act on a single-word task; the four discovery runs were replayed offline under the final code (all calls hit
+the v16 cache, and no cross-word pair was found). All luderick variants in §7.1 are
 saved runs of earlier versions of the same code, re-scored with one scorer. Every number in this paper is produced by
 a script in the repository from saved runs and cached model replies (§10 says which of them a fresh clone can
 reproduce), except where a sentence says it is a development
-observation. **There is no held-out data.** The design was iterated on the same luderick and nautilus clips that we
-evaluate on: the faint fish in frame 35 of 20190618_9 and the s004 peak frame were used as regression checks for
-every change, and the final layout (V5) was chosen knowing the result of V4. The numbers below are those of a
-careful case study, not of a benchmark.
+observation. **The six luderick and four nautilus clips are development data.** The design was iterated on them:
+the faint fish in frame 35 of 20190618_9 and the s004 peak frame were used as regression checks for every change,
+and the final layout (V5) was chosen knowing the result of V4. For counting we added, after the second review, 24
+held-out luderick clips scored once with frozen code under a protocol committed before the run (§6.2). Discovery
+has no held-out data. The numbers below are those of a careful case study, not of a benchmark, and we make no claim
+beyond these clips.
 
 # Results
 
@@ -403,15 +411,21 @@ rejected*: the same run with every queued track removed.</div>
 **The audits remove the over-counts SAM makes, and so does a length rule.** On 20190618_3 and 20190709_4 SAM alone
 counts 3 where people counted 2. In both, A1 confidently rejected one track, and in both that track was two or three
 frames long and contained only unmatched boxes (recall unchanged, precision 98→100% and 71→77%). Recall stays at the
-segmenter's 97.4% (529 of 543 boxes, 95% interval 95.7–98.5%): of the 529 matched boxes, the audits removed none.
+segmenter's 97.4% (529 of 543 boxes): of the 529 matched boxes, the audits removed none. The boxes are not
+independent (they sit in 27 tracks on six clips), so we give a percentile bootstrap over clips rather than a binomial
+interval: 92.4–100% for SAM alone, the length rule and the audited pipeline alike, and 72.1–96.4% if the queue is
+rejected. With six clips these intervals are wide, and none of the counting differences in Table 1 is outside them.
 Merge and stitch alone change nothing on this task (identical to SAM alone), and SAM's own confidence is no help
 either: every cut-off from 0.5 to 0.7 leaves the output unchanged, and 0.8 drops recall to 35.7%. But dropping
 tracks shorter than four frames, with no model call, removes exactly the same two tracks and gives exactly the same
 recall, precision and MaxN (Table 1). The rule is sensitive to its threshold, which we chose with the test labels:
 three frames fixes only one of the two clips (exact 3/6), and five or more frames start to remove real fish (recall
-95.8% at five, 94.8% at six). On this single-category task, then, the audits reached the result of the best
-length threshold without having one tuned, and did nothing beyond it. We do not claim that the audits improve MaxN
-on luderick over a well-chosen heuristic; their distinct contributions are on discovery (§6.2, §7.3), where a
+95.8% at five, 94.8% at six). Choosing k fairly, leave-one-clip-out (the k that minimises the MaxN error on the
+other five clips), picks k = 4 five times and k = 3 once, when 20190709_4 is left out, and that clip then keeps its
+over-count: exact 3/6, Σ|err| 3, recall 97.4%, against 4/6 and 2 for the audits. The difference is one clip. On this
+single-category task, then, the audits reached the result of the best length threshold without having one tuned, and
+did not clearly go beyond it. We do not claim that the audits improve MaxN
+on luderick over a well-chosen heuristic; their distinct contributions are on discovery (§6.3, §7.3), where a
 length rule has nothing to say about names, duplicates of crowded animals, or a motion box on a net.
 
 **The headline recall assumes the queue is accepted.** Nine of 27 tracks are queued. If a reviewer rejected all of
@@ -446,6 +460,36 @@ positives in an earlier run and all 6 were unboxed fish; this is a development o
 not let us reproduce. A precision change from 78.7% to 79.2% should therefore not be read as the size of the audits'
 effect on false detections.
 
+## Held-out clips
+
+After the second review we ran the frozen final code (V6) once on every annotated video of our archive copy that
+development had not used: 24 clips, 6–62 frames, 445 annotated frames, 523 boxes (496 luderick, 27 bream), human
+MaxN 1–2. The protocol (clips by rule, methods, metrics, one run) was committed before the run
+(`report/paper/heldout_protocol.md`); the length rule keeps the k = 4 chosen on the development clips. These clips
+come from the same estuary and cameras and are shorter and sparser than the development clips, so they test
+transfer within one site, not to new habitats.
+
+<div class="tablecap">**Table 1c.** Held-out luderick clips (24), IoU ≥ 0.3, frozen V6. Script:
+`report/paper/scripts/rescore_heldout.py`.</div>
+
+| system | recall | precision | MaxN exact | within ±1 | Σ\|err\| |
+|---|--:|--:|--:|--:|--:|
+| SAM "fish" alone | 98.9% | 76.1% | 19/24 | 21/24 | 14 |
+| merge + min length 4 | 98.9% | 76.5% | 19/24 | 21/24 | 13 |
+| audited, queue accepted | 98.9% | 77.6% | 20/24 | 21/24 | 12 |
+| audited, queue rejected | 95.6% | 88.5% | 21/24 | 24/24 | 3 |
+
+With the queue accepted, the audits fix one over-count the length rule cannot (20190618_6, 1→2 becomes 1→1: A1
+rejected a 6-frame track as "empty blue water, no fish" at 0.85, too long for k = 4) and otherwise leave the segmenter's output as it was: three clips keep
+large over-counts (20190709_17 2→7, 20190709_9 1→5, 20190709_11 2→4). In all three most extra tracks are queued
+(5 of 8, 4 of 5, 2 of 6). The queue holds 15 of 49 tracks. Rejecting it brings every clip within ±1 (Σ|err| 3) at a recall cost of 3.3 points.
+We looked at the peak frame of the worst clip by eye: all seven boxes in 20190709_17 frame 15 are fish-shaped,
+three clearly fish and four faint ones, against two human boxes, so much of the "over-count" is likely unboxed fish
+rather than false detections (our own non-expert reading, consistent with the precision caveat below). The held-out
+result therefore repeats the development finding in a weaker form: the audits do not beat the segmenter or a length
+rule on box metrics, and their useful output on this task is the queue, which isolates exactly the tracks on which
+the clip-level counts disagree.
+
 ## Finding what was not asked for
 
 <div class="tablecap">**Table 2.** Nautilus clips, request "fish". Person = non-expert, taxon-level list from four
@@ -459,17 +503,18 @@ frames per clip, made before looking at outputs.</div>
 | s004 | nautilus 1; shrimp 10+; hagfish 1 | nautilus 1; caridean shrimp 12 (+3 unidentified); hagfish 1 | "hagfish" 0 → "eel" 24 frames, labelled hagfish; "shrimp" 40 forward / 60 reversed; two shrimp at the bottom edge only through motion box prompts (30 and 55 frames after merging) |
 
 <div class="tablecap">**Table 3.** Discovery summary over the four clips (7 taxa). The no-audit baselines replay the
-final runs' cached calls with A1–A4 disabled and count under SAM's word.</div>
+final runs' cached calls with A1–A4 disabled; a track counts under SAM's word, or, for a motion box prompt (which
+has no word), under the one-word name Spark gave the moving spot.</div>
 
 | measure | SAM "fish" alone | discovery, no audits | + motion, no audits | audited pipeline |
 |---|--:|--:|--:|--:|
 | taxa in the final count | 0 of 7 | 6 of 7 | 7 of 7 | **7 of 7** |
 | ... of which under a wrong name | — | 2 ("eel" for hagfish, "shrimp" for crab) | 2 | **0** |
-| labels counted outside the person's list (queue excluded) | — | 0 | 1 (s003 "shrimp" 2) | **0** |
+| non-fish labels counted that match nothing on the person's list | 0 | 0 | 1 (s003 "shrimp" 2) | **0** |
 | s001 nautilus (person: 4 or more) | 0 | 0 | 3 | 2 (+1 queued) |
 | s003 nautilus (person: 3–4) | 0 | 3 | 4 | 3 |
 | s004 shrimp (person: 10 or more) | 0 | 15 | 18 | 12 (+3 unidentified) |
-| s002 "fish" (no fish listed) | 2 | 2 | 2 | 2, both queued |
+| "fish" counted (the person listed non-fish animals only) | s002: 2 | s002: 2 | s002: 2; s004: 1 (motion, "small fish swimming away") | s002: 2, both queued; s004: 0 |
 
 **The naming step finds the taxa; the audits fix names and counts.** Spark proposed nine items over the four clips.
 Eight correspond to animals in the person's list; one, s003's "large striped shrimp", corresponds to nothing the
@@ -490,8 +535,11 @@ unaudited one (3).
 low-confidence "fish" tracks that sit in the queue; the person listed no fish. One (A1: "red crab", 0.5) co-exists
 with the counted crab for 42 frames without overlapping it, so it is probably the second red crustacean the person
 saw, missed as a crab and left under the requested word. The other (A1: "dark elongated shape", 0.4, at the top
-edge) is unidentified. The zero in Table 3's row "labels counted outside the person's list" holds only because queued
-labels are excluded; a reviewer must resolve both.
+edge) is unidentified. Both are counted until a reviewer decides (§4.7: a word track is removed only by a confident
+rejection, and the first was rejected at 0.5), so the s002 output overstates "fish" by at least one unless the queue is
+worked. The person's list does not cover fish, so Table 3 reports "fish" counts separately instead of scoring them;
+the s004 "fish" of the motion-only baseline is a moving spot that A1 rejects in the audited run (0.6, "box tracks
+shadow").
 
 Counts of individuals are not scored: four frames per clip are not enough for a person to count ten or more moving
 shrimp. In s001 the taxon is counted but the number (2) is below what a person sees (4 or more).
@@ -502,9 +550,11 @@ prompts with no word.](figures/motion_s004.jpg){.half}
 
 ## Cost and time
 
-All model calls made during development and evaluation, including discarded experiments, cost $3.03 (447 calls: 148
-SAM, 299 Spark; mean Spark call $0.0044, median 653 input and 688 output tokens); the repeated-call experiment of
-§7.1 added 16 Spark calls ($0.10), for a ledger total of $3.13. From the call counts of the final
+All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
+SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens). The repeated-call experiment of
+§7.1 added 24 Spark calls ($0.14), the held-out runs 58 calls ($0.31) and the fixed-vocabulary baseline of §6.3 the
+calls listed by `report/paper/scripts/ledger_summary.py`, which produces every number in this paragraph from the
+spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
 the luderick counting runs from development calls; by the price list, one SAM pass over their 665 frames costs
@@ -561,7 +611,9 @@ layout. Data: `report/paper/data/repeat_peak_f35.json`.</div>
 | V6: middle, question names the category ("fish") | 0 of 9 | 0 of 9 | 9 of 9 |
 
 With the frame at the edge, Spark failed to see an animal in 5 of 9 calls; in the middle, never (Fisher exact test,
-two-sided p = 0.029). The position of the frame therefore changes whether the faint body is seen as a fish. Whether
+two-sided p = 0.029). These 9 + 9 include the two original calls that prompted the experiment; on the 8 + 8 repeats
+alone the split is 4 of 8 vs. 0 of 8 (p = 0.077). On this sheet, then, the position of the frame changes whether the
+faint body is seen as a fish; one tile in one frame cannot say how general the effect is. Whether
 the track survives is a weaker effect (removed in 5 of 9 vs. 2 of 9, p = 0.33), because in the middle layout Spark
 sometimes recognised the fish but answered that it was "other fish" than the label being checked ("striped
 seabream"), which also removes it (§7.5). Asking about the requested category instead (V6) removed that path: the
@@ -629,9 +681,9 @@ These are observations on our clips, not general claims about the model.</div>
 | probe | result | consequence for the design |
 |-------------|-------------|-----------|
 | "animal" vs. "fish", three IMAS deep-sea clips | 0 detections on all three vs. 13–16 per frame | the VLM translates requests into basic-level nouns |
-| "pink seabream", same clips | 0 | species come from the audit; SAM gets the plain noun |
+| "pink seabream", one call on one IMAS clip | 0 | species come from the audit; SAM gets the plain noun |
 | "hagfish" vs. "eel", s004 | 0 vs. 24 frames | word ladder; Spark's name is kept as the label |
-| "shell", "snail" vs. "nautilus", s001–s004 | "shell" never tracked a nautilus; "nautilus" tracked 16–48 frames on three clips | the VLM's own short name is tried first |
+| "shell" vs. "nautilus", s002–s003 (development spikes) | "shell" tracked the s002 nautilus (47 frames) but returned nothing on an s003 crop where "nautilus" tracked (development observation); in the final runs "nautilus" tracked 16–48 frames on three clips, and on s001 every word, "shell" included, returned 0 | the VLM's own short name is tried first |
 | forward vs. reversed, same word | nautilus 16 → 60 (s004), 33 → 60 (s003); shrimp 40 → 60 (s004) | every word that works is re-run on the reversed clip |
 | full frame vs. 3× cell, s002 crustacean | "crab" 0 → 5, "shrimp" 0 → 12 frames | closer look in the cell the VLM names |
 | box prompt with no word, s004 bottom-edge shrimp | 57 of 60 frames in the first test (55 in the pipeline); no word, tile or reversed pass ever tracked it | motion residual → box prompt |
@@ -725,8 +777,9 @@ counted twice (for example body only vs. body with legs).](figures/pairs_s004.jp
   is that they matched the best threshold of a heuristic without tuning it.
 * **Species labels are unvalidated** (§7.5), and per-species MaxN can be fragmented across names.
 * **Development and test overlap.** The design was iterated on the same clips used for evaluation (the frame-35 case
-  became a regression test, and V5 was chosen knowing V4). There is no held-out test set; numbers should be read as
-  a careful case study, not as a benchmark result.
+  became a regression test, and V5 was chosen knowing V4). The 24 held-out luderick clips (§6.2) come from the same
+  estuary and cameras, are short and mostly hold one or two fish, and were scored once; discovery has no held-out
+  clips at all. Numbers should be read as a careful case study, not as a benchmark result.
 * **Single runs.** Apart from the repeated frame-35 judgement (Table 4b), each variant and each discovery clip was run
   once; a fresh run can move a track across a threshold.
 * **Dependence on hosted models.** Both models were accessed through an API whose versions may change; cached
@@ -748,7 +801,7 @@ a non-expert and is labelled as such everywhere it is used.
 The repository (MIT licence) contains the code, the prompts, the four final discovery runs with every sheet Spark
 judged (`demo/runs`), and a scoring bundle in `report/paper/data/`: the human boxes of the six luderick clips (from
 Ditria et al., 2021, CC BY 4.0), SAM 3.1's reply for "fish" on each clip, the `result.json` of every scored luderick
-run (V1–V5 and the merge-only baseline), the no-audit discovery runs, the two frame-35 sheets and the replies of the
+run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the two frame-35 sheets and the replies of the
 repeated calls. From a fresh clone, with no data download and no API key,
 
 ```
@@ -867,7 +920,8 @@ Khan, F.F., Li, X., Temple, A.J., Elhoseiny, M. (2023). FishNet: a large-scale d
 recognition, detection, and functional trait prediction. *ICCV 2023*, 20439–20449.
 
 Kilfoil, J.P., Campbell, M.D., Heithaus, M.R., Zhang, Y. (2021). The influence of shark behavior and environmental
-conditions on baited remote underwater video survey results. *Ecological Modelling* 447.
+conditions on baited remote underwater video survey results. *Ecological Modelling* 447: 109507.
+doi:10.1016/j.ecolmodel.2021.109507.
 
 Kirillov, A., Mintun, E., Ravi, N., Mao, H., Rolland, C., Gustafson, L., et al. (2023). Segment anything. *ICCV
 2023*. arXiv:2304.02643.
@@ -1006,13 +1060,13 @@ dual SAM. *CVPR 2024*, 2578–2587.
 Zhao, H., Tai, J., Wu, Y., Zhang, W., Lan, X., Wang, S., Zhang, T., Yang, W. (2026). UW-VOS: a large-scale dataset
 for underwater video object segmentation. arXiv:2603.24006.
 
-Zheng, C., Zhou, H., Meng, F., Zhou, J., Huang, M. (2024). Large language models are not robust multiple choice
+Zheng, C., Zhou, H., Meng, F., Zhou, J., Huang, M. (2024a). Large language models are not robust multiple choice
 selectors. *ICLR 2024*. arXiv:2309.03882.
 
 Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., et al. (2023). Judging LLM-as-a-judge with
 MT-Bench and Chatbot Arena. *NeurIPS 2023 Datasets and Benchmarks*. arXiv:2306.05685.
 
-Zheng, Z., Liang, H., Hua, B.-S., Wong, Y.H., Ang, P., Chui, A.P.Y., Yeung, S.-K. (2024). CoralSCOP: segment any
+Zheng, Z., Liang, H., Hua, B.-S., Wong, Y.H., Ang, P., Chui, A.P.Y., Yeung, S.-K. (2024b). CoralSCOP: segment any
 coral image on this planet. *CVPR 2024*, 28170–28180.
 
 Zurowietz, M., Langenkämper, D., Hosking, B., Ruhl, H.A., Nattkemper, T.W. (2018). MAIA — a machine learning assisted
@@ -1087,9 +1141,10 @@ time. Comments in the source record the case that motivated each sentence.
 | ingest | frame rate; max width; max length | 5 fps; 1920 px; 600 s |
 | zoom | block (2/3 of frame) upscale; cell (1/3) upscale | 1.5×; 3× |
 | discovery | items per clip; words per item; zoom tiles | ≤3; ≤3; ≤3 |
-| motion | analysis scale; threshold; min path length; spots shown; boxes prompted; Spark confidence | 0.5; median + 6·MAD (≥ 8, CIELAB); 6 frames; ≤8; ≤5; ≥0.6 |
+| motion | analysis scale; threshold; temporal check; blob area; min path length; spots shown; boxes prompted; Spark confidence | 0.5; median + 6·MAD (≥ 8, CIELAB); frame t±2 differ by > 0.8 × threshold; 12–2,500 px (analysis scale); 6 frames; ≤8; ≤5; ≥0.6 |
+| motion | counted only if | A1 ≥ 0.7 accept and A2 yes (else queued, not counted) |
 | motion | box growth; grid; edge margin | +40% (≥ 48 px); 8 px; 2 px |
-| merge | overlap to drop (same label); alias if duplicate on | IoU ≥ 0.5 for uncut zoom detections, else max(IoU, containment) ≥ 0.5; ≥ 50% of frames |
+| merge | overlap to drop (same label); alias if duplicate on | IoU ≥ 0.5 for uncut zoom detections, else max(IoU, containment − 0.2) ≥ 0.5; ≥ 50% of frames |
 | merge | motion track absorbed into a word track | IoU ≥ 0.3 in ≥ 3 frames |
 | stitch | max gap; min IoU | 10 frames; 0.2 |
 | A1 | tracks per sheet; crops; label / reject confidence | 12; largest-box frame ± ⌊length/3⌋; ≥ 0.7 |

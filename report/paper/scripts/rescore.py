@@ -138,6 +138,37 @@ def main():
             a, b, *_ = match(systems(c)[n], c["gt"], 0.3); tp += a; fn += b
         lo, hi = wilson(tp, tp + fn)
         print(f"{n:20s} {tp}/{tp + fn} = {tp / (tp + fn):.1%}  [{lo:.1%}, {hi:.1%}]")
+
+    print("\n== recall, 95% percentile bootstrap over clips (10,000 resamples of the 6 clips, seed 0; IoU 0.3) ==")
+    import random
+    per = {n: [match(systems(c)[n], c["gt"], 0.3)[:2] for c in clips]
+           for n in ("SAM alone", "merge + min length 4", "V5", "V5 queue rejected")}
+    for n, pc in per.items():
+        rng = random.Random(0)      # same resamples for every system
+        vals = []
+        for _ in range(10000):
+            smp = [pc[rng.randrange(len(pc))] for _ in pc]
+            tp = sum(a for a, _ in smp); fn = sum(b for _, b in smp)
+            vals.append(tp / max(1, tp + fn))
+        vals.sort()
+        tp = sum(a for a, _ in pc); fn = sum(b for _, b in pc)
+        print(f"{n:22s} {tp / (tp + fn):.1%}  [{vals[249]:.1%}, {vals[9749]:.1%}]")
+    print("\n== minimum track length k chosen leave-one-clip-out (k in 2..8 minimising sum|MaxN err| on the other five,"
+          " then max recall, then smallest k) ==")
+    T = [0, 0, 0]; ex = se = 0; ks = []
+    for i, c in enumerate(clips):
+        def crit(k):
+            e = r_tp = r_fn = 0
+            for j, o in enumerate(clips):
+                if j != i:
+                    tp, fn, _, mg, mp, _ = match(systems(o)[f"merge + min length {k}"], o["gt"], 0.3)
+                    e += abs(mg - mp); r_tp += tp; r_fn += fn
+            return (e, -r_tp / max(1, r_tp + r_fn), k)
+        k = min(range(2, 9), key=crit); ks.append(k)
+        tp, fn, fp, mg, mp, _ = match(systems(c)[f"merge + min length {k}"], c["gt"], 0.3)
+        T[0] += tp; T[1] += fn; T[2] += fp; ex += mg == mp; se += abs(mg - mp)
+    print(f"k per held-out clip {ks}: recall {T[0] / (T[0] + T[1]):.1%}, precision {T[0] / max(1, T[0] + T[2]):.1%}, "
+          f"exact {ex}/6, sum|err| {se}")
     print("\n== per clip, V5 queue accepted vs rejected (IoU 0.3): recall ==")
     for c in clips:
         s = systems(c)
