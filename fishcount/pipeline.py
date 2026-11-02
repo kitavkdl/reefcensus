@@ -265,6 +265,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     for name, mm in m.items():
         if mm["maxn_frame"] is not None:
             render.evidence(clip, raw, result, mm["maxn_frame"], run.path(f"evidence_{api_safe(name)}.jpg"))
+    run.stage("render", "drawing the annotated video")
+    render.annotate(clip, raw, result, run.path("annotated.mp4"), asked=[p for _, p in plist])
     run.status["done"] = time.time()
     run.stage("done", f"finished in {run.status['done'] - run.status['started']:.0f}s; live calls {run.status['live_calls']}, cached {run.status['cached_calls']}, billed ${run.status['billed_usd']:.3f}")
     return result
