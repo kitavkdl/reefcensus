@@ -355,7 +355,18 @@ class H(BaseHTTPRequestHandler):
         self.send(200, dict(name=name, mb=round(n / 1e6, 1)))
 
 
+def seed_demo_runs():
+    """A fresh clone has no runs/: copy the packed demo runs (demo/runs, see demo/pack_runs.py) so the screen
+    shows finished results without an API key. Existing runs are never overwritten."""
+    import shutil
+    demo = os.path.join(ROOT, "demo", "runs")
+    for rid in os.listdir(demo) if os.path.isdir(demo) else []:
+        if SAFE.match(rid) and not os.path.exists(os.path.join(RUNS, rid)):
+            shutil.copytree(os.path.join(demo, rid), os.path.join(RUNS, rid))
+
+
 if __name__ == "__main__":
+    seed_demo_runs()
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8793)     # 8765 crew, 8790/8791 brain
     a = ap.parse_args()

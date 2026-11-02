@@ -7,3 +7,5 @@ spikes/*/data/
 spikes/*/clips/*.frames/
 spikes/*/clips/*.txt
 demo/out/
+.env
+!demo/runs/*/annotated.mp4

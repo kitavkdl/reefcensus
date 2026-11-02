@@ -1,6 +1,7 @@
 """Meta Model API clients (SAM 3.1 video, Muse Spark chat) with a disk cache and a spend ledger.
 Every paid call goes through `_guard()`, which refuses to exceed BUDGET_USD (env FISH_BUDGET, default $1)
-for the lifetime of the ledger file. The API key is read only from ~/.config/meta-api/key and never printed."""
+for the lifetime of the ledger file. The API key comes from META_API_KEY (environment or a .env file in the repo root,
+see .env.example) or else ~/.config/meta-api/key, and is never printed."""
 import base64, hashlib, json, os, sys, threading, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -9,6 +10,20 @@ import requests
 
 BASE = "https://api.meta.ai/v1"
 KEYFILE = os.path.expanduser("~/.config/meta-api/key")
+
+
+def _load_dotenv(path=os.path.join(ROOT, ".env")):
+    """KEY=VALUE lines from .env, without overriding variables already set in the environment."""
+    if not os.path.exists(path):
+        return
+    for line in open(path):
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+_load_dotenv()
 CACHE = os.path.join(ROOT, "cache")
 LEDGER = os.path.join(CACHE, "ledger.jsonl")
 SAM_PER_FRAME = 0.20 / 1000
@@ -22,9 +37,11 @@ class BudgetExceeded(RuntimeError):
 
 
 def _key():
-    k = open(KEYFILE).read().strip()
+    k = os.environ.get("META_API_KEY", "").strip()
+    if not k and os.path.exists(KEYFILE):
+        k = open(KEYFILE).read().strip()
     if not k:
-        raise RuntimeError("empty key file")
+        raise RuntimeError("no Meta API key: set META_API_KEY (see .env.example), or use --offline / the demo runs")
     return k
 
 
