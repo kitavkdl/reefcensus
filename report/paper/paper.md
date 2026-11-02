@@ -531,6 +531,20 @@ report the change without scoring it. The audits also cost one animal: in s001, 
 confidence 0.55 and waits in the queue, so the audited count (2) is further from the person's "4 or more" than the
 unaudited one (3).
 
+**A fixed noun list instead of the VLM's names.** The second review asked whether a list of common nouns would do
+as well as Spark's naming at no VLM cost. We prompted SAM 3.1 on the full frame of each clip with 16 basic-level
+nouns for animals seen on baited cameras (fish, shark, ray, eel, crab, shrimp, lobster, octopus, squid, snail, shell,
+starfish, jellyfish, sea urchin, sea cucumber, worm), written before the calls and without "nautilus", and again with
+"nautilus" added as the survey's known target ($0.55, 46 new calls; `report/paper/scripts/fixed_vocab.py`). A word
+track counts as finding a taxon when it overlaps a track the audited run counted under that taxon (IoU ≥ 0.3 in at
+least three frames). The generic list finds 5 of the 7 taxa, but only one (s004 shrimp) under a right word: the s002
+crab is found as "octopus", the nautiluses as "snail" and "shell", the hagfish as "eel", and the s003 nautilus not at
+all. Adding "nautilus" reaches 6 of 7, the same as Spark's naming without audits (Table 3), with four taxa under a
+right word. On s001 "octopus" tracks a spot for 57 frames that matches no counted animal; the baseline cannot say
+whether it is the uncounted nautilus inside the trap or nothing. A fixed list thus recovers most taxa on these clips
+if it happens to contain the target, but it names them by whichever word fired; what the VLM adds is the name, and a
+list it did not need to be given.
+
 **The two queued "fish" in s002.** The audited output for s002 also lists "fish (unidentified): 2", from two
 low-confidence "fish" tracks that sit in the queue; the person listed no fish. One (A1: "red crab", 0.5) co-exists
 with the counted crab for 42 frames without overlapping it, so it is probably the second red crustacean the person
@@ -552,8 +566,8 @@ prompts with no word.](figures/motion_s004.jpg){.half}
 
 All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
 SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens). The repeated-call experiment of
-§7.1 added 24 Spark calls ($0.14), the held-out runs 58 calls ($0.31) and the fixed-vocabulary baseline of §6.3 the
-calls listed by `report/paper/scripts/ledger_summary.py`, which produces every number in this paragraph from the
+§7.1 added 24 Spark calls ($0.14), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
+SAM calls ($0.55), for a ledger total of $4.16 over 600 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
