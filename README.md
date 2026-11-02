@@ -40,14 +40,14 @@ is a hard cap on total spend; a 12 s discovery run costs about $0.05–0.25.
 ```
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit]
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
-python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval_<clip>)
+python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval3_<clip>)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
 The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
 of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits).
-New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run).
+New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, not in the repo).
 
 ## How well it counts (measured)
 Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames, IoU >= 0.3. MaxN over the annotated
@@ -55,18 +55,23 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
 
 | clip | annotated frames | SAM "fish" alone: recall / precision / MaxN true→counted | full pipeline: recall / precision / MaxN true→counted | tracks sent to a human |
 |---|---|---|---|---|
-| 20190618_9 | 44 | 98% / 72% / 9→10 | 94% / 72% / 9→8 | 6 of 14 |
-| 20190709_14 | 126 | 100% / 72% / 2→2 | 100% / 72% / 2→2 | 1 of 3 |
-| 20190618_3 | 58 | 100% / 98% / 2→3 | 100% / 98% / 2→3 | 2 of 3 |
+| 20190618_9 | 44 | 98% / 72% / 9→10 | 98% / 72% / 9→10 | 4 of 14 |
+| 20190709_14 | 126 | 100% / 72% / 2→2 | 100% / 72% / 2→2 | 0 of 3 |
+| 20190618_3 | 58 | 100% / 98% / 2→3 | 100% / 100% / 2→2 | 1 of 3 |
 | 20190710_4 | 40 | 82% / 100% / 2→1 | 82% / 100% / 2→1 | 0 of 1 |
-| 20190709_13 | 40 | 100% / 100% / 2→2 | 100% / 100% / 2→2 | 1 of 3 |
-| 20190709_4 | 11 | 100% / 71% / 2→3 | 100% / 77% / 2→2 | 3 of 3 |
-| **all** | 319 | **97.4% / 78.7%**, MaxN off by 1 on 4 of 6 | **95.9% / 79.3%**, MaxN off by 1 on 3 of 6 | 13 of 27 |
+| 20190709_13 | 40 | 100% / 100% / 2→2 | 100% / 100% / 2→2 | 0 of 3 |
+| 20190709_4 | 11 | 100% / 71% / 2→3 | 100% / 77% / 2→2 | 2 of 3 |
+| **all** | 319 | **97.4% / 78.7%**, MaxN off by 1 on 4 of 6 | **97.4% / 79.2%**, MaxN off by 1 on 2 of 6 | 7 of 27 |
 
-- On plain fish counting the pipeline is no better than SAM alone; its value is in what follows. 6 of the 12
-  "false-positive" tracks were checked by eye and all 6 are real luderick the annotators left unboxed.
-- MaxN is never more than 1 off, in either direction. About half the tracks go to the human queue: the counts are
-  what a reviewer confirms, not a final census.
+- Recall equals SAM alone: the checks no longer throw away real fish. They did at first (95.9%): Spark judged each
+  track from one crop, and a faint fish behind seagrass was "only seagrass and water", so a 36-frame track left the
+  count. Showing three crops of the same track (early, middle, late; for the peak check, just before and after)
+  fixed it, the same way it lets Spark tell a sediment cloud from an animal below.
+- Of the two MaxN misses left, 20190618_9 (9→10) is two real fish the annotators did not box in that frame (one cut
+  by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds. Earlier, 6 of 12
+  "false-positive" tracks were checked by eye and all 6 were real luderick the annotators left unboxed, so precision
+  is a lower bound.
+- A quarter of the tracks go to the human queue: the counts are what a reviewer confirms, not a final census.
 
 ## Finding what you didn't ask for (measured)
 Four nautilus BRUV clips (12 s each), request = "fish" only. Before looking at any output, every non-fish animal in
@@ -78,7 +83,7 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 | counted at the end | 6 of 7 (missed: nautilus behind a wire trap at night, s001) |
 | something wrong counted | 0 (Spark once proposed a shrimp that isn't there; SAM tracked nothing for it) |
 | SAM "fish" alone | 0 of 7 — it only sees what it is told |
-| motion look, added | +1 animal counted (s004 edge shrimp), 0 counted wrongly. A sediment cloud that looked like a fish in one crop is rejected once Spark sees three |
+| motion look, added | +2 shrimp in s004's peak frame (both at the bottom edge, outside every box), 0 counted wrongly. A sediment cloud that looked like a fish in one crop is rejected once Spark sees three; low-confidence motion tracks go to the human queue only |
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — github.com/globalwetlands/luderick-seagrass

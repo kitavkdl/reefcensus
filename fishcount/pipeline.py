@@ -31,16 +31,20 @@ Return ONLY JSON:
  "signs":[{{"frame":int,"region":"one of top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right","sign":"<=12 words","possible_animal":"best guess or unknown"}}]}}
 At most 4 others (most notable first) and 3 signs. Use empty lists if there are none."""
 
-AUDIT_PROMPT = """You are checking detections from an automatic tracker in underwater survey video. Each tile is one tracked object, labelled with its track id (e.g. T3); the detector was asked to find "{label}". Context from an earlier look at the clip: {context}
+AUDIT_PROMPT = """You are checking detections from an automatic tracker in underwater survey video. Each tile is one tracked object, labelled with its track id (e.g. T3), shown at three moments of the clip (early, middle, late; same zoom, the orange box marks the object); the detector was asked to find "{label}". Context from an earlier look at the clip: {context}
 For every tile return ONLY a JSON list: [{{"track":"T3","is_target":true|false,"species":"common name or 'unknown'","confidence":0.0-1.0,"reason":"<=10 words"}}]
-is_target = the tile really shows a whole or partial {target} (not seagrass, rock, bubbles, debris, a shadow, or a duplicate fragment you cannot tell apart). Be honest about uncertainty: blurry tiles should get low confidence."""
+is_target = the tile really shows a whole or partial {target} (not seagrass, rock, bubbles, debris, a shadow, or a duplicate fragment you cannot tell apart). Use all three crops: an animal keeps its body shape while it moves; weed sways in place and sediment changes shape. A hazy or faint {target} seen through water or seagrass is still a {target}. Be honest about uncertainty: blurry tiles should get low confidence."""
 
+# 11/2 luderick 20190618_9: with one crop per track (its largest box), a faint fish behind seagrass was called
+# "only seagrass and water" and its whole 36-frame track left the count. Three crops show the same body moving.
 # 11/1 s004: per-track audit saw one crop per track (its largest box) and passed them all, yet in the MaxN frame
 # most "shrimp" boxes sat on hagfish bodies. So the frame that sets each MaxN is checked box by box.
-VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ...
+VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ... Each tile shows that frame in the middle ("this frame", orange box) and the same tracked object about half a second before and after (left, right) at the same zoom.
 For every tile return ONLY a JSON list: [{{"tile":"D1","is_target":true|false,"what_it_is":"<=6 words"}}]
-is_target = the tile mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. If it is too blurry to tell, answer true and say "unclear"."""
+is_target = the middle crop mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
 
+# 11/2 luderick 20190618_9 frame 35: a single crop of a faint fish behind seagrass was called "seagrass and water"
+# and the fish left 11 frames. The before/after crops show the same body moving.
 # 11/2 s004 frame 24: the same shrimp was boxed twice by different passes (body only + body with legs), so it was
 # counted twice. Masks find the candidates (one mask >=80% inside the other), but cannot tell a duplicate from
 # s003's case: SAM drew one mask over two nautiluses and a zoom tile found the rear one alone (both counts right).
@@ -57,7 +61,7 @@ For every group return ONLY a JSON list: [{{"tile":"M1","is_animal":true|false,"
 Compare the three crops: an animal keeps about the same shape and size (it may turn or move); a sand or sediment cloud spreads, thins or changes shape from crop to crop, and a shadow changes with the light.
 Black areas are outside the picture: an animal cut off by the edge of the picture still counts.
 is_animal = the rectangle mainly holds a living animal, even a small, pale, blurry or partly hidden one. Answer false for sand or sediment clouds, shadows, bubbles, bait or a bait bag, rope, net, rock, seagrass, empty water, or a tentacle, fin or tail of a bigger animal whose body is clearly elsewhere in the crops."""
-MOTION_VERSION = "v4"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
+MOTION_VERSION = "v5"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
     """check= for the motion sheet: JSON naming at least one M tile (else not cached, asked once more)."""
     got = api.parse_json(text)
@@ -161,32 +165,48 @@ def word_ladder(run, clip, n, words, offline):
     return None, "", tried
 
 
+def _paths(frames):
+    """{track: [(frame, box)]} in frame order."""
+    out = {}
+    for f in sorted(frames):
+        for k in frames[f]:
+            out.setdefault(k["track"], []).append((f, k["box"]))
+    return out
+
+
+def _ibox(b):
+    return [int(round(x)) for x in b]
+
+
+def _half(trio_):
+    """Crop half-size for a trio: the largest box side with a quarter of padding each way (as render.crop)."""
+    return max(48, int(0.75 * max(max(b[2] - b[0], b[3] - b[1]) for _, b in trio_)))
+
+
 def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None):
-    """Show Spark one crop per track (largest box) in sheets of 12; returns {track: verdict}."""
-    best = {}
-    for f, ks in frames.items():
-        for k in ks:
-            if trk[k["track"]]["label"] != label:
-                continue
-            b = k["box"]
-            a = (b[2] - b[0]) * (b[3] - b[1])
-            if k["track"] not in best or a > best[k["track"]][0]:
-                best[k["track"]] = (a, f, b)
+    """Show Spark three crops per track (early, largest box, late) in sheets of 12; returns {track: verdict}."""
+    paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label}
+    best, trios = {}, {}
+    for t, p in paths.items():
+        i = max(range(len(p)), key=lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1]))
+        span = max(1, len(p) // 3)
+        best[t] = (None, p[i][0], p[i][1])
+        trios[t] = [(f, _ibox(b)) for f, b in (p[max(0, i - span)], p[i], p[min(len(p) - 1, i + span)])]
     ids = sorted(best, key=lambda t: best[t][1])
     names = {t: f"T{start + i + 1}" for i, t in enumerate(ids)}
-    imgs = video.frames(clip, {best[t][1] for t in ids})
+    imgs = video.frames(clip, {f for t in ids for f, _ in trios[t]})
     os.makedirs(run.path("thumbs"), exist_ok=True)
-    crops = {}
+    groups = {}
     for t in ids:
         _, f, b = best[t]
         crop = render.crop(imgs[f], b, pad=0.25, min_side=96)
         open(run.path("thumbs", f"{names[t]}.jpg"), "wb").write(video.jpg(crop, max_w=320))
-        crops[t] = video.label(render.square(crop, 256), names[t])
+        groups[t] = motion.trio(imgs, trios[t], names[t], half=_half(trios[t]))
     out = {}
     for i in range(0, len(ids), per_sheet):
         chunk = ids[i:i + per_sheet]
-        sheet = video.grid([crops[t] for t in chunk], 4, 256)
-        reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json_list)
+        sheet = motion.layout([groups[t] for t in chunk])
+        reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [sheet], offline=offline, check=api.parse_json_list)
         for v in api.parse_json_list(reply):
             out[v["track"]] = v
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
@@ -301,9 +321,10 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
 
     labels = auto_labels(trk, verdicts)
     for t, v in verdicts.items():
-        # a motion track rests on two weak signals (it moved; Spark thought one crop looked alive), so any audit
-        # rejection keeps it out of the count. It stays in Needs a person, where a human can restore it.
-        if trk[t]["source"].startswith("m") and v.get("is_target") is False:
+        # a motion track rests on two weak signals (it moved; Spark thought one crop looked alive), so it is counted
+        # only on a confident audit yes. Otherwise it stays in Needs a person, where a human can restore it.
+        # 11/2 s004 v11: a box that drifted onto net mesh and hagfish got "obscured shrimp", confidence 0.4.
+        if trk[t]["source"].startswith("m") and needs_review(v):
             labels[t] = None
     for mv in moved:
         if mv.get("source"):
@@ -483,7 +504,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=3, min
         picks = motion.pick(cands, k=k)
         said, meta, sheet_name = {}, [], None
         if picks:
-            jpg, meta = motion.sheet(clip, picks, W, H)
+            jpg, meta = motion.sheet(clip, picks, W, H, n=n)
             sheet_name = f"motion_{key}.jpg"
             open(os.path.join(api.CACHE, sheet_name), "wb").write(jpg)
             open(sheet_jpg, "wb").write(jpg)
@@ -620,10 +641,11 @@ def closer_look(run, clip, inf, jobs, results, max_usd, offline):
     return log
 
 
-def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, window=5):
-    """Spark checks every box in the frame that sets each label's MaxN. A rejected box removes that track for
-    +-`window` frames (1 s at 5 fps), the curve is recomputed, and the new peak frame is checked, up to `rounds`.
-    Mutates `frames`; returns one log entry per checked frame."""
+def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, window=5, per_sheet=12, side_gap=3):
+    """Spark checks every box in the frame that sets each label's MaxN, each with the same track `side_gap` frames
+    before and after. A rejected box removes that track for +-`window` frames (1 s at 5 fps), the curve is
+    recomputed, and the new peak frame is checked, up to `rounds`. Mutates `frames`; returns one log entry per
+    checked frame."""
     log, done = [], set()
     lab = lambda t: labels.get(t, trk[t]["label"])
     for _ in range(rounds):
@@ -631,16 +653,27 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
         todo = [(name, mm["maxn_frame"]) for name, mm in m.items() if mm["maxn_frame"] is not None and (name, mm["maxn_frame"]) not in done]
         if not todo:
             break
-        imgs = video.frames(clip, {f for _, f in todo})
+        paths = _paths(frames)
+        trios = {}
+        for name, f in todo:
+            for k in frames[f]:
+                if lab(k["track"]) != name:
+                    continue
+                p = dict(paths[k["track"]])
+                before = max((g for g in p if g <= f - side_gap), default=min(p))
+                after = min((g for g in p if g >= f + side_gap), default=max(p))
+                trios[(f, k["track"])] = [(g, _ibox(p[g] if g != f else k["box"])) for g in (before, f, after)]
+        imgs = video.frames(clip, {g for tr in trios.values() for g, _ in tr} | {f for _, f in todo})
         for name, f in todo:
             done.add((name, f))
             ks = [k for k in frames[f] if lab(k["track"]) == name]
-            tiles = [video.label(render.square(render.crop(imgs[f], k["box"], pad=0.25, min_side=96), 256), f"D{i + 1}") for i, k in enumerate(ks)]
+            groups = [motion.trio(imgs, trios[(f, k["track"])], f"D{i + 1}", half=_half(trios[(f, k["track"])]),
+                                  words=("before", "this frame", "after")) for i, k in enumerate(ks)]
             said = {}
             word = name.replace(" (unidentified)", "")
-            for i in range(0, len(tiles), 16):
-                sheet = video.grid(tiles[i:i + 16], 4, 256)
-                reply = _counted(run, api.spark, VERIFY_PROMPT.format(name=word), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json_list)
+            for i in range(0, len(groups), per_sheet):
+                sheet = motion.layout(groups[i:i + per_sheet])
+                reply = _counted(run, api.spark, VERIFY_PROMPT.format(name=word), [sheet], offline=offline, check=api.parse_json_list)
                 for v in api.parse_json_list(reply):
                     said[v.get("tile")] = v
             bad = [(k, said[f"D{i + 1}"]) for i, k in enumerate(ks) if said.get(f"D{i + 1}", {}).get("is_target") is False]
@@ -650,7 +683,7 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
                     frames[g] = [k for k in frames[g] if k["track"] not in drop]
             log.append(dict(label=name, frame=f, checked=len(ks), kept=len(ks) - len(bad),
                             rejected=[dict(track=k["track"], box=[round(x) for x in k["box"]], said=v.get("what_it_is")) for k, v in bad]))
-            run.stage("verify", f"{name}: Spark checks all {len(ks)} boxes in peak frame {f}, rejects {len(bad)}"
+            run.stage("verify", f"{name}: Spark checks all {len(ks)} boxes in peak frame {f} (with the track just before and after), rejects {len(bad)}"
                       + (": " + "; ".join(sorted({v.get('what_it_is', '?') for _, v in bad})) if bad else ""))
     return log
 
@@ -726,8 +759,15 @@ def drop_nested(frames, dec, outer, inner, contain):
             frames[g] = [k for k in ks if k is not ki]
 
 
+def _conf(v):
+    try:
+        return float(v.get("confidence") or 0)
+    except (TypeError, ValueError):     # Spark sometimes quotes numbers
+        return 0.0
+
+
 def needs_review(v):
-    return not v or v.get("confidence", 0) < 0.7 or v.get("is_target") is False
+    return not v or _conf(v) < 0.7 or v.get("is_target") is False
 
 
 def auto_labels(trk, verdicts):
@@ -735,7 +775,7 @@ def auto_labels(trk, verdicts):
     "<category> (unidentified)" and goes to the human queue. A human edit overrides any of these."""
     out = {}
     for t, v in verdicts.items():
-        conf = v.get("confidence", 0)
+        conf = _conf(v)
         if v.get("is_target") is False and conf >= 0.7:
             out[t] = None
         elif conf >= 0.7 and v.get("species") and v["species"] != "unknown":

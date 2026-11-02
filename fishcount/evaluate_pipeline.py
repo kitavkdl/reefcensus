@@ -1,7 +1,7 @@
 """Score full pipeline runs (merge, stitch, Spark audit, same-animal check, peak check) against the luderick
 ground truth (Ditria et al. 2021, CC BY 4.0), next to raw SAM 'fish' on the same clips.
 MaxN is taken over the human-annotated frames only, for both, so the two are comparable.
-  python3 fishcount/evaluate_pipeline.py [--run]   (--run: make missing runs eval_<clip>; needs FISH_BUDGET)"""
+  python3 fishcount/evaluate_pipeline.py [--run] [--tag eval3]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks
@@ -36,6 +36,7 @@ def pipeline_boxes(res):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", action="store_true")
+    ap.add_argument("--tag", default="eval3")   # eval3 = three-crop audit and peak check (11/2)
     a = ap.parse_args()
     man = json.load(open(f"{SMOKE}/clips/manifest_fish.json"))
     rows, tot = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}
@@ -44,10 +45,10 @@ def main():
               for k, v in json.load(open(f"{SMOKE}/{c['gt']}"))["frames"].items()}
         clip = f"{SMOKE}/{c['path']}"
         sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(api.sam_video(clip, "fish", c["n_frames"], offline=True)).items()}
-        rp = os.path.join(RUNS, f"eval_{cid}", "result.json")
+        rp = os.path.join(RUNS, f"{a.tag}_{cid}", "result.json")
         if a.run and not os.path.exists(rp):
             from fishcount import pipeline
-            pipeline.run_pipeline(clip, f"eval_{cid}", do_scout=False, prompts=["fish"], max_usd=0.2)
+            pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.2)
         res = json.load(open(rp)) if os.path.exists(rp) else None
         r = dict(clip=cid, frames=len(gt), sam=score(sam, gt))
         if res:

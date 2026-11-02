@@ -2,7 +2,7 @@
 Only what the screen shows is copied: result.json, status.json, review.json if any, evidence jpgs, motion_sheet.jpg, thumbs/,
 annotated.mp4 (~2 MB a run). web/server.py seeds runs/ from demo/runs/ on start.
 
-    python3 demo/pack_runs.py L1_s002_v8 L1_s003_v8 L1_s004_v8
+    python3 demo/pack_runs.py L1_s002_v12 L1_s003_v12 L1_s004_v12
 """
 import os, shutil, sys
 
