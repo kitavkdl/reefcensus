@@ -9,3 +9,4 @@ spikes/*/clips/*.txt
 demo/out/
 .env
 !demo/runs/*/annotated.mp4
+demo/site/
