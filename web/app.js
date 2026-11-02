@@ -241,7 +241,19 @@ function drawFound() {
     el("h2", {}, "Found without being asked", el("small", {}, "Muse Spark named what else was there; SAM tracked it under a plain word.")),
     ...(items.length ? items : [el("p", { class: "empty" }, disc.length ? "Spark saw other animals, but SAM could not track them." : "Spark saw nothing else living in this clip.")]),
     ...(missed.length ? [el("p", { class: "signs" }, "Seen but not trackable: ",
-      ...missed.map((d, i) => [i ? "; " : "", el("b", {}, d.what), ` (tried ${d.tried.map((t) => t.word).join(", ")})`]))] : []));
+      ...missed.map((d, i) => [i ? "; " : "", el("b", {}, d.what), ` (tried ${d.tried.map((t) => t.word).join(", ")})`]))] : []),
+    ...groupBlock(run));
+}
+
+// same-frame totals per animal group (server: pipeline.group_metrics), shown under both count panels
+function groupBlock(run) {
+  const gm = Object.entries(run.group_metrics || {});
+  if (!gm.length) return [];
+  return [el("div", { class: "groups" }, el("h3", {}, "By animal group", el("small", {}, " the labels below added frame by frame")),
+    ...gm.map(([g, m]) => el("div", { class: "climb" }, `All ${g === "fish" ? "fish" : g + "s"}: `,
+      el("span", { class: "num" }, m.maxn), ` in one frame (${m.labels.map((n) => `${run.metrics[n]?.curve?.[m.maxn_frame] || 0} ${n}`).join(" + ")}) `,
+      m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `at ${secs(m.maxn_time)}`) : null,
+      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "")))];
 }
 
 // "shrimp (unidentified)" and "caridean shrimp" are both shrimp: one track has one label, so per-frame counts add.

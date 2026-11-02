@@ -166,6 +166,17 @@ class NameDisagreement(unittest.TestCase):
         self.assertTrue(P.needs_review(dict(ok, name_disagrees="caridean shrimp vs fish")))
 
 
+class GroupMetrics(unittest.TestCase):
+    def test_same_frame_sum(self):
+        from fishcount import pipeline as P
+        m = {"caridean shrimp": dict(curve=[1, 3, 2], first_frame=0, tracks=3),
+             "shrimp (unidentified)": dict(curve=[0, 0, 2], first_frame=2, tracks=2),
+             "hagfish": dict(curve=[1, 1, 0], first_frame=0, tracks=1)}
+        g = P.group_metrics(m, 5.0)
+        self.assertEqual(list(g), ["crustacean"])          # a one-label group is that label's own row
+        self.assertEqual((g["crustacean"]["maxn"], g["crustacean"]["maxn_frame"]), (4, 2))
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")
