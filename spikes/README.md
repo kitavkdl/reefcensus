@@ -11,7 +11,7 @@ Subfolders (each has `clips/`, `out/` = raw SAM text, `data/` = ignored inputs):
 - `E/` thermal video (`rangezip.py` lists/extracts remote zip members); early idea exploration, not part of reefcensus
 - `F/` AI-video object-permanence check (`lifecycle.py`); early idea exploration, not part of reefcensus
 - `G/` kitchen contact graph (`contact.py`, `maskcontact.py`, `timeline.py`); early idea exploration, not part of reefcensus
-- `DH/` clips only (`DH1-5.mp4`); exploratory
+- `DH/` held-out discovery evaluation clips (made by `report/paper/scripts/prep_discovery_heldout.py`, protocol `report/paper/discovery_heldout_protocol.md`)
 - `L1/` discovery: Spark names what was not asked, SAM tries the words (`discover.py`); led to `--discover`
 - `M/` s004 box prompts (`s004_boxA/B.txt`); exploratory
 - `control/` IMAS clip `imas_TF_52` with a "fish" prompt, as a control
