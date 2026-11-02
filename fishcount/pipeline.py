@@ -806,6 +806,10 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
                                   words=trios[(f, k["track"])][1]) for i, k in enumerate(ks)]
             said = {}
             word = name.replace(" (unidentified)", "")
+            # ask about the requested category, not the species the audit proposed: asked "striped seabream?", Spark
+            # removed a real fish as "other fish" (paper Table 4b), and it is then counted under no label at all
+            if ks and all(trk[k["track"]]["source"].startswith("p") for k in ks):
+                word = trk[ks[0]["track"]]["label"]
             for i in range(0, len(groups), per_sheet):
                 sheet = motion.layout(groups[i:i + per_sheet])
                 open(run.path(f"verify_{api_safe(name)}_f{f}_{i // per_sheet + 1}.jpg"), "wb").write(sheet)
