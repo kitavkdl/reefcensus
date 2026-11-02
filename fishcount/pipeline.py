@@ -39,9 +39,9 @@ is_target = the tile really shows a whole or partial {target} (not seagrass, roc
 # "only seagrass and water" and its whole 36-frame track left the count. Three crops show the same body moving.
 # 11/1 s004: per-track audit saw one crop per track (its largest box) and passed them all, yet in the MaxN frame
 # most "shrimp" boxes sat on hagfish bodies. So the frame that sets each MaxN is checked box by box.
-VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ... Each tile shows that frame in the middle ("this frame", orange box) and the same tracked object about half a second before and after (left, right) at the same zoom. Only when the track starts or ends in that frame is "this frame" the first or last crop instead, as the captions under the crops say.
+VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ... Each tile shows that frame in the middle ("this frame", orange box) and the same tracked object about half a second before and after (left, right) at the same zoom.
 For every tile return ONLY a JSON list: [{{"tile":"D1","is_target":true|false,"what_it_is":"<=6 words"}}]
-is_target = the "this frame" crop (normally the middle one) mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
+is_target = the middle crop mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
 
 # 11/2 luderick 20190618_9 frame 35: a single crop of a faint fish behind seagrass was called "seagrass and water"
 # and the fish left 11 frames. The before/after crops show the same body moving.
@@ -61,6 +61,12 @@ For every group return ONLY a JSON list: [{{"tile":"M1","is_animal":true|false,"
 Compare the three crops: an animal keeps about the same shape and size (it may turn or move); a sand or sediment cloud spreads, thins or changes shape from crop to crop, and a shadow changes with the light.
 Black areas are outside the picture: an animal cut off by the edge of the picture still counts.
 is_animal = the rectangle mainly holds a living animal, even a small, pale, blurry or partly hidden one. Answer false for sand or sediment clouds, shadows, bubbles, bait or a bait bag, rope, net, rock, seagrass, empty water, or a tentacle, fin or tail of a bigger animal whose body is clearly elsewhere in the crops."""
+# 11/2 s003 v13: a motion box on the trap's net legs got audit "large striped shrimp", 0.75 - the audit context listed
+# that name (a discovery guess no word ever found) and the audit took it. A motion track rests on weak signals, so before
+# it counts a second Spark look must agree: other moments of the track, no label, no names from earlier steps.
+CONFIRM_PROMPT = """Each group (C1, C2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops), same zoom; the orange rectangle marks the object. The tracker was started from a moving spot, so it may have locked onto something that is not an animal.
+For every group return ONLY a JSON list: [{{"tile":"C1","is_animal":true|false,"name":"one plain noun or none","confidence":0.0-1.0,"reason":"<=10 words"}}]
+is_animal = the rectangle holds the same living animal in the crops (a whole one or most of one; small, pale or blurry is fine). Answer false when it holds a part of a trap, net, mesh, rope, cans, bait, rock, seagrass, a shadow, sediment or empty water, or only a tentacle, fin or tail of a bigger animal whose body is elsewhere. Things fixed to the trap or seabed keep the same place against them in every crop; an animal changes place or pose. Be honest: if you cannot see an animal, answer false."""
 MOTION_VERSION = "v7"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
     """check= for the motion sheet: JSON naming at least one M tile (else not cached, asked once more)."""
@@ -234,6 +240,31 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
 
 
+def confirm_motion(run, clip, frames, ts, offline):
+    """Second look at motion tracks the audit would count: crops at other moments than the audit's (the path's first
+    and last eighth and its middle), no label and no earlier names in the prompt. Saved as confirm_<n>.jpg."""
+    paths = _paths(frames)
+    groups, names = [], {}
+    trios = {}
+    for t in ts:
+        p = paths[t]
+        L = len(p)
+        idx = sorted({min(L - 1, L // 8), L // 2, max(0, L - 1 - L // 8)})
+        if len(idx) < 3 and L >= 3:
+            idx = sorted(set(idx) | {0, L - 1})[:3]
+        trios[t] = [(p[j][0], _ibox(p[j][1])) for j in idx]
+    imgs = video.frames(clip, {f for t in ts for f, _ in trios[t]})
+    for i, t in enumerate(ts):
+        names[t] = f"C{i + 1}"
+        groups.append(motion.trio(imgs, trios[t], names[t], half=_half(trios[t]), words=("first", "middle", "last")[:len(trios[t])]))
+    del imgs
+    sheet = motion.layout(groups)
+    open(run.path("confirm_1.jpg"), "wb").write(sheet)
+    reply = _counted(run, api.spark, CONFIRM_PROMPT, [sheet], offline=offline, check=api.parse_json_list)
+    got = {v.get("tile"): v for v in api.parse_json_list(reply)}
+    return {t: got.get(names[t], {}) for t in ts}
+
+
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False):
     rid = rid or time.strftime("%m%d-%H%M%S")
@@ -342,8 +373,17 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         run.stage("audit", f"{n_flag} of {len(verdicts)} tracks need a human look")
 
     labels = auto_labels(trk, verdicts)
-    seen = {norm_label(f["what"]) for f in found} - {None}
+    # every word of every discovered name: "small red crab on seabed" must match an audit "small red crab" (11/2 s002 v13:
+    # norm_label kept only "seabed", so the red crab the discovery step had named was dropped as "not a shrimp")
+    seen = {norm_label(w) for f in found for w in (f["what"] or "").split()} - {None}
     for t, v in verdicts.items():
+        # a discovered track (word ladder) that the audit confidently calls another animal the discovery step had
+        # also named is that animal: two looks agree (s002: 'shrimp' word -> audit "small red crab", 0.7)
+        if (trk[t]["source"].startswith("d") and v.get("is_target") is False and _conf(v) >= 0.7
+                and norm_label(v.get("species") or "") in seen):
+            labels[t] = v["species"].lower()
+            v["relabelled"] = f"{trk[t]['label']} -> {labels[t]}"
+            continue
         # a motion label is Spark's one-word guess from a small crop; when the audit says "not a <guess>" but
         # confidently names an animal the discovery step had already named on its own, the track is that animal
         # (11/2 s001 v13: "snail" -> audit "not a snail; nautilus, shell and tentacles clear", 0.9). The peak check
@@ -358,6 +398,19 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         # 11/2 s004 v11: a box that drifted onto net mesh and hagfish got "obscured shrimp", confidence 0.4.
         if trk[t]["source"].startswith("m") and needs_review(v):
             labels[t] = None
+    if do_audit:
+        sure = [t for t in verdicts if trk[t]["source"].startswith("m") and labels.get(t)]
+        if sure:
+            said = confirm_motion(run, clip, frames, sure, offline)
+            for t in sure:
+                c = said.get(t, {})
+                verdicts[t]["confirm"] = c
+                # this look only asks "animal or not" (net, shadow); the species confidence (>= 0.7) is the audit's
+                # job, so a plain yes is enough here (11/2 s004 v14: two shrimp the eye confirms got yes at 0.6/0.65)
+                if not (c.get("is_animal") is True and _conf(c) >= 0.5):
+                    labels[t] = None
+            run.stage("audit", f"second look at {len(sure)} motion track(s) before they count: "
+                      + ", ".join(f"{verdicts[t]['name']} {'yes' if labels[t] else 'no'} ({said.get(t, {}).get('reason', 'no answer')})" for t in sure))
     for mv in moved:
         if mv.get("source"):
             mine_t = [t for t, v in trk.items() if v["source"] == mv["source"]]
@@ -688,24 +741,14 @@ def closer_look(run, clip, inf, jobs, results, max_usd, offline):
 
 
 def _sides(ps, f, gap):
-    """[(frame, caption)] x3 in time order for checking frame f of a track with frames `ps`: before / this frame /
-    after, or both side crops on the side that has frames when the track starts or ends at f (11/2 review: frame 0
-    of a track was shown as its own 'before')."""
-    before = max((g for g in ps if g <= f - gap), default=None)
-    after = min((g for g in ps if g >= f + gap), default=None)
-    if before is not None and after is not None:
-        return [(before, "before"), (f, "this frame"), (after, "after")]
-    if after is not None:
-        later = min((g for g in ps if g >= after + gap), default=max(ps))
-        return [(f, "this frame"), (after, "after"), (later, "later")]
-    if before is not None:
-        earlier = max((g for g in ps if g <= before - gap), default=min(ps))
-        return [(earlier, "earlier"), (before, "before"), (f, "this frame")]
-    near = sorted(sorted((g for g in ps if g != f), key=lambda g: abs(g - f))[:2])   # track shorter than 2*gap
-    if not near:
-        return [(f, "this frame")] * 3
-    near = (near + near)[:2]
-    return sorted([(f, "this frame")] + [(g, "before" if g < f else "after") for g in near], key=lambda t: t[0])
+    """[(frame, caption)] x3 for checking frame f of a track with frames `ps`: before / this frame / after, "this
+    frame" always in the middle. When the track starts or ends at f, the missing side repeats f.
+    11/2 v13 tried moving "this frame" to the first/last crop with two crops on the other side (review: a repeated
+    frame wastes a crop): luderick 20190618_9 frame 35, where a faint fish's track starts, was rejected as
+    "seagrass, no fish" again and recall fell 97.4 -> 96.3%. With the frame repeated Spark sees the faint fish twice."""
+    before = max((g for g in ps if g <= f - gap), default=min(ps))
+    after = min((g for g in ps if g >= f + gap), default=max(ps))
+    return [(before, "before"), (f, "this frame"), (after, "after")]
 
 
 def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, window=5, per_sheet=12, side_gap=3):

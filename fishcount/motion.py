@@ -171,9 +171,9 @@ def _crop(img, box, half, side):
 
 
 def trio(fr, tr, name, side=200, half=None, words=("early", "middle", "late")):
-    """`words` labels the three crops in order (verify_peaks passes its own per object)."""
     """Three crops of one object side by side (same zoom, each centred on its own box, box drawn), tagged `name`.
-    `half` defaults to the largest box side, so a size or shape change across the three shows."""
+    `half` defaults to the largest box side, so a size or shape change across the three shows. `words` labels the
+    crops in order (verify_peaks passes its own per object)."""
     half = half or max(max(b[2] - b[0], b[3] - b[1]) for _, b in tr)
     tiles = []
     for j, (t, b) in enumerate(tr):
