@@ -1,7 +1,7 @@
 """Score full pipeline runs (merge, stitch, Spark audit, same-animal check, peak check) against the luderick
 ground truth (Ditria et al. 2021, CC BY 4.0), next to raw SAM 'fish' on the same clips.
 MaxN is taken over the human-annotated frames only, for both, so the two are comparable.
-  python3 fishcount/evaluate_pipeline.py [--run] [--tag eval3]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
+  python3 fishcount/evaluate_pipeline.py [--run] [--tag eval3] [--manifest manifest_heldout.json]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks, pipeline
@@ -37,8 +37,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--tag", default="eval3")   # eval3 = three-crop audit and peak check (11/2)
+    ap.add_argument("--manifest", default="manifest_fish.json", help="manifest_heldout.json = the held-out clips (paper)")
     a = ap.parse_args()
-    man = json.load(open(f"{SMOKE}/clips/manifest_fish.json"))
+    man = json.load(open(f"{SMOKE}/clips/{a.manifest}"))
     rows, tot = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}
     for cid, c in man["clips"].items():
         gt = {int(k): [(x, y, x + w, y + h) for x, y, w, h, *_ in v]

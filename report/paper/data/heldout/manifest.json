@@ -1,0 +1,317 @@
+{
+ "note": "held-out: every annotated archive video not used in development (11/2, protocol in report/paper/heldout_protocol.md)",
+ "clips": {
+  "fish_20190618_1": {
+   "test": "fish",
+   "path": "clips/fish_20190618_1.mp4",
+   "gt": "clips/gt/fish_20190618_1.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_1.mov",
+   "out_fps": 5,
+   "n_frames": 31,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_10": {
+   "test": "fish",
+   "path": "clips/fish_20190618_10.mp4",
+   "gt": "clips/gt/fish_20190618_10.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_10.mov",
+   "out_fps": 5,
+   "n_frames": 11,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_11": {
+   "test": "fish",
+   "path": "clips/fish_20190618_11.mp4",
+   "gt": "clips/gt/fish_20190618_11.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_11.mov",
+   "out_fps": 5,
+   "n_frames": 21,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_2": {
+   "test": "fish",
+   "path": "clips/fish_20190618_2.mp4",
+   "gt": "clips/gt/fish_20190618_2.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_2.mov",
+   "out_fps": 5,
+   "n_frames": 19,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_4": {
+   "test": "fish",
+   "path": "clips/fish_20190618_4.mp4",
+   "gt": "clips/gt/fish_20190618_4.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_4.mov",
+   "out_fps": 5,
+   "n_frames": 22,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_5": {
+   "test": "fish",
+   "path": "clips/fish_20190618_5.mp4",
+   "gt": "clips/gt/fish_20190618_5.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_5.mov",
+   "out_fps": 5,
+   "n_frames": 8,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_6": {
+   "test": "fish",
+   "path": "clips/fish_20190618_6.mp4",
+   "gt": "clips/gt/fish_20190618_6.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_6.mov",
+   "out_fps": 5,
+   "n_frames": 16,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_7": {
+   "test": "fish",
+   "path": "clips/fish_20190618_7.mp4",
+   "gt": "clips/gt/fish_20190618_7.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_7.mov",
+   "out_fps": 5,
+   "n_frames": 17,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190618_8": {
+   "test": "fish",
+   "path": "clips/fish_20190618_8.mp4",
+   "gt": "clips/gt/fish_20190618_8.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190618_8.mov",
+   "out_fps": 5,
+   "n_frames": 50,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_11": {
+   "test": "fish",
+   "path": "clips/fish_20190709_11.mp4",
+   "gt": "clips/gt/fish_20190709_11.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_11.mov",
+   "out_fps": 5,
+   "n_frames": 42,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_15": {
+   "test": "fish",
+   "path": "clips/fish_20190709_15.mp4",
+   "gt": "clips/gt/fish_20190709_15.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_15.mov",
+   "out_fps": 5,
+   "n_frames": 24,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_17": {
+   "test": "fish",
+   "path": "clips/fish_20190709_17.mp4",
+   "gt": "clips/gt/fish_20190709_17.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_17.mov",
+   "out_fps": 5,
+   "n_frames": 30,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_2": {
+   "test": "fish",
+   "path": "clips/fish_20190709_2.mp4",
+   "gt": "clips/gt/fish_20190709_2.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_2.mov",
+   "out_fps": 5,
+   "n_frames": 38,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_3": {
+   "test": "fish",
+   "path": "clips/fish_20190709_3.mp4",
+   "gt": "clips/gt/fish_20190709_3.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_3.mov",
+   "out_fps": 5,
+   "n_frames": 37,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_8": {
+   "test": "fish",
+   "path": "clips/fish_20190709_8.mp4",
+   "gt": "clips/gt/fish_20190709_8.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_8.mov",
+   "out_fps": 5,
+   "n_frames": 6,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190709_9": {
+   "test": "fish",
+   "path": "clips/fish_20190709_9.mp4",
+   "gt": "clips/gt/fish_20190709_9.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190709_9.mov",
+   "out_fps": 5,
+   "n_frames": 13,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_1": {
+   "test": "fish",
+   "path": "clips/fish_20190710_1.mp4",
+   "gt": "clips/gt/fish_20190710_1.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_1.mov",
+   "out_fps": 5,
+   "n_frames": 46,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_2": {
+   "test": "fish",
+   "path": "clips/fish_20190710_2.mp4",
+   "gt": "clips/gt/fish_20190710_2.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_2.mov",
+   "out_fps": 5,
+   "n_frames": 33,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_3": {
+   "test": "fish",
+   "path": "clips/fish_20190710_3.mp4",
+   "gt": "clips/gt/fish_20190710_3.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_3.mov",
+   "out_fps": 5,
+   "n_frames": 24,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_5": {
+   "test": "fish",
+   "path": "clips/fish_20190710_5.mp4",
+   "gt": "clips/gt/fish_20190710_5.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_5.mov",
+   "out_fps": 5,
+   "n_frames": 52,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_6": {
+   "test": "fish",
+   "path": "clips/fish_20190710_6.mp4",
+   "gt": "clips/gt/fish_20190710_6.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_6.mov",
+   "out_fps": 5,
+   "n_frames": 62,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_7": {
+   "test": "fish",
+   "path": "clips/fish_20190710_7.mp4",
+   "gt": "clips/gt/fish_20190710_7.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_7.mov",
+   "out_fps": 5,
+   "n_frames": 51,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_8": {
+   "test": "fish",
+   "path": "clips/fish_20190710_8.mp4",
+   "gt": "clips/gt/fish_20190710_8.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_8.mov",
+   "out_fps": 5,
+   "n_frames": 12,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  },
+  "fish_20190710_9": {
+   "test": "fish",
+   "path": "clips/fish_20190710_9.mp4",
+   "gt": "clips/gt/fish_20190710_9.json",
+   "src": "data/luderick/videos/4bUBoZmvV/20190710_9.mov",
+   "out_fps": 5,
+   "n_frames": 11,
+   "width": 1920,
+   "height": 1080,
+   "prompts": [
+    "fish"
+   ]
+  }
+ }
+}
