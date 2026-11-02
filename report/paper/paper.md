@@ -1,6 +1,6 @@
 ---
 title: "Ask for Fish, Find the Hagfish: Failure Modes of a VLM-Audited Promptable Segmenter for Abundance Counts in Baited Underwater Video"
-author: "reefcensus team · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 2 Nov 2026"
+author: "Jiyul Ahn · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 2 Nov 2026"
 lang: en
 ---
 
