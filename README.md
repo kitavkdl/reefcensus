@@ -42,14 +42,22 @@ their evidence frames, motion sheets and human queue. Nothing is called.
 is a hard cap on total spend; a 12 s discovery run cost $0.02–0.40 on our nine clips.
 
 ```
-python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit]
+python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
 python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval3_<clip>)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 15 tests, including an exact
-offline replay of the s004 demo run.
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 21 tests, including an exact
+offline replay of the s004 demo run and the long-video merge.
+
+**Long videos.** One SAM 3.1 call takes a file of up to 10 minutes. A longer video is cut automatically into equal,
+back-to-back segments of at most 600 s (`--segment S` for shorter ones), each segment is run as a normal clip, and the
+segments are merged into one ordinary run, so the review screen, queue and CSV work on it unchanged. MaxN and first
+arrival are per-frame numbers, so the merge is exact for them: MaxN is the largest segment MaxN, first arrival is the
+segment start plus the time inside it, and no frame is counted twice. A name is merged only when it is identical in
+both segments; names sharing a head noun are listed for the reviewer to rename (`fishcount/longvideo.py`,
+measurements in `report/long_video.md`).
 
 The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
