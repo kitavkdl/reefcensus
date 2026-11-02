@@ -149,6 +149,23 @@ class MaskCodec(unittest.TestCase):
             self.skipTest("no cached one_bit masks found")
 
 
+class NameDisagreement(unittest.TestCase):
+    """A second look (no names shown) that names a different animal group queues the track but keeps it counted."""
+
+    def test_groups(self):
+        from fishcount import pipeline as P
+        self.assertIsNone(P.name_disagreement("small red crab", "crab"))
+        self.assertIsNone(P.name_disagreement("hagfish", "eel"))
+        self.assertIsNone(P.name_disagreement("large striped shrimp", "none"))
+        self.assertEqual(P.name_disagreement("caridean shrimp", "fish"), "caridean shrimp vs fish")
+
+    def test_queue(self):
+        from fishcount import pipeline as P
+        ok = {"confidence": 0.7, "species": "caridean shrimp", "confirm": {"is_animal": True, "confidence": 0.6}}
+        self.assertFalse(P.needs_review(ok))
+        self.assertTrue(P.needs_review(dict(ok, name_disagrees="caridean shrimp vs fish")))
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")

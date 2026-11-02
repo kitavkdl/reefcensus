@@ -39,9 +39,11 @@ is_target = the tile really shows a whole or partial {target} (not seagrass, roc
 # "only seagrass and water" and its whole 36-frame track left the count. Three crops show the same body moving.
 # 11/1 s004: per-track audit saw one crop per track (its largest box) and passed them all, yet in the MaxN frame
 # most "shrimp" boxes sat on hagfish bodies. So the frame that sets each MaxN is checked box by box.
+# 11/2 (paper Table 4b): the example "part of an eel, hagfish or fish" named the category itself, and a real fish of
+# another species was called "other fish" in 4 of 25 calls; "an eel or hagfish" kept it in 25 of 25.
 VERIFY_PROMPT = """Each tile is one object that an automatic tracker counted as "{name}" in a single frame of underwater survey video; this frame sets the maximum count, so every tile matters. Tiles are labelled D1, D2, ... Each tile shows that frame in the middle ("this frame", orange box) and the same tracked object about half a second before and after (left, right) at the same zoom.
 For every tile return ONLY a JSON list: [{{"tile":"D1","is_target":true|false,"what_it_is":"<=6 words"}}]
-is_target = the middle crop mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel, hagfish or fish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
+is_target = the middle crop mainly shows a whole or partial {name}. Answer false when the box is on a different animal (for example part of an eel or hagfish), a net, rope, pipe, rock, sediment or empty water. Use the side crops: an animal keeps its body shape while it moves; weed sways in place. If it is too blurry to tell, answer true and say "unclear"."""
 
 # 11/2 luderick 20190618_9 frame 35: a single crop of a faint fish behind seagrass was called "seagrass and water"
 # and the fish left 11 frames. The before/after crops show the same body moving.
@@ -423,6 +425,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 # job, so a plain yes is enough here (11/2 s004 v14: two shrimp the eye confirms got yes at 0.6/0.65)
                 if not (c.get("is_animal") is True and _conf(c) >= 0.5):
                     labels[t] = None
+                # the second look sees no names, so a different animal group from it (s004 v16: audit "caridean
+                # shrimp", second look "fish") puts the name in doubt but not the animal: the track still counts under
+                # the audit's name and also waits in the queue, where a person can rename it
+                elif name_disagreement(verdicts[t].get("species") or labels[t], c.get("name")):
+                    verdicts[t]["name_disagrees"] = name_disagreement(verdicts[t].get("species") or labels[t], c.get("name"))
             run.stage("audit", f"second look at {len(sure)} motion or renamed track(s) before they count: "
                       + ", ".join(f"{verdicts[t]['name']} {'yes' if labels[t] else 'no'} ({said.get(t, {}).get('reason', 'no answer')})" for t in sure))
     for mv in moved:
@@ -540,6 +547,43 @@ def _head(name):
             ws = ws[:i]
             break
     return norm_label(" ".join(ws))
+
+
+# Coarse animal groups for comparing two names of one track. Only clear group differences count as a disagreement
+# (a "fish" against a "shrimp"); a name outside this list never does.
+NAME_GROUPS = {
+    "fish": ("fish", "eel", "hagfish", "shark", "ray", "seabream", "bream", "luderick", "grouper", "snapper", "wrasse",
+             "goby", "blenny", "cod", "rockfish", "flatfish", "flounder", "skate", "lamprey", "perch", "mullet"),
+    "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish",
+                   "caridean", "copepod", "barnacle", "squat"),
+    "cephalopod": ("nautilus", "octopus", "squid", "cuttlefish", "cephalopod"),
+    "gastropod": ("snail", "whelk", "slug", "nudibranch", "gastropod", "limpet"),
+    "echinoderm": ("starfish", "star", "urchin", "cucumber", "brittlestar", "echinoderm", "crinoid"),
+    "worm": ("worm", "polychaete", "tubeworm", "annelid"),
+    "cnidarian": ("anemone", "jellyfish", "jelly", "coral", "hydroid", "cnidarian"),
+}
+_GROUP_OF = {w: g for g, ws in NAME_GROUPS.items() for w in ws}
+
+
+def name_group(name):
+    """The coarse group of a name, by its head noun and then any of its words ("caridean shrimp" -> crustacean);
+    None when no word is known."""
+    head = _head(name)
+    if head in _GROUP_OF:
+        return _GROUP_OF[head]
+    for w in re.sub(r"[^a-z ]", " ", (name or "").lower()).split():
+        w = norm_label(w)
+        if w in _GROUP_OF:
+            return _GROUP_OF[w]
+    return None
+
+
+def name_disagreement(audit_name, second_name):
+    """'<audit> vs <second look>' when both names fall in known, different groups; else None."""
+    a, b = name_group(audit_name), name_group(second_name)
+    if a and b and a != b:
+        return f"{audit_name} vs {second_name}"
+    return None
 
 
 def norm_label(name):
@@ -828,7 +872,7 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
     return log
 
 
-def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8):
+def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8, contain_cross=0.6):
     """Every nested pair in the clip (two counted detections, one mask >= `contain` inside the other) goes to Spark
     once, shown in the frame where it nests most, as "same animal or two?". For a duplicate the smaller-mask track
     is removed from each frame where it nests inside the other.
@@ -836,7 +880,10 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
     and renamed "small red crab", or a motion box on a word track) go on separate sheets pairsx_<n>.jpg, so adding
     the cross-word check leaves every same-word sheet, and its cached answer, unchanged (11/2 review: duplicates
     were only checked within one word). Mutates `frames`; returns [dict(outer, inner, frame, containment, same, said,
-    cross)]."""
+    cross)].
+    Two different words on one animal rarely give one mask inside the other: each word's mask covers a different
+    part or extent of the body, so cross-word pairs are sent to Spark from `contain_cross` (0.6) instead of 0.8. Spark
+    still decides; the lower bar only lets more cross-word candidates be asked (11/2: none were found at 0.8)."""
     lab = lambda t: labels.get(t, trk[t]["label"])
     best, cross = {}, {}   # (outer, inner) -> (containment, frame, outer mask, inner mask)
     for f, ks in frames.items():
@@ -847,9 +894,10 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
                 if a == b or not (lab(a) and lab(b)) or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
                     continue
                 c = maskdedupe.containment(ms[i], ms[j])
-                if c is None or c < contain:
+                same_word = trk[a]["label"] == trk[b]["label"]
+                if c is None or c < (contain if same_word else contain_cross):
                     continue
-                into = best if trk[a]["label"] == trk[b]["label"] else cross
+                into = best if same_word else cross
                 o, n_ = (i, j) if ms[i][0].sum() >= ms[j][0].sum() else (j, i)
                 key = (ks[o]["track"], ks[n_]["track"])
                 if key[::-1] in into:   # sizes swap between frames: keep one orientation per pair
@@ -876,7 +924,7 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
             out.append(dict(outer=o, inner=in_, frame=found[(o, in_)][1], containment=round(found[(o, in_)][0], 2),
                             same=same, said=v.get("what"), cross=found is cross))
             if same:
-                drop_nested(frames, dec, o, in_, contain)
+                drop_nested(frames, dec, o, in_, contain if found is best else contain_cross)
     return out
 
 
@@ -923,7 +971,8 @@ def needs_review(v):
         return True
     c = v.get("confirm")
     if c is not None:
-        return not (c.get("is_animal") is True and _conf(c) >= 0.5) or _conf(v) < 0.7
+        return (not (c.get("is_animal") is True and _conf(c) >= 0.5) or _conf(v) < 0.7
+                or bool(v.get("name_disagrees")))
     if v.get("relabelled"):
         return False
     return _conf(v) < 0.7 or v.get("is_target") is False

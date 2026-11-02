@@ -112,7 +112,7 @@ def effective(rid):
         if pipeline.needs_review(vd) or t in review:
             queue.append(dict(track=t, name=vd.get("name"), thumb=f"thumbs/{vd.get('name')}.jpg", trio=f"thumbs/{vd.get('name')}_trio.jpg",
                               has_trio=os.path.exists(os.path.join(d, "thumbs", f"{vd.get('name')}_trio.jpg")), species=vd.get("species"),
-                              confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=vd.get("reason"),
+                              confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=(f"Name in doubt: audit and the unprimed second look disagree ({vd['name_disagrees']}). " if vd.get("name_disagrees") else "") + (vd.get("reason") or ""),
                               category=res["tracks"][t]["label"], auto=res["auto_labels"].get(t),
                               reviewed=t in review, label=labels.get(t)))
     out = {k: v for k, v in res.items() if k != "frames"}
