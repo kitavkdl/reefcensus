@@ -83,7 +83,7 @@ def sam_video(clip_path, prompt, n_frames, offline=False):
     with open(clip_path, "rb") as fh:
         r = requests.post(f"{BASE}/files", headers={"Authorization": f"Bearer {key}"},
                           data={"purpose": "user_data", "expires_after[anchor]": "created_at", "expires_after[seconds]": "86400"},
-                          files={"file": (os.path.basename(clip_path), fh, "video/mp4")}, timeout=(30, 600))
+                          files={"file": (os.path.basename(clip_path), fh, "video/mp4")}, timeout=(300, 600))  # 11/1 night: uplink ~45 KB/s stalled sends past 30 s
     r.raise_for_status()
     fid = r.json()["id"]
     body = {"model": "sam-3.1", "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},

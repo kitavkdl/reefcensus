@@ -19,6 +19,15 @@ def parse_boxes(text):
     return out
 
 
+def reverse_text(text, n):
+    """Renumber a SAM output made on a reversed clip so frame indices refer to the original clip."""
+    return "\n".join(LINE.sub(lambda m: f"<{n - 1 - int(m.group(1))}f>{m.group(2)}", ln.strip()) for ln in text.splitlines())
+
+
+def max_per_frame(dets):
+    return max((len(ds) for ds in dets.values()), default=0)
+
+
 def iou(a, b):
     ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
     iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
@@ -37,13 +46,16 @@ def overlap(a, b):
     return max(inter / (sa + sb - inter), inter / min(sa, sb) - 0.2)   # containment 0.7 ~ IoU 0.5
 
 
-def from_tile(dets, tile, scale):
-    """Map detections found in an upscaled crop back to full-frame pixels. tile=(x,y,w,h)."""
-    x0, y0 = tile[0], tile[1]
+def from_tile(dets, tile, scale, margin=0.02):
+    """Map detections found in an upscaled crop back to full-frame pixels. tile=(x,y,w,h).
+    cut=True when the box touches the crop border (a partial animal), so merge() may match it by containment."""
+    x0, y0, tw, th = tile
+    mx, my = margin * tw * scale, margin * th * scale
+    cut = lambda b: b[0] <= mx or b[1] <= my or b[2] >= tw * scale - mx or b[3] >= th * scale - my
     out = {}
     for f, ds in dets.items():
-        out[f] = [dict(d, box=(x0 + d["box"][0] / scale, y0 + d["box"][1] / scale,
-                               x0 + d["box"][2] / scale, y0 + d["box"][3] / scale)) for d in ds]
+        out[f] = [dict(d, cut=cut(d["box"]), box=(x0 + d["box"][0] / scale, y0 + d["box"][1] / scale,
+                                                 x0 + d["box"][2] / scale, y0 + d["box"][3] / scale)) for d in ds]
     return out
 
 
@@ -61,7 +73,10 @@ def merge(sources, thr=0.5):
             for d in ds:
                 tid = f"{src}:{d['id']}"
                 seen[tid] += 1
-                hit = max(((overlap(d["box"], k["box"]), k) for k in kept[f] if k["src"] != src), key=lambda t: t[0], default=(0, None))
+                # 11/1 s003: a whole nautilus from a zoom tile lay inside a bigger one's box and containment dropped
+                # it; containment is only for tile-cut partials, an uncut tile detection must match by IoU
+                sim = iou if d.get("cut") is False else overlap
+                hit = max(((sim(d["box"], k["box"]), k) for k in kept[f] if k["src"] != src), key=lambda t: t[0], default=(0, None))
                 if hit[0] >= thr:
                     dup[tid][hit[1]["track"]] += 1
                     continue
@@ -73,6 +88,8 @@ def merge(sources, thr=0.5):
         coexist = any(any(k["track"] == tid for k in ks) and any(k["track"] == top for k in ks) for ks in kept.values())
         if n >= 0.5 * seen[tid] and not coexist:
             alias[tid] = top
+    for f in kept:
+        kept[f] = drop_group_boxes(kept[f])
     frames, tracks = {}, {}
     for f, ks in kept.items():
         for k in ks:
@@ -81,6 +98,19 @@ def merge(sources, thr=0.5):
             t["frames"].append(f)
         frames[f] = ks
     return frames, tracks
+
+
+def drop_group_boxes(ks, contain=0.8):
+    """11/1 s004: one box was drawn around two shrimp that other passes had boxed separately, so all three were
+    counted. A box that contains two or more other same-label boxes is a group box and is dropped. A box holding
+    just one (s003: a nautilus partly behind a bigger one) is kept."""
+    def inside(a, b):   # share of a lying inside b
+        ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
+        iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
+        return ix * iy / max(1e-6, (a[2] - a[0]) * (a[3] - a[1]))
+    group = {i for i, g in enumerate(ks)
+             if sum(1 for j, k in enumerate(ks) if j != i and k["label"] == g["label"] and inside(k["box"], g["box"]) >= contain) >= 2}
+    return [k for i, k in enumerate(ks) if i not in group]
 
 
 def metrics(frames, tracks, n_frames, fps, labels=None):

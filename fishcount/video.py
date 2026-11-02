@@ -74,7 +74,15 @@ def grid(imgs, cols, cell_w):
 def crop_tile(src, dst, box, scale=2, fps=5):
     """Crop box=(x,y,w,h) from every frame of src and upscale by `scale` (for small/far objects)."""
     x, y, w, h = box
-    vf = f"crop={w}:{h}:{x}:{y},scale={w * scale}:{h * scale}:flags=lanczos"
+    vf = f"crop={w}:{h}:{x}:{y},scale={int(w * scale) // 2 * 2}:{int(h * scale) // 2 * 2}:flags=lanczos"
     subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", vf, "-an",
                     "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
+    return info(dst)
+
+
+def reverse(src, dst):
+    """Same clip played backwards. SAM only tracks forward from the frame where it first recognises an object
+    (11/1 s003: forward 'nautilus' starts at frame 27; reversed run covers all 60), so a reversed pass back-fills."""
+    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", "reverse", "-an",
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
     return info(dst)
