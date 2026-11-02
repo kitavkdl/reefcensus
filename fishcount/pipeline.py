@@ -1100,8 +1100,19 @@ if __name__ == "__main__":
     ap.add_argument("--zoom", action="store_true")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
-    ap.add_argument("--max-usd", type=float, default=1.0)
+    ap.add_argument("--max-usd", type=float, default=1.0, help="per-video cap (per segment when the video is split)")
     ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
+    ap.add_argument("--segment", type=float, help="split into segments of at most this many seconds and merge "
+                    "(automatic at 600 s, the SAM 3.1 per-file limit, for longer videos)")
     a = ap.parse_args()
-    r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover, lowlight=a.lowlight)
+    from fishcount import longvideo
+    inf0 = video.info(a.video)
+    secs = inf0["n_frames"] / inf0["fps"] if inf0["fps"] else 0
+    if a.segment or secs > longvideo.MAX_SEGMENT_S:
+        r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
+                               offline=a.offline, do_scout=not a.no_scout, do_audit=not a.no_audit, do_zoom=a.zoom,
+                               prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight)
+    else:
+        r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
+                         lowlight=a.lowlight)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
