@@ -85,3 +85,16 @@ words find the same animals?** Same rules as the first set wherever possible; di
    MaxN accuracy is not measured (four frames cannot count shrimp).
 - Results go into the paper (§6.3, Table 3b), README and submission form even if they are poor. No prompt, threshold
   or code change after seeing them; a bug found here is reported, not fixed in these numbers.
+
+## Amendment 1 (2026-11-02, after the eight queries' text results, before any clip was downloaded or viewed)
+The eight queries returned 47 files; read from titles and descriptions only, **1 non-fish and 3+ fish-only** clips
+were eligible (the rest: terrestrial camera traps, animations, pelagic longline cameras, diver-held footage, burned-in
+species text, or publications already used — logged in `candidates.md`). The protocol's "set is smaller" clause would
+leave 3 clips, too few to answer the question. Amendment, fixed before running them: the same eligibility rules and
+the same 6 + 2 quota, with these further Commons API queries appended in this order (text only, as before):
+  9. `pone crab video`  10. `pone shrimp video`  11. `octopus camera seafloor`  12. `amphipod bait video`
+  13. `hagfish bait video`  14. `sea star time-lapse`  15. `deep sea observatory video`  16. `stationary camera seafloor`
+  17. `pone underwater video camera`  18. `cold seep time-lapse`  19. `hydrothermal vent camera fauna`
+  20. `pone video invertebrates seabed`
+Naming animal groups in queries 9–14 favours clips with non-fish animals; that is the same direction rule (d)
+already takes and is disclosed. If these still give fewer than 6 + 2, the set is what they give.
