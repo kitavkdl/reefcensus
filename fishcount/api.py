@@ -142,8 +142,19 @@ def img_data_url(jpg_bytes):
     return "data:image/jpeg;base64," + base64.b64encode(jpg_bytes).decode()
 
 
-def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False):
-    """One chat call with optional JPEG images (bytes). Returns the reply text. Cached by content."""
+def _valid(check, text):
+    try:
+        check(text)
+        return True
+    except ValueError:      # json.JSONDecodeError is a ValueError
+        return False
+
+
+def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check=None):
+    """One chat call with optional JPEG images (bytes). Returns the reply text. Cached by content.
+    `check(text)` raising ValueError marks a bad reply (11/2: Spark twice sent broken JSON, e.g. `{ polo":1 }:`,
+    and the cached reply then killed every rerun): a bad reply is never cached, a cached bad one counts as a miss,
+    and one more live call is made before giving up."""
     content = [{"type": "text", "text": prompt}] + [
         {"type": "image_url", "image_url": {"url": img_data_url(b)}} for b in images]
     payload = {"model": SPARK_MODEL, "messages": [{"role": "user", "content": content}], "max_tokens": max_tokens}
@@ -151,22 +162,29 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False):
         payload["reasoning_effort"] = effort
     cp = _cache_path("spark", payload)
     if os.path.exists(cp):
-        return json.load(open(cp))["text"]
+        text = json.load(open(cp))["text"]
+        if check is None or _valid(check, text):
+            return text
     if offline:
         raise FileNotFoundError("not cached: spark call")
-    _guard(0.02)
-    r = requests.post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
-    if r.status_code >= 300:
-        raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
-    j = r.json()
-    u = j.get("usage") or {}
-    usd = u.get("prompt_tokens", 0) * SPARK_IN + u.get("completion_tokens", 0) * SPARK_OUT
-    _log("spark", usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
-    text = j["choices"][0]["message"]["content"] or ""
-    if not text.strip():
-        raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
-    json.dump({"text": text, "usage": u}, open(cp, "w"))
-    return text
+    for attempt in range(2 if check else 1):
+        _guard(0.02)
+        r = requests.post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
+        if r.status_code >= 300:
+            raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
+        j = r.json()
+        u = j.get("usage") or {}
+        usd = u.get("prompt_tokens", 0) * SPARK_IN + u.get("completion_tokens", 0) * SPARK_OUT
+        _log("spark", usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
+        text = j["choices"][0]["message"]["content"] or ""
+        if not text.strip():
+            raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
+        if check is None or _valid(check, text):
+            with open(cp + ".tmp", "w") as fh:
+                json.dump({"text": text, "usage": u}, fh)
+            os.replace(cp + ".tmp", cp)
+            return text
+    raise ValueError(f"Spark sent an unreadable reply twice: {text[:120]!r}")
 
 
 def parse_json(text):

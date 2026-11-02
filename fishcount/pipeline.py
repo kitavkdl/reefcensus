@@ -49,13 +49,15 @@ For every tile return ONLY a JSON list: [{{"tile":"P1","same_animal":true|false,
 same_animal = true when the cyan outline marks the same single animal as the red one (or a part of it, for example its body without the legs or its head). false when the cyan outline marks a different individual, for example a second animal next to, behind or in front of the first, even if the red outline also spills over it."""
 
 
+# 11/2 s003: a sediment cloud passed on one crop; three frames per spot (a person's eye did the same).
 # 11/2 s004: a shrimp that no word, tile or reversed pass ever tracked moved against the still seabed; a box drawn
 # on it (no word at all) made SAM track it in 57 of 60 frames. Movement only says "look here", so Spark decides.
-MOTION_PROMPT = """Each tile (M1, M2, ...) is a crop from one frame of underwater survey video. The orange rectangle marks a spot where something moved and no detector has boxed anything yet.
-For every tile return ONLY a JSON list: [{{"tile":"M1","is_animal":true|false,"name":"one plain everyday English noun (shrimp, crab, fish, eel, worm, starfish, snail, octopus) or none","what":"<=8 words","confidence":0.0-1.0}}]
+MOTION_PROMPT = """Each group (M1, M2, ...) shows one spot of underwater survey video three times, left to right: early, middle and late in the clip, same zoom, following the spot. The orange rectangle marks where something moved and no detector has boxed anything yet.
+For every group return ONLY a JSON list: [{{"tile":"M1","is_animal":true|false,"name":"one plain everyday English noun (shrimp, crab, fish, eel, worm, starfish, snail, octopus) or none","what":"<=8 words","confidence":0.0-1.0}}]
+Compare the three crops: an animal keeps about the same shape and size (it may turn or move); a sand or sediment cloud spreads, thins or changes shape from crop to crop, and a shadow changes with the light.
 Black areas are outside the picture: an animal cut off by the edge of the picture still counts.
-is_animal = the rectangle mainly holds a living animal, even a small, pale, blurry or partly hidden one. Answer false for sand or sediment clouds, shadows, bubbles, bait or a bait bag, rope, net, rock, seagrass, empty water, or a tentacle, fin or tail of a bigger animal whose body is clearly elsewhere in the tile."""
-MOTION_VERSION = "v3"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
+is_animal = the rectangle mainly holds a living animal, even a small, pale, blurry or partly hidden one. Answer false for sand or sediment clouds, shadows, bubbles, bait or a bait bag, rope, net, rock, seagrass, empty water, or a tentacle, fin or tail of a bigger animal whose body is clearly elsewhere in the crops."""
+MOTION_VERSION = "v4"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 MOTION_ERRORS = (FileNotFoundError, RuntimeError, ValueError, KeyError, TypeError, AttributeError, requests.RequestException)
 
 class Run:
@@ -126,7 +128,7 @@ def scout(run, clip, inf, offline):
     idx = sorted({int(i * (n - 1) / 5) for i in range(6)})
     fr = video.frames(clip, idx)
     sheet = video.grid([video.label(fr[i], f"frame {i}") for i in idx], 3, 640)
-    reply = _counted(run, api.spark, SCOUT_PROMPT.format(n=len(idx)), [video.jpg(sheet, q=80)], offline=offline)
+    reply = _counted(run, api.spark, SCOUT_PROMPT.format(n=len(idx)), [video.jpg(sheet, q=80)], offline=offline, check=api.parse_json)
     return api.parse_json(reply)
 
 
@@ -135,7 +137,7 @@ def discover(run, clip, inf, targets, offline):
     idx = sorted({int(i * (n - 1) / 5) for i in range(6)})
     fr = video.frames(clip, idx)
     sheet = video.grid([video.label(fr[i], f"frame {i}") for i in idx], 3, 640)
-    reply = _counted(run, api.spark, DISCOVER_PROMPT.format(targets=", ".join(targets), n=len(idx)), [video.jpg(sheet, q=80)], offline=offline)
+    reply = _counted(run, api.spark, DISCOVER_PROMPT.format(targets=", ".join(targets), n=len(idx)), [video.jpg(sheet, q=80)], offline=offline, check=api.parse_json)
     return api.parse_json(reply)
 
 
@@ -177,7 +179,7 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     for i in range(0, len(ids), per_sheet):
         chunk = ids[i:i + per_sheet]
         sheet = video.grid([crops[t] for t in chunk], 4, 256)
-        reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [video.jpg(sheet, q=85)], offline=offline)
+        reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json)
         for v in api.parse_json(reply):
             out[v["track"]] = v
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
@@ -479,7 +481,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=3, min
             open(os.path.join(api.CACHE, sheet_name), "wb").write(jpg)
             open(sheet_jpg, "wb").write(jpg)
             run.stage("motion", f"{len(cands)} moving spots outside every box; Muse Spark looks at the {len(picks)} longest-lived")
-            reply = _counted(run, api.spark, MOTION_PROMPT, [jpg], offline=offline)
+            reply = _counted(run, api.spark, MOTION_PROMPT, [jpg], offline=offline, check=api.parse_json)
             got = api.parse_json(reply)
             for v in (got if isinstance(got, list) else [got]):
                 if isinstance(v, dict):
@@ -631,7 +633,7 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
             word = name.replace(" (unidentified)", "")
             for i in range(0, len(tiles), 16):
                 sheet = video.grid(tiles[i:i + 16], 4, 256)
-                reply = _counted(run, api.spark, VERIFY_PROMPT.format(name=word), [video.jpg(sheet, q=85)], offline=offline)
+                reply = _counted(run, api.spark, VERIFY_PROMPT.format(name=word), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json)
                 for v in api.parse_json(reply):
                     said[v.get("tile")] = v
             bad = [(k, said[f"D{i + 1}"]) for i, k in enumerate(ks) if said.get(f"D{i + 1}", {}).get("is_target") is False]
@@ -676,7 +678,7 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
     tiles = [video.label(render.square(pair_tile(imgs[best[k][1]], best[k][2], best[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
     said = {}
     for i in range(0, len(tiles), 16):
-        reply = _counted(run, api.spark, PAIR_PROMPT, [video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)], offline=offline)
+        reply = _counted(run, api.spark, PAIR_PROMPT, [video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)], offline=offline, check=api.parse_json)
         for v in api.parse_json(reply):
             said[v.get("tile")] = v
     out = []

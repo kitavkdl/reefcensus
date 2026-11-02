@@ -105,17 +105,31 @@ def pick(cands, k=8, min_frames=6, min_area=20):
     return keep[:k]
 
 
-def prompt_box(c, W, H, grow=0.4, min_side=48):
-    """The frame where the blob is at its median size, and its box grown by `grow`, at least `min_side` px, kept
-    strictly inside the frame (the API rejects a box that touches the edge: y2=1080 on a 1080-high clip)."""
-    areas = sorted(((b[2] - b[0]) * (b[3] - b[1]), t, b) for t, b in c["path"])
-    _, t, (x0, y0, x1, y1) = areas[len(areas) // 2]
+def _grow(b, W, H, grow=0.4, min_side=48):
+    """A blob box grown by `grow`, at least `min_side` px, snapped to the grid and kept strictly inside the frame
+    (the API rejects a box that touches the edge: y2=1080 on a 1080-high clip)."""
+    x0, y0, x1, y1 = b
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     w, h = max(min_side, (x1 - x0) * (1 + grow)), max(min_side, (y1 - y0) * (1 + grow))
     g = GRID
-    bx = [max(0, int(cx - w / 2) // g * g), max(0, int(cy - h / 2) // g * g),
-          min(W - 2, -(-int(cx + w / 2) // g) * g), min(H - 2, -(-int(cy + h / 2) // g) * g)]
-    return t, bx
+    return [max(0, int(cx - w / 2) // g * g), max(0, int(cy - h / 2) // g * g),
+            min(W - 2, -(-int(cx + w / 2) // g) * g), min(H - 2, -(-int(cy + h / 2) // g) * g)]
+
+
+def prompt_box(c, W, H):
+    """The frame where the blob is at its median size, and its grown box."""
+    areas = sorted(((b[2] - b[0]) * (b[3] - b[1]), t, b) for t, b in c["path"])
+    _, t, b = areas[len(areas) // 2]
+    return t, _grow(b, W, H)
+
+
+def three(c, W, H):
+    """(frame, box) early, at the prompt frame, and late along the blob track. 11/2 s003: one crop of a sediment
+    cloud looked like a dark fish; across three frames its shape kept changing (a person told them apart that way)."""
+    t, b = prompt_box(c, W, H)
+    path = sorted(c["path"])
+    early, late = path[0], path[-1]
+    return [(early[0], _grow(early[1], W, H)), (t, b), (late[0], _grow(late[1], W, H))]
 
 
 def box_prompt(t, box, W, H):
@@ -123,26 +137,48 @@ def box_prompt(t, box, W, H):
     return f"<{t}f>1<|box;x1={x0};y1={y0};x2={x1};y2={y1};w={W};h={H}|>"
 
 
-def sheet(clip, picks, W, H, side=240):
-    """One numbered crop (box with context, scaled to `side`) per candidate at its prompt frame. Returns JPEG bytes
-    and [(number, frame, box)]."""
-    chosen = [prompt_box(c, W, H) for c in picks]
-    fr = video.frames(clip, sorted({t for t, _ in chosen}))
-    tiles, meta = [], []
-    for i, (t, (x0, y0, x1, y1)) in enumerate(chosen):
-        img = fr[t].copy()
-        cv2.rectangle(img, (x0, y0), (x1, y1), (29, 85, 242), 2)
-        cx, cy, half = (x0 + x1) // 2, (y0 + y1) // 2, max(x1 - x0, y1 - y0)
-        # pad with black instead of clipping: 11/2 s004 a shrimp at the bottom edge came out stretched and cut, and
-        # Spark called it "part of an animal reaching in from outside"
-        img = cv2.copyMakeBorder(img, half, half, half, half, cv2.BORDER_CONSTANT, value=(0, 0, 0))
-        crop = img[cy:cy + 2 * half, cx:cx + 2 * half]
-        tile = cv2.resize(crop, (side, side), interpolation=cv2.INTER_CUBIC)
-        cv2.rectangle(tile, (0, 0), (52, 34), (0, 0, 0), -1)
-        cv2.putText(tile, f"M{i + 1}", (4, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
-        tiles.append(tile)
-        meta.append((i + 1, t, [x0, y0, x1, y1]))
-    while len(tiles) % 4:
-        tiles.append(np.zeros((side, side, 3), np.uint8))
-    img = np.vstack([np.hstack(tiles[i:i + 4]) for i in range(0, len(tiles), 4)])
+def _crop(img, box, half, side):
+    x0, y0, x1, y1 = box
+    img = img.copy()
+    cv2.rectangle(img, (x0, y0), (x1, y1), (29, 85, 242), 2)
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    # pad with black instead of clipping: 11/2 s004 a shrimp at the bottom edge came out stretched and cut, and
+    # Spark called it "part of an animal reaching in from outside"
+    img = cv2.copyMakeBorder(img, half, half, half, half, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    return cv2.resize(img[cy:cy + 2 * half, cx:cx + 2 * half], (side, side), interpolation=cv2.INTER_CUBIC)
+
+
+def sheet(clip, picks, W, H, side=200, per_row=2, gap=16):
+    """Per candidate, three crops side by side (early, prompt frame, late; same zoom, following the blob), numbered
+    M1, M2, ...; `per_row` candidates per sheet row. Returns JPEG bytes and [(number, prompt frame, prompt box)]."""
+    trios = [three(c, W, H) for c in picks]
+    fr = video.frames(clip, sorted({t for tr in trios for t, _ in tr}))
+    groups, meta = [], []
+    for i, tr in enumerate(trios):
+        half = max(max(b[2] - b[0], b[3] - b[1]) for _, b in tr)     # one zoom for all three: size changes show
+        tiles = []
+        for j, (t, b) in enumerate(tr):
+            tile = _crop(fr[t], b, half, side)
+            cv2.putText(tile, ("early", "middle", "late")[j], (6, side - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            tiles.append(tile)
+            if j < 2:
+                tiles.append(np.full((side, 3, 3), 60, np.uint8))
+        g = np.hstack(tiles)
+        cv2.rectangle(g, (0, 0), (52, 34), (0, 0, 0), -1)
+        cv2.putText(g, f"M{i + 1}", (4, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+        groups.append(g)
+        meta.append((i + 1, tr[1][0], tr[1][1]))
+    while len(groups) % per_row:
+        groups.append(np.zeros_like(groups[0]))
+    gh, gw = groups[0].shape[:2]
+    rows = []
+    for r in range(0, len(groups), per_row):
+        row = []
+        for k, g in enumerate(groups[r:r + per_row]):
+            row.append(g)
+            if k < per_row - 1:
+                row.append(np.full((gh, gap, 3), 255, np.uint8))
+        rows.append(np.hstack(row))
+        rows.append(np.full((gap, rows[-1].shape[1], 3), 255, np.uint8))
+    img = np.vstack(rows[:-1])
     return cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85])[1].tobytes(), meta
