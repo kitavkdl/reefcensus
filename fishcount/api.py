@@ -25,8 +25,8 @@ def _load_dotenv(path=os.path.join(ROOT, ".env")):
 
 
 _load_dotenv()
-CACHE = os.path.join(ROOT, "cache")
-LEDGER = os.path.join(CACHE, "ledger.jsonl")
+CACHE = os.environ.get("FISH_CACHE_DIR") or os.path.join(ROOT, "cache")   # FISH_CACHE_DIR=<empty dir>: a fresh, uncached run
+LEDGER = os.path.join(ROOT, "cache", "ledger.jsonl")                        # one spend ledger whatever the cache
 SAM_PER_FRAME = 0.20 / 1000
 SAM_MIN_FRAMES = 50
 SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
@@ -67,6 +67,7 @@ def thread_spent():
 
 def _log(kind, usd, note):
     _tl.usd = thread_spent() + usd
+    os.makedirs(os.path.dirname(LEDGER), exist_ok=True)
     os.makedirs(CACHE, exist_ok=True)
     with open(LEDGER, "a") as f:
         f.write(json.dumps({"t": time.time(), "kind": kind, "usd": usd, "note": note}) + "\n")
