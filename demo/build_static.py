@@ -13,6 +13,81 @@ OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "
 REPO = "https://github.com/kitavkdl/reefcensus"
 
 
+# Landing block for judges: the claim in one line, then one card per run (asked vs. found, with its evidence frame).
+# Captions are the measured facts from README "Discovery" (development clips, Barord et al. 2014).
+ORDER = ["L1_s004_v16", "L1_s003_v16", "L1_s002_v16", "L1_s001_v16"]
+CAPTION = {
+    "L1_s004_v16": "A shrimp swarm, a hagfish and a nautilus at the bait. SAM found nothing for “hagfish”; Spark tried “eel” and it locked on.",
+    "L1_s003_v16": "Three nautiluses, one partly behind another, counted as three.",
+    "L1_s002_v16": "A nautilus and a small red crab nobody asked for.",
+    "L1_s001_v16": "Night, behind a wire trap. No word found them; moving pixels did. 2 counted of at least 4 there.",
+}
+SHOW = {"L1_s004_v16": "caridean shrimp", "L1_s003_v16": "chambered nautilus",
+        "L1_s002_v16": "small red crab", "L1_s001_v16": "nautilus"}
+HERO_CSS = """
+.hero { background: var(--graphite); color: var(--slate); padding: 28px 24px 24px; }
+.hero h2 { margin: 0 0 6px; font-size: clamp(26px, 4.4vw, 46px); line-height: 1.05; font-weight: 800; font-variation-settings: "wdth" 70; max-width: 30ch; }
+.hero h2 .a { color: #8FB5EE; } .hero h2 .f { color: #FF8A5C; }
+.hero .sub { margin: 0 0 18px; max-width: 70ch; color: #B9C4CC; font-size: 15px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.card { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; text-align: left; background: #2E363C; border: 1px solid #47525B; border-radius: 6px; padding: 0; color: inherit; cursor: pointer; overflow: hidden; }
+.card:hover, .card:focus-visible { border-color: #FF8A5C; }
+.card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #111; }
+.card .body { padding: 10px 12px 12px; }
+.card .ask { font-size: 12px; color: #8FB5EE; margin: 0 0 4px; }
+.card ul { list-style: none; margin: 0 0 6px; padding: 0; }
+.card li { font-size: 15px; font-weight: 600; }
+.card li .n { font-family: var(--narrow); font-variation-settings: "wdth" 68; font-size: 22px; margin-right: 6px; }
+.card li.found { color: #FF8A5C; } .card li.asked { color: #8FB5EE; }
+.card li small { font-weight: 400; color: #B9C4CC; font-size: 12px; }
+.card p.lab { margin: 6px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.card p.lab.f { color: #FF8A5C; } .card p.lab.a { color: #8FB5EE; }
+.card p.cap { margin: 0; font-size: 13px; color: #B9C4CC; }
+.hero .more { margin: 14px 0 0; font-size: 13px; color: #B9C4CC; }
+.hero .more a { color: #FFFFFF; }
+@media (max-width: 520px) { .hero { padding: 20px 16px; } }
+"""
+
+
+def hero(runs):
+    import html as H
+    by = {r["id"]: r for r in runs}
+    cards = []
+    for rid in [i for i in ORDER if i in by] + [r["id"] for r in runs if r["id"] not in ORDER]:
+        eff = server.effective(rid)
+        origin = eff.get("origin", {})
+        metrics = eff.get("metrics", {})
+        items = []
+        for name, n in sorted(by[rid].get("maxn", {}).items(), key=lambda kv: (origin.get(kv[0]) != "found", -kv[1])):
+            kind = "found" if origin.get(name) == "found" else "asked"
+            items.append((kind, f'<li class="{kind}"><span class="n">{n}</span>{H.escape(name)}</li>'))
+        q = len(eff.get("queue", []))
+        show = SHOW.get(rid)
+        ev = (metrics.get(show) or {}).get("evidence") if show else None
+        ev = ev or next((m.get("evidence") for m in metrics.values() if m.get("evidence")), None)
+        img = f'<img src="runs/{rid}/{H.escape(ev)}" alt="Evidence frame for {H.escape(show or rid)}" loading="lazy">' if ev else ""
+        cards.append(
+            f'<button class="card" type="button" data-run="{rid}">{img}<div class="body">'
+            f'<p class="ask">Asked for: “fish” · clip {H.escape(by[rid].get("source", ""))}</p>'
+            + (f'<p class="lab f">Not asked for, found and counted</p><ul>{"".join(h for k, h in items if k == "found")}</ul>'
+               if any(k == "found" for k, _ in items) else "")
+            + (f'<p class="lab a">Asked for</p><ul>{"".join(h for k, h in items if k == "asked")}</ul>'
+               if any(k == "asked" for k, _ in items) else "")
+            + f'<p class="cap">{H.escape(CAPTION.get(rid, ""))} {q} track{"s" if q != 1 else ""} in the review queue.</p>'
+            + '</div></button>')
+    js = ("<script>document.querySelectorAll('.card[data-run]').forEach(function(b){b.onclick=function(){"
+          "var s=document.getElementById('runSel');s.value=b.dataset.run;s.dispatchEvent(new Event('change'));"
+          "var m=document.getElementById('main');m.scrollIntoView({behavior:'smooth'});m.focus({preventScroll:true});};});</script>")
+    return (f'<style>{HERO_CSS}</style><section class="hero" aria-labelledby="heroTitle">'
+            f'<h2 id="heroTitle">Asked to count <span class="a">fish</span>. '
+            f'It also found the <span class="f">animals nobody asked for</span>.</h2>'
+            f'<p class="sub">SAM 3.1 only sees what it is told to look for. Muse Spark looks first, names what is there in words '
+            f'SAM can act on, and checks SAM’s work frame by frame. Four 12-second clips of deep-sea baited-camera video, '
+            f'every model answer computed beforehand. Click a clip to see the counts, the evidence and the review queue.</p>'
+            f'<div class="cards">{"".join(cards)}</div>'
+            f'<p class="more">Code, paper and how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
+
+
 def main():
     server.RUNS = SRC
     if os.path.isdir(OUT):
@@ -48,7 +123,12 @@ def main():
     note = (f'<p id="staticNote" style="margin:0;padding:6px 16px;font-size:13px;background:#fff6e5;color:#5a4300">'
             f'Static demo of four precomputed runs (every model answer was computed beforehand). '
             f'Live runs and reviews need the local server: <a href="{REPO}">{REPO}</a></p>')
-    html = html.replace("<body>", "<body>\n" + note, 1)
+    html = html.replace("<body>", "<body>\n" + note + "\n" + hero(runs), 1)
+    # IMAS footage is no longer used anywhere (licence not specified at the source); credit only what is shown
+    html = re.sub(r'<footer class="credits">.*?</footer>',
+                  '<footer class="credits">Nautilus video: Barord et al. 2014, PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0. '
+                  'SAM 3.1 and Muse Spark by Meta, through the Meta Model API.</footer>', html, count=1, flags=re.S)
+    html = html.replace('<main class="grid" id="main">', '<main class="grid" id="main" tabindex="-1">', 1)
     html = html.replace('<button class="btn ghost" id="newBtn"', '<button class="btn ghost" id="newBtn" hidden style="display:none"', 1)
     if 'id="staticNote"' not in html or "newBtn\" hidden" not in html:
         raise SystemExit("index.html changed, update build_static.py")
