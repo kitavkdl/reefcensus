@@ -1,8 +1,9 @@
 """Copy finished runs into demo/runs/ (committed) so the review screen works from a fresh clone with no API key.
 Only what the screen shows is copied: result.json, status.json, review.json if any, evidence jpgs, motion_sheet.jpg, thumbs/,
+the sheets Spark judged (audit_*, verify_*, confirm_*),
 annotated.mp4 (~2 MB a run). web/server.py seeds runs/ from demo/runs/ on start.
 
-    python3 demo/pack_runs.py L1_s002_v12 L1_s003_v12 L1_s004_v12
+    python3 demo/pack_runs.py L1_s001_v15 L1_s002_v15 L1_s003_v15 L1_s004_v15
 """
 import os, shutil, sys
 
@@ -15,7 +16,7 @@ for rid in sys.argv[1:]:
         shutil.rmtree(dst)
     os.makedirs(dst)
     for f in os.listdir(src):
-        if f in KEEP or (f.startswith("evidence_") and f.endswith(".jpg")):
+        if f in KEEP or (f.startswith(("evidence_", "audit_", "verify_", "confirm_")) and f.endswith(".jpg")):
             shutil.copy2(os.path.join(src, f), dst)
     if os.path.isdir(os.path.join(src, "thumbs")):
         shutil.copytree(os.path.join(src, "thumbs"), os.path.join(dst, "thumbs"))
