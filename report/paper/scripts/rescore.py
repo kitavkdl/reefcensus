@@ -41,6 +41,28 @@ def match(pred, gt, thr):
     return tp, fn, fp, mg, mp, hit
 
 
+def match_optimal(pred, gt, thr):
+    """Like match() but with a maximum-cardinality bipartite matching per frame (augmenting paths) instead of greedy
+    in human-box order. Returns tp, fn, fp."""
+    tp = fn = fp = 0
+    for i, gb in gt.items():
+        pb = pred.get(i, [])
+        adj = [[j for j, (b, _) in enumerate(pb) if tracks.iou(a, b) >= thr] for a in gb]
+        owner = {}
+
+        def aug(g, seen):
+            for j in adj[g]:
+                if j not in seen:
+                    seen.add(j)
+                    if j not in owner or aug(owner[j], seen):
+                        owner[j] = g
+                        return True
+            return False
+        m = sum(aug(g, set()) for g in range(len(gb)))
+        tp += m; fn += len(gb) - m; fp += len(pb) - m
+    return tp, fn, fp
+
+
 def boxes(res, keep):
     lab = lambda t: res["auto_labels"].get(t, res["tracks"].get(t, {}).get("label"))
     return {int(f): [(k["box"], k["track"]) for k in ks if lab(k["track"]) and keep(k["track"])]
@@ -131,6 +153,16 @@ def main():
                 ex += mg == mp; w1 += abs(mg - mp) <= 1; se += abs(mg - mp); per.append(f"{mg}->{mp}")
             print(f"{n:24s} {T[0] / (T[0] + T[1]):6.1%}  {T[0] / max(1, T[0] + T[2]):8.1%}   {ex}/6     {w1}/6      {se}   "
                   + " ".join(per) + f"   (tp {T[0]} fn {T[1]} fp {T[2]})")
+    print("\n== greedy (human-box order) vs maximum bipartite matching: recall / precision ==")
+    for thr in (0.3, 0.5, 0.7):
+        for n in ("SAM alone", "merge + min length 4", "V5", "V6", "V5 queue rejected"):
+            g = [0, 0, 0]; o = [0, 0, 0]
+            for c in clips:
+                s = systems(c)[n]
+                for k, v in enumerate(match(s, c["gt"], thr)[:3]): g[k] += v
+                for k, v in enumerate(match_optimal(s, c["gt"], thr)): o[k] += v
+            print(f"IoU {thr}  {n:22s} greedy {g[0] / (g[0] + g[1]):.1%} / {g[0] / max(1, g[0] + g[2]):.1%}   "
+                  f"optimal {o[0] / (o[0] + o[1]):.1%} / {o[0] / max(1, o[0] + o[2]):.1%}   (tp {g[0]} vs {o[0]})")
     print("\n== recall 95% Wilson intervals (IoU 0.3) ==")
     for n in ("SAM alone", "V1", "V5", "V5 queue rejected"):
         tp = fn = 0

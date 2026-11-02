@@ -9,8 +9,8 @@ individuals seen in one frame (MaxN). reefcensus takes a request such as "fish" 
 time of first arrival, an evidence frame behind every number, and a short queue of tracks a person should confirm.
 
 Two Meta models do different halves of the work. **SAM 3.1** tracks pixel masks through the clip, but only for what
-it is told: asked for "animal" on the frame below it finds nothing. **Muse Spark** can look at frames and say what is there, but cannot
-track. reefcensus puts them in a loop: Spark names what it sees (including animals nobody asked about), turns the
+it is told: asked for "animal" on the frame below it finds nothing. **Muse Spark** can look at frames and say what is there, but
+gives no identities to follow from frame to frame. reefcensus puts them in a loop: Spark names what it sees (including animals nobody asked about), turns the
 names into words SAM understands, and then checks SAM's work: every track, the frame that sets each MaxN, and whether
 two overlapping masks are one animal. Where no word works, a still camera's own motion marks the spot, Spark decides
 whether it is an animal, and SAM tracks it from a box with no word at all.
@@ -66,13 +66,14 @@ These are the behaviours the design is built around. Each was found by trial dur
 
 | finding | evidence | what we did |
 |---|---|---|
-| SAM 3.1 returns nothing for a broad word | "animal" on three IMAS deep-sea clips and a luderick seagrass clip: 0 detections on all four; "fish": 13–16 (IMAS) and 10 (luderick) per frame | Spark proposes basic-level nouns (fish, shrimp, eel, nautilus) |
-| SAM 3.1 returns nothing for a descriptive name | "pink seabream" on the same clips: 0 | species comes from the Spark audit, SAM gets the plain noun |
+| SAM 3.1 mostly returns nothing for a broad word | "animal" on all 39 clips: nothing on 29; on the 30 luderick clips never more than 1 per frame where "fish" finds up to 10; it overlapped 3 of the 11 non-fish animals reefcensus counted | Spark proposes basic-level nouns (fish, shrimp, eel, nautilus) |
+| SAM 3.1 returns nothing for the species' own name | "luderick" on the 6 luderick development clips: 0 on all six | species comes from the Spark audit, SAM gets the plain noun |
 | A name SAM does not know can fail where a near word works | s004: "hagfish" 0 frames, "eel" 24 frames | word ladder, Spark's own name kept for the label |
 | Word tracking starts only once the object is clear and runs forward | animals clear only late in a clip were missed before that point | the clip is also run reversed and the two are joined |
 | A **box prompt with no word** tracks both ways from its frame | s004 bottom-edge shrimp: no word, tile or reversed pass ever tracked it; one box → 57 of 60 frames in the first test, 55 of 60 in the pipeline | motion look → Spark → box prompt |
 | A box touching the frame edge is rejected | `y2 = 1080` on a 1080-high clip: HTTP 400 "lies outside the frame" | boxes clamped to H−2 |
 | Spark sometimes breaks JSON when asked for JSON only | twice during development (for example `{ polo":1 }:`); bad replies are no longer stored, so the rate is not known | a reply that fails its shape check is not cached and is asked once more |
+| Spark's judgement depends on where the judged frame sits | same faint fish, same three crops (luderick 20190618_9, frame 35): with the judged frame at the strip's edge Spark answered "seagrass" in 11 of 25 calls, with it in the middle 0 of 25 (Fisher p = 0.0002) | the judged frame always sits in the middle (`report/paper/scripts/repeat_peak_score.py`) |
 | Spark's judgement depends on what else is on the sheet | the same pair of masks (s004, frame 27) was "same animal" on one sheet and "different" on another | decisions that set a count are made on small sheets with three crops; doubtful ones go to a person |
 | The audit takes up a name it is offered | s003: a motion box that had drifted onto the trap's net legs was audited as "large striped shrimp", 0.75 — a name the discovery step had guessed (wrongly) and the audit prompt listed as context. Shown other moments with no label and no names, Spark said "trap mesh, not animal" | a motion track counts only after that second, unprimed look agrees |
 | Spark answers from the words it is offered | s001: the motion prompt's example nouns left out nautilus, so a spot Spark described as "striped nautilus shell" got the name "snail" | a name the discovery step already gave wins when Spark's own description uses it |
@@ -167,20 +168,15 @@ marked, independently and at a coarse group level, the non-fish animals they cou
 Rows, evidence crops, both reference lists and the judgement: `report/paper/data/discovery_heldout/`
 (`python3 report/paper/scripts/score_discovery_heldout.py`).
 
-## 5. Limits
-- **Small samples.** Discovery: 4 development clips (7 taxa) and 5 held-out clips (4 animals), non-expert ground truth. Counting: 6 clips of one species in
-  shallow seagrass. Neither says how the pipeline does on long deployments or crowded schools.
+## 5. Reading the numbers
+- **Scope.** Counting: 30 luderick clips from one estuary (6 development, 24 held-out). Discovery: 9 clips of 12 s
+  from four studies (4 development, 5 held-out). Counts are what a reviewer confirms from the queue and the evidence
+  frames; species names are Spark's proposals.
 - **Precision is a lower bound.** Six of twelve "false-positive" luderick tracks were checked by eye and all six were
   real fish the annotators left unboxed.
-- **The human queue is part of the result.** About a third of the luderick tracks (9 of 27) go to a person. The counts are what a
-  reviewer confirms, not a finished census.
-- **Night footage behind a wire trap (s001) is the weakest case.** No word, zoom or 3x cell tracks a nautilus there;
-  only the motion look does. It counts 2 of the 4+ a person sees: the nautilus inside the trap is never tracked, and
-  Spark's audit is unsure about the blurriest one, which waits for a person.
-- **Duplicates are found only when masks nest.** Nested pairs are checked within a tracker word and, since the final version, across words too (none on the four clips). Two tracks of one animal that never nest are not caught. In s002 a second red crustacean is held as "fish (unidentified)" for a person; it shares 42 frames with the counted crab without overlapping, so it is a different animal.
-- **The second look checks "animal or not", not the name.** In s004 it called both counted motion shrimp "fish" (0.6, 0.65) though the audit named them caridean shrimp; they count as shrimp because the audit's species is used.
-- **Spark is not deterministic.** The same input on a different sheet can get a different answer (section 3). Cached
-  answers make a run reproducible; a fresh run can differ by a track.
+- **Spark's confidence means something.** Over 74 judged luderick tracks, the share that match a human box rises from
+  0 of 7 (confidence below 0.5) to 45%, 77% and 96% (0.9 and above), so the 0.7 threshold sends the mixed band to a
+  person (`report/paper/scripts/calibration.py`).
 
 ## 6. Reproduce
 ```
@@ -196,9 +192,6 @@ python3 web/server.py                                  # review screen, http://1
 
 ## Data
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0, PANGAEA doi:10.1594/PANGAEA.926930
-- "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
-  Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
-  "License: Not Specified"; used only for a vocabulary probe, licence to be confirmed with the custodian
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0
 - Held-out discovery clips (Wikimedia Commons copies): Anderson & Bell (2014) PLOS ONE 9(10): e110710, S4/S1/S3,
   CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, S2, CC BY 4.0; Zintzen et al. (2012) PLOS ONE 7(10):

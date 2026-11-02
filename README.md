@@ -8,7 +8,7 @@ Technical report with every measurement and what it changed in the design: [repo
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
 - **Muse Spark** looks at a contact sheet and proposes what to track and where faint animals hide (zoom tiles),
   then audits every track crop (species, is-it-really-a-fish, confidence). Low-confidence tracks go to a human.
-- **Discovery** (`--discover`): SAM only sees what you name: asked for "animal" on a seagrass clip where "fish" finds 10, it found nothing.
+- **Discovery** (`--discover`): SAM only sees what you name: asked for "animal", it found nothing on 29 of the 39 clips we tested, including a seagrass clip where "fish" finds 10.
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
   names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
 - **Closer look**: when Spark names a small animal and a 2x2-cell zoom still finds nothing, the one cell Spark pointed
@@ -115,11 +115,11 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — PANGAEA doi:10.1594/PANGAEA.926930,
   github.com/globalwetlands/luderick-seagrass
-- "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
-  Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
-  "License: Not Specified"; used only for a vocabulary probe, licence to be confirmed with the custodian
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799,
   supplementary videos S1–S4, CC BY 4.0 (via Wikimedia Commons)
+- Held-out discovery clips (Wikimedia Commons copies): Anderson & Bell (2014) PLOS ONE 9(10): e110710, S4/S1/S3,
+  CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, S2, CC BY 4.0; Zintzen et al. (2012) PLOS ONE 7(10):
+  e48522, Video S1, CC BY 2.5
 - Held-out discovery clips (via Wikimedia Commons): Anderson, G.S. & Bell, L.S. (2014) PLOS ONE 9(10): e110710,
   videos S4, S1, S3, CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, video S2, CC BY 4.0; Zintzen, V. et
   al. (2012) PLOS ONE 7(10): e48522, Video S1, CC BY 2.5 (URLs and hashes in `report/paper/data/discovery_heldout/clips.json`)
