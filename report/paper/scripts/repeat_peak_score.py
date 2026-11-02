@@ -36,6 +36,15 @@ for v in ("V4", "V5", "V5-category"):
     rows[v] = allv
     c = {k: allv.count(k) for k in ("not a fish", "other fish", "kept", "no answer")}
     print(f"{v:12s} n={len(allv):3d}  " + "  ".join(f"{k} {n}" for k, n in c.items()))
+FX = os.path.join(ROOT, "report/paper/data/repeat_peak_f35_fixexample.json")
+if os.path.exists(FX):
+    fx = [verdict(r) for r in json.load(open(FX))["repeats"]]
+    c = {k: fx.count(k) for k in ("not a fish", "other fish", "kept", "no answer")}
+    print(f"{'V6, example without fish':12s} n={len(fx):3d}  " + "  ".join(f"{k} {n}" for k, n in c.items()))
+    rows["V6fx"] = ["x"] + fx      # placeholder for the original call, so slice(1, None) drops nothing real
+    o = rows["V5-category"]
+    print(f"other fish, V6 vs V6 with the example fixed: {o.count('other fish')}/{len(o)} vs {fx.count('other fish')}/{len(fx)}, "
+          f"p = {fisher(o.count('other fish'), len(o), fx.count('other fish'), len(fx)):.3g}")
 for label, sl in (("all calls", slice(0, None)), ("repeats only", slice(1, None))):
     e, m = rows["V4"][sl], rows["V5"][sl]
     print(f"not a fish, edge vs middle ({label}): {e.count('not a fish')}/{len(e)} vs {m.count('not a fish')}/{len(m)}, "
