@@ -4,6 +4,7 @@ luderick frame; MaxN = the largest count over a clip's annotated frames. Protoco
   python3 report/paper/scripts/spark_count.py --offline        (cache only)
 --probe makes one call (first annotated frame of the first development clip) and prints its tokens and cost."""
 import json, os, sys
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, ROOT)
@@ -24,12 +25,20 @@ def _check(text):
 
 
 def count(clip, idx, img, offline):
-    try:
-        t = api.spark(PROMPT, [video.jpg(img, max_w=1280)], max_tokens=2000, effort="low", offline=offline, check=_check)
-        return api.parse_json(t)["count"]
-    except (ValueError, FileNotFoundError) as e:
-        print(f"  missing {clip} frame {idx}: {e}")
-        return None
+    # An empty reply (all 2,000 tokens spent on reasoning, seen once on the held-out run) is treated like an
+    # unreadable one, as the protocol says: one more call, then the frame is reported missing.
+    for attempt in range(2):
+        try:
+            t = api.spark(PROMPT, [video.jpg(img, max_w=1280)], max_tokens=2000, effort="low", offline=offline, check=_check)
+            return api.parse_json(t)["count"]
+        except RuntimeError as e:
+            if "empty text" not in str(e) or attempt:
+                print(f"  missing {clip} frame {idx}: {e}"[:200])
+                return None
+            print(f"  empty reply {clip} frame {idx}, one more call")
+        except (ValueError, FileNotFoundError) as e:
+            print(f"  missing {clip} frame {idx}: {e}"[:200])
+            return None
 
 
 def main():
@@ -55,7 +64,8 @@ def main():
         for cid, c in man["clips"].items():
             gt = {int(k): len(v) for k, v in json.load(open(f"{SMOKE}/{c['gt']}"))["frames"].items()}
             imgs = video.frames(f"{SMOKE}/{c['path']}", list(gt))
-            per = {i: count(cid, i, imgs[i], offline) for i in sorted(gt)}
+            with ThreadPoolExecutor(6) as ex:      # parallel calls only; each frame is still one independent call
+                per = dict(zip(sorted(gt), ex.map(lambda i: count(cid, i, imgs[i], offline), sorted(gt))))
             got = [v for v in per.values() if v is not None]
             r = dict(clip=cid, frames=len(gt), missing=len(gt) - len(got), human_maxn=max(gt.values()),
                      spark_maxn=max(got) if got else None,

@@ -1,0 +1,24 @@
+{
+ "dev": {
+  "clips": 6,
+  "scored": 6,
+  "exact": 1,
+  "within1": 6,
+  "sum_abs_err": 5,
+  "over": 5,
+  "under": 0,
+  "frame_mae": 0.395,
+  "frames": 319
+ },
+ "held": {
+  "clips": 24,
+  "scored": 24,
+  "exact": 8,
+  "within1": 16,
+  "sum_abs_err": 33,
+  "over": 16,
+  "under": 0,
+  "frame_mae": 0.526,
+  "frames": 445
+ }
+}

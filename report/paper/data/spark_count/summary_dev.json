@@ -1,0 +1,13 @@
+{
+ "dev": {
+  "clips": 6,
+  "scored": 6,
+  "exact": 1,
+  "within1": 6,
+  "sum_abs_err": 5,
+  "over": 5,
+  "under": 0,
+  "frame_mae": 0.395,
+  "frames": 319
+ }
+}

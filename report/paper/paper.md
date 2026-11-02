@@ -15,9 +15,10 @@ basic-level nouns (it returned nothing for "animal" on clips where "fish" return
 animals nobody asked about are invisible to it unless the VLM names them. The VLM, used as an auditor, adopts names
 placed in its prompt and changes its verdict with the layout of the evidence it is shown. We build a pipeline around
 these observations, in which the VLM names, translates and audits and a person reviews a queue, and evaluate it
-against model-free baselines. On counting luderick, the audits match a tuned minimum-track-length rule on six
+against model-free baselines and against the VLM counting on its own. On counting luderick, the audits match a tuned minimum-track-length rule on six
 development clips and are within one clip of it on 24 held-out clips scored once under a pre-committed protocol;
 neither beats the segmenter on box recall, and the queue isolates the tracks behind every large count disagreement.
+Asked to count each frame itself, the VLM over-counts MaxN on 16 of the 24 held-out clips.
 On four nautilus clips requested as "fish", VLM naming finds six of seven untargeted taxa without any audit (seven with
 a motion cue), and the audits correct names, duplicates and one false taxon. All discovery clips were also used in
 development; we present a case study of an annotation accelerator, not a finished census.
@@ -485,6 +486,7 @@ transfer within one site, not to new habitats.
 | merge + min length 4 | 98.9% | 76.5% | 19/24 | 21/24 | 13 |
 | audited, queue accepted | 98.9% | 77.6% | 20/24 | 21/24 | 12 |
 | audited, queue rejected | 95.6% | 88.5% | 21/24 | 24/24 | 3 |
+| Spark alone, counts each frame (no segmenter) | — | — | 8/24 | 16/24 | 33 |
 
 With the queue accepted, the audits fix one over-count the length rule cannot (20190618_6, 1→2 becomes 1→1: A1
 rejected a 6-frame track as "empty blue water, no fish" at 0.85, too long for k = 4) and otherwise leave the segmenter's output as it was: three clips keep
@@ -496,6 +498,22 @@ rather than false detections (our own non-expert reading, consistent with the pr
 result therefore repeats the development finding in a weaker form: the audits do not beat the segmenter or a length
 rule on box metrics, and their useful output on this task is the queue, which isolates exactly the tracks on which
 the clip-level counts disagree.
+
+**The VLM alone does not count.** The second review asked whether Spark could replace the segmenter. Under a
+protocol committed before any call (`report/paper/spark_count_protocol.md`), Spark counted the fish in every
+annotated frame of both sets, one call per frame with the frame alone (1280 px wide, the audits' model and reasoning
+setting, prompt in `report/paper/scripts/spark_count.py`), and its MaxN is the largest of those counts. On the six
+development clips it is within ±1 everywhere but exact on only 1 of 6 (Σ|err| 5, all over-counts; SAM alone: 2 of 6,
+Σ|err| 4). On the held-out clips it is exact on 8 of 24, within ±1 on 16 and Σ|err| 33, never below the human count
+(Table 1c). Per frame, Spark's count is above the number of human boxes in 94 of 319 development frames and 133 of
+445 held-out frames, and below it in 8 and 1. Unboxed fish explain part of this: Spark's largest over-counts fall on
+the clips where SAM also over-counts (20190709_17: Spark 8, SAM 8, human 2; 20190709_9: 6, 5, 1). They do not explain
+all of it: on 11 of the 19 held-out clips where SAM's MaxN equals the human count, Spark's is higher, by up to 3
+(20190710_5: human 1, SAM 1 with 100% precision, Spark 4). We did not inspect these frames by eye. The VLM's
+counts are thus biased upward even on sparse clips, which supports the division of labour in the pipeline: the
+segmenter boxes, and the VLM names and judges boxes it is shown. One call returned an empty reply (all 2,000
+tokens spent on reasoning); it was called once more, as the protocol allows, and no frame is missing. The 765 calls
+cost $2.47.
 
 ## Finding what was not asked for
 
@@ -585,7 +603,8 @@ prompts with no word.](figures/motion_s004.jpg){.half}
 All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
 SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens). The repeated-call experiment of
 §7.1 added 24 Spark calls ($0.14), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
-SAM calls ($0.55), for a ledger total of $4.16 over 600 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+SAM calls ($0.55) and the Spark-alone counting baseline 765 Spark calls ($2.47), for a ledger total of $6.62 over
+1,365 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -831,8 +850,9 @@ a non-expert and is labelled as such everywhere it is used.
 The repository (MIT licence) contains the code, the prompts, the four final discovery runs with every sheet Spark
 judged (`demo/runs`), and a scoring bundle in `report/paper/data/`: the human boxes of the six luderick clips (from
 Ditria et al., 2021, CC BY 4.0), SAM 3.1's reply for "fish" on each clip, the `result.json` of every scored luderick
-run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the two frame-35 sheets and the replies of the
-repeated calls. From a fresh clone, with no data download and no API key,
+run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the two frame-35 sheets, the replies of the
+repeated calls and the per-frame counts of the Spark-alone baseline (`data/spark_count`; `spark_count.py --offline`
+rescores them from the cache). From a fresh clone, with no data download and no API key,
 
 ```
 python3 report/paper/scripts/rescore.py              # Tables 1, 1b, 4, 5: baselines, queue bounds, intervals

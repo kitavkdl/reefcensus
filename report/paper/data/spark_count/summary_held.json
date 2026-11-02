@@ -1,0 +1,13 @@
+{
+ "held": {
+  "clips": 24,
+  "scored": 24,
+  "exact": 8,
+  "within1": 16,
+  "sum_abs_err": 33,
+  "over": 16,
+  "under": 0,
+  "frame_mae": 0.526,
+  "frames": 445
+ }
+}
