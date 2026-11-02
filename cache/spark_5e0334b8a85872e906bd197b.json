@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.75,\"reason\":\"Middle frame shows striped fish body tail\"}]", "usage": {"completion_tokens": 484, "prompt_tokens": 526, "total_tokens": 1010, "completion_tokens_details": {"reasoning_tokens": 443}, "prompt_tokens_details": {"cached_tokens": 99}}}

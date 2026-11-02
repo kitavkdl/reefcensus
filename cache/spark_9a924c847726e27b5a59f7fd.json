@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"chambered nautilus\"}]", "usage": {"completion_tokens": 443, "prompt_tokens": 559, "total_tokens": 1002, "completion_tokens_details": {"reasoning_tokens": 412}, "prompt_tokens_details": {"cached_tokens": 0}}}

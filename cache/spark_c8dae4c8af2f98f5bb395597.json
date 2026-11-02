@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T25\",\"is_target\":true,\"species\":\"pink bream with dark spot\",\"confidence\":0.85,\"reason\":\"Clear fish head facing camera\"}]", "usage": {"completion_tokens": 421, "prompt_tokens": 654, "total_tokens": 1075, "completion_tokens_details": {"reasoning_tokens": 377}, "prompt_tokens_details": {"cached_tokens": 0}}}

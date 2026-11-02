@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.8,\"reason\":\"Striped fish body visible moving through seagrass\"}]", "usage": {"completion_tokens": 614, "prompt_tokens": 526, "total_tokens": 1140, "completion_tokens_details": {"reasoning_tokens": 570}, "prompt_tokens_details": {"cached_tokens": 99}}}

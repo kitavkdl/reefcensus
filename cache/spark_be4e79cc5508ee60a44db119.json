@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"chambered nautilus\",\"confidence\":0.3,\"reason\":\"Blurry dark shape not fish\"}]", "usage": {"completion_tokens": 706, "prompt_tokens": 529, "total_tokens": 1235, "completion_tokens_details": {"reasoning_tokens": 662}, "prompt_tokens_details": {"cached_tokens": 0}}}

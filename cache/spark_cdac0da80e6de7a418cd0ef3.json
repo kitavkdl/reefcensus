@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.7,\"reason\":\"Fish body shape persists across frames\"}]", "usage": {"completion_tokens": 515, "prompt_tokens": 526, "total_tokens": 1041, "completion_tokens_details": {"reasoning_tokens": 475}, "prompt_tokens_details": {"cached_tokens": 0}}}

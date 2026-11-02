@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"luderick\",\"confidence\":0.85,\"reason\":\"Clear barred fish body moving through seagrass\"}]", "usage": {"completion_tokens": 499, "prompt_tokens": 526, "total_tokens": 1025, "completion_tokens_details": {"reasoning_tokens": 454}, "prompt_tokens_details": {"cached_tokens": 99}}}

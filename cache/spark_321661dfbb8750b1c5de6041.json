@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.9,\"reason\":\"striped fish body clear in middle\"}]", "usage": {"completion_tokens": 533, "prompt_tokens": 526, "total_tokens": 1059, "completion_tokens_details": {"reasoning_tokens": 492}, "prompt_tokens_details": {"cached_tokens": 99}}}

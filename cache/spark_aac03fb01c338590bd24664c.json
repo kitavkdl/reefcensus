@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T2\",\"is_target\":true,\"species\":\"chambered nautilus\",\"confidence\":0.95,\"reason\":\"clear striped shell and tentacles visible\"}]", "usage": {"completion_tokens": 186, "prompt_tokens": 500, "total_tokens": 686, "completion_tokens_details": {"reasoning_tokens": 141}, "prompt_tokens_details": {"cached_tokens": 0}}}

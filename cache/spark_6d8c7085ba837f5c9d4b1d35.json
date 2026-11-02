@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"hagfish\",\"confidence\":0.9,\"reason\":\"Pale elongate body curving near bait\"}]", "usage": {"completion_tokens": 476, "prompt_tokens": 499, "total_tokens": 975, "completion_tokens_details": {"reasoning_tokens": 432}, "prompt_tokens_details": {"cached_tokens": 0}}}

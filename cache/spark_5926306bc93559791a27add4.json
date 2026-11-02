@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T26\",\"is_target\":true,\"species\":\"shark\",\"confidence\":0.5,\"reason\":\"elongated body tail pectoral fin visible\"}]", "usage": {"completion_tokens": 616, "prompt_tokens": 636, "total_tokens": 1252, "completion_tokens_details": {"reasoning_tokens": 572}, "prompt_tokens_details": {"cached_tokens": 0}}}

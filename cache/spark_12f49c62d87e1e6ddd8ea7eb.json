@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"hagfish\",\"confidence\":0.9,\"reason\":\"Curved gray eel-like body persists\"}]", "usage": {"completion_tokens": 385, "prompt_tokens": 545, "total_tokens": 930, "completion_tokens_details": {"reasoning_tokens": 343}, "prompt_tokens_details": {"cached_tokens": 0}}}

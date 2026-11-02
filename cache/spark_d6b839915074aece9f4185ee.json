@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T4\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.2,\"reason\":\"Too blurry to confirm shrimp\"}]", "usage": {"completion_tokens": 616, "prompt_tokens": 489, "total_tokens": 1105, "completion_tokens_details": {"reasoning_tokens": 576}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T27\",\"is_target\":true,\"species\":\"caridean shrimp\",\"confidence\":0.85,\"reason\":\"Two pink shrimp with antennae legs\"}]", "usage": {"completion_tokens": 336, "prompt_tokens": 502, "total_tokens": 838, "completion_tokens_details": {"reasoning_tokens": 292}, "prompt_tokens_details": {"cached_tokens": 0}}}

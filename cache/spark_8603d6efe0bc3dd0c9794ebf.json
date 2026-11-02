@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.2,\"reason\":\"Blurry dark shape not fish\"}]", "usage": {"completion_tokens": 396, "prompt_tokens": 488, "total_tokens": 884, "completion_tokens_details": {"reasoning_tokens": 356}, "prompt_tokens_details": {"cached_tokens": 0}}}

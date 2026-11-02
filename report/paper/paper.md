@@ -913,7 +913,7 @@ python3 report/paper/scripts/fig_ablation.py         # Figure 5
 
 reproduces the counting and cost numbers of §6.1, §6.2, §6.4 and §7.1–7.2; we checked this in a clone with the live
 run files and video paths absent. Re-running the pipeline itself needs the source videos (luderick from PANGAEA, nautilus from the PLOS ONE
-supplement) and either the model-reply cache of our runs (7 MB, not in the repository at the time of writing) for a
+supplement) and either the model-reply cache of our runs (`cache/`, 12 MB, in the repository) for a
 free, exact replay, or an API key and a spend cap for a live run, which can differ by a track (§7.5):
 
 ```

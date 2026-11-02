@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T4\",\"is_target\":true,\"species\":\"shrimp\",\"confidence\":0.6,\"reason\":\"Reddish body with tail persists across frames\"}]", "usage": {"completion_tokens": 553, "prompt_tokens": 533, "total_tokens": 1086, "completion_tokens_details": {"reasoning_tokens": 510}, "prompt_tokens_details": {"cached_tokens": 0}}}

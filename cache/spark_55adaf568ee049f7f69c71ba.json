@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"hagfish\",\"confidence\":0.85,\"reason\":\"Pale curved hagfish not true eel\"}]", "usage": {"completion_tokens": 452, "prompt_tokens": 498, "total_tokens": 950, "completion_tokens_details": {"reasoning_tokens": 409}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T3\",\"is_target\":false,\"species\":\"nautilus\",\"confidence\":0.5,\"reason\":\"Pale shelled animal behind trap wires\"}]", "usage": {"completion_tokens": 758, "prompt_tokens": 530, "total_tokens": 1288, "completion_tokens_details": {"reasoning_tokens": 715}, "prompt_tokens_details": {"cached_tokens": 0}}}

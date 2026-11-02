@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T4\",\"is_target\":false,\"species\":\"nautilus\",\"confidence\":0.9,\"reason\":\"Clear nautilus shell with tentacles visible\"}]", "usage": {"completion_tokens": 721, "prompt_tokens": 530, "total_tokens": 1251, "completion_tokens_details": {"reasoning_tokens": 678}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T5\",\"is_target\":false,\"species\":\"chambered nautilus\",\"confidence\":0.6,\"reason\":\"Tentacles of nautilus, not shrimp shape\"}]", "usage": {"completion_tokens": 500, "prompt_tokens": 533, "total_tokens": 1033, "completion_tokens_details": {"reasoning_tokens": 453}, "prompt_tokens_details": {"cached_tokens": 0}}}

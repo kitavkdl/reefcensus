@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.9,\"reason\":\"Middle frame clearly shows striped fish\"}]", "usage": {"completion_tokens": 438, "prompt_tokens": 526, "total_tokens": 964, "completion_tokens_details": {"reasoning_tokens": 398}, "prompt_tokens_details": {"cached_tokens": 0}}}

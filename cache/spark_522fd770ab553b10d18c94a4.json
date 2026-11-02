@@ -1,0 +1,1 @@
+{"text": "I'll crop the top-right area to verify the count.{\"count\": 1}", "usage": {"completion_tokens": 416, "prompt_tokens": 1268, "total_tokens": 1684, "completion_tokens_details": {"reasoning_tokens": 376}, "prompt_tokens_details": {"cached_tokens": 0}}}

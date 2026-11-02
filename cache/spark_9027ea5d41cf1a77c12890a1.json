@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T2\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.6,\"reason\":\"early fish overlap but box tracks shadow\"}]", "usage": {"completion_tokens": 1814, "prompt_tokens": 542, "total_tokens": 2356, "completion_tokens_details": {"reasoning_tokens": 1773}, "prompt_tokens_details": {"cached_tokens": 0}}}

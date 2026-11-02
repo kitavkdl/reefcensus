@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"hagfish\",\"confidence\":0.85,\"reason\":\"elongated grey eel-like body moves\"}]", "usage": {"completion_tokens": 403, "prompt_tokens": 545, "total_tokens": 948, "completion_tokens_details": {"reasoning_tokens": 361}, "prompt_tokens_details": {"cached_tokens": 0}}}

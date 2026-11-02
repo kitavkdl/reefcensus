@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"fish head facing left\"},{\"tile\":\"D2\",\"is_target\":true,\"what_it_is\":\"fish in seagrass\"}]", "usage": {"completion_tokens": 419, "prompt_tokens": 512, "total_tokens": 931, "completion_tokens_details": {"reasoning_tokens": 369}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.9,\"reason\":\"Clear striped fish moves through seagrass\"}]", "usage": {"completion_tokens": 476, "prompt_tokens": 526, "total_tokens": 1002, "completion_tokens_details": {"reasoning_tokens": 434}, "prompt_tokens_details": {"cached_tokens": 99}}}

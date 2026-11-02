@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T25\",\"is_target\":true,\"species\":\"pink seabream with black spot\",\"confidence\":0.7,\"reason\":\"pink body black spot fish shape\"}]", "usage": {"completion_tokens": 311, "prompt_tokens": 635, "total_tokens": 946, "completion_tokens_details": {"reasoning_tokens": 266}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"partial fish head\"}]", "usage": {"completion_tokens": 454, "prompt_tokens": 476, "total_tokens": 930, "completion_tokens_details": {"reasoning_tokens": 425}, "prompt_tokens_details": {"cached_tokens": 99}}}

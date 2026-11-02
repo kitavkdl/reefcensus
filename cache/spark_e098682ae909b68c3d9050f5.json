@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T5\",\"is_target\":true,\"species\":\"shrimp\",\"confidence\":0.6,\"reason\":\"reddish shrimp body with tail visible moving\"}]", "usage": {"completion_tokens": 847, "prompt_tokens": 548, "total_tokens": 1395, "completion_tokens_details": {"reasoning_tokens": 804}, "prompt_tokens_details": {"cached_tokens": 0}}}

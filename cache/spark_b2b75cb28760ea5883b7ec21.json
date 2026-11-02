@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":true,\"name\":\"crab\",\"confidence\":0.8,\"reason\":\"small red crab with legs shifts\"}]", "usage": {"completion_tokens": 751, "prompt_tokens": 543, "total_tokens": 1294, "completion_tokens_details": {"reasoning_tokens": 709}, "prompt_tokens_details": {"cached_tokens": 0}}}

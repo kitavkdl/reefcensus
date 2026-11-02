@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T4\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.5,\"reason\":\"Blurry stationary debris, no shrimp body\"}]", "usage": {"completion_tokens": 557, "prompt_tokens": 538, "total_tokens": 1095, "completion_tokens_details": {"reasoning_tokens": 515}, "prompt_tokens_details": {"cached_tokens": 0}}}
