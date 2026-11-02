@@ -4,7 +4,7 @@ Windows are fixed by time stamps recorded when each experiment started (UTC epoc
 import json, os, statistics
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-LIVE = os.path.join(ROOT, "cache/ledger.jsonl")
+LIVE = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache/ledger.jsonl")
 COPY = os.path.join(ROOT, "report/paper/data/ledger.jsonl")
 T_HELDOUT = 1793610643      # held-out protocol commit 06f1f01 (git log -1 --format=%ct); held-out runs start after it
 T_FIXED = 1793611190              # fixed-vocabulary baseline launched (date +%s just before the run)
