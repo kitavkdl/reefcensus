@@ -6,3 +6,4 @@ __pycache__/
 spikes/*/data/
 spikes/*/clips/*.frames/
 spikes/*/clips/*.txt
+demo/out/
