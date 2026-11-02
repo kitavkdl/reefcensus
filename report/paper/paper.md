@@ -292,7 +292,7 @@ added after the anchoring failure in §7.5.
 **A3 Same animal?** Two counted detections whose masks nest (one ≥ 80% inside the other) are found
 from the decoded masks; each pair is shown once, in the frame where it nests most, with both outlines drawn (red and
 cyan). Pairs of the same segmenter word and pairs of two different words (for example a renamed track and a track of
-another word) go on separate sheets, the second kind only in the final version (V6). Spark answers whether the cyan outline marks the same single animal or a part of it. Masks find candidates;
+another word, candidates from containment ≥ 0.6) go on separate sheets, the second kind from V6 on. Spark answers whether the cyan outline marks the same single animal or a part of it. Masks find candidates;
 the judgement is needed because one mask can cover two real animals (a case we observed with two overlapping
 nautiluses, where a zoom pass found the rear one alone). For a duplicate, the smaller-mask track is removed from every
 frame where it nests.
@@ -412,12 +412,18 @@ to the point where the audits would start. Without audits there are no species l
 under SAM's word ("eel", "shrimp"). Further ablations of discovery components come from the development history
 (§7.3).
 
-**Protocol.** Results are from v16 code (luderick run tag eval6) unless marked V6. The final code (V6) differs from
-v16 in two places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6). It
-reproduces every v16 count exactly. Luderick run eval7 was made after the first change and before the second, which
-cannot act on a single-word task; the four discovery runs were replayed offline under the final code (all calls hit
-the v16 cache, and no cross-word pair was found). Lower-case v-numbers (v13–v16) name code releases; V1–V6 name the audit variants of §7.1, of which V5 is
-the v16 audit and V6 the final code. All luderick variants in §7.1 are
+**Protocol.** Results are from v16 code (luderick run tag eval6) unless marked V6 or final. V6 differs from v16 in two
+places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6); it reproduces
+every v16 count exactly. Luderick run eval7 was made after the first change and before the second, which cannot act on
+a single-word task. The **final code, frozen at commit `cbaf59b` before the held-out re-runs**, adds to V6: A4's
+example of a different animal without the category word (§7.1); cross-word A3 candidates from containment 0.6; a
+second look or a same-group peak answer that names another animal queues the track while it still counts; animal-group
+MaxN rows; a separate second look for mid-confidence motion tracks; discovery names reduced to their animal noun for
+SAM; automatic brightening of dark clips (thresholds set from the development clips' brightness, post hoc; only s001
+is that dark); and splitting of videos over 600 s. Replayed offline on the development data ($0), it reproduces
+every luderick number (Table 4) and every discovery count except s001, which it brightens (nautilus 2 + 1 queued →
+4, none queued); s004's queue grows from 8 to 10 tracks with the same counts. Lower-case v-numbers (v13–v16) name code
+releases; V1–V6 name the audit variants of §7.1, of which V5 is the v16 audit. All luderick variants in §7.1 are
 saved runs of earlier versions of the same code, re-scored with one scorer. Every number in this paper is produced by
 a script in the repository from saved runs and cached model replies (§10 says which of them a fresh clone can
 reproduce), except where a sentence says it is a development
@@ -601,7 +607,7 @@ frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
 |-----|----------|-----------|------------------------------|
-| s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | nautilus 2 (+1 queued) | motion residual only; every word 0 frames |
+| s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | nautilus 4, none queued (final code, clip brightened); v16 on the original clip: 2 (+1 queued) | motion residual; on the original clip every word 0 frames |
 | s002 | nautilus 1; red crustaceans 2 | nautilus 1; small red crab 1 (+2 "fish (unidentified)" queued) | "nautilus"; crab via "shrimp" in a 3× cell, renamed by A1 |
 | s003 | nautilus 3–4 | nautilus 3 | "nautilus" forward, reversed and zoomed |
 | s004 | nautilus 1; shrimp 10+; hagfish 1 | nautilus 1; shrimp 15 (A1: "caridean shrimp" 12, "unidentified" 3); hagfish 1 | hagfish via "eel", renamed; "shrimp"; 2 shrimp via motion |
@@ -609,7 +615,10 @@ frames per clip, made before looking at outputs.</div>
 How each taxon was reached, from the run logs. **s001**: "nautilus", "shell" and "snail" track 0 frames on the full
 frame, two blocks and two 3× cells of this night clip; the motion residual finds moving spots that Spark calls
 "nautilus", and box prompts on them track 56 and 60 of 60 frames (A1 0.95 and 0.9, A2 yes). A third motion track
-(A1 0.55) is queued. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
+(A1 0.55) is queued (v16). The final code first brightens this clip (median Lab L 5, mean 26.5; the thresholds,
+median < 15 and mean < 35, were set from the development clips' brightness, so the rule is post hoc,
+`report/paper/lowlight_s001.md`): "shell" then tracks one nautilus for 9 frames, four motion box prompts track 50–60 of
+60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4, none queued. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
 "crab" tracks 5 frames and "shrimp" 12, and A1 calls the "shrimp" track "small red crab, not shrimp" (0.7), which
 matches Spark's discovery name, so the track is relabelled; A2 agrees. **s003**: "nautilus" tracks 33 frames forward,
 60 reversed and 45 and 44 in two zoom blocks. Spark also proposed a "large striped shrimp" that no word tracked; a
@@ -626,7 +635,7 @@ has no word), under the one-word name Spark gave the moving spot.</div>
 | taxa in the final count | 0 of 7 | 6 of 7 | 7 of 7 | **7 of 7** |
 | ... of which under a wrong name | — | 2 ("eel" for hagfish, "shrimp" for crab) | 2 | **0** |
 | non-fish labels counted that match nothing on the person's list | 0 | 0 | 1 (s003 "shrimp" 2) | **0** |
-| s001 nautilus (person: 4 or more) | 0 | 0 | 3 | 2 (+1 queued) |
+| s001 nautilus (person: 4 or more) | 0 | 0 | 3 | 2 (+1 queued); final code, brightened: 4 |
 | s003 nautilus (person: 3–4) | 0 | 3 | 4 | 3 |
 | s004 shrimp (person: 10 or more) | 0 | 15 | 18 | 15 (12 + 3 unidentified, one frame) |
 | "fish" counted (the person listed non-fish animals only) | s002: 2 | s002: 2 | s002: 2; s004: 1 (motion, "small fish swimming away") | s002: 2, both queued; s004: 0 |
@@ -642,11 +651,12 @@ label; with them both carry the animal Spark named. With the motion residual but
 false taxon), and A2 removes it. In s004 the shrimp MaxN, counted over both shrimp labels
 in the same frame, drops from 18 to 15: A3 found six nested pairs that were one shrimp counted twice, and A4 removed a
 box on the trap's pipe; these act in different frames, so the peak falls by three, not seven. A1 also splits those 15 into "caridean shrimp" (MaxN 12) and "shrimp (unidentified)" (3),
-which peak together in frame 54; a per-label output, like the demo's, shows 12, but that drop is the label
+which peak together in frame 54; a per-label output shows 12 (the final code adds an animal-group row,
+"crustacean 15", to the result, CSV and review screen), but that drop is the label
 fragmentation of §7.5, not a correction. The person's "10 or more" from four frames cannot say whether 15 is right, so
 we report the change without scoring it. The audits also cost one animal: in s001, the third motion nautilus has A1
-confidence 0.55 and waits in the queue, so the audited count (2) is further from the person's "4 or more" than the
-unaudited one (3).
+confidence 0.55 and waits in the queue, so the audited v16 count (2) is further from the person's "4 or more" than the
+unaudited one (3). On the brightened clip (final code) all four motion nautiluses pass the audits (4, none queued).
 
 **A fixed noun list instead of the VLM's names.** The second review asked whether a list of common nouns would do
 as well as Spark's naming at no VLM cost. We prompted SAM 3.1 on the full frame of each clip with 16 basic-level
@@ -677,7 +687,8 @@ the s004 "fish" of the motion-only baseline is a moving spot that A1 rejects in 
 shadow").
 
 Counts of individuals are not scored: four frames per clip are not enough for a person to count ten or more moving
-shrimp. In s001 the taxon is counted but the number (2) is below what a person sees (4 or more).
+shrimp. In s001 v16 counted the taxon with a number (2) below what a person sees (4 or more); the final code, which
+brightens this clip, counts 4.
 
 ![**Figure 4.** Motion-residual sheet, s004. Each group is one moving spot no box covered, shown early / middle / late
 at the same zoom. Spark calls the shrimp animals and the sediment puffs not; the shrimp then go to SAM 3.1 as box
@@ -734,8 +745,13 @@ passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass)
 the luderick counting runs from development calls; by the price list, one SAM pass over their 665 frames costs
 $0.13, and the audits add a few Spark calls per clip. A cached replay of a discovery clip, including rendering the annotated video, takes 13–24 s
 on a CPU server; live runs took up to 98 s, bounded by API latency. These are measurements on clips of 12 to 53 s;
-we have not run an hour-long deployment, and SAM 3.1 accepts at most 10 minutes per file, so long videos would be
-processed in segments.
+SAM 3.1 accepts at most 10 minutes per file, so the final code cuts a longer video into equal back-to-back segments of
+at most 600 s and merges them into one ordinary run (`fishcount/longvideo.py`, `report/long_video.md`). Our longest
+source is 40 s (Barord et al. S3): in one pass it counts the same 3 nautiluses as its 12-s clip ($0.35, 297 s live;
+replayed on the frozen code: 3). Forced 20-s segments counted 1, for reasons inside a segment (one SAM ID covering two
+animals; a five-word name never tried as a word, which the final code's short names address, not re-measured). We have
+not run an hour-long deployment; by the measured per-frame price and run time, one hour at 5 fps would cost about $30
+and take about 7.5 h run sequentially (parallel segments are not implemented).
 
 # Analysis
 
@@ -758,7 +774,8 @@ case we therefore repeated the judgement on the saved sheets (below).
 | V3 | V2 with 2-px borders and captions in the prompt | 97.4% | 79.2% | 4/6 | 2 | 10/27 |
 | V4 | V2, but when a track starts or ends at the judged frame, that frame moves to the strip's edge (no repeated crop) | 96.3% | 79.0% | **5/6** | **1** | 9/27 |
 | V5 | V2 layout restored; A2 and relabelling added (inactive on this task) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
-| V6 (final) | V5, but A4 asks about the requested category ("fish"), not A1's species; A3 also checks pairs across words (none here) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
+| V6 | V5, but A4 asks about the requested category ("fish"), not A1's species; A3 also checks pairs across words (none here) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
+| final (frozen `cbaf59b`) | V6, with A4's example of another animal no longer naming the category, and the rules of §5 *Protocol* (replayed, $0) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
 
 ![**Figure 5.** The same SAM tracks audited with five sheet designs (V1–V5; V6 uses the V5 sheets). Recall is drawn as dots because its axis does
 not start at zero. V4 has the best MaxN score and the worst recall of the three-moment designs; see text.](figures/ablation.png){.half}
@@ -786,6 +803,7 @@ layout. Data: `report/paper/data/repeat_peak_f35.json`; tally: `report/paper/scr
 | V4: judged frame at the strip's edge | 11 of 25 | 0 of 25 | 14 of 25 |
 | V5: judged frame in the middle | 0 of 25 | 4 of 25 | 21 of 25 |
 | V6: middle, question names the category ("fish") | 0 of 25 | 4 of 25 | 21 of 25 |
+| final: V6 with the example "an eel or hagfish" instead of "an eel, hagfish or fish" | 0 of 25 | 0 of 25 | 25 of 25 |
 
 With the frame at the edge, Spark failed to see an animal in 11 of 25 calls; in the middle, never (Fisher exact test,
 two-sided p = 0.0002). These 25 + 25 include the two original calls that prompted the experiment; on the 24 + 24
@@ -793,7 +811,7 @@ repeats alone the split is 10 of 24 vs. 0 of 24 (p = 0.0006). On this sheet, the
 whether the faint body is seen as a fish at all; one tile in one frame cannot say how general the effect is. Whether
 the track survives differs less (removed in 11 of 25 vs. 4 of 25, p = 0.06), because in the middle layout Spark
 sometimes recognised a fish but answered that it was "other fish" than the label being checked, which also removes it
-(§7.5). Asking about the requested category (V6) did not remove that answer (4 of 25; see §7.5). The single runs of Table 4 thus each show one draw: V4's 96.3% is
+(§7.5). Asking about the requested category (V6) did not remove that answer (4 of 25); removing "fish" from the question's example of a different animal (final code) did (0 of 25; §7.1). The single runs of Table 4 thus each show one draw: V4's 96.3% is
 the outcome in 11 of 25 calls, and V5's and V6's 97.4% in 21 of 25 each. The direction agrees with reports that multi-image VLMs weigh inputs
 differently by position (Tian et al., 2025); their setting is separate images, ours is crops within one composite
 sheet, so we call the effect similar rather than the same.
@@ -844,8 +862,8 @@ tracks, 4 were counted (s001 two nautiluses, s004 two shrimp). What discovery an
 separated in Table 3 and §6.3 (no taxon without discovery; names, the s003 false taxon and the s004 duplicates fixed
 by the audits). Two further components show only in this accounting and the development history:
 
-* **Without the motion residual** the s001 nautiluses are never found: every word, block and 3× cell returned 0
-  frames on this night clip, so the taxon count would be 6 of 7, and s004 would lose two shrimp at the frame edge.
+* **Without the motion residual** the s001 nautiluses are never found on the original clip: every word, block and
+  3× cell returned 0 frames on this night clip (brightened, "shell" reaches one of them for 9 frames), so the taxon count would be 6 of 7, and s004 would lose two shrimp at the frame edge.
 * **Without the second look (v13)**, s003 counted a "large striped shrimp" that does not exist (1 false taxon); with
   it (v14 onward), 0.
 
@@ -904,13 +922,16 @@ frame 0 as "anemone tentacles"; the nautilus still counts because a later frame,
 peak, but the ±1 s removal window moved its reported first arrival from 0 s to 1.2 s (frame 6 instead of 0), and a
 label with a single short appearance would have been lost. And because the A4 question names the label,
 a real fish of another species can be rejected for not being that species: on the frame-35 sheet Spark
-answered "other fish" for a fish under the label "striped seabream" in 4 of 25 calls (Table 4b). Under the current rule such a track
-is removed from the peak frame and is not moved to another label, so a per-species check silently lowers the total.
-The final version (V6) asks A4 about the requested category for word-prompted tracks and leaves the species to A1;
-every saved count is unchanged, but on the same sheet the fish was still called "other fish" in 4 of 25 calls
-(Table 4b). The question's examples of a different animal read "an eel, hagfish or fish", which names the category itself; with
-only that phrase changed to "an eel or hagfish", the fish was kept in 25 of 25 calls on the same sheet (4 of 25 vs.
-0 of 25, p = 0.11; `report/paper/scripts/repeat_peak_fixexample.py`, written before the calls).
+answered "other fish" for a fish under the label "striped seabream" in 4 of 25 calls (Table 4b). Under the v16 rule
+such a track was removed from the peak frame and not moved to another label, so a per-species check silently lowered
+the total. V6 asks A4 about the requested category for word-prompted tracks and leaves the species to A1; every saved
+count is unchanged, but on the same sheet the fish was still called "other fish" in 4 of 25 calls (Table 4b). The
+question's examples of a different animal read "an eel, hagfish or fish", which names the category itself; with only
+that phrase changed to "an eel or hagfish", the fish was kept in 25 of 25 calls on the same sheet (4 of 25 vs. 0 of 25,
+p = 0.11; `report/paper/scripts/repeat_peak_fixexample.py`, written before the calls). The final code uses that
+phrase, and an answer that names another animal of the same group ("other fish" under a fish label) no longer removes
+the box: it stays in the count and the track goes to the queue for its species. An answer naming a part, a duplicate
+or no animal ("tail of another fish", "sediment between crab legs") still removes it.
 
 **Malformed output.** During development Spark twice returned replies that were not valid JSON (for example
 `{ polo":1 }:`); because one was cached, every replay failed. A reply that fails its schema check is now never
@@ -938,8 +959,8 @@ counted twice (for example body only vs. body with legs).](figures/pairs_s004.jp
 
 Counting was measured on 30 luderick clips from one estuary, discovery on nine 12-s clips from four studies in three
 seas; every number above is for these clips. Counts are what a reviewer confirms from the queue and the evidence
-frames, and species names are the VLM's proposals (§7.5). SAM 3.1 accepts at most 10 minutes per file, so an
-hour-long deployment would be processed in segments, which we have not run.
+frames, and species names are the VLM's proposals (§7.5). Videos over 10 minutes are split into
+segments and merged (§6.4); an hour-long deployment has not been run (estimated about $30 and 7.5 h sequentially).
 
 # Ethics and broader impact
 
@@ -1311,7 +1332,8 @@ time. Comments in the source record the case that motivated each sentence.
 
 | component | parameter | value |
 |------|--------------|--------------|
-| ingest | frame rate; max width; max length | 5 fps; 1920 px; 600 s |
+| ingest | frame rate; max width; segment length (longer videos split, final) | 5 fps; 1920 px; ≤ 600 s |
+| low light (final) | dark if Lab L median and mean below; then | 15 and 35 (set from the development clips, post hoc); gamma 0.5 + CLAHE clip 2.0 |
 | zoom | block (2/3 of frame) upscale; cell (1/3) upscale | 1.5×; 3× |
 | discovery | items per clip; words per item; zoom tiles | ≤3; ≤3; ≤3 |
 | motion | analysis scale; threshold; temporal check; blob area; min path length; spots shown; boxes prompted; Spark confidence | 0.5; median + 6·MAD (≥ 8, CIELAB); frame t±2 differ by > 0.8 × threshold; 12–2,500 px (analysis scale); 6 frames; ≤8; ≤5; ≥0.6 |
@@ -1323,7 +1345,7 @@ time. Comments in the source record the case that motivated each sentence.
 | A1 | tracks per sheet; crops; label / reject confidence | 12; largest-box frame ± ⌊length/3⌋; ≥ 0.7 |
 | Spark | reasoning effort; max tokens | low; 6000 |
 | A2 | crops along path; animal confidence | 1/8, 1/2, 7/8; ≥ 0.5 |
-| A3 | nesting (mask containment); pairs per sheet | ≥ 0.8; 16 |
+| A3 | nesting (mask containment), same word; across two words (final); pairs per sheet | ≥ 0.8; ≥ 0.6; 16 |
 | A4 | side gap; removal window; rounds; tiles per sheet | 3 frames; ±5 frames (±1 s at 5 fps); 3; 12 |
 | evaluation | IoU match; MaxN frames | 0.3 (also 0.5, 0.7); annotated frames only |
 

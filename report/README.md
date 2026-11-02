@@ -20,7 +20,7 @@ Results (details in **Evaluation**):
 - **Held out (24 luderick clips never used in development, frozen code, one run, protocol committed first):** recall 98.9%, MaxN exact on 20 of 24 with the queue accepted (SAM alone and the length rule: 19); with the queue rejected every clip is within ±1 (recall 95.6%). The review screen shows MaxN as the range between those two cases until the queue is checked; it contains the human MaxN on 22 of 24 held-out clips (5 of 6 in development), a summary added after the run. Same estuary as the development clips.
 - **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net, and cost one nautilus in s001 (queued). The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
 - **Finding what was not asked for, held out (5 new videos from other studies, frozen code, one run, protocol committed first):** Spark named all 4 non-fish animals the author and an AI assistant had marked before the run; 3 were counted and the 4th (a squat lobster that no word tracked, followed by a motion box in all 60 frames) was sent to a person to confirm. 0 false discoveries: every counted crop was judged an animal with its label hidden, and nothing non-fish was counted on the two clips without one. $1.06 for all five.
-- **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.27 (discovery) in API calls; all answers are cached by content, so a rerun is free.
+- **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.40 (discovery; $0.22–0.27 on the development clips) in API calls; all answers are cached by content, so a rerun is free.
 
 ![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3_luderick.jpg)
 *Same seagrass frame (luderick archive 20190618_9, CC BY 4.0). Left: SAM 3.1 asked for "animal", 0 detections (none in
@@ -47,7 +47,8 @@ video ──► SAM 3.1 "fish" (whole frame, reversed clip, optional 2x2 zoom ti
    ├─► motion: pixels that keep changing outside every box (no model) ──► Spark, 3 crops per spot:
    │         animal or sediment? ──► animals → SAM box prompt, no word
    │         counted only if the audit is confident AND a second Spark look (other moments, no label) agrees
-   │         (the same second look also gates a track the audit renamed to another discovered animal)
+   │         (the same second look also gates a track the audit renamed to another discovered animal;
+   │          if it names another animal group, the track still counts and goes to the queue)
    │
    ├─► merge + re-join broken track IDs
    ├─► Spark audit: 3 crops per track (early / middle / late) → species, is it the target, confidence
@@ -55,6 +56,7 @@ video ──► SAM 3.1 "fish" (whole frame, reversed clip, optional 2x2 zoom ti
    │         (motion tracks: counted only if confident and the second look agrees)
    ├─► Spark "same animal?": one mask inside another → both outlines shown → duplicate removed
    ├─► Spark peak check: every box in the frame that sets MaxN, with the same track before and after
+   │         (an answer naming another animal of the same group keeps the box and queues the track)
    └─► MaxN, first arrival, evidence frame per species; review screen; CSV
 ```
 All Spark checks look at **three moments** of the same object at the same zoom. One crop of a sediment cloud can look
@@ -118,7 +120,7 @@ a non-expert list: 7 taxa over the four clips.
 
 | clip | animals a person listed (not fish) | reefcensus final count (MaxN) | how it was found |
 |---|---|---|---|
-| s001 (night, wire trap) | nautilus: 1 inside the trap, 3+ outside | **nautilus 2** | no word, zoom or 3x cell tracked anything; motion look → Spark "nautilus" → SAM box prompts (56 and 60 of 60 frames), audit 0.95 / 0.9, second look yes. A third motion track (audit 0.55) waits for a person |
+| s001 (night, wire trap) | nautilus: 1 inside the trap, 3+ outside | **nautilus 4**, none queued (final code) | the clip is dark (brightness median 5, mean 26.5), so the final code brightens it first (gamma 0.5 + CLAHE; thresholds set from our development clips, post hoc, see `paper/lowlight_s001.md`). Then "shell" follows one nautilus for 9 frames and the motion look → Spark "nautilus" → four SAM box prompts (50–60 of 60 frames), all four pass the audit and the second look, peak check keeps 4 of 4. Before brightening (v16): no word, zoom or 3x cell tracked anything, 2 counted and a third (audit 0.55) queued |
 | s002 | nautilus 1; red crustaceans 2 (by the rope, by the bait) | nautilus 1; **small red crab 1** | Spark: "small red crab on seabed". The word "shrimp" tracked it in a 3x cell; the audit said "small red crab, not shrimp" (0.7), which matches the discovery name, so the track is relabelled; the unprimed second look agrees ("small red crab with legs shifts"). The crustacean at the bait is held as "fish (unidentified)" for a person |
 | s003 | nautilus 3–4 | nautilus 3 | word "nautilus" + zoom tiles. Spark also proposed a "large striped shrimp" that is not there: no word tracked it, and the motion box later audited under that name was rejected by the second look (figure below) |
 | s004 | nautilus 1; shrimp 10+; one grey eel-like animal (hagfish) | nautilus 1; caridean shrimp 12 (+3 unidentified; 15 together in frame 54); hagfish 1 | "hagfish" 0 frames → "eel" 24 frames, labelled hagfish. Two shrimp at the bottom edge only through motion boxes (tracked in 55 and 30 frames) |
@@ -131,7 +133,7 @@ a non-expert list: 7 taxa over the four clips.
 | SAM "fish" alone | 0 of 7 (in s002 it boxed the two crustaceans as low-confidence "fish") |
 
 Counts of individuals cannot be scored here: four frames per clip are not enough for a person to count 10+ shrimp.
-In s001 the taxon is counted but the number (2) is below what a person sees (4+).
+In s001, v16 counted 2 of the 4+ a person sees; the final code, which brightens this night clip, counts 4.
 
 ![Motion sheet, s004](figures/motion_s004.jpg)
 *Motion look, s004: each group is one moving spot that no box covered, shown early / middle / late. Spark calls the

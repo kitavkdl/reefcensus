@@ -39,8 +39,12 @@ Each copy: same 60 frames (5 fps, 1920×1080), H.264 crf 18. Run with the demo o
 ## Limits
 - One clip, development data, three variants tried after the fact; picking the best of three is a selection. The
   honest summary is "every variant improved 2 → 3 counted (4 with the queue accepted); the strongest reached 4".
-- Not tested on normally lit clips: brightening might add noise or false motion there. The submitted pipeline does
-  not brighten; this is an option to try, not a change to the evaluated system.
+- Not tested on normally lit clips: brightening might add noise or false motion there. **Update (11/2):** after this
+  test the final code brightens automatically, only clips darker than a threshold (Lab L median < 15 and mean < 35),
+  with the strongest variant (gamma 0.5 + CLAHE 2.0). The threshold was set from the development clips' brightness
+  (s001 5/26.5 is brightened; the next darkest, s004 at 26/42, is not), so it is a post-hoc rule; none of the held-out
+  clips (DH1–DH11, 24 luderick) is that dark, so the held-out runs do not test it. On the frozen code s001 counts 4,
+  none queued.
 
 ## Draft sentence for the paper (post-hoc)
 > In a post-hoc test on the development night clip s001, brightening the video before the unchanged pipeline

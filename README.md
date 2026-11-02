@@ -48,7 +48,7 @@ python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (r
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 21 tests, including an exact
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 28 tests, including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos.** One SAM 3.1 call takes a file of up to 10 minutes. A longer video is cut automatically into equal,
@@ -72,10 +72,10 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 | | result |
 |---|---|
 | Spark names it | 7 of 7 |
-| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look: 2 of at least 4 counted) |
+| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look; the final code brightens that dark clip and counts 4 of at least 4, v16 counted 2) |
 | something wrong counted | 0 (Spark once proposed a shrimp that isn't there; no word found it, and the motion box that drifted onto the trap mesh was rejected by a second look) |
 | SAM "fish" alone | 0 of 7 — it only sees what it is told |
-| motion look, added | s001: 2 nautiluses no word ever found (night, wire trap). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
+| motion look, added | s001: the nautiluses no word found (night, wire trap; 4 once the clip is brightened, 2 before). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
 
 **Five new videos, held out (measured).** Clips from three other studies (deep carcass cameras in British Columbia,
 a fish-only BRUV in New Zealand; CC BY), never used in development, run once with frozen code under a protocol
