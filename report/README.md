@@ -50,7 +50,8 @@ video ──► SAM 3.1 "fish" (whole frame, reversed clip, optional 2x2 zoom ti
    │
    ├─► merge + re-join broken track IDs
    ├─► Spark audit: 3 crops per track (early / middle / late) → species, is it the target, confidence
-   │         confidence < 0.7 → human queue, not counted
+   │         confident "not the target" → removed; unsure → counted as "(unidentified)" and queued for a person
+   │         (motion tracks: counted only if confident and the second look agrees)
    ├─► Spark "same animal?": one mask inside another → both outlines shown → duplicate removed
    ├─► Spark peak check: every box in the frame that sets MaxN, with the same track before and after
    └─► MaxN, first arrival, evidence frame per species; review screen; CSV
@@ -70,7 +71,7 @@ These are the behaviours the design is built around. Each was found by trial dur
 | Word tracking starts only once the object is clear and runs forward | animals clear only late in a clip were missed before that point | the clip is also run reversed and the two are joined |
 | A **box prompt with no word** tracks both ways from its frame | s004 bottom-edge shrimp: no word, tile or reversed pass ever tracked it; one box → 57 of 60 frames in the first test, 55 of 60 in the pipeline | motion look → Spark → box prompt |
 | A box touching the frame edge is rejected | `y2 = 1080` on a 1080-high clip: HTTP 400 "lies outside the frame" | boxes clamped to H−2 |
-| Spark sometimes breaks JSON when asked for JSON only | 2 of 124 cached replies (for example `{ polo":1 }:`) | a reply that fails its shape check is not cached and is asked once more |
+| Spark sometimes breaks JSON when asked for JSON only | twice during development (for example `{ polo":1 }:`); bad replies are no longer stored, so the rate is not known | a reply that fails its shape check is not cached and is asked once more |
 | Spark's judgement depends on what else is on the sheet | the same pair of masks (s004, frame 27) was "same animal" on one sheet and "different" on another | decisions that set a count are made on small sheets with three crops; doubtful ones go to a person |
 | The audit takes up a name it is offered | s003: a motion box that had drifted onto the trap's net legs was audited as "large striped shrimp", 0.75 — a name the discovery step had guessed (wrongly) and the audit prompt listed as context. Shown other moments with no label and no names, Spark said "trap mesh, not animal" | a motion track counts only after that second, unprimed look agrees |
 | Spark answers from the words it is offered | s001: the motion prompt's example nouns left out nautilus, so a spot Spark described as "striped nautilus shell" got the name "snail" | a name the discovery step already gave wins when Spark's own description uses it |

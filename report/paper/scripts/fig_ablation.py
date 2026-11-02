@@ -4,7 +4,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-variants = ["V1 one crop", "V2 three moments", "V3 V2 + captions", "V4 judged frame at end", "V5 final (V2 layout)"]
+variants = ["V1 one crop", "V2 three moments", "V3 V2 + captions", "V4 judged frame at end", "V5 / V6 (V2 layout)"]
 recall = [95.9, 97.4, 97.4, 96.3, 97.4]
 exact = [3, 4, 4, 5, 4]
 queue = [13, 7, 10, 9, 9]
