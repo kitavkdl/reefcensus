@@ -16,13 +16,28 @@ and a short queue of uncertain tracks for a human to confirm. Built during the M
   (body only and body with legs). Masks find the candidates (one mask lying >=80% inside another); Spark is shown both
   outlines and decides "same animal or two?" — masks alone can't, because SAM sometimes draws one mask over two
   animals and a zoom tile then finds the rear one on its own. Duplicates are removed before MaxN is taken.
-- All API calls are cached by content hash and metered against a budget (`FISH_BUDGET`, default $1).
+- **Motion look** (no word at all): a BRUV camera sits still, so pixels that differ from the clip's median frame and
+  keep changing are "look here" hints (`fishcount/motion.py`, no model). Spots outside every box go to Spark as one
+  sheet, each shown early / middle / late at the same zoom — an animal keeps its shape, a sediment cloud spreads. The
+  ones Spark calls animals go to SAM 3.1 as a **box prompt with no word**, and SAM tracks the animal both ways through
+  the clip. Nautilus clip s004: a shrimp at the bottom edge that no word, tile or reversed pass ever tracked, 55/60
+  frames from one box. Motion tracks the audit doubts are not counted; they wait in the human queue.
+- All API calls are cached by content hash and metered against a budget (`FISH_BUDGET`, default $1). A Spark reply
+  that is not valid JSON is never cached and is asked once more.
 - SAM masks are decoded by a small C port of `meta_sam_parser`'s one_bit codec (`fishcount/_maskdec.c`, built with
   `cc` on first use; ~1 ms a mask instead of ~1 s). Without a C compiler it falls back to `meta_sam_parser`.
   `python3 spikes/maskcheck.py` checks it against the reference on every cached SAM output.
 
+## Try it
+
+**No key needed to look:** `pip install -r requirements.txt && python3 web/server.py`, then open
+http://127.0.0.1:8793. Three finished nautilus runs (`demo/runs`, copied into `runs/` on first start) play with
+their evidence frames, motion sheets and human queue. Nothing is called.
+
+**To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
+is a hard cap on total spend; a 12 s discovery run costs about $0.05–0.25.
+
 ```
-pip install -r requirements.txt     # Meta API key in ~/.config/meta-api/key
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit]
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
 python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval_<clip>)
@@ -48,10 +63,22 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
 | 20190709_4 | 11 | 100% / 71% / 2→3 | 100% / 77% / 2→2 | 3 of 3 |
 | **all** | 319 | **97.4% / 78.7%**, MaxN off by 1 on 4 of 6 | **95.9% / 79.3%**, MaxN off by 1 on 3 of 6 | 13 of 27 |
 
-- Precision is a floor: one crop from each of 6 "false-positive" tracks (of 12) was looked at, and all 6 are real
-  luderick that the annotators left unboxed or boxed elsewhere.
-- MaxN is never more than 1 off on these clips, in either direction. The pipeline does not replace the reviewer:
-  about half the tracks go to the human queue, and the counts are what a reviewer confirms, not a final census.
+- On plain fish counting the pipeline is no better than SAM alone; its value is in what follows. 6 of the 12
+  "false-positive" tracks were checked by eye and all 6 are real luderick the annotators left unboxed.
+- MaxN is never more than 1 off, in either direction. About half the tracks go to the human queue: the counts are
+  what a reviewer confirms, not a final census.
+
+## Finding what you didn't ask for (measured)
+Four nautilus BRUV clips (12 s each), request = "fish" only. Before looking at any output, every non-fish animal in
+four frames per clip was listed by eye at taxon level (not an expert's list): 7 taxa.
+
+| | result |
+|---|---|
+| Spark names it | 7 of 7 |
+| counted at the end | 6 of 7 (missed: nautilus behind a wire trap at night, s001) |
+| something wrong counted | 0 (Spark once proposed a shrimp that isn't there; SAM tracked nothing for it) |
+| SAM "fish" alone | 0 of 7 — it only sees what it is told |
+| motion look, added | +1 animal counted (s004 edge shrimp), 0 counted wrongly. A sediment cloud that looked like a fish in one crop is rejected once Spark sees three |
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — github.com/globalwetlands/luderick-seagrass
