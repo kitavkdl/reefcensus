@@ -177,6 +177,14 @@ class GroupMetrics(unittest.TestCase):
         self.assertEqual((g["crustacean"]["maxn"], g["crustacean"]["maxn_frame"]), (4, 2))
 
 
+class LowLight(unittest.TestCase):
+    def test_threshold(self):
+        from fishcount import video
+        self.assertTrue(video.is_dark(dict(median_l=5.0, mean_l=26.5)))     # s001 night trap
+        self.assertFalse(video.is_dark(dict(median_l=26.0, mean_l=42.0)))   # s004, nearest lit clip
+        self.assertFalse(video.is_dark(dict(median_l=None, mean_l=None)))
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")

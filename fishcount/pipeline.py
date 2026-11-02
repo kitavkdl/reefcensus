@@ -276,9 +276,11 @@ def confirm_motion(run, clip, frames, ts, offline, sheet_no=1):
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None):
+                 do_discover=False, do_motion=None, lowlight="auto"):
     """do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
-    counted unchecked). The paper's no-audit discovery baseline sets it explicitly."""
+    counted unchecked). The paper's no-audit discovery baseline sets it explicitly.
+    lowlight: "auto" brightens only a dark clip (video.is_dark), "on" always, "off" never; the original is kept as
+    clip_original.mp4 and the decision with the brightness numbers goes into result["video"]["lowlight"]."""
     do_motion = (do_discover and do_audit) if do_motion is None else do_motion
     rid = rid or time.strftime("%m%d-%H%M%S")
     run = Run(rid)
@@ -288,7 +290,14 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         shutil.copy(src, clip)      # already analysis-ready (keeps the cache key stable)
     else:
         video.ingest(src, clip)
+    light = video.light_stats(clip)
+    light.update(mode=lowlight, brightened=lowlight == "on" or (lowlight == "auto" and video.is_dark(light)))
+    if light["brightened"]:
+        os.replace(clip, run.path("clip_original.mp4"))
+        video.brighten(run.path("clip_original.mp4"), clip)
+        run.stage("ingest", f"dark clip (median L {light['median_l']}, mean {light['mean_l']}): brightened with gamma 0.5 + CLAHE")
     inf = video.info(clip)
+    inf["lowlight"] = light
     run.status["video"] = inf
     run.stage("ingest", f"{inf['n_frames']} frames {inf['width']}x{inf['height']}")
 
@@ -1071,6 +1080,7 @@ if __name__ == "__main__":
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--max-usd", type=float, default=1.0)
+    ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
     a = ap.parse_args()
-    r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover)
+    r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover, lowlight=a.lowlight)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

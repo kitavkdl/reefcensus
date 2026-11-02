@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T2\",\"is_target\":true,\"species\":\"nautilus\",\"confidence\":0.9,\"reason\":\"Striped coiled shell visible moving consistently\"}]", "usage": {"completion_tokens": 377, "prompt_tokens": 533, "total_tokens": 910, "completion_tokens_details": {"reasoning_tokens": 334}, "prompt_tokens_details": {"cached_tokens": 0}}}

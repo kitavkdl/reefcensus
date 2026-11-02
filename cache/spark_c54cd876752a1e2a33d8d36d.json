@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"nautilus\",\"confidence\":0.9,\"reason\":\"Late frame shows chambered nautilus shell clearly\"}]", "usage": {"completion_tokens": 401, "prompt_tokens": 530, "total_tokens": 931, "completion_tokens_details": {"reasoning_tokens": 357}, "prompt_tokens_details": {"cached_tokens": 0}}}
