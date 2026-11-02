@@ -6,7 +6,7 @@ import argparse, concurrent.futures as cf, hashlib, json, os, re, shutil, sys, t
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks, video, render, maskdedupe, motion
 import requests
-import cv2, numpy as np   # render put ~/meta-smoke/pylib on sys.path
+import cv2, numpy as np   # render set up the optional FISH_PYLIB path
 
 RUNS = os.path.join(api.ROOT, "runs")
 TILE_SCALE = 1.5   # a 2/3 block comes back to the clip's own size; SAM resizes internally anyway

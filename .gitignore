@@ -9,3 +9,4 @@ demo/out/
 .env
 !demo/runs/*/annotated.mp4
 demo/site/
+.pylib

@@ -11,7 +11,7 @@ pass had tracked; a box on one (frame 32) tracked it in 57 of 60 frames, before 
 the candidates were sediment, shadows, bait and nautilus tentacles; on a busy reef clip (IMAS TF_52) they were too
 many to be useful. Hence Spark decides, and at most a few boxes go to SAM.
 """
-from fishcount import video   # puts ~/meta-smoke/pylib (cv2) on sys.path
+from fishcount import video   # also sets up the optional FISH_PYLIB path before cv2
 import cv2
 import numpy as np
 

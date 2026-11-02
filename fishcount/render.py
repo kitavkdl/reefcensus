@@ -1,6 +1,7 @@
 """Drawing: crops for the review queue and the evidence frame (masks + numbered boxes) behind each MaxN."""
 import os, re, subprocess, sys, tempfile, zlib
-sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fishcount import _pylib  # noqa: F401
 import cv2
 import numpy as np
 from fishcount import maskcodec, video, tracks

@@ -3,7 +3,8 @@ meta_sam_parser is pure Python and decodes every mask twice over (parse validate
 again), ~1 s a mask at our sizes -> 11/1 s003 annotated video took ~2 min. Same results, checked mask by mask
 against the reference (spikes/maskcheck.py). Without a C compiler it falls back to the reference decoder."""
 import ctypes, hashlib, os, re, subprocess, sys, tempfile
-sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fishcount import _pylib  # noqa: F401
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))

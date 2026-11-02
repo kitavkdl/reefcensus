@@ -5,7 +5,8 @@ see .env.example) or else ~/.config/meta-api/key, and is never printed."""
 import base64, hashlib, json, os, sys, threading, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))   # numpy, cv2, requests, meta_sam_parser
+sys.path.insert(0, ROOT)
+from fishcount import _pylib  # noqa: F401  optional vendored package folder (see _pylib.py)
 import requests
 
 BASE = "https://api.meta.ai/v1"

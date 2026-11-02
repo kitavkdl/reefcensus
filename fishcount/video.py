@@ -1,8 +1,9 @@
 """Video helpers: re-encode to the analysis rate, read frames, crop tiles. Uses the ffmpeg binary shipped with
-imageio-ffmpeg and OpenCV for frame access (pip install -r requirements.txt; ~/meta-smoke/pylib also works)."""
+imageio-ffmpeg and OpenCV for frame access (pip install -r requirements.txt, or a vendored folder via FISH_PYLIB)."""
 import os, re, subprocess, sys
 
-sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fishcount import _pylib  # noqa: F401
 import cv2
 import numpy as np
 
