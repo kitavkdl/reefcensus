@@ -180,11 +180,20 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
         if not text.strip():
             raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
         if check is None or _valid(check, text):
-            with open(cp + ".tmp", "w") as fh:
+            tmp = f"{cp}.{os.getpid()}.{threading.get_ident()}.tmp"     # CLI and web server may share cache/
+            with open(tmp, "w") as fh:
                 json.dump({"text": text, "usage": u}, fh)
-            os.replace(cp + ".tmp", cp)
+            os.replace(tmp, cp)
             return text
     raise ValueError(f"Spark sent an unreadable reply twice: {text[:120]!r}")
+
+
+def parse_json_list(text):
+    """parse_json for replies that must be a list of objects (audit, verify, pair); raises ValueError otherwise."""
+    got = parse_json(text)
+    if not (isinstance(got, list) and all(isinstance(v, dict) for v in got)):
+        raise ValueError("expected a JSON list of objects")
+    return got
 
 
 def parse_json(text):

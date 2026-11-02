@@ -58,6 +58,12 @@ Compare the three crops: an animal keeps about the same shape and size (it may t
 Black areas are outside the picture: an animal cut off by the edge of the picture still counts.
 is_animal = the rectangle mainly holds a living animal, even a small, pale, blurry or partly hidden one. Answer false for sand or sediment clouds, shadows, bubbles, bait or a bait bag, rope, net, rock, seagrass, empty water, or a tentacle, fin or tail of a bigger animal whose body is clearly elsewhere in the crops."""
 MOTION_VERSION = "v4"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
+def _motion_reply(text):
+    """check= for the motion sheet: JSON naming at least one M tile (else not cached, asked once more)."""
+    got = api.parse_json(text)
+    if not any(isinstance(v, dict) and str(v.get("tile", "")).startswith("M") for v in (got if isinstance(got, list) else [got])):
+        raise ValueError("motion reply names no tile")
+
 MOTION_ERRORS = (FileNotFoundError, RuntimeError, ValueError, KeyError, TypeError, AttributeError, requests.RequestException)
 
 class Run:
@@ -87,12 +93,13 @@ class Run:
 def _counted(run, fn, *a, **k):
     """Call an api function and record whether it hit the network (this thread logged spend) or the cache."""
     before = api.thread_spent()
-    out = fn(*a, **k)
-    d = api.thread_spent() - before
-    with run._lock:
-        run.status["live_calls" if d > 0 else "cached_calls"] += 1
-        run.status["billed_usd"] += d
-    return out
+    try:
+        return fn(*a, **k)
+    finally:    # a call that raises after paying (Spark's retry of a broken reply) still counts toward the cap
+        d = api.thread_spent() - before
+        with run._lock:
+            run.status["live_calls" if d > 0 else "cached_calls"] += 1
+            run.status["billed_usd"] += d
 
 
 def cell_box(cell, W, H, pad=0.15):
@@ -179,8 +186,8 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     for i in range(0, len(ids), per_sheet):
         chunk = ids[i:i + per_sheet]
         sheet = video.grid([crops[t] for t in chunk], 4, 256)
-        reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json)
-        for v in api.parse_json(reply):
+        reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json_list)
+        for v in api.parse_json_list(reply):
             out[v["track"]] = v
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
 
@@ -458,7 +465,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=3, min
     key = hashlib.sha256((api.file_sha(clip) + kb + MOTION_PROMPT + MOTION_VERSION).encode()).hexdigest()[:24]
     cpath = os.path.join(api.CACHE, f"motion_{key}.json")
     sheet_jpg = run.path("motion_sheet.jpg")
-    est = 0.02 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
         run.stage("motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return []
@@ -481,13 +488,13 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=3, min
             open(os.path.join(api.CACHE, sheet_name), "wb").write(jpg)
             open(sheet_jpg, "wb").write(jpg)
             run.stage("motion", f"{len(cands)} moving spots outside every box; Muse Spark looks at the {len(picks)} longest-lived")
-            reply = _counted(run, api.spark, MOTION_PROMPT, [jpg], offline=offline, check=api.parse_json)
+            reply = _counted(run, api.spark, MOTION_PROMPT, [jpg], offline=offline, check=_motion_reply)
             got = api.parse_json(reply)
             for v in (got if isinstance(got, list) else [got]):
                 if isinstance(v, dict):
                     said[str(v.get("tile"))] = v
             if not any(f"M{i}" in said for i, _, _ in meta):
-                raise ValueError(f"Spark's motion reply named no tile: {reply[:120]!r}")   # not cached: retried next run
+                raise ValueError(f"Spark's motion reply named no tile: {reply[:120]!r}")   # _motion_reply kept it out of the cache
         mc = dict(n_candidates=len(cands), sheet=sheet_name,
                   said=[dict(said.get(f"M{i}", {}), tile=f"M{i}", frame=t, box=b) for i, t, b in meta])
         with open(cpath + ".tmp", "w") as fh:
@@ -633,8 +640,8 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
             word = name.replace(" (unidentified)", "")
             for i in range(0, len(tiles), 16):
                 sheet = video.grid(tiles[i:i + 16], 4, 256)
-                reply = _counted(run, api.spark, VERIFY_PROMPT.format(name=word), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json)
-                for v in api.parse_json(reply):
+                reply = _counted(run, api.spark, VERIFY_PROMPT.format(name=word), [video.jpg(sheet, q=85)], offline=offline, check=api.parse_json_list)
+                for v in api.parse_json_list(reply):
                     said[v.get("tile")] = v
             bad = [(k, said[f"D{i + 1}"]) for i, k in enumerate(ks) if said.get(f"D{i + 1}", {}).get("is_target") is False]
             drop = {k["track"] for k, _ in bad}
@@ -678,8 +685,8 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8)
     tiles = [video.label(render.square(pair_tile(imgs[best[k][1]], best[k][2], best[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
     said = {}
     for i in range(0, len(tiles), 16):
-        reply = _counted(run, api.spark, PAIR_PROMPT, [video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)], offline=offline, check=api.parse_json)
-        for v in api.parse_json(reply):
+        reply = _counted(run, api.spark, PAIR_PROMPT, [video.jpg(video.grid(tiles[i:i + 16], 4, 256), q=85)], offline=offline, check=api.parse_json_list)
+        for v in api.parse_json_list(reply):
             said[v.get("tile")] = v
     out = []
     for i, (o, in_) in enumerate(pairs):
