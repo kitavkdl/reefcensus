@@ -892,7 +892,8 @@ judged (`demo/runs`), and a scoring bundle in `report/paper/data/`: the human bo
 Ditria et al., 2021, CC BY 4.0), SAM 3.1's reply for "fish" on each clip, the `result.json` of every scored luderick
 run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the two frame-35 sheets, the replies of the
 repeated calls, the per-frame replies of the Spark-alone baseline (`data/spark_count`), the fixed-vocabulary tracks
-(`data/fixed_vocab`) and a copy of the cost ledger. From a fresh clone, with no data download and no API key,
+(`data/fixed_vocab`) and a copy of the cost ledger. From a fresh clone, with no data download and no API key (Python 3 with NumPy, OpenCV and, for the figure,
+matplotlib),
 
 ```
 python3 report/paper/scripts/rescore.py              # Tables 1, 1b, 4, 5: baselines, queue bounds, intervals
