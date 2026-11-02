@@ -1,9 +1,14 @@
 """Drawing: crops for the review queue and the evidence frame (masks + numbered boxes) behind each MaxN."""
-import os, re, subprocess, sys, tempfile
+import os, re, subprocess, sys, tempfile, zlib
 sys.path.insert(0, os.path.expanduser("~/meta-smoke/pylib"))
 import cv2
 import numpy as np
 from fishcount import video, tracks
+
+def colour(track):
+    """Stable per track across runs (built-in hash() of a str changes every process)."""
+    return PALETTE[zlib.crc32(track.encode()) % len(PALETTE)]
+
 
 PALETTE = [(80, 220, 255), (90, 255, 120), (255, 160, 60), (255, 90, 200), (120, 140, 255), (60, 255, 255), (200, 255, 90), (255, 255, 120)]
 
@@ -64,23 +69,44 @@ def evidence(clip, raw, result, f, out_path):
                 continue
             x0, y0 = int(round(box[0])), int(round(box[1]))
             x1, y1 = min(W, x0 + m.shape[1]), min(H, y0 + m.shape[0])
-            col = PALETTE[hash(hit["track"]) % len(PALETTE)]
+            col = colour(hit["track"])
             region = over[y0:y1, x0:x1]
             region[m[: y1 - y0, : x1 - x0]] = col
     img = cv2.addWeighted(over, 0.45, img, 0.55, 0)
-    n = 0
+    n, placed = 0, []
     for k in kept:
         if k["track"] in drop:
             continue
         n += 1
         x0, y0, x1, y1 = map(int, k["box"])
-        col = PALETTE[hash(k["track"]) % len(PALETTE)]
+        col = colour(k["track"])
         cv2.rectangle(img, (x0, y0), (x1, y1), col, 3)
         tag = names.get(k["track"]) or str(n)
-        cv2.putText(img, tag, (x0 + 4, max(24, y0 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, col, 2)
+        placed.append(_tag(img, tag, (x0, y0, x1, y1), col, placed))
     cv2.putText(img, f"frame {f}  count {n}", (16, H - 20), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 3)
     cv2.imwrite(out_path, img, [cv2.IMWRITE_JPEG_QUALITY, 85])
     return n
+
+
+def _tag(img, text, box, col, placed, scale=0.9):
+    """Name tag on a dark plate at the first spot around the box that clears the tags already drawn
+    (11/1: neighbouring tracks' T1/T2 tags were printed on top of each other). Returns the plate rect."""
+    H, W = img.shape[:2]
+    (tw, th), base = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, scale, 2)
+    w, h = tw + 10, th + base + 8
+    x0, y0, x1, y1 = box
+    spots = [(x0, y0 - h - 2), (x0 + 3, y0 + 3), (x0, y1 + 2), (x1 - w, y0 - h - 2), (x1 - w, y1 + 2), (x1 + 2, y0), (x0 - w - 2, y0)]
+    hit = lambda r: any(r[0] < q[2] and q[0] < r[2] and r[1] < q[3] and q[1] < r[3] for q in placed)
+    rects = [(min(max(0, x), W - w), min(max(0, y), H - h)) for x, y in spots]
+    rects = [(x, y, x + w, y + h) for x, y in rects]
+    r = next((r for r in rects if not hit(r)), None)
+    if r is None:       # crowded: stack below the lowest overlapping plate
+        r = rects[0]
+        while hit(r) and r[3] + h < H:
+            r = (r[0], r[1] + h + 2, r[2], r[3] + h + 2)
+    cv2.rectangle(img, (r[0], r[1]), (r[2], r[3]), (20, 24, 28), -1)
+    cv2.putText(img, text, (r[0] + 5, r[3] - base - 4), cv2.FONT_HERSHEY_SIMPLEX, scale, col, 2)
+    return r
 
 
 ASKED, FOUND = (200, 99, 29), (29, 85, 242)     # BGR: bait-pipe blue for what was asked, survey orange for finds
@@ -117,7 +143,15 @@ def all_masks(text):
     return out
 
 
-def annotate(clip, raw, result, out_path, asked=()):
+def asked_labels(result):
+    """Labels backed by at least one track from a requested prompt (or its zoom tile); the rest were found by
+    discovery. By track source, not label text: 'shrimp (unidentified)' found by discovery is not 'shrimp' asked."""
+    jobs = {j["name"] for j in result.get("jobs", [])}
+    labels = result.get("auto_labels", {})
+    return {labels.get(t, v["label"]) for t, v in result["tracks"].items() if v["source"] in jobs} - {None}
+
+
+def annotate(clip, raw, result, out_path):
     """Whole clip with every counted object masked and boxed, coloured by asked/found, plus a live count per
     label in the corner. Encoded H.264 so a browser plays it."""
     n = result["video"]["n_frames"]
@@ -125,7 +159,8 @@ def annotate(clip, raw, result, out_path, asked=()):
     labels = result.get("auto_labels", {})
     trk = result["tracks"]
     lab = lambda t: labels.get(t, trk[t]["label"]) if t in trk else None
-    is_asked = lambda l: any(l == a or l.startswith(a + " ") for a in asked)
+    asked = asked_labels(result)
+    is_asked = lambda l: l in asked
     import concurrent.futures as cf
     srcs = [(text, tile) for text, tile in raw.values() if text]
     with cf.ProcessPoolExecutor(min(6, len(srcs) or 1)) as ex:

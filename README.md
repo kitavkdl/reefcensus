@@ -15,7 +15,13 @@ and a short queue of uncertain tracks for a human to confirm. Built during the M
 pip install -r requirements.txt     # Meta API key in ~/.config/meta-api/key
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit]
 python3 fishcount/evaluate.py            # recall/precision/MaxN error vs. luderick ground truth
+python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
+
+The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species
+count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
+of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits).
+New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run).
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — github.com/globalwetlands/luderick-seagrass

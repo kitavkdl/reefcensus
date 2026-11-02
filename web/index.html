@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reefcensus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <h1 class="mark">reefcensus</h1>
+  <label class="picker">
+    <span class="sr">Run</span>
+    <select id="runSel" aria-label="Choose a run"></select>
+  </label>
+  <ol class="rail" id="rail" aria-label="Pipeline progress"></ol>
+  <div class="meter" id="meter" aria-live="polite"></div>
+  <button class="btn ghost" id="newBtn" aria-expanded="false" aria-controls="newRun">New run</button>
+</header>
+
+<section class="drawer" id="newRun" hidden>
+  <form id="runForm">
+    <div class="drop" id="drop" tabindex="0">
+      <strong>Drop an underwater clip here</strong>
+      <span>or pick one you already have</span>
+      <select id="clipSel" aria-label="Clip"></select>
+      <input type="file" id="fileIn" accept="video/*" hidden>
+      <button type="button" class="link" id="browse">Choose a file</button>
+    </div>
+    <label class="field">What should it count?
+      <input id="words" value="fish" autocomplete="off" spellcheck="false">
+      <small>Plain nouns, comma separated. SAM only sees what it is told to look for.</small>
+    </label>
+    <label class="check"><input type="checkbox" id="discover" checked> Also look for living things I did not ask for</label>
+    <label class="check money"><input type="checkbox" id="allowApi"> Allow paid API calls, up to $<input id="cap" type="number" min="0.1" max="2" step="0.1" value="1" aria-label="Spending cap in dollars"></label>
+    <small class="hint" id="moneyHint">Off: replays saved API answers only, free. Clips seen before replay exactly.</small>
+    <div class="row">
+      <button class="btn" id="startBtn">Start run</button>
+      <span class="err" id="formErr" role="alert"></span>
+    </div>
+  </form>
+</section>
+
+<main class="grid" id="main">
+  <section class="stage">
+    <div class="screen">
+      <video id="vid" controls muted playsinline preload="auto"></video>
+      <div class="screenmsg" id="screenMsg" hidden></div>
+    </div>
+    <div class="strip" id="strip" aria-label="Count per frame for each animal, same timeline as the video"></div>
+    <div class="evidence" id="evidence"></div>
+    <section class="panel second" id="secondPanel"></section>
+    <details class="log" id="logBox"><summary>Pipeline log</summary><ol id="log"></ol></details>
+  </section>
+
+  <aside class="side">
+    <section class="panel asked" id="askedPanel"></section>
+    <section class="panel found" id="foundPanel"></section>
+    <section class="panel queue" id="queuePanel"></section>
+    <a class="btn ghost export" id="exportBtn" href="#">Download MaxN table (CSV)</a>
+  </aside>
+</main>
+
+<dialog id="lightbox"><img id="lbImg" alt=""><p id="lbCap"></p><button class="btn ghost" id="lbClose">Close</button></dialog>
+<footer class="credits">Nautilus video: Barord et al. 2014, PLOS ONE, CC BY 4.0. IMAS MPA highlights, CC BY 4.0. SAM 3.1 and Muse Spark by Meta.</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

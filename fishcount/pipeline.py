@@ -2,7 +2,7 @@
 -> audit (Spark) -> metrics -> evidence frames.  Each stage writes into runs/<id>/ and updates status.json,
 which the web UI polls.
   python3 fishcount/pipeline.py <video> [--offline] [--no-scout] [--no-audit] [--zoom] [--prompts fish ...]"""
-import argparse, concurrent.futures as cf, json, os, shutil, sys, time
+import argparse, concurrent.futures as cf, json, os, shutil, sys, threading, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks, video, render
 
@@ -44,15 +44,20 @@ class Run:
         self.id, self.dir = rid, os.path.join(RUNS, rid)
         os.makedirs(self.dir, exist_ok=True)
         self.status = dict(id=rid, stage="queued", log=[], live_calls=0, cached_calls=0, billed_usd=0.0, started=time.time())
+        self._lock = threading.Lock()   # ladders and the second look call stage() from worker threads
 
     def path(self, *p):
         return os.path.join(self.dir, *p)
 
     def stage(self, name, msg=None):
-        self.status["stage"] = name
-        if msg:
-            self.status["log"].append(f"{time.strftime('%H:%M:%S')} {msg}")
-        json.dump(self.status, open(self.path("status.json"), "w"))
+        with self._lock:
+            self.status["stage"] = name
+            if msg:
+                self.status["log"].append(f"{time.strftime('%H:%M:%S')} {msg}")
+            tmp = self.path("status.json.tmp")     # the web UI polls this file; never let it read a half-written one
+            with open(tmp, "w") as f:
+                json.dump(self.status, f)
+            os.replace(tmp, self.path("status.json"))
 
     def save(self, name, obj):
         json.dump(obj, open(self.path(name), "w"))
@@ -63,8 +68,9 @@ def _counted(run, fn, *a, **k):
     before = api.thread_spent()
     out = fn(*a, **k)
     d = api.thread_spent() - before
-    run.status["live_calls" if d > 0 else "cached_calls"] += 1
-    run.status["billed_usd"] += d
+    with run._lock:
+        run.status["live_calls" if d > 0 else "cached_calls"] += 1
+        run.status["billed_usd"] += d
     return out
 
 
@@ -266,7 +272,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         if mm["maxn_frame"] is not None:
             render.evidence(clip, raw, result, mm["maxn_frame"], run.path(f"evidence_{api_safe(name)}.jpg"))
     run.stage("render", "drawing the annotated video")
-    render.annotate(clip, raw, result, run.path("annotated.mp4"), asked=[p for _, p in plist])
+    render.annotate(clip, raw, result, run.path("annotated.mp4"))
     run.status["done"] = time.time()
     run.stage("done", f"finished in {run.status['done'] - run.status['started']:.0f}s; live calls {run.status['live_calls']}, cached {run.status['cached_calls']}, billed ${run.status['billed_usd']:.3f}")
     return result
