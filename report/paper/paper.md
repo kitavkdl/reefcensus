@@ -11,7 +11,7 @@ individuals of a species visible in one frame, and people still produce it by wa
 happens when two general-purpose models are combined for this task without training: SAM 3.1, a promptable video
 segmenter that tracks whatever a short noun names, and Muse Spark, a vision-language model (VLM) that can name and
 judge but cannot track. The paper is organised around measured failure modes. The segmenter responds only to
-basic-level nouns (it returned nothing for "animal" on clips where "fish" returned 13–16 detections per frame), so
+basic-level nouns (it returned nothing for "animal" on clips where "fish" returned 10–16 detections per frame), so
 animals nobody asked about are invisible to it unless the VLM names them. The VLM, used as an auditor, adopts names
 placed in its prompt and changes its verdict with the layout of the evidence it is shown. We build a pipeline around
 these observations, in which the VLM names, translates and audits and a person reviews a queue, and evaluate it
@@ -62,7 +62,7 @@ This paper is an analysis of combining the two for open-set abundance counting, 
 modes rather than around a model. Our contributions are:
 
 1. **Measurements of what a promptable video segmenter responds to on BRUV footage.** On our clips SAM 3.1
-   returned nothing for a hypernym ("animal", three clips) or a descriptive name ("pink seabream", a single call);
+   returned nothing for a hypernym ("animal", four clips) or a descriptive name ("pink seabream", a single call);
    a rare name failed where a basic-level neighbour worked ("hagfish" vs. "eel"); word-prompted tracks began only
    once an animal was clear (a reversed pass recovered 16 → 60 frames for one nautilus); and a box prompt with no
    word tracked an animal that no word or zoom ever found (§7.4).
@@ -85,9 +85,10 @@ uses MLLMs as "AI verifiers" of masks, and its "SAM 3 Agent" lets an MLLM propos
 masks (Carion et al., 2026, §4 and §6). What is new here is the target (ecological counts with per-number evidence),
 the specific checks that a MaxN requires, and measurements of how those checks fail.
 
-![**Figure 1.** The same deep-sea BRUV frame (IMAS curated MPA highlights, clip TF_52) three ways. Left: SAM 3.1
-prompted with "animal", 0 detections. Middle: prompted with "fish". Right: the audited pipeline, with species labels
-from the VLM audit.](figures/compare3.jpg){.wide}
+![**Figure 1.** The same seagrass frame (luderick archive, clip 20190618_9, frame 35; CC BY 4.0) three ways. Left:
+SAM 3.1 prompted with "animal", 0 detections (none in any of the clip's 107 frames). Middle: prompted with "fish", 10
+detections. Right: the audited pipeline, with the names the VLM audit gave each track (7 striped seabream, 3 fish
+left unidentified).](figures/compare3_luderick.jpg){.wide}
 
 # Related work
 
@@ -786,7 +787,7 @@ These are observations on our clips, not general claims about the model.</div>
 
 | probe | result | consequence for the design |
 |-------------|-------------|-----------|
-| "animal" vs. "fish", three IMAS deep-sea clips | 0 detections on all three vs. 13–16 per frame | the VLM translates requests into basic-level nouns |
+| "animal" vs. "fish", three IMAS deep-sea clips and luderick 20190618_9 | 0 detections on all four vs. 13–16 (IMAS) and up to 10 (luderick) per frame | the VLM translates requests into basic-level nouns |
 | "pink seabream", one call on one IMAS clip | 0 | species come from the audit; SAM gets the plain noun |
 | "hagfish" vs. "eel", s004 | 0 vs. 24 frames | word ladder; Spark's name is kept as the label |
 | "shell" vs. "nautilus", s002–s003 (development spikes) | "shell" tracked the s002 nautilus (47 frames) but returned nothing on an s003 crop where "nautilus" tracked (development observation); in the final runs "nautilus" tracked 16–48 frames on three clips, and on s001 every word, "shell" included, returned 0 | the VLM's own short name is tried first |
@@ -800,7 +801,7 @@ concepts" and notes weak zero-shot generalisation to fine-grained concepts in ni
 with benchmark findings for open-vocabulary detectors (Yao et al., 2024; Nebbia and Kovashka, 2024; Parisot et al.,
 2023). We found no prior measurement of a hypernym returning nothing or of a rare-species name failing where a
 basic-level neighbour works for SAM-class models. SAM 3's ontology does include an "animal" category (Carion et al.,
-2026, App. D.2), so we state the result as "returned zero detections on our clips", not as a property of the model.
+2026, App. D.2), so we state the result as "returned zero detections on these four clips", not as a property of the model.
 The asymmetry between word and box prompts is consistent with Lian and Li (2024) for SAM 2 underwater.
 
 ## Failure modes of the VLM auditor

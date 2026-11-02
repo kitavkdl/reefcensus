@@ -122,7 +122,49 @@ def compare3(clip="imas_TF_52", run="imas_TF_52"):
     return path, f, len(per[f]), len(hits), [h["track"] for h in extra]
 
 
+LABEL_COL = {"striped seabream": FOUND, "fish (unidentified)": (60, 200, 250)}   # BGR orange, amber
+
+
+def compare_luderick(run="eval6_fish_20190618_9", frame=35):
+    """Video asset for the 0:16 scene, CC BY 4.0 footage (luderick archive, PANGAEA 926930, clip 20190618_9).
+    Same frame three ways: SAM 3.1 "animal" (0 detections in all 107 frames), SAM 3.1 "fish", and the audited run
+    (Spark's names on SAM's tracks). Cached replies only, no API calls. Writes panel_luderick_{animal,fish,pipeline}.jpg
+    and compare3_luderick.jpg."""
+    import json
+    from fishcount import api
+    clip = os.path.join(ROOT, "runs", run, "clip.mp4")
+    n = video.info(clip)["n_frames"]
+    animal = api.sam_video(clip, "animal", n, offline=True)
+    assert not list(maskcodec.records(animal)), "expected zero detections for 'animal' on this clip"
+    per = maskcodec.masks(api.sam_video(clip, "fish", n, offline=True))
+    res = json.load(open(os.path.join(ROOT, "runs", run, "result.json")))
+    labels = res["auto_labels"]
+    img = video.frames(clip, [frame])[frame]
+    left = img.copy()
+    mid = paint(img, per[frame], ASKED)
+    right = img.copy()
+    hits = res["frames"][str(frame)]
+    tally = {}
+    for h in hits:
+        lab = labels.get(h["track"], "fish (unidentified)")
+        tally[lab] = tally.get(lab, 0) + 1
+        x0, y0, x1, y1 = map(int, h["box"])
+        cv2.rectangle(right, (x0, y0), (x1, y1), LABEL_COL.get(lab, FOUND), 4)
+    sub = "  +  ".join(f"{v} {k}" for k, v in sorted(tally.items(), key=lambda kv: -kv[1]))
+    banner(left, 'SAM 3.1   prompt: "animal"', "0 detections", (160, 160, 160))
+    banner(mid, 'SAM 3.1   prompt: "fish"', f"{len(per[frame])} detections", ASKED)
+    banner(right, "reefcensus   SAM 3.1 + Muse Spark", sub, FOUND)
+    os.makedirs(OUT, exist_ok=True)
+    for name, im in (("animal", left), ("fish", mid), ("pipeline", right)):
+        cv2.imwrite(os.path.join(OUT, f"panel_luderick_{name}.jpg"), im, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    gap = np.full((img.shape[0], 16, 3), 255, np.uint8)
+    path = os.path.join(OUT, "compare3_luderick.jpg")
+    cv2.imwrite(path, np.hstack([left, gap, mid, gap, right]), [cv2.IMWRITE_JPEG_QUALITY, 90])
+    return path, frame, len(per[frame]), tally
+
+
 if __name__ == "__main__":
     for c in ("imas_TF_52", "imas_TF_63", "imas_TF_81"):
         print(*compare(c))
     print(*compare3())
+    print(*compare_luderick())

@@ -8,7 +8,7 @@ Technical report with every measurement and what it changed in the design: [repo
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
 - **Muse Spark** looks at a contact sheet and proposes what to track and where faint animals hide (zoom tiles),
   then audits every track crop (species, is-it-really-a-fish, confidence). Low-confidence tracks go to a human.
-- **Discovery** (`--discover`): SAM finds nothing for a vague word like "animal" — it only sees what you name.
+- **Discovery** (`--discover`): SAM only sees what you name: asked for "animal" on a seagrass clip where "fish" finds 10, it found nothing.
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
   names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
 - **Closer look**: when Spark names a small animal and a 2x2-cell zoom still finds nothing, the one cell Spark pointed

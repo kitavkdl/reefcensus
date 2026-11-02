@@ -9,7 +9,7 @@ individuals seen in one frame (MaxN). reefcensus takes a request such as "fish" 
 time of first arrival, an evidence frame behind every number, and a short queue of tracks a person should confirm.
 
 Two Meta models do different halves of the work. **SAM 3.1** tracks pixel masks through the clip, but only for what
-it is told: asked for "animal" it finds nothing. **Muse Spark** can look at frames and say what is there, but cannot
+it is told: asked for "animal" on the frame below it finds nothing. **Muse Spark** can look at frames and say what is there, but cannot
 track. reefcensus puts them in a loop: Spark names what it sees (including animals nobody asked about), turns the
 names into words SAM understands, and then checks SAM's work: every track, the frame that sets each MaxN, and whether
 two overlapping masks are one animal. Where no word works, a still camera's own motion marks the spot, Spark decides
@@ -21,9 +21,9 @@ Results (details in **Evaluation**):
 - **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net, and cost one nautilus in s001 (queued). The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
 - **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.27 (discovery) in API calls; all answers are cached by content, so a rerun is free.
 
-![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3.jpg)
-*Same deep-sea frame (IMAS TF_52). Left: SAM 3.1 asked for "animal", 0 detections. Middle: asked for "fish".
-Right: reefcensus.*
+![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3_luderick.jpg)
+*Same seagrass frame (luderick archive 20190618_9, CC BY 4.0). Left: SAM 3.1 asked for "animal", 0 detections (none in
+all 107 frames). Middle: asked for "fish", 10. Right: reefcensus, with Spark's names on SAM's tracks.*
 
 ## 1. Problem
 A BRUV drops a camera next to a bait bag on the seabed. The standard abundance measure is MaxN: per species, the
@@ -65,7 +65,7 @@ These are the behaviours the design is built around. Each was found by trial dur
 
 | finding | evidence | what we did |
 |---|---|---|
-| SAM 3.1 returns nothing for a broad word | "animal" on three IMAS deep-sea clips: 0 detections on all three; "fish": 13–16 per frame | Spark proposes basic-level nouns (fish, shrimp, eel, nautilus) |
+| SAM 3.1 returns nothing for a broad word | "animal" on three IMAS deep-sea clips and a luderick seagrass clip: 0 detections on all four; "fish": 13–16 (IMAS) and 10 (luderick) per frame | Spark proposes basic-level nouns (fish, shrimp, eel, nautilus) |
 | SAM 3.1 returns nothing for a descriptive name | "pink seabream" on the same clips: 0 | species comes from the Spark audit, SAM gets the plain noun |
 | A name SAM does not know can fail where a near word works | s004: "hagfish" 0 frames, "eel" 24 frames | word ladder, Spark's own name kept for the label |
 | Word tracking starts only once the object is clear and runs forward | animals clear only late in a clip were missed before that point | the clip is also run reversed and the two are joined |
