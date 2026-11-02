@@ -1,0 +1,89 @@
+{
+ "note": "second held-out discovery set (DH6-DH11); window = 12 s centred on the file midpoint",
+ "clips": [
+  {
+   "id": "DH6",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Reef-Fidelity-and-Migration-of-Tiger-Sharks-Galeocerdo-cuvier-across-the-Coral-Sea-pone.0083249.s002.ogv",
+   "citation": "Werry et al. 2014, PLOS ONE, doi:10.1371/journal.pone.0083249 (9(1)), Video S2 (Lord Howe Island BRUV)",
+   "licence": "CC BY 4.0",
+   "sha256": "ad69f8227e855072c80a93368be45a02436f392d7c5d443afe63de51a751cec1",
+   "duration_s": 37.64,
+   "window_start_s": 12.82,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 640,
+   "height": 480,
+   "authors": "Werry J, Planes S, Berumen M, Lee K, Braun C, Clua E"
+  },
+  {
+   "id": "DH7",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/9/99/Methane-Carbon-Flow-into-the-Benthic-Food-Web-at-Cold-Seeps---A-Case-Study-from-the-Costa-Rica-pone.0074894.s001.ogv",
+   "citation": "Niemann et al. 2013, PLOS ONE, doi:10.1371/journal.pone.0074894 (8(10)), Video S1 (stationary seafloor time-lapse, 2 images/h)",
+   "licence": "CC BY 2.5",
+   "sha256": "498d6a893bf34481287d43fad6b204a3794b935ac3a5c5004d1642e87d45f729",
+   "duration_s": 57.32,
+   "window_start_s": 22.66,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 1280,
+   "height": 720,
+   "authors": "Niemann H, Linke P, Knittel K, MacPherson E, Boetius A, Bruckmann W, et al. (13 authors)"
+  },
+  {
+   "id": "DH8",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Oceanic-Sharks-Clean-at-Coastal-Seamount-pone.0014755.s004.ogv",
+   "citation": "Oliver et al. 2011, PLOS ONE, doi:10.1371/journal.pone.0014755 (6(3)), Video S4 (remote video camera, Station A)",
+   "licence": "CC BY 2.5",
+   "sha256": "a12665f3b8c4ee4fb2c26f431b9eb26a3d57029d87daf40d39e29e8cf1274761",
+   "duration_s": 26.06,
+   "window_start_s": 7.03,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 640,
+   "height": 480,
+   "authors": "Oliver S, Hussey N, Turner J, Beckett A"
+  },
+  {
+   "id": "DH9",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/4/49/Bioturbation-in-a-Declining-Oxygen-Environment-in-situ-Observations-from-Wormcam-pone.0034539.s004.ogv",
+   "citation": "Sturdivant, Diaz & Cutter 2012, PLOS ONE, doi:10.1371/journal.pone.0034539 (7(4)), Video S4 (Wormcam, hourly images, Aug-Sep 2009)",
+   "licence": "CC BY 2.5",
+   "sha256": "8b9d3f3ca86a1be81ac0882978826d3f531fc51ba65b68ca5806fe23e13193e2",
+   "duration_s": 31.13,
+   "window_start_s": 9.57,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 272,
+   "height": 360,
+   "authors": "Sturdivant S, Diaz R, Cutter G"
+  },
+  {
+   "id": "DH10",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Bioturbation-in-a-Declining-Oxygen-Environment-in-situ-Observations-from-Wormcam-pone.0034539.s001.ogv",
+   "citation": "Sturdivant, Diaz & Cutter 2012, PLOS ONE, doi:10.1371/journal.pone.0034539 (7(4)), Video S1 (Wormcam, hourly images, May-Jun 2009)",
+   "licence": "CC BY 2.5",
+   "sha256": "53f47404a30f6c775b56e5111e6563ab7ae2bd2a705e4f142db9225fff40d8d2",
+   "duration_s": 28.6,
+   "window_start_s": 8.3,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 362,
+   "height": 480,
+   "authors": "Sturdivant S, Diaz R, Cutter G"
+  },
+  {
+   "id": "DH11",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/2/2a/Rhythms-and-Community-Dynamics-of-a-Hydrothermal-Tubeworm-Assemblage-at-Main-Endeavour-Field---A-pone.0096924.s004.ogv",
+   "citation": "Cuvelier et al. 2014, PLOS ONE, doi:10.1371/journal.pone.0096924 (9(5)), Video S4 (Grotto vent, 2186 m)",
+   "licence": "CC BY 4.0",
+   "sha256": "9971f5197c48548f471622a1f919d2182f943c08e6dc570401bea3efd4343173",
+   "duration_s": 22.49,
+   "window_start_s": 5.24,
+   "n_frames": 60,
+   "fps": 5.0,
+   "width": 426,
+   "height": 240,
+   "authors": "Cuvelier D, Legendre P, Laes A, Sarradin P, Sarrazin J"
+  }
+ ]
+}
