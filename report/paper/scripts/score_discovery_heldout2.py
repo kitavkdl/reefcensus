@@ -22,7 +22,9 @@ if __name__ == "__main__":
         print(f"{s['clip']}: named {s['named']}  queued tracks {s['queued_tracks']}  ${s['cost_usd']}")
         for row in s["rows"]:
             tag = ""
-            if row["counted"] and row["non_fish"]:
+            # metric 3 is defined on counted (non-queued) rows; rows that are in the MaxN but also queued get a crop
+            # too and are reported separately (they are shown as counts on the review screen and CSV)
+            if (row["counted"] or row.get("in_maxn")) and row["non_fish"]:
                 k += 1
                 row["crop"] = k
                 if os.path.exists(os.path.join(S.ROOT, "runs", f"DH{n}_eval", "clip.mp4")):
@@ -30,7 +32,8 @@ if __name__ == "__main__":
                     cv2.putText(t, f"#{k}", (10, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 2, cv2.LINE_AA)
                     tiles.append(t)
                 tag = f"  crop #{k}"
-            print(f"   {'COUNTED' if row['counted'] else 'queued '} {row['label']!r} maxn {row['maxn']} "
+            state = "COUNTED" if row["counted"] else ("in MaxN, queued" if row.get("in_maxn") else "queued ")
+            print(f"   {state} {row['label']!r} maxn {row['maxn']} "
                   f"conf {row['confidence']} {'non-fish' if row['non_fish'] else 'fish'}{tag}")
     json.dump(res, open(os.path.join(S.OUT, "runs_summary.json"), "w"), indent=1)
     if len(tiles) == k and tiles:

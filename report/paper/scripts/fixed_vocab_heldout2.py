@@ -26,7 +26,10 @@ MAX_CROPS = 3
 
 
 def is_fish(label):
-    return any(w in label.split(" (")[0].split() for w in FISHY)
+    """The word "fish" or a name of the pipeline's fish group (shark, ray, eel, goby ...): the run was asked for fish,
+    so a shark is not a discovery (11/2 pre-freeze review; the paper already treated DH5's "pink cusk-eel" as a fish)."""
+    base = label.split(" (")[0]
+    return any(w in base.split() for w in FISHY) or pipeline.name_group(base) == "fish"
 
 
 def clip_path(cid):

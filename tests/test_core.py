@@ -193,6 +193,30 @@ class ShortName(unittest.TestCase):
         self.assertEqual(P.short_name("hagfish"), "hagfish")
 
 
+class PeakCheckSameGroup(unittest.TestCase):
+    """A "not a <name>" answer keeps the box only when it names another animal of the same group (11/2 review)."""
+
+    def test_answers(self):
+        from fishcount.pipeline import same_group_answer as f
+        self.assertTrue(f("other fish", "fish"))
+        self.assertTrue(f("a different fish species", "fish"))
+        self.assertTrue(f("another crab", "crustacean"))
+        self.assertFalse(f("sediment between crab legs", "crustacean"))
+        self.assertFalse(f("tail of another fish", "fish"))
+        self.assertFalse(f("second box on same fish", "fish"))
+        self.assertFalse(f("sea anemone tentacles", "fish"))
+        self.assertFalse(f(None, "fish"))
+
+
+class ShortNameFallback(unittest.TestCase):
+    def test_known_animal_noun_and_fallback(self):
+        from fishcount.pipeline import short_name, _GROUP_OF
+        self.assertEqual(short_name("chambered nautilus clustered on bait"), "nautilus")
+        self.assertEqual(short_name("small red crab on seabed"), "crab")
+        self.assertEqual(short_name("white bacterial mat"), "mat")      # fallback: goes after Spark's search words
+        self.assertNotIn("mat", _GROUP_OF)
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")

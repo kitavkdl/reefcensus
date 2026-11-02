@@ -22,7 +22,10 @@ FISHY = ("fish",)
 
 
 def is_fish(label):
-    return any(w in label.split(" (")[0].split() for w in FISHY)
+    """The word "fish" or a name of the pipeline's fish group (shark, ray, eel, goby ...): the run was asked for fish,
+    so a shark is not a discovery (11/2 pre-freeze review; the paper already treated DH5's "pink cusk-eel" as a fish)."""
+    base = label.split(" (")[0]
+    return any(w in base.split() for w in FISHY) or pipeline.name_group(base) == "fish"
 
 
 def run_dir(n):
@@ -46,7 +49,9 @@ def summarise(n):
         counted = [x for x in ts if x[2]]
         best = max(counted or ts, key=lambda x: pipeline._conf(x[1]))
         m = r["metrics"].get(lab, {})
-        out.append(dict(label=lab, counted=bool(counted), non_fish=not is_fish(lab), tracks=len(ts),
+        # counted = some track needs no review (metric 1, protocol); in_maxn = the label has a non-zero MaxN in the
+        # run's own result, which also includes tracks that are counted *and* queued for a check (11/2 merge)
+        out.append(dict(label=lab, counted=bool(counted), in_maxn=bool(m.get("maxn")), non_fish=not is_fish(lab), tracks=len(ts),
                         maxn=m.get("maxn"), track=best[0], frame=best[1].get("frame"), box=best[1].get("box"),
                         confidence=pipeline._conf(best[1]), reason=best[1].get("reason")))
     named = [d["what"] for d in r.get("discovered") or []]

@@ -329,9 +329,12 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             # 11/1 s003: 'shell' found nothing but Spark's own name 'nautilus' tracked, so its name goes first, as its
             # head noun: a long name was skipped entirely before (11/2 long-video segment 2: "chambered nautilus
             # clustered on bait" never tried "nautilus", and all six tracks went to the queue)
-            name = [h] if (h := short_name(o.get("what", ""))) else []
+            # only a known animal noun goes first; any other fallback word ("white bacterial mat" -> "mat") goes after
+            # Spark's own search words, so a junk word that happens to track cannot block them (11/2 pre-freeze review)
+            h = short_name(o.get("what", ""))
+            name, tail = ([h], []) if h in _GROUP_OF else ([], [h] if h else [])
             words = []
-            for w in name + o.get("search_words", []):
+            for w in name + o.get("search_words", []) + tail:
                 w = w.strip().lower()
                 if w and w not in used and w not in words:
                     words.append(w)
@@ -631,6 +634,20 @@ def name_group(name):
         if w in _GROUP_OF:
             return _GROUP_OF[w]
     return None
+
+
+# words that make a "not a <name>" answer a part, a duplicate or not an animal, even when an animal word is in it
+# ("sediment between crab legs", "tail of another fish", "second box on the same fish"): such a box leaves the peak
+_NOT_ANOTHER = {"leg", "tail", "fin", "head", "claw", "antenna", "shell", "part", "body", "same", "second", "sediment",
+                "sand", "rock", "bait", "shadow", "reflection", "mesh", "trap", "debris", "carcass", "between"}
+
+
+def same_group_answer(said, group):
+    """True when a peak-check answer names another animal of `group` ("other fish" under a fish label), not a part,
+    a duplicate or a non-animal that merely mentions an animal word (11/2 pre-freeze review: "sediment between crab
+    legs" was kept under "crab")."""
+    ws = {norm_label(w) for w in re.sub(r"[^a-z ]", " ", (said or "").lower()).split()}
+    return not (ws & _NOT_ANOTHER) and name_group(said) == group
 
 
 def group_metrics(m, fps, min_labels=2):
@@ -948,7 +965,7 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
             # pipe) is removed from this label's peak as before: in s002 that track is a nautilus again by frame 6,
             # and queuing it would have put a clear nautilus at "0-1 until checked" (tested 11/2, fixes branch).
             wg = name_group(word) or name_group(name)
-            same_g = [(k, v) for k, v in bad if wg and name_group(v.get("what_it_is")) == wg]
+            same_g = [(k, v) for k, v in bad if wg and same_group_answer(v.get("what_it_is"), wg)]
             bad = [(k, v) for k, v in bad if (k, v) not in same_g]
             drop = {k["track"] for k, _ in bad}
             for g in range(max(0, f - window), f + window + 1):
