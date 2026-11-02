@@ -284,6 +284,8 @@ function drawQueue() {
   const run = state.run, q = run.queue, total = Object.keys(run.verdicts || {}).length;
   const items = q.map((it) => {
     const thumb = `/runs/${encodeURIComponent(run.id)}/${it.thumb}`;
+    // the three crops Spark judged (early, middle, late); runs made before 11/2 v13 have only the one crop
+    const trio = it.has_trio ? `/runs/${encodeURIComponent(run.id)}/${it.trio}` : thumb;
     const guess = it.species && it.species !== "unknown" ? it.species.toLowerCase() : it.category;
     const said = el("div", { class: "said" }, `${it.name}: Spark says `,
       el("b", {}, it.is_target === false ? `not a ${it.category}` : (it.species || "unknown")),
@@ -302,7 +304,7 @@ function drawQueue() {
         el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")), form);
     }
     return el("div", { class: `qitem${it.reviewed ? " done" : ""}` },
-      el("img", { src: thumb, alt: `Crop of track ${it.name}`, loading: "lazy", onclick: () => zoom(thumb, `${it.name}: ${it.reason || ""}`) }),
+      el("img", { src: thumb, alt: `Crop of track ${it.name}`, loading: "lazy", onclick: () => zoom(trio, `${it.name}: ${it.reason || ""}${it.has_trio ? " (the three crops Spark saw: early, middle, late)" : ""}`) }),
       el("div", {}, ...body));
   });
   $("queuePanel").replaceChildren(

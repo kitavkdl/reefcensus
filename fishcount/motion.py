@@ -137,6 +137,14 @@ def three(c, W, H, gap=4, n=None):
         f, pb = min(path, key=lambda p: (abs(p[0] - g), p[0]))
         return (g, _grow(pb, W, H))
 
+    # at a clip end there is no room on one side: both other crops go to the side that has room (11/2 review: a
+    # prompt frame 0 gave early == middle)
+    if t - gap < 0 and t + gap <= last:
+        far = (path[-1][0], _grow(path[-1][1], W, H)) if path[-1][0] >= t + 2 * gap else at(min(last, t + 2 * gap))
+        return [(t, b), at(t + gap), far]
+    if t + gap > last and t - gap >= 0:
+        far = (path[0][0], _grow(path[0][1], W, H)) if path[0][0] <= t - 2 * gap else at(max(0, t - 2 * gap))
+        return [far, at(t - gap), (t, b)]
     early = (path[0][0], _grow(path[0][1], W, H)) if path[0][0] <= t - gap else at(max(0, t - gap))
     late = (path[-1][0], _grow(path[-1][1], W, H)) if path[-1][0] >= t + gap else at(min(last, t + gap))
     return [early, (t, b), late]
@@ -149,17 +157,21 @@ def box_prompt(t, box, W, H):
 
 def _crop(img, box, half, side):
     x0, y0, x1, y1 = box
-    img = img.copy()
-    cv2.rectangle(img, (x0, y0), (x1, y1), (29, 85, 242), 2)
     cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
     cx, cy = min(max(cx, 0), img.shape[1]), min(max(cy, 0), img.shape[0])   # a box mapped back from a tile can poke out
     # pad with black instead of clipping: 11/2 s004 a shrimp at the bottom edge came out stretched and cut, and
     # Spark called it "part of an animal reaching in from outside"
     img = cv2.copyMakeBorder(img, half, half, half, half, cv2.BORDER_CONSTANT, value=(0, 0, 0))
-    return cv2.resize(img[cy:cy + 2 * half, cx:cx + 2 * half], (side, side), interpolation=cv2.INTER_CUBIC)
+    tile = cv2.resize(img[cy:cy + 2 * half, cx:cx + 2 * half], (side, side), interpolation=cv2.INTER_CUBIC)
+    # the box is drawn after scaling (11/2 review: drawn before, a 2 px line on a big box shrank to a faint trace)
+    s = side / (2 * half)
+    pt = lambda x, y: (int(round((x - cx + half) * s)), int(round((y - cy + half) * s)))
+    cv2.rectangle(tile, pt(x0, y0), pt(x1, y1), (29, 85, 242), 3)
+    return tile
 
 
 def trio(fr, tr, name, side=200, half=None, words=("early", "middle", "late")):
+    """`words` labels the three crops in order (verify_peaks passes its own per object)."""
     """Three crops of one object side by side (same zoom, each centred on its own box, box drawn), tagged `name`.
     `half` defaults to the largest box side, so a size or shape change across the three shows."""
     half = half or max(max(b[2] - b[0], b[3] - b[1]) for _, b in tr)
