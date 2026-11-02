@@ -40,7 +40,8 @@ Spend for both: $1.068 (SAM 3.1 $0.975 = 91%, Muse Spark $0.093).
   moves with how many words, tiles and motion boxes Spark asks for in each segment.
 - Wall clock: 297 s for 40 s of video, about 7.5× real time with four SAM calls in parallel. If that holds, an hour
   of video takes about 7.5 hours with segments run one after another; segments are independent and could run in
-  parallel (not implemented). No single 600 s SAM call has been made yet.
+  parallel, which would bring an hour down to roughly the time of one segment (an estimate, not measured; left as
+  future work after the hackathon). No single 600 s SAM call has been made yet.
 - Sampling at fewer frames per second would cut both in proportion (MaxN of slow animals at bait may tolerate it); not
   measured.
 
