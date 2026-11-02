@@ -3,6 +3,8 @@
 Say what to count; get per-species MaxN and time of first arrival **with an evidence frame behind every number**,
 and a short queue of uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026).
 
+Technical report with every measurement and what it changed in the design: [report/README.md](report/README.md).
+
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
 - **Muse Spark** looks at a contact sheet and proposes what to track and where faint animals hide (zoom tiles),
   then audits every track crop (species, is-it-really-a-fish, confidence). Low-confidence tracks go to a human.
