@@ -460,6 +460,13 @@ positives in an earlier run and all 6 were unboxed fish; this is a development o
 not let us reproduce. A precision change from 78.7% to 79.2% should therefore not be read as the size of the audits'
 effect on false detections.
 
+For context only: on footage from the same estuary, a Mask R-CNN trained on about 6,000 luderick annotations scored
+F1 86.8% on per-video MaxN over 31 test videos, against 85.3% for marine experts and 79.0% for citizen scientists
+(Ditria et al., 2020a, Table 1). The test videos, the split and the metric differ from ours and our system is not
+trained on luderick, so the numbers cannot be compared. They do show that a supervised single-species detector
+already matches experts at this site, which is one more reason we do not present luderick counting as this system's
+contribution.
+
 ## Held-out clips
 
 After the second review we ran the frozen final code (V6) once on every annotated video of our archive copy that
@@ -497,10 +504,21 @@ frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
 |-----|----------|-----------|------------------------------|
-| s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | nautilus 2 | every word (nautilus, shell, snail) 0 frames on the full frame, two blocks and two 3× cells; motion residual → Spark "nautilus" → box prompts tracked 56 and 60 of 60 frames; A1 0.95 / 0.9; A2 yes. A third motion track (A1 0.55) is queued |
-| s002 | nautilus 1; red crustaceans 2 | nautilus 1; small red crab 1 (+2 "fish (unidentified)" queued) | "nautilus" 48 frames. "crab" 0 on the full frame; in the 3× cell "crab" 5 frames, "shrimp" 12; A1: "small red crab, not shrimp" (0.7) matches Spark's discovery name → relabelled; A2 agrees |
-| s003 | nautilus 3–4 | nautilus 3 | "nautilus" 33 frames forward, 60 reversed, plus zoom blocks (45, 44 frames). Spark also proposed a "large striped shrimp" that no word tracked; a motion box audited under that name was rejected by A2 (§7.5) |
-| s004 | nautilus 1; shrimp 10+; hagfish 1 | nautilus 1; caridean shrimp 12 (+3 unidentified); hagfish 1 | "hagfish" 0 → "eel" 24 frames, labelled hagfish; "shrimp" 40 forward / 60 reversed; two shrimp at the bottom edge only through motion box prompts (30 and 55 frames after merging) |
+| s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | nautilus 2 (+1 queued) | motion residual only; every word 0 frames |
+| s002 | nautilus 1; red crustaceans 2 | nautilus 1; small red crab 1 (+2 "fish (unidentified)" queued) | "nautilus"; crab via "shrimp" in a 3× cell, renamed by A1 |
+| s003 | nautilus 3–4 | nautilus 3 | "nautilus" forward, reversed and zoomed |
+| s004 | nautilus 1; shrimp 10+; hagfish 1 | nautilus 1; caridean shrimp 12 (+3 unidentified); hagfish 1 | hagfish via "eel", renamed; "shrimp"; 2 shrimp via motion |
+
+How each taxon was reached, from the run logs. **s001**: "nautilus", "shell" and "snail" track 0 frames on the full
+frame, two blocks and two 3× cells of this night clip; the motion residual finds moving spots that Spark calls
+"nautilus", and box prompts on them track 56 and 60 of 60 frames (A1 0.95 and 0.9, A2 yes). A third motion track
+(A1 0.55) is queued. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
+"crab" tracks 5 frames and "shrimp" 12, and A1 calls the "shrimp" track "small red crab, not shrimp" (0.7), which
+matches Spark's discovery name, so the track is relabelled; A2 agrees. **s003**: "nautilus" tracks 33 frames forward,
+60 reversed and 45 and 44 in two zoom blocks. Spark also proposed a "large striped shrimp" that no word tracked; a
+motion box audited under that name was rejected by A2 (§7.5). **s004**: "hagfish" tracks 0 frames and "eel" 24,
+counted as hagfish; "shrimp" tracks 40 frames forward and 60 reversed; two shrimp at the bottom edge are reached only
+through motion box prompts (30 and 55 frames after merging).
 
 <div class="tablecap">**Table 3.** Discovery summary over the four clips (7 taxa). The no-audit baselines replay the
 final runs' cached calls with A1–A4 disabled; a track counts under SAM's word, or, for a motion box prompt (which
@@ -676,12 +694,10 @@ A3 judged 9 nested pairs, of which 6 were the same animal counted twice (all in 
 kept apart; A4 checked 11 peak frames and rejected 3 boxes: a box on the trap's blue pipe (correct, checked by
 eye), an 11 × 15-pixel box in empty water (not checked), and the only box of the real nautilus in s002's frame 0,
 called "anemone tentacles" (wrong; the count survived because a later frame became the peak). Of the 10 motion
-tracks, 4 were counted (s001 two nautiluses, s004 two shrimp). The no-audit replays (Table 3) and the development
-history isolate the components on discovery:
+tracks, 4 were counted (s001 two nautiluses, s004 two shrimp). What discovery and the audits each contribute is
+separated in Table 3 and §6.3 (no taxon without discovery; names, the s003 false taxon and the s004 duplicates fixed
+by the audits). Two further components show only in this accounting and the development history:
 
-* **Without discovery** (SAM "fish" alone) no non-fish taxon is counted (0 of 7).
-* **Without audits** the taxa are still found (6 of 7, or 7 of 7 with motion), but two are counted under SAM's word,
-  the s003 net becomes a false "shrimp" taxon, and s004's shrimp count includes six duplicates (18 vs. 12).
 * **Without the motion residual** the s001 nautiluses are never found: every word, block and 3× cell returned 0
   frames on this night clip, so the taxon count would be 6 of 7, and s004 would lose two shrimp at the frame edge.
 * **Without the second look (v13)**, s003 counted a "large striped shrimp" that does not exist (1 false taxon); with

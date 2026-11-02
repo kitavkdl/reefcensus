@@ -17,8 +17,9 @@ whether it is an animal, and SAM tracks it from a box with no word at all.
 
 Results (details in **Evaluation**):
 - **Counting, luderick (6 clips, 319 frames boxed by people):** recall 97.4% (the same as SAM alone: the checks throw away no real fish), precision 79.2% (a lower bound, see 4.1), MaxN within ±1 of the human count on all 6 clips and exact on 4 (SAM alone: 2); 9 of 27 tracks sent to a person. A rule with no model call, dropping tracks shorter than 4 frames, gives exactly the same numbers, so on this one-species task the checks match a well-chosen heuristic rather than beat it. The 97.4% counts the queued tracks as accepted; if a reviewer rejected all of them, recall would be 84.2%.
+- **Held out (24 luderick clips never used in development, frozen code, one run, protocol committed first):** recall 98.9%, MaxN exact on 20 of 24 with the queue accepted (SAM alone and the length rule: 19); with the queue rejected every clip is within ±1 (recall 95.6%). Same estuary as the development clips.
 - **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net, and cost one nautilus in s001 (queued). The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
-- **Cost:** a 12 s clip costs about $0.02–0.25 in API calls; all answers are cached by content, so a rerun is free.
+- **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.27 (discovery) in API calls; all answers are cached by content, so a rerun is free.
 
 ![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3.jpg)
 *Same deep-sea frame (IMAS TF_52). Left: SAM 3.1 asked for "animal", 0 detections. Middle: asked for "fish".
@@ -166,7 +167,7 @@ python3 web/server.py                                  # review screen, http://1
 ```
 
 ## Data
-- Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0
+- Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0, PANGAEA doi:10.1594/PANGAEA.926930
 - "Curated underwater video highlights of marine protected areas (IMAS, UWA & collaborators)", Australian Ocean Data
   Network record on data.gov.au (dataset b75639f4-c6d8-4a52-b633-988d6ba8a247). The record lists no authors and
   "License: Not Specified"; used only for a vocabulary probe and one figure, licence to be confirmed with the custodian
