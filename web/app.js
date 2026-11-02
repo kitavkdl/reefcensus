@@ -220,8 +220,13 @@ function drawFound() {
     const fromMotion = Object.entries(run.tracks || {}).some(([t, v]) => v.source.startsWith("m") && labelOf(run, t) === name);
     if (fromMotion)
       extra.push(el("div", { class: "ladder" }, "Includes an animal no word found: it moved, Spark said it was alive, and SAM tracked a box drawn on it."));
-    if (name.endsWith("(unidentified)"))
+    if (name.endsWith("(unidentified)")) {
       extra.push(el("div", { class: "ladder" }, "Spark could not name these with confidence; they wait in Needs a person."));
+      const g = groupTotal(rows, name);
+      if (g) extra.push(el("div", { class: "climb" }, `All ${g.head} together: `, el("span", { class: "num" }, g.maxn),
+        ` in one frame (${g.parts.join(" + ")}) `,
+        el("button", { class: "jump", onclick: () => seek(g.frame) }, `at ${secs(g.frame / state.fps)}`)));
+    }
     return countRow(name, m, "found", extra);
   });
   const missed = disc.filter((d) => !d.word);
@@ -230,6 +235,17 @@ function drawFound() {
     ...(items.length ? items : [el("p", { class: "empty" }, disc.length ? "Spark saw other animals, but SAM could not track them." : "Spark saw nothing else living in this clip.")]),
     ...(missed.length ? [el("p", { class: "signs" }, "Seen but not trackable: ",
       ...missed.map((d, i) => [i ? "; " : "", el("b", {}, d.what), ` (tried ${d.tried.map((t) => t.word).join(", ")})`]))] : []));
+}
+
+// "shrimp (unidentified)" and "caridean shrimp" are both shrimp: one track has one label, so per-frame counts add.
+function groupTotal(rows, name) {
+  const head = name.replace(/\s*\(unidentified\)$/, "");
+  const members = rows.filter(([n]) => n === name || n.split(" ").at(-1) === head);
+  if (members.length < 2) return null;
+  const sum = members[0][1].curve.map((_, i) => members.reduce((s, [, m]) => s + (m.curve[i] || 0), 0));
+  const maxn = Math.max(...sum), frame = sum.indexOf(maxn);
+  const parts = members.map(([n, m]) => `${m.curve[frame] || 0} ${n === name ? "unidentified" : n.slice(0, -head.length).trim()}`);
+  return { head, maxn, frame, parts };
 }
 
 const labelOf = (run, t) => {
