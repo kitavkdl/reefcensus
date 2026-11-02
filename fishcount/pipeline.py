@@ -326,8 +326,10 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         run.save("discover.json", disc)
         used = {q for _, q in plist}
         for o in disc.get("others", []):
-            # 11/1 s003: 'shell' found nothing but Spark's own name 'nautilus' tracked, so a short name goes first
-            name = o.get("what", "").strip().lower().split()[-1:] if len(o.get("what", "").split()) <= 2 else []
+            # 11/1 s003: 'shell' found nothing but Spark's own name 'nautilus' tracked, so its name goes first, as its
+            # head noun: a long name was skipped entirely before (11/2 long-video segment 2: "chambered nautilus
+            # clustered on bait" never tried "nautilus", and all six tracks went to the queue)
+            name = [h] if (h := short_name(o.get("what", ""))) else []
             words = []
             for w in name + o.get("search_words", []):
                 w = w.strip().lower()
@@ -597,6 +599,25 @@ NAME_GROUPS = {
     "cnidarian": ("anemone", "jellyfish", "jelly", "coral", "hydroid", "cnidarian"),
 }
 _GROUP_OF = {w: g for g, ws in NAME_GROUPS.items() for w in ws}
+
+
+def short_name(name):
+    """The animal noun of a discovery name, for SAM: words before a place preposition, then from the end the first
+    known animal word (NAME_GROUPS), else the last word that is not a participle ("clustered", "swimming") or vague.
+    "chambered nautilus clustered on bait" -> nautilus, "small red crab on seabed" -> crab."""
+    ws = re.sub(r"[^a-z ]", " ", (name or "").lower()).split()
+    for i, w in enumerate(ws):
+        if w in ("on", "at", "in", "near", "by", "under", "over", "with", "from", "behind", "inside", "beside", "among"):
+            ws = ws[:i]
+            break
+    cand = [norm_label(w) for w in ws]
+    for w in reversed(cand):
+        if w in _GROUP_OF:
+            return w
+    for w in reversed(cand):
+        if w and not w.endswith(("ed", "ing")) and len(w) > 2:
+            return w
+    return None
 
 
 def name_group(name):

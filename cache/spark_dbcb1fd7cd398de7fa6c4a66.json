@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.7,\"reason\":\"Only sand, no fish body shape\"}]", "usage": {"completion_tokens": 509, "prompt_tokens": 534, "total_tokens": 1043, "completion_tokens_details": {"reasoning_tokens": 468}, "prompt_tokens_details": {"cached_tokens": 0}}}

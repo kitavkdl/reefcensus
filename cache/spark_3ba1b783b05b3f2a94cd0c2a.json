@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":true,\"name\":\"shrimp\",\"confidence\":0.7,\"reason\":\"shrimp swims away shrinking and whitening\"}]", "usage": {"completion_tokens": 1251, "prompt_tokens": 543, "total_tokens": 1794, "completion_tokens_details": {"reasoning_tokens": 1206}, "prompt_tokens_details": {"cached_tokens": 0}}}

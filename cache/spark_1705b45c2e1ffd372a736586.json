@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T6\",\"is_target\":false,\"species\":\"chambered nautilus\",\"confidence\":0.75,\"reason\":\"Shell pattern matches nautilus not octopus\"}]", "usage": {"completion_tokens": 430, "prompt_tokens": 539, "total_tokens": 969, "completion_tokens_details": {"reasoning_tokens": 384}, "prompt_tokens_details": {"cached_tokens": 0}}}

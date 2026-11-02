@@ -185,6 +185,14 @@ class LowLight(unittest.TestCase):
         self.assertFalse(video.is_dark(dict(median_l=None, mean_l=None)))
 
 
+class ShortName(unittest.TestCase):
+    def test_head_noun(self):
+        from fishcount import pipeline as P
+        self.assertEqual(P.short_name("chambered nautilus clustered on bait"), "nautilus")
+        self.assertEqual(P.short_name("small red crab on seabed"), "crab")
+        self.assertEqual(P.short_name("hagfish"), "hagfish")
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")
