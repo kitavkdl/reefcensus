@@ -601,9 +601,10 @@ precision on them but is not a corrected precision for the set.
 scoring rule fixed before judging) and mixed with 10 matched boxes; Jiyul Ahn judged each crop with labels hidden as
 fish, not fish or unsure (`report/paper/data/heldout/fp_sheet/`). All 10 matched boxes were called fish. Of the 40
 unmatched boxes, 29 were fish, 2 were boxes on part of a fish, 9 were unsure (7 of them on tracks the pipeline had
-already sent to the person queue), and none was called not a fish. Counting only the 29 as correct, held-out precision
-is 93.7% (95% Wilson interval for the share 57–84%, so 90.2–96.3%) instead of 77.2%; with the two part-of-a-fish boxes
-it is 94.9%. One judge, the first author, and one sample of 40.
+already sent to the person queue). **None of the 40 was called not a fish.** Held-out precision is therefore 93.7%
+counting only the 29 clear fish as correct (95% Wilson interval 90.2–96.3%), 94.9% with the two part-of-a-fish boxes,
+and 100% of the sample if the unsure boxes are the fish they were drawn on, against the 77.2% scored on the
+reference boxes. One judge, the first author, and one sample of 40.
 
 *A second reference for all 24 clips.* Prompted by the three outliers, Jiyul Ahn then counted MaxN by hand on the
 other 21 held-out clips, from the full-rate videos without boxes, in a shuffled order under neutral file names (key
