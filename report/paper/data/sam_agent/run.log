@@ -1,0 +1,16 @@
+DH1 SAM 1 (cached 1) Spark 1 {'crab': 'kept'} $0.00629 
+DH2 SAM 9 (cached 5) Spark 3 {'coral': 'kept', 'crab': 'kept', 'worm': 'dropped', 'scallop': 'revise_exhausted'} $0.07664 
+DH3 SAM 12 (cached 6) Spark 3 {'crayfish': 'revise_exhausted', 'anemone': 'revise_exhausted', 'prawn': 'revise_exhausted', 'snake': 'revise_exhausted'} $0.104 
+DH4 SAM 0 (cached 0) Spark 0 {} $0.0 
+DH5 SAM 3 (cached 3) Spark 3 {'krill': 'revise_exhausted'} $0.01839 
+DH6 SAM 3 (cached 3) Spark 3 {'oyster': 'revise_exhausted'} $0.01823 
+DH7 SAM 1 (cached 1) Spark 1 {'crab': 'kept'} $0.00573 
+DH8 SAM 1 (cached 1) Spark 1 {'shark': 'dropped'} $0.00743 
+DH9 SAM 0 (cached 0) Spark 0 {} $0.0 
+DH10 SAM 3 (cached 2) Spark 3 {'larva': 'revise_exhausted'} $0.03911 
+DH11 SAM 6 (cached 4) Spark 3 {'bug': 'kept', 'shell': 'revise_exhausted'} $0.04843 
+s001 SAM 1 (cached 1) Spark 1 {'shell': 'kept'} $0.00481 
+s002 SAM 7 (cached 5) Spark 3 {'shell': 'kept', 'bug': 'revise_exhausted', 'insect': 'revise_exhausted'} $0.05154 
+s003 SAM 6 (cached 6) Spark 3 {'octopus': 'revise_exhausted', 'lobster': 'revise_exhausted'} $0.02331 
+s004 SAM 3 (cached 3) Spark 1 {'shell': 'kept', 'shrimp': 'kept', 'eel': 'kept'} $0.00756 
+script total 0.4115 ledger 24.5303

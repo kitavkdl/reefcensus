@@ -1,0 +1,1384 @@
+{
+ "clip": "DH2",
+ "n_frames": 60,
+ "things": [
+  {
+   "pid": "P1",
+   "what": "sea anemone",
+   "tried": [
+    {
+     "phrase": "anemone",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "jellyfish",
+     "round": 2,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "coral",
+     "round": 3,
+     "frames": 60,
+     "cached": true,
+     "tracks": 1,
+     "maxn": 1,
+     "missing": false
+    }
+   ],
+   "phrase": "coral",
+   "status": "kept",
+   "dets": {
+    "0": [
+     {
+      "id": 0,
+      "box": [
+       229.0,
+       161.0,
+       354.0,
+       287.0
+      ]
+     }
+    ],
+    "1": [
+     {
+      "id": 0,
+      "box": [
+       237.0,
+       164.0,
+       359.0,
+       287.0
+      ]
+     }
+    ],
+    "2": [
+     {
+      "id": 0,
+      "box": [
+       243.0,
+       164.0,
+       367.0,
+       287.0
+      ]
+     }
+    ],
+    "3": [
+     {
+      "id": 0,
+      "box": [
+       249.0,
+       164.0,
+       375.0,
+       287.0
+      ]
+     }
+    ],
+    "4": [
+     {
+      "id": 0,
+      "box": [
+       256.0,
+       165.0,
+       381.0,
+       287.0
+      ]
+     }
+    ],
+    "5": [
+     {
+      "id": 0,
+      "box": [
+       262.0,
+       165.0,
+       387.0,
+       288.0
+      ]
+     }
+    ],
+    "6": [
+     {
+      "id": 0,
+      "box": [
+       268.0,
+       165.0,
+       394.0,
+       289.0
+      ]
+     }
+    ],
+    "7": [
+     {
+      "id": 0,
+      "box": [
+       273.0,
+       165.0,
+       401.0,
+       289.0
+      ]
+     }
+    ],
+    "8": [
+     {
+      "id": 0,
+      "box": [
+       281.0,
+       166.0,
+       407.0,
+       291.0
+      ]
+     }
+    ],
+    "9": [
+     {
+      "id": 0,
+      "box": [
+       287.0,
+       167.0,
+       413.0,
+       291.0
+      ]
+     }
+    ],
+    "10": [
+     {
+      "id": 0,
+      "box": [
+       293.0,
+       168.0,
+       418.0,
+       293.0
+      ]
+     }
+    ],
+    "11": [
+     {
+      "id": 0,
+      "box": [
+       300.0,
+       169.0,
+       425.0,
+       295.0
+      ]
+     }
+    ],
+    "12": [
+     {
+      "id": 0,
+      "box": [
+       306.0,
+       169.0,
+       432.0,
+       296.0
+      ]
+     }
+    ],
+    "13": [
+     {
+      "id": 0,
+      "box": [
+       312.0,
+       170.0,
+       438.0,
+       297.0
+      ]
+     }
+    ],
+    "14": [
+     {
+      "id": 0,
+      "box": [
+       317.0,
+       171.0,
+       446.0,
+       297.0
+      ]
+     }
+    ],
+    "15": [
+     {
+      "id": 0,
+      "box": [
+       323.0,
+       172.0,
+       451.0,
+       298.0
+      ]
+     }
+    ],
+    "16": [
+     {
+      "id": 0,
+      "box": [
+       329.0,
+       173.0,
+       458.0,
+       299.0
+      ]
+     }
+    ],
+    "17": [
+     {
+      "id": 0,
+      "box": [
+       335.0,
+       174.0,
+       465.0,
+       301.0
+      ]
+     }
+    ],
+    "18": [
+     {
+      "id": 0,
+      "box": [
+       341.0,
+       175.0,
+       472.0,
+       302.0
+      ]
+     }
+    ],
+    "19": [
+     {
+      "id": 0,
+      "box": [
+       348.0,
+       176.0,
+       479.0,
+       303.0
+      ]
+     }
+    ],
+    "20": [
+     {
+      "id": 0,
+      "box": [
+       353.0,
+       177.0,
+       485.0,
+       304.0
+      ]
+     }
+    ],
+    "21": [
+     {
+      "id": 0,
+      "box": [
+       360.0,
+       178.0,
+       493.0,
+       305.0
+      ]
+     }
+    ],
+    "22": [
+     {
+      "id": 0,
+      "box": [
+       366.0,
+       179.0,
+       498.0,
+       307.0
+      ]
+     }
+    ],
+    "23": [
+     {
+      "id": 0,
+      "box": [
+       372.0,
+       181.0,
+       506.0,
+       309.0
+      ]
+     }
+    ],
+    "24": [
+     {
+      "id": 0,
+      "box": [
+       379.0,
+       182.0,
+       512.0,
+       311.0
+      ]
+     }
+    ],
+    "25": [
+     {
+      "id": 0,
+      "box": [
+       384.0,
+       183.0,
+       520.0,
+       314.0
+      ]
+     }
+    ],
+    "26": [
+     {
+      "id": 0,
+      "box": [
+       390.0,
+       185.0,
+       527.0,
+       315.0
+      ]
+     }
+    ],
+    "27": [
+     {
+      "id": 0,
+      "box": [
+       398.0,
+       187.0,
+       534.0,
+       317.0
+      ]
+     }
+    ],
+    "28": [
+     {
+      "id": 0,
+      "box": [
+       402.0,
+       187.0,
+       541.0,
+       319.0
+      ]
+     }
+    ],
+    "29": [
+     {
+      "id": 0,
+      "box": [
+       410.0,
+       190.0,
+       547.0,
+       321.0
+      ]
+     }
+    ],
+    "30": [
+     {
+      "id": 0,
+      "box": [
+       417.0,
+       192.0,
+       555.0,
+       321.0
+      ]
+     }
+    ],
+    "31": [
+     {
+      "id": 0,
+      "box": [
+       422.0,
+       193.0,
+       561.0,
+       322.0
+      ]
+     }
+    ],
+    "32": [
+     {
+      "id": 0,
+      "box": [
+       427.0,
+       194.0,
+       569.0,
+       325.0
+      ]
+     }
+    ],
+    "33": [
+     {
+      "id": 0,
+      "box": [
+       434.0,
+       196.0,
+       577.0,
+       328.0
+      ]
+     }
+    ],
+    "34": [
+     {
+      "id": 0,
+      "box": [
+       440.0,
+       198.0,
+       584.0,
+       329.0
+      ]
+     }
+    ],
+    "35": [
+     {
+      "id": 0,
+      "box": [
+       447.0,
+       201.0,
+       591.0,
+       332.0
+      ]
+     }
+    ],
+    "36": [
+     {
+      "id": 0,
+      "box": [
+       453.0,
+       203.0,
+       598.0,
+       334.0
+      ]
+     }
+    ],
+    "37": [
+     {
+      "id": 0,
+      "box": [
+       459.0,
+       205.0,
+       608.0,
+       337.0
+      ]
+     }
+    ],
+    "38": [
+     {
+      "id": 0,
+      "box": [
+       465.0,
+       206.0,
+       616.0,
+       340.0
+      ]
+     }
+    ],
+    "39": [
+     {
+      "id": 0,
+      "box": [
+       471.0,
+       208.0,
+       623.0,
+       343.0
+      ]
+     }
+    ],
+    "40": [
+     {
+      "id": 0,
+      "box": [
+       477.0,
+       211.0,
+       630.0,
+       345.0
+      ]
+     }
+    ],
+    "41": [
+     {
+      "id": 0,
+      "box": [
+       483.0,
+       212.0,
+       638.0,
+       347.0
+      ]
+     }
+    ],
+    "42": [
+     {
+      "id": 0,
+      "box": [
+       492.0,
+       215.0,
+       643.0,
+       350.0
+      ]
+     }
+    ],
+    "43": [
+     {
+      "id": 0,
+      "box": [
+       498.0,
+       218.0,
+       653.0,
+       352.0
+      ]
+     }
+    ],
+    "44": [
+     {
+      "id": 0,
+      "box": [
+       505.0,
+       220.0,
+       655.0,
+       354.0
+      ]
+     }
+    ],
+    "45": [
+     {
+      "id": 0,
+      "box": [
+       511.0,
+       223.0,
+       655.0,
+       358.0
+      ]
+     }
+    ],
+    "46": [
+     {
+      "id": 0,
+      "box": [
+       518.0,
+       225.0,
+       655.0,
+       363.0
+      ]
+     }
+    ],
+    "47": [
+     {
+      "id": 0,
+      "box": [
+       525.0,
+       228.0,
+       655.0,
+       364.0
+      ]
+     }
+    ],
+    "48": [
+     {
+      "id": 0,
+      "box": [
+       531.0,
+       231.0,
+       656.0,
+       368.0
+      ]
+     }
+    ],
+    "49": [
+     {
+      "id": 0,
+      "box": [
+       537.0,
+       234.0,
+       656.0,
+       373.0
+      ]
+     }
+    ],
+    "50": [
+     {
+      "id": 0,
+      "box": [
+       544.0,
+       237.0,
+       657.0,
+       380.0
+      ]
+     }
+    ],
+    "51": [
+     {
+      "id": 0,
+      "box": [
+       551.0,
+       240.0,
+       656.0,
+       381.0
+      ]
+     }
+    ],
+    "52": [
+     {
+      "id": 0,
+      "box": [
+       559.0,
+       243.0,
+       656.0,
+       384.0
+      ]
+     }
+    ],
+    "53": [
+     {
+      "id": 0,
+      "box": [
+       564.0,
+       248.0,
+       655.0,
+       388.0
+      ]
+     }
+    ],
+    "54": [
+     {
+      "id": 0,
+      "box": [
+       571.0,
+       254.0,
+       655.0,
+       395.0
+      ]
+     }
+    ],
+    "55": [
+     {
+      "id": 0,
+      "box": [
+       579.0,
+       259.0,
+       655.0,
+       401.0
+      ]
+     }
+    ],
+    "56": [
+     {
+      "id": 0,
+      "box": [
+       586.0,
+       262.0,
+       655.0,
+       368.0
+      ]
+     }
+    ],
+    "57": [
+     {
+      "id": 0,
+      "box": [
+       592.0,
+       264.0,
+       655.0,
+       359.0
+      ]
+     }
+    ],
+    "58": [
+     {
+      "id": 0,
+      "box": [
+       600.0,
+       270.0,
+       656.0,
+       363.0
+      ]
+     }
+    ],
+    "59": [
+     {
+      "id": 0,
+      "box": [
+       608.0,
+       274.0,
+       656.0,
+       368.0
+      ]
+     }
+    ]
+   },
+   "verdicts": [
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "jellyfish",
+     "reason": "fluffy anemone visible but no boxes"
+    },
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "coral",
+     "reason": "pale flower anemone visible all frames"
+    },
+    {
+     "id": "P1",
+     "verdict": "keep",
+     "new_phrase": "",
+     "reason": "Box tightly on fluffy anemone"
+    }
+   ]
+  },
+  {
+   "pid": "P2",
+   "what": "crab",
+   "tried": [
+    {
+     "phrase": "crab",
+     "round": 1,
+     "frames": 28,
+     "cached": true,
+     "tracks": 2,
+     "maxn": 2,
+     "missing": false
+    }
+   ],
+   "phrase": "crab",
+   "status": "kept",
+   "dets": {
+    "32": [
+     {
+      "id": 0,
+      "box": [
+       237.0,
+       242.0,
+       300.0,
+       318.0
+      ]
+     }
+    ],
+    "33": [
+     {
+      "id": 0,
+      "box": [
+       243.0,
+       239.0,
+       305.0,
+       317.0
+      ]
+     }
+    ],
+    "34": [
+     {
+      "id": 0,
+      "box": [
+       247.0,
+       237.0,
+       314.0,
+       317.0
+      ]
+     }
+    ],
+    "35": [
+     {
+      "id": 0,
+      "box": [
+       241.0,
+       241.0,
+       320.0,
+       316.0
+      ]
+     }
+    ],
+    "36": [
+     {
+      "id": 0,
+      "box": [
+       245.0,
+       242.0,
+       331.0,
+       318.0
+      ]
+     }
+    ],
+    "37": [
+     {
+      "id": 0,
+      "box": [
+       249.0,
+       241.0,
+       340.0,
+       315.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       44.0,
+       200.0,
+       255.0,
+       381.0
+      ]
+     }
+    ],
+    "38": [
+     {
+      "id": 0,
+      "box": [
+       260.0,
+       242.0,
+       344.0,
+       314.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       45.0,
+       199.0,
+       258.0,
+       383.0
+      ]
+     }
+    ],
+    "39": [
+     {
+      "id": 0,
+      "box": [
+       274.0,
+       242.0,
+       351.0,
+       314.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       45.0,
+       199.0,
+       267.0,
+       387.0
+      ]
+     }
+    ],
+    "40": [
+     {
+      "id": 0,
+      "box": [
+       286.0,
+       242.0,
+       360.0,
+       314.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       44.0,
+       197.0,
+       275.0,
+       391.0
+      ]
+     }
+    ],
+    "41": [
+     {
+      "id": 0,
+      "box": [
+       300.0,
+       240.0,
+       372.0,
+       316.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       44.0,
+       197.0,
+       280.0,
+       393.0
+      ]
+     }
+    ],
+    "42": [
+     {
+      "id": 0,
+      "box": [
+       313.0,
+       239.0,
+       381.0,
+       315.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       44.0,
+       196.0,
+       287.0,
+       397.0
+      ]
+     }
+    ],
+    "43": [
+     {
+      "id": 0,
+      "box": [
+       321.0,
+       238.0,
+       393.0,
+       314.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       45.0,
+       195.0,
+       292.0,
+       398.0
+      ]
+     }
+    ],
+    "44": [
+     {
+      "id": 0,
+      "box": [
+       330.0,
+       238.0,
+       400.0,
+       313.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       45.0,
+       196.0,
+       297.0,
+       399.0
+      ]
+     }
+    ],
+    "45": [
+     {
+      "id": 0,
+      "box": [
+       338.0,
+       239.0,
+       412.0,
+       312.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       45.0,
+       195.0,
+       303.0,
+       404.0
+      ]
+     }
+    ],
+    "46": [
+     {
+      "id": 0,
+      "box": [
+       350.0,
+       238.0,
+       421.0,
+       311.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       44.0,
+       195.0,
+       310.0,
+       405.0
+      ]
+     }
+    ],
+    "47": [
+     {
+      "id": 0,
+      "box": [
+       356.0,
+       238.0,
+       430.0,
+       309.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       44.0,
+       194.0,
+       315.0,
+       407.0
+      ]
+     }
+    ],
+    "48": [
+     {
+      "id": 0,
+      "box": [
+       362.0,
+       240.0,
+       437.0,
+       308.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       45.0,
+       194.0,
+       322.0,
+       409.0
+      ]
+     }
+    ],
+    "49": [
+     {
+      "id": 0,
+      "box": [
+       368.0,
+       242.0,
+       444.0,
+       310.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       42.0,
+       193.0,
+       327.0,
+       409.0
+      ]
+     }
+    ],
+    "50": [
+     {
+      "id": 0,
+      "box": [
+       373.0,
+       242.0,
+       449.0,
+       308.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       42.0,
+       192.0,
+       334.0,
+       408.0
+      ]
+     }
+    ],
+    "51": [
+     {
+      "id": 0,
+      "box": [
+       379.0,
+       241.0,
+       456.0,
+       311.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       43.0,
+       192.0,
+       340.0,
+       407.0
+      ]
+     }
+    ],
+    "52": [
+     {
+      "id": 0,
+      "box": [
+       388.0,
+       243.0,
+       463.0,
+       314.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       40.0,
+       155.0,
+       347.0,
+       407.0
+      ]
+     }
+    ],
+    "53": [
+     {
+      "id": 0,
+      "box": [
+       397.0,
+       245.0,
+       464.0,
+       319.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       40.0,
+       137.0,
+       351.0,
+       407.0
+      ]
+     }
+    ],
+    "54": [
+     {
+      "id": 0,
+      "box": [
+       398.0,
+       244.0,
+       473.0,
+       325.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       47.0,
+       190.0,
+       357.0,
+       405.0
+      ]
+     }
+    ],
+    "55": [
+     {
+      "id": 0,
+      "box": [
+       402.0,
+       248.0,
+       489.0,
+       331.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       39.0,
+       107.0,
+       364.0,
+       405.0
+      ]
+     }
+    ],
+    "56": [
+     {
+      "id": 0,
+      "box": [
+       401.0,
+       248.0,
+       495.0,
+       335.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       36.0,
+       130.0,
+       370.0,
+       404.0
+      ]
+     }
+    ],
+    "57": [
+     {
+      "id": 0,
+      "box": [
+       403.0,
+       248.0,
+       501.0,
+       337.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       36.0,
+       181.0,
+       376.0,
+       403.0
+      ]
+     }
+    ],
+    "58": [
+     {
+      "id": 0,
+      "box": [
+       407.0,
+       247.0,
+       509.0,
+       340.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       37.0,
+       49.0,
+       382.0,
+       403.0
+      ]
+     }
+    ],
+    "59": [
+     {
+      "id": 0,
+      "box": [
+       417.0,
+       250.0,
+       518.0,
+       342.0
+      ]
+     },
+     {
+      "id": 1,
+      "box": [
+       35.0,
+       180.0,
+       389.0,
+       402.0
+      ]
+     }
+    ]
+   },
+   "verdicts": [
+    {
+     "id": "P2",
+     "verdict": "keep",
+     "new_phrase": "",
+     "reason": "small box tracks crab, large is bait"
+    }
+   ]
+  },
+  {
+   "pid": "P3",
+   "what": "eel",
+   "tried": [
+    {
+     "phrase": "eel",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "worm",
+     "round": 2,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "worm",
+   "status": "dropped",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P3",
+     "verdict": "revise",
+     "new_phrase": "worm",
+     "reason": "dark curved shapes near bait likely eels"
+    },
+    {
+     "id": "P3",
+     "verdict": "drop",
+     "new_phrase": "",
+     "reason": "eel is fish not target"
+    }
+   ]
+  },
+  {
+   "pid": "P4",
+   "what": "round shell",
+   "tried": [
+    {
+     "phrase": "shell",
+     "round": 1,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "clam",
+     "round": 2,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "scallop",
+     "round": 3,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "scallop",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P4",
+     "verdict": "revise",
+     "new_phrase": "clam",
+     "reason": "small round shell visible in all frames"
+    },
+    {
+     "id": "P4",
+     "verdict": "revise",
+     "new_phrase": "scallop",
+     "reason": "small round shell visible on seabed"
+    },
+    {
+     "id": "P4",
+     "verdict": "revise",
+     "new_phrase": "oyster",
+     "reason": "Pale round shell visible lower left"
+    }
+   ]
+  }
+ ],
+ "rounds": [
+  {
+   "round": 1,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'anemone' (looking for: sea anemone)\nP2 'crab' (looking for: crab)\nP3 'eel' (looking for: eel)\nP4 'shell' (looking for: round shell)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"jellyfish\",\"reason\":\"fluffy anemone visible but no boxes\"},{\"id\":\"P2\",\"verdict\":\"keep\",\"new_phrase\":\"\",\"reason\":\"small box tracks crab, large is bait\"},{\"id\":\"P3\",\"verdict\":\"revise\",\"new_phrase\":\"worm\",\"reason\":\"dark curved shapes near bait likely eels\"},{\"id\":\"P4\",\"verdict\":\"revise\",\"new_phrase\":\"clam\",\"reason\":\"small round shell visible in all frames\"}]"
+  },
+  {
+   "round": 2,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'jellyfish' (looking for: sea anemone; tried before: 'anemone' 0 frames)\nP3 'worm' (looking for: eel; tried before: 'eel' 0 frames)\nP4 'clam' (looking for: round shell; tried before: 'shell' 0 frames)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"coral\",\"reason\":\"pale flower anemone visible all frames\"},{\"id\":\"P3\",\"verdict\":\"drop\",\"new_phrase\":\"\",\"reason\":\"eel is fish not target\"},{\"id\":\"P4\",\"verdict\":\"revise\",\"new_phrase\":\"scallop\",\"reason\":\"small round shell visible on seabed\"}]"
+  },
+  {
+   "round": 3,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'coral' (looking for: sea anemone; tried before: 'anemone' 0 frames, 'jellyfish' 0 frames)\nP4 'scallop' (looking for: round shell; tried before: 'shell' 0 frames, 'clam' 0 frames)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"keep\",\"new_phrase\":\"\",\"reason\":\"Box tightly on fluffy anemone\"},{\"id\":\"P4\",\"verdict\":\"revise\",\"new_phrase\":\"oyster\",\"reason\":\"Pale round shell visible lower left\"}]"
+  }
+ ],
+ "sam_calls": 9,
+ "sam_cached": 5,
+ "spark_calls": 3,
+ "stopped": null,
+ "usd": 0.07664
+}

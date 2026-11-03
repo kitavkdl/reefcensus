@@ -1,0 +1,140 @@
+{
+ "clip": "s003",
+ "n_frames": 60,
+ "things": [
+  {
+   "pid": "P1",
+   "what": "chambered nautilus",
+   "tried": [
+    {
+     "phrase": "shell",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "snail",
+     "round": 2,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "octopus",
+     "round": 3,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "octopus",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "snail",
+     "reason": "Nautiluses visible but shell found nothing"
+    },
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "octopus",
+     "reason": "Nautilus clearly visible despite no detection"
+    },
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "squid",
+     "reason": "Nautilus clearly visible, try related cephalopod term"
+    }
+   ]
+  },
+  {
+   "pid": "P2",
+   "what": "large striped shrimp",
+   "tried": [
+    {
+     "phrase": "shrimp",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "prawn",
+     "round": 2,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "lobster",
+     "round": 3,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "lobster",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P2",
+     "verdict": "revise",
+     "new_phrase": "prawn",
+     "reason": "Striped shrimp present but undetected"
+    },
+    {
+     "id": "P2",
+     "verdict": "revise",
+     "new_phrase": "lobster",
+     "reason": "Large striped shrimp on bait visible"
+    },
+    {
+     "id": "P2",
+     "verdict": "revise",
+     "new_phrase": "crayfish",
+     "reason": "Striped shrimp on bait visible, try crustacean"
+    }
+   ]
+  }
+ ],
+ "rounds": [
+  {
+   "round": 1,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'shell' (looking for: chambered nautilus)\nP2 'shrimp' (looking for: large striped shrimp)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"snail\",\"reason\":\"Nautiluses visible but shell found nothing\"},{\"id\":\"P2\",\"verdict\":\"revise\",\"new_phrase\":\"prawn\",\"reason\":\"Striped shrimp present but undetected\"}]"
+  },
+  {
+   "round": 2,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'snail' (looking for: chambered nautilus; tried before: 'shell' 0 frames)\nP2 'prawn' (looking for: large striped shrimp; tried before: 'shrimp' 0 frames)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"octopus\",\"reason\":\"Nautilus clearly visible despite no detection\"},{\"id\":\"P2\",\"verdict\":\"revise\",\"new_phrase\":\"lobster\",\"reason\":\"Large striped shrimp on bait visible\"}]"
+  },
+  {
+   "round": 3,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'octopus' (looking for: chambered nautilus; tried before: 'shell' 0 frames, 'snail' 0 frames)\nP2 'lobster' (looking for: large striped shrimp; tried before: 'shrimp' 0 frames, 'prawn' 0 frames)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"squid\",\"reason\":\"Nautilus clearly visible, try related cephalopod term\"},{\"id\":\"P2\",\"verdict\":\"revise\",\"new_phrase\":\"crayfish\",\"reason\":\"Striped shrimp on bait visible, try crustacean\"}]"
+  }
+ ],
+ "sam_calls": 6,
+ "sam_cached": 6,
+ "spark_calls": 3,
+ "stopped": null,
+ "usd": 0.02331
+}

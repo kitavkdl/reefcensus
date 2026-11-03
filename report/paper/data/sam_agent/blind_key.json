@@ -1,0 +1,62 @@
+{
+ "DH1": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "DH2": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "DH3": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "DH4": {
+  "A": "agent",
+  "B": "pipeline"
+ },
+ "DH5": {
+  "A": "agent",
+  "B": "pipeline"
+ },
+ "DH6": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "DH7": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "DH8": {
+  "A": "agent",
+  "B": "pipeline"
+ },
+ "DH9": {
+  "A": "agent",
+  "B": "pipeline"
+ },
+ "DH10": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "DH11": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "s001": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "s002": {
+  "A": "agent",
+  "B": "pipeline"
+ },
+ "s003": {
+  "A": "pipeline",
+  "B": "agent"
+ },
+ "s004": {
+  "A": "pipeline",
+  "B": "agent"
+ }
+}

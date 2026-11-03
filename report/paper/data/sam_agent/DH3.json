@@ -1,0 +1,252 @@
+{
+ "clip": "DH3",
+ "n_frames": 60,
+ "things": [
+  {
+   "pid": "P1",
+   "what": "spider crab",
+   "tried": [
+    {
+     "phrase": "crab",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "spider",
+     "round": 2,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "crayfish",
+     "round": 3,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "crayfish",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "spider",
+     "reason": "crab-like animals visible in lower frames"
+    },
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "crayfish",
+     "reason": "long-legged crabs visible in bottom frames"
+    },
+    {
+     "id": "P1",
+     "verdict": "revise",
+     "new_phrase": "lobster",
+     "reason": "crab-like animals visible in lower frames"
+    }
+   ]
+  },
+  {
+   "pid": "P2",
+   "what": "sunflower sea star",
+   "tried": [
+    {
+     "phrase": "starfish",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "star",
+     "round": 2,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "anemone",
+     "round": 3,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "anemone",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P2",
+     "verdict": "revise",
+     "new_phrase": "star",
+     "reason": "multi-armed star visible center right"
+    },
+    {
+     "id": "P2",
+     "verdict": "revise",
+     "new_phrase": "anemone",
+     "reason": "multi-armed orange sea star clearly present"
+    },
+    {
+     "id": "P2",
+     "verdict": "revise",
+     "new_phrase": "flower",
+     "reason": "multi-armed star clearly visible near carcass"
+    }
+   ]
+  },
+  {
+   "pid": "P3",
+   "what": "squat lobster shrimp",
+   "tried": [
+    {
+     "phrase": "shrimp",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "lobster",
+     "round": 2,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "prawn",
+     "round": 3,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "prawn",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P3",
+     "verdict": "revise",
+     "new_phrase": "lobster",
+     "reason": "reddish shrimp on bait pile"
+    },
+    {
+     "id": "P3",
+     "verdict": "revise",
+     "new_phrase": "prawn",
+     "reason": "reddish shrimp on carcass in later frames"
+    },
+    {
+     "id": "P3",
+     "verdict": "revise",
+     "new_phrase": "crab",
+     "reason": "reddish crustaceans on carcass in later frames"
+    }
+   ]
+  },
+  {
+   "pid": "P4",
+   "what": "hagfish",
+   "tried": [
+    {
+     "phrase": "eel",
+     "round": 1,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "worm",
+     "round": 2,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    },
+    {
+     "phrase": "snake",
+     "round": 3,
+     "frames": 0,
+     "cached": false,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "snake",
+   "status": "revise_exhausted",
+   "dets": {},
+   "verdicts": [
+    {
+     "id": "P4",
+     "verdict": "revise",
+     "new_phrase": "worm",
+     "reason": "dark eel loops left side"
+    },
+    {
+     "id": "P4",
+     "verdict": "revise",
+     "new_phrase": "snake",
+     "reason": "dark eel-like hagfish left of bait"
+    },
+    {
+     "id": "P4",
+     "verdict": "revise",
+     "new_phrase": "fish",
+     "reason": "dark eel-like loops left of carcass"
+    }
+   ]
+  }
+ ],
+ "rounds": [
+  {
+   "round": 1,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'crab' (looking for: spider crab)\nP2 'starfish' (looking for: sunflower sea star)\nP3 'shrimp' (looking for: squat lobster shrimp)\nP4 'eel' (looking for: hagfish)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"spider\",\"reason\":\"crab-like animals visible in lower frames\"},{\"id\":\"P2\",\"verdict\":\"revise\",\"new_phrase\":\"star\",\"reason\":\"multi-armed star visible center right\"},{\"id\":\"P3\",\"verdict\":\"revise\",\"new_phrase\":\"lobster\",\"reason\":\"reddish shrimp on bait pile\"},{\"id\":\"P4\",\"verdict\":\"revise\",\"new_phrase\":\"worm\",\"reason\":\"dark eel loops left side\"}]"
+  },
+  {
+   "round": 2,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'spider' (looking for: spider crab; tried before: 'crab' 0 frames)\nP2 'star' (looking for: sunflower sea star; tried before: 'starfish' 0 frames)\nP3 'lobster' (looking for: squat lobster shrimp; tried before: 'shrimp' 0 frames)\nP4 'worm' (looking for: hagfish; tried before: 'eel' 0 frames)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"crayfish\",\"reason\":\"long-legged crabs visible in bottom frames\"},{\"id\":\"P2\",\"verdict\":\"revise\",\"new_phrase\":\"anemone\",\"reason\":\"multi-armed orange sea star clearly present\"},{\"id\":\"P3\",\"verdict\":\"revise\",\"new_phrase\":\"prawn\",\"reason\":\"reddish shrimp on carcass in later frames\"},{\"id\":\"P4\",\"verdict\":\"revise\",\"new_phrase\":\"snake\",\"reason\":\"dark eel-like hagfish left of bait\"}]"
+  },
+  {
+   "round": 3,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'crayfish' (looking for: spider crab; tried before: 'crab' 0 frames, 'spider' 0 frames)\nP2 'anemone' (looking for: sunflower sea star; tried before: 'starfish' 0 frames, 'star' 0 frames)\nP3 'prawn' (looking for: squat lobster shrimp; tried before: 'shrimp' 0 frames, 'lobster' 0 frames)\nP4 'snake' (looking for: hagfish; tried before: 'eel' 0 frames, 'worm' 0 frames)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"lobster\",\"reason\":\"crab-like animals visible in lower frames\"},{\"id\":\"P2\",\"verdict\":\"revise\",\"new_phrase\":\"flower\",\"reason\":\"multi-armed star clearly visible near carcass\"},{\"id\":\"P3\",\"verdict\":\"revise\",\"new_phrase\":\"crab\",\"reason\":\"reddish crustaceans on carcass in later frames\"},{\"id\":\"P4\",\"verdict\":\"revise\",\"new_phrase\":\"fish\",\"reason\":\"dark eel-like loops left of carcass\"}]"
+  }
+ ],
+ "sam_calls": 12,
+ "sam_cached": 6,
+ "spark_calls": 3,
+ "stopped": null,
+ "usd": 0.104
+}

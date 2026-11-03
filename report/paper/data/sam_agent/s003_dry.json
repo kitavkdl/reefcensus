@@ -1,0 +1,55 @@
+{
+ "clip": "s003",
+ "n_frames": 60,
+ "things": [
+  {
+   "pid": "P1",
+   "what": "chambered nautilus",
+   "tried": [
+    {
+     "phrase": "shell",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "shell",
+   "status": "revise_exhausted",
+   "dets": {}
+  },
+  {
+   "pid": "P2",
+   "what": "large striped shrimp",
+   "tried": [
+    {
+     "phrase": "shrimp",
+     "round": 1,
+     "frames": 0,
+     "cached": true,
+     "tracks": 0,
+     "maxn": 0,
+     "missing": false
+    }
+   ],
+   "phrase": "shrimp",
+   "status": "revise_exhausted",
+   "dets": {}
+  }
+ ],
+ "rounds": [
+  {
+   "round": 1,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'shell' (looking for: chambered nautilus)\nP2 'shrimp' (looking for: large striped shrimp)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": null,
+   "dry": true
+  }
+ ],
+ "sam_calls": 2,
+ "sam_cached": 2,
+ "spark_calls": 0,
+ "stopped": null,
+ "usd": 0.0
+}

@@ -35,6 +35,7 @@ people marked. It is an annotation accelerator whose output a person confirms, n
 | On six more held-out videos it counts the one animal marked beforehand and no non-animal | §6.3, Table 3c | 6; 1 animal | four of the six were chosen because their source text names a non-fish animal; the fixed 16-word baseline finds the same animals |
 | The VLM auditor adopts names in its prompt and changes verdicts with the layout of the evidence | §7.1, §7.5 | 6 development | development clips; repeated calls also vary on their own |
 | Muse Wonder, Meta's larger VLM, given Spark's 101 questions, rejects tiles of a crab a person was certain of, gives 12 unsupported names against Spark's 5, and costs about 4.3× per call | §7.6, Table 7 | 15; 101 questions | same questions, not Wonder's own run; yes/no per tile without confidence thresholds |
+| A plain propose–segment–look–revise loop (the SAM 3 Agent pattern) with the same models reaches 3 of 5 held-out marked animals and 5 of 7 development taxa, against 4 of 5 and 7 of 7 | §7.7, Table 8 | 15 | text prompts, full frame, forward only; the published agent's prompts are not reproduced |
 
 
 # Introduction
@@ -1081,6 +1082,39 @@ On these questions the larger model is more conservative where it matters for co
 animal a person was certain of) and less careful where it matters for discovery (more names with nothing behind
 them, four of them not animals), at about 4.3 times the cost per call. Nothing here argues for replacing Spark, and
 because Spark's answers chose the questions, it does not show what a pipeline built around Wonder would count.
+
+
+## The plain SAM 3 Agent pattern as a discovery baseline
+
+SAM 3's "SAM 3 Agent" lets an MLLM propose noun phrases, look at the returned masks and revise (Carion et al., 2026,
+§6). To test whether that pattern alone does what our discovery steps do, we ran it with our models on the 15
+discovery clips (protocol committed before any call: `report/paper/sam_agent_protocol.md`): the final run's own
+discovery reply proposes up to four things with their first words; SAM 3.1 tracks each phrase on the full frame,
+forward only; one Spark call per round sees the contact sheet and the three frames with most boxes for each phrase,
+and answers keep, revise (one new plain noun) or drop; at most three SAM rounds per thing; no zoom, reversed pass,
+motion residual or audit. A separate grader scored the kept things and the pipeline's counted labels blind against
+the reference lists.
+
+<div class="tablecap">**Table 8.** Pipeline vs. a propose–segment–look–revise loop on the same 15 clips. Data:
+`report/paper/data/sam_agent/`.</div>
+
+| | pipeline (counted) | loop (kept) |
+|---|---|---|
+| Held-out DH1–DH11: marked animals reached, strict / lenient | 4 of 5 / 4 of 4 | 3 of 5 / 3 of 4 |
+| Development s001–s004: taxa reached (Table 3) | 7 of 7 | 5 of 7 |
+| Entries supported by no reference list | 1 (DH7 crab) | 1 (DH7 crab) |
+| Things revised / kept after a revision | — | 16 of 25 / 2 |
+| Cost | Table 3b, §6.4 | $0.41 (41 of 56 SAM calls already cached) |
+
+The loop missed the DH3 spider crab ("crab", "spider", "crayfish": 0 frames on the full frame), the s002 red crab
+("crab", "lobster", "bug": 0) and the s003 nautilus ("shell", "snail", "octopus": 0), and found one of the four s001
+nautiluses ("shell", 9 frames). Each miss is an animal the pipeline reaches by another route: "crab" or "shrimp" in a
+3× cell for the two crabs, the listed word "nautilus" (33 frames) for s003, motion box prompts for s001. Revisions
+rarely helped (2 of 16 revised things were kept, as "coral" for a sea anemone and "bug" for an amphipod) and in s003
+moved away from the word that works. Like the pipeline, the loop kept nothing that is not an animal. The blind sheet's
+pipeline list for s004 lacked "hagfish" because a shared helper drops labels of the fish group; the pipeline counts it
+(Table 2). This supports positioning the pipeline as an application of the known pattern: the pattern supplies the
+naming, and the counts depend on the extra routes to the segmenter.
 
 # Scope
 

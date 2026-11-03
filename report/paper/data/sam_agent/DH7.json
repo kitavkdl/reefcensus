@@ -1,0 +1,377 @@
+{
+ "clip": "DH7",
+ "n_frames": 60,
+ "things": [
+  {
+   "pid": "P1",
+   "what": "crab",
+   "tried": [
+    {
+     "phrase": "crab",
+     "round": 1,
+     "frames": 22,
+     "cached": true,
+     "tracks": 10,
+     "maxn": 5,
+     "missing": false
+    }
+   ],
+   "phrase": "crab",
+   "status": "kept",
+   "dets": {
+    "15": [
+     {
+      "id": 0,
+      "box": [
+       822.0,
+       105.0,
+       914.0,
+       252.0
+      ]
+     }
+    ],
+    "16": [
+     {
+      "id": 0,
+      "box": [
+       930.0,
+       256.0,
+       1031.0,
+       391.0
+      ]
+     }
+    ],
+    "22": [
+     {
+      "id": 0,
+      "box": [
+       481.0,
+       51.0,
+       737.0,
+       410.0
+      ]
+     }
+    ],
+    "23": [
+     {
+      "id": 0,
+      "box": [
+       574.0,
+       529.0,
+       776.0,
+       715.0
+      ]
+     }
+    ],
+    "26": [
+     {
+      "id": 1,
+      "box": [
+       970.0,
+       6.0,
+       1088.0,
+       104.0
+      ]
+     }
+    ],
+    "28": [
+     {
+      "id": 1,
+      "box": [
+       769.0,
+       229.0,
+       933.0,
+       436.0
+      ]
+     }
+    ],
+    "29": [
+     {
+      "id": 1,
+      "box": [
+       577.0,
+       312.0,
+       765.0,
+       451.0
+      ]
+     }
+    ],
+    "30": [
+     {
+      "id": 1,
+      "box": [
+       1037.0,
+       6.0,
+       1173.0,
+       122.0
+      ]
+     }
+    ],
+    "33": [
+     {
+      "id": 2,
+      "box": [
+       336.0,
+       13.0,
+       508.0,
+       132.0
+      ]
+     },
+     {
+      "id": 3,
+      "box": [
+       536.0,
+       6.0,
+       677.0,
+       125.0
+      ]
+     }
+    ],
+    "34": [
+     {
+      "id": 1,
+      "box": [
+       765.0,
+       4.0,
+       976.0,
+       59.0
+      ]
+     },
+     {
+      "id": 2,
+      "box": [
+       106.0,
+       167.0,
+       263.0,
+       352.0
+      ]
+     },
+     {
+      "id": 3,
+      "box": [
+       765.0,
+       4.0,
+       976.0,
+       59.0
+      ]
+     },
+     {
+      "id": 4,
+      "box": [
+       1043.0,
+       380.0,
+       1174.0,
+       505.0
+      ]
+     },
+     {
+      "id": 5,
+      "box": [
+       710.0,
+       601.0,
+       792.0,
+       714.0
+      ]
+     }
+    ],
+    "35": [
+     {
+      "id": 6,
+      "box": [
+       1055.0,
+       24.0,
+       1174.0,
+       255.0
+      ]
+     }
+    ],
+    "36": [
+     {
+      "id": 3,
+      "box": [
+       512.0,
+       150.0,
+       658.0,
+       297.0
+      ]
+     },
+     {
+      "id": 6,
+      "box": [
+       1048.0,
+       188.0,
+       1174.0,
+       375.0
+      ]
+     }
+    ],
+    "38": [
+     {
+      "id": 6,
+      "box": [
+       1003.0,
+       335.0,
+       1174.0,
+       516.0
+      ]
+     }
+    ],
+    "39": [
+     {
+      "id": 5,
+      "box": [
+       627.0,
+       471.0,
+       805.0,
+       684.0
+      ]
+     }
+    ],
+    "41": [
+     {
+      "id": 6,
+      "box": [
+       926.0,
+       330.0,
+       1151.0,
+       550.0
+      ]
+     },
+     {
+      "id": 7,
+      "box": [
+       1074.0,
+       263.0,
+       1174.0,
+       441.0
+      ]
+     }
+    ],
+    "42": [
+     {
+      "id": 6,
+      "box": [
+       1081.0,
+       615.0,
+       1174.0,
+       715.0
+      ]
+     },
+     {
+      "id": 7,
+      "box": [
+       921.0,
+       6.0,
+       1024.0,
+       131.0
+      ]
+     }
+    ],
+    "43": [
+     {
+      "id": 6,
+      "box": [
+       939.0,
+       325.0,
+       1099.0,
+       515.0
+      ]
+     },
+     {
+      "id": 7,
+      "box": [
+       941.0,
+       346.0,
+       1029.0,
+       472.0
+      ]
+     }
+    ],
+    "44": [
+     {
+      "id": 6,
+      "box": [
+       1063.0,
+       478.0,
+       1173.0,
+       579.0
+      ]
+     },
+     {
+      "id": 8,
+      "box": [
+       1057.0,
+       591.0,
+       1174.0,
+       707.0
+      ]
+     }
+    ],
+    "54": [
+     {
+      "id": 9,
+      "box": [
+       911.0,
+       627.0,
+       1034.0,
+       714.0
+      ]
+     }
+    ],
+    "56": [
+     {
+      "id": 6,
+      "box": [
+       1115.0,
+       361.0,
+       1174.0,
+       466.0
+      ]
+     }
+    ],
+    "57": [
+     {
+      "id": 6,
+      "box": [
+       987.0,
+       489.0,
+       1144.0,
+       629.0
+      ]
+     }
+    ],
+    "58": [
+     {
+      "id": 9,
+      "box": [
+       895.0,
+       629.0,
+       1052.0,
+       715.0
+      ]
+     }
+    ]
+   },
+   "verdicts": [
+    {
+     "id": "P1",
+     "verdict": "keep",
+     "new_phrase": "",
+     "reason": "Boxes correctly enclose visible crabs"
+    }
+   ]
+  }
+ ],
+ "rounds": [
+  {
+   "round": 1,
+   "prompt": "You are helping a marine ecologist find every kind of living thing other than fish in an underwater survey clip.\nImage 1 is a contact sheet of 6 frames from the clip. Image 2 shows what a segmentation model found in the whole clip for each search phrase: one row per phrase (labelled with its id and phrase), the three frames where it found the most objects with orange boxes, or a note that it found nothing.\nThe segmentation model only understands plain everyday English nouns (like \"shell\", \"shrimp\", \"crab\", \"jellyfish\", \"worm\", \"starfish\", \"eel\"); it returns nothing for species names, colours, or vague words like \"animal\" or \"creature\".\nPhrases:\nP1 'crab' (looking for: crab)\nFor each phrase decide:\n- \"keep\": the boxes are mainly on that kind of living thing;\n- \"revise\": the boxes are wrong or there are none, but you believe that thing is in the clip; give one different plain noun to try (not one already tried);\n- \"drop\": there is no such thing, or the boxes are on rock, weed, bait, sediment, equipment or empty water.\nReturn ONLY a JSON list: [{\"id\":\"P1\",\"verdict\":\"keep|revise|drop\",\"new_phrase\":\"plain noun or empty\",\"reason\":\"<=12 words\"}]",
+   "reply": "[{\"id\":\"P1\",\"verdict\":\"keep\",\"new_phrase\":\"\",\"reason\":\"Boxes correctly enclose visible crabs\"}]"
+  }
+ ],
+ "sam_calls": 1,
+ "sam_cached": 1,
+ "spark_calls": 1,
+ "stopped": null,
+ "usd": 0.00573
+}

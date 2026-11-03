@@ -1,0 +1,417 @@
+{
+ "DH1": {
+  "kept": [
+   {
+    "phrase": "crab",
+    "what": "crab",
+    "frames": 60,
+    "maxn": 1,
+    "revised": 0
+   }
+  ],
+  "dropped": [],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 1,
+  "pipeline_tracks_overlapped": 1,
+  "overlapped": [
+   "crab [d0:0]"
+  ],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 1,
+  "sam_cached": 1,
+  "spark_calls": 1,
+  "usd": 0.00629,
+  "stopped": null
+ },
+ "DH2": {
+  "kept": [
+   {
+    "phrase": "coral",
+    "what": "sea anemone",
+    "frames": 60,
+    "maxn": 1,
+    "revised": 2
+   },
+   {
+    "phrase": "crab",
+    "what": "crab",
+    "frames": 28,
+    "maxn": 2,
+    "revised": 0
+   }
+  ],
+  "dropped": [
+   "worm"
+  ],
+  "other_status": {
+   "scallop": "revise_exhausted"
+  },
+  "revised_things": 3,
+  "kept_after_revision": 1,
+  "pipeline_counted_nonfish": 2,
+  "pipeline_tracks_overlapped": 2,
+  "overlapped": [
+   "sea anemone [d0:0]",
+   "crab [d1rev:0]"
+  ],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 9,
+  "sam_cached": 5,
+  "spark_calls": 3,
+  "usd": 0.07664,
+  "stopped": null
+ },
+ "DH3": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {
+   "crayfish": "revise_exhausted",
+   "anemone": "revise_exhausted",
+   "prawn": "revise_exhausted",
+   "snake": "revise_exhausted"
+  },
+  "revised_things": 4,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 3,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [
+   "spider crab [d0c-bottom-left:0]",
+   "spider crab [d0c-bottom:1]",
+   "spider crab [d0c-bottom:2]"
+  ],
+  "loose_kept_phrases": [],
+  "sam_calls": 12,
+  "sam_cached": 6,
+  "spark_calls": 3,
+  "usd": 0.104,
+  "stopped": null
+ },
+ "DH4": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 0,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 0,
+  "sam_cached": 0,
+  "spark_calls": 0,
+  "usd": 0.0,
+  "stopped": null
+ },
+ "DH5": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {
+   "krill": "revise_exhausted"
+  },
+  "revised_things": 1,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 0,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 3,
+  "sam_cached": 3,
+  "spark_calls": 3,
+  "usd": 0.01839,
+  "stopped": null
+ },
+ "DH6": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {
+   "oyster": "revise_exhausted"
+  },
+  "revised_things": 1,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 0,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 3,
+  "sam_cached": 3,
+  "spark_calls": 3,
+  "usd": 0.01823,
+  "stopped": null
+ },
+ "DH7": {
+  "kept": [
+   {
+    "phrase": "crab",
+    "what": "crab",
+    "frames": 22,
+    "maxn": 5,
+    "revised": 0
+   }
+  ],
+  "dropped": [],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 8,
+  "pipeline_tracks_overlapped": 2,
+  "overlapped": [
+   "crab [d0:6]",
+   "crab [d0:4]"
+  ],
+  "not_overlapped": [
+   "crab [d0:1]",
+   "crab [d0:2]",
+   "crab [d0:3]",
+   "crab [d0:5]",
+   "crab [d0:8]",
+   "crab [d0:9]"
+  ],
+  "loose_kept_phrases": [],
+  "sam_calls": 1,
+  "sam_cached": 1,
+  "spark_calls": 1,
+  "usd": 0.00573,
+  "stopped": null
+ },
+ "DH8": {
+  "kept": [],
+  "dropped": [
+   "shark"
+  ],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 0,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 1,
+  "sam_cached": 1,
+  "spark_calls": 1,
+  "usd": 0.00743,
+  "stopped": null
+ },
+ "DH9": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 0,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 0,
+  "sam_cached": 0,
+  "spark_calls": 0,
+  "usd": 0.0,
+  "stopped": null
+ },
+ "DH10": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {
+   "larva": "revise_exhausted"
+  },
+  "revised_things": 1,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 0,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 3,
+  "sam_cached": 2,
+  "spark_calls": 3,
+  "usd": 0.03911,
+  "stopped": null
+ },
+ "DH11": {
+  "kept": [
+   {
+    "phrase": "bug",
+    "what": "scavenging amphipod crustacean",
+    "frames": 60,
+    "maxn": 1,
+    "revised": 2
+   }
+  ],
+  "dropped": [],
+  "other_status": {
+   "shell": "revise_exhausted"
+  },
+  "revised_things": 2,
+  "kept_after_revision": 1,
+  "pipeline_counted_nonfish": 1,
+  "pipeline_tracks_overlapped": 1,
+  "overlapped": [
+   "scavenging amphipod crustacean [d1:0]"
+  ],
+  "not_overlapped": [],
+  "loose_kept_phrases": [],
+  "sam_calls": 6,
+  "sam_cached": 4,
+  "spark_calls": 3,
+  "usd": 0.04843,
+  "stopped": null
+ },
+ "s001": {
+  "kept": [
+   {
+    "phrase": "shell",
+    "what": "nautilus",
+    "frames": 9,
+    "maxn": 1,
+    "revised": 0
+   }
+  ],
+  "dropped": [],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 5,
+  "pipeline_tracks_overlapped": 1,
+  "overlapped": [
+   "nautilus [d0:1]"
+  ],
+  "not_overlapped": [
+   "nautilus [m1:1]",
+   "nautilus [m2:1]",
+   "nautilus [m4:1]",
+   "nautilus [m0:1]"
+  ],
+  "loose_kept_phrases": [],
+  "sam_calls": 1,
+  "sam_cached": 1,
+  "spark_calls": 1,
+  "usd": 0.00481,
+  "stopped": null
+ },
+ "s002": {
+  "kept": [
+   {
+    "phrase": "shell",
+    "what": "chambered nautilus",
+    "frames": 47,
+    "maxn": 1,
+    "revised": 0
+   }
+  ],
+  "dropped": [],
+  "other_status": {
+   "bug": "revise_exhausted",
+   "insect": "revise_exhausted"
+  },
+  "revised_things": 2,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 2,
+  "pipeline_tracks_overlapped": 1,
+  "overlapped": [
+   "chambered nautilus [d0:0]"
+  ],
+  "not_overlapped": [
+   "small red crab [d1c-bottomrev:0]"
+  ],
+  "loose_kept_phrases": [],
+  "sam_calls": 7,
+  "sam_cached": 5,
+  "spark_calls": 3,
+  "usd": 0.05154,
+  "stopped": null
+ },
+ "s003": {
+  "kept": [],
+  "dropped": [],
+  "other_status": {
+   "octopus": "revise_exhausted",
+   "lobster": "revise_exhausted"
+  },
+  "revised_things": 2,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 3,
+  "pipeline_tracks_overlapped": 0,
+  "overlapped": [],
+  "not_overlapped": [
+   "chambered nautilus [d0:0]",
+   "chambered nautilus [d0z-left:1]",
+   "chambered nautilus [d0z-center:1]"
+  ],
+  "loose_kept_phrases": [],
+  "sam_calls": 6,
+  "sam_cached": 6,
+  "spark_calls": 3,
+  "usd": 0.02331,
+  "stopped": null
+ },
+ "s004": {
+  "kept": [
+   {
+    "phrase": "shell",
+    "what": "chambered nautilus",
+    "frames": 14,
+    "maxn": 1,
+    "revised": 0
+   },
+   {
+    "phrase": "shrimp",
+    "what": "caridean shrimp",
+    "frames": 40,
+    "maxn": 9,
+    "revised": 0
+   },
+   {
+    "phrase": "eel",
+    "what": "hagfish",
+    "frames": 24,
+    "maxn": 1,
+    "revised": 0
+   }
+  ],
+  "dropped": [],
+  "other_status": {},
+  "revised_things": 0,
+  "kept_after_revision": 0,
+  "pipeline_counted_nonfish": 20,
+  "pipeline_tracks_overlapped": 10,
+  "overlapped": [
+   "chambered nautilus [d0rev:0]",
+   "caridean shrimp [d1:1]",
+   "caridean shrimp [d1:2]",
+   "caridean shrimp [d1:6]",
+   "caridean shrimp [d1rev:4]",
+   "caridean shrimp [d1rev:7]",
+   "caridean shrimp [d1z-center:7]",
+   "caridean shrimp [d1rev:3]",
+   "caridean shrimp [d1z-center:5]",
+   "caridean shrimp [d1:3]"
+  ],
+  "not_overlapped": [
+   "caridean shrimp [d1rev:2]",
+   "caridean shrimp [d1z-center:9]",
+   "caridean shrimp [d1rev:0]",
+   "caridean shrimp [d1z-right:0]",
+   "caridean shrimp [d1rev:6]",
+   "caridean shrimp [d1z-center:2]",
+   "caridean shrimp [d1rev:8]",
+   "caridean shrimp [d1z-right:5]",
+   "caridean shrimp [d1z-right:3]",
+   "caridean shrimp [d1z-center:12]"
+  ],
+  "loose_kept_phrases": [],
+  "sam_calls": 3,
+  "sam_cached": 3,
+  "spark_calls": 1,
+  "usd": 0.00756,
+  "stopped": null
+ }
+}
