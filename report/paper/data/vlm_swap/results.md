@@ -29,7 +29,7 @@ clams", "anemone or hydroid" under the strict reading, supported only by the agr
 | audit (A1) | 106/121 | 14 | 1 |
 | verify (peak check) | 71/77 | 4 | 2 |
 | confirm (motion track) | 12/15 | 2 | 1 |
-| motion look | 88/111 | 16 | 7 |
+| motion look | 88/111 | 17 | 6 |
 | pair (same animal) | 11/12 | 1 | 0 |
 
 ## Measure 3 — rows a person judged "animal" (7 rows, all judged animals)
