@@ -48,7 +48,7 @@ python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (r
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 28 tests, including an exact
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 50 tests, including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos.** One SAM 3.1 call takes a file of up to 10 minutes. A longer video is cut automatically into equal,
@@ -88,6 +88,16 @@ raw EventMeasure points carry `frame`, `time`, `period`, `family`, `genus`, `spe
 annotation protocol: Langlois et al. (2020), *Methods in Ecology and Evolution* 11(11), doi:10.1111/2041-210X.13470.
 We could not open a real EventMeasure or GlobalArchive export file, so the column order and names follow these
 documents, not a sample file: check the first upload against your own template (`OpCode` vs `Sample` is the likeliest rename).
+
+### Site memory (added after the evaluation; not used in any paper number)
+Off unless you pass `--site NAME` (or fill "Site" in the new-run form). When a reviewer confirms or renames a queued row in a
+run started with a site, the label is saved to `runs/_site_memory/<site>.json`. The next video run with the same site name
+also asks SAM for those words (up to 3 remembered animals, each a 1-2 word ladder such as `hagfish`, then the word that
+tracked it last time, e.g. `eel`), after discovery and the second look, so a correction carries over. Each word costs one SAM call
+(`max(50, frames) x $0.0002`: $0.012 for a 12 s clip, $0.60 for a 10 min segment); entries that would pass `--max-usd` are
+dropped. Rows that came from a remembered word say so on the review screen. Design, an independent review and a $0.02 demo
+(one word that tracked an animal Spark never named, one that found nothing): [docs/site_memory.md](docs/site_memory.md).
+`python3 fishcount/sitememory.py list SITE` and `forget SITE WORD` show and remove what is remembered.
 
 ## Finding what you didn't ask for (measured)
 Four nautilus BRUV clips (12 s each), request = "fish" only. Before looking at any output, every non-fish animal in

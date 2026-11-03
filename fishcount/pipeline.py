@@ -276,8 +276,10 @@ def confirm_motion(run, clip, frames, ts, offline, sheet_no=1):
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None, lowlight="auto"):
-    """do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
+                 do_discover=False, do_motion=None, lowlight="auto", site=None):
+    """site: opt-in site memory (fishcount/sitememory.py, docs/site_memory.md): words a reviewer gave to earlier
+    videos of this site are added as SAM ladders; with site=None nothing below changes.
+    do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
     counted unchecked). The paper's no-audit discovery baseline sets it explicitly.
     lowlight: "auto" brightens only a dark clip (video.is_dark), "on" always, "off" never; the original is kept as
     clip_original.mp4 and the decision with the brightness numbers goes into result["video"]["lowlight"]."""
@@ -381,6 +383,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         except MOTION_ERRORS as e:
             run.stage("motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}")
         recovered += moved
+    site_entries = []
+    if site:      # after recovery and the motion look, so their inputs and cache keys are exactly those of a run without site
+        site_entries, site_results = site_look(run, clip, inf, site, {q for _, q in plist} | {f["word"] for f in found if f["word"]},
+                                               max_usd, offline)
+        results[0:0] = site_results       # a remembered specific kind wins overlaps, like the scout's words
     raw = {name: (txt, tile) for name, _, _, txt, tile in results}   # tile=None: full-frame text (masks drawable)
     sources = [(name, label, d) for name, label, d, _, _ in results]
     frames, trk = tracks.merge(sources)
@@ -393,7 +400,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         context = (json.dumps(sc.get("objects", []))[:600] + " " + json.dumps([f["what"] for f in found])).strip() or "none"
         # a discovered word is only SAM's handle ("eel"); ask about the animal Spark named ("hagfish")
         asked = {f["word"]: f["what"] for f in found if f["word"]}
-        for label in sorted({t["label"] for t in trk.values()}):
+        site_src = {e["source"] for e in site_entries if e.get("word")}
+        # labels only site memory produced are audited last, so every other label keeps its track numbers and cached sheets
+        site_only = lambda l: bool(site_src) and all(t["source"] in site_src for t in trk.values() if t["label"] == l)
+        asked.update({e["word"]: e["label"] for e in site_entries if e.get("word")})
+        for label in sorted({t["label"] for t in trk.values()}, key=lambda l: (site_only(l), l)):
             run.stage("audit", f"Muse Spark checks every '{label}' track crop")
             verdicts.update(audit(run, clip, frames, trk, label, context, offline, start=len(verdicts), target=asked.get(label)))
         n_flag = sum(1 for v in verdicts.values() if needs_review(v))
@@ -491,6 +502,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                   verdicts=verdicts, auto_labels=labels, metrics=m, group_metrics=group_metrics(m, inf["fps"]),
                   discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks, duplicates=dups,
                   frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
+    if site:
+        result["site"] = dict(name=site, entries=site_entries)
     run.save("result.json", result)
     run.stage("render", "drawing evidence frames")
     for name, mm in m.items():
@@ -501,6 +514,41 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     run.status["done"] = time.time()
     run.stage("done", f"finished in {run.status['done'] - run.status['started']:.0f}s; live calls {run.status['live_calls']}, cached {run.status['cached_calls']}, billed ${run.status['billed_usd']:.3f}")
     return result
+
+
+def site_look(run, clip, inf, site, skip, max_usd, offline):
+    """Site memory (opt-in, docs/site_memory.md): words a reviewer gave to earlier videos of this site, each a SAM word
+    ladder [noun, alt]. Runs after discovery and the second look: words discovery already tracked (`skip`) are not
+    repeated, entries that would pass the per-video cap are dropped (least confirmed first), and an uncached word in a
+    free replay is recorded as not tried, never an error. Returns (entries, results to merge first)."""
+    from fishcount import sitememory
+    entries = sitememory.plan(site, skip_words=skip)
+    per_word = max(api.SAM_MIN_FRAMES, inf["n_frames"]) * api.SAM_PER_FRAME
+    while entries and not offline and run.status["billed_usd"] + sum(len(e["words"]) for e in entries) * per_word > max_usd:
+        e = entries.pop()
+        run.stage("recover", f"site memory '{e['label']}' skipped: would pass the per-video cap ${max_usd:.2f}")
+    if not entries:
+        return [], []
+    run.stage("recover", "site memory: " + ", ".join(f"{e['label']} -> try {e['words']}" for e in entries))
+
+    def one(e):
+        try:
+            return word_ladder(run, clip, inf["n_frames"], e["words"], offline) + (None,)
+        except MOTION_ERRORS as ex:
+            return None, "", [], f"{type(ex).__name__}: {str(ex)[:120]}"
+
+    with cf.ThreadPoolExecutor(3) as ex:
+        outs = list(ex.map(one, entries))
+    results = []
+    for i, (e, (word, txt, tried, err)) in enumerate(zip(entries, outs)):
+        d = tracks.parse_boxes(txt) if txt else {}
+        e.update(source=f"k{i}", word=word, tried=tried, frames=len(d), maxn_full=tracks.max_per_frame(d) if d else 0)
+        if err:
+            e["error"] = err + (" (free replay only reuses saved answers; allow paid calls to try this word)" if offline else "")
+        run.stage("recover", f"site memory '{e['label']}': " + (", ".join(f"'{t['word']}' {t['frames']} frames" for t in tried) or e.get("error", "not tried")))
+        if word:
+            results.append((f"k{i}", word, d, txt, None))
+    return entries, results
 
 
 def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max_tiles=3):
@@ -1117,6 +1165,7 @@ if __name__ == "__main__":
     ap.add_argument("--zoom", action="store_true")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
+    ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
     ap.add_argument("--max-usd", type=float, default=1.0, help="per-video cap (per segment when the video is split)")
     ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
     ap.add_argument("--segment", type=float, help="split into segments of at most this many seconds and merge "
@@ -1128,8 +1177,8 @@ if __name__ == "__main__":
     if a.segment or secs > longvideo.MAX_SEGMENT_S:
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                offline=a.offline, do_scout=not a.no_scout, do_audit=not a.no_audit, do_zoom=a.zoom,
-                               prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight)
+                               prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
-                         lowlight=a.lowlight)
+                         lowlight=a.lowlight, site=a.site)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

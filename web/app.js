@@ -227,6 +227,9 @@ function drawFound() {
     if (d && d.tried?.length)
       extra.push(el("div", { class: "ladder" }, "SAM words tried:",
         ...d.tried.map((t) => el("span", { class: t.frames ? "hit" : "miss", title: `${t.frames} frames` }, t.word))));
+    const sm = (run.site_rows || {})[name];
+    if (sm)
+      extra.push(el("div", { class: "ladder sitemem" }, `From site memory (${run.site.name}): a reviewer's '${sm.remembered}' from an earlier video; SAM tracked it as '${sm.word}' in ${sm.frames} frames.`));
     const fromMotion = Object.entries(run.tracks || {}).some(([t, v]) => v.source.startsWith("m") && labelOf(run, t) === name);
     if (fromMotion)
       extra.push(el("div", { class: "ladder" }, "Includes an animal no word found: it moved, Spark said it was alive, and SAM tracked a box drawn on it."));
@@ -244,9 +247,20 @@ function drawFound() {
   $("foundPanel").replaceChildren(
     el("h2", {}, "Found without being asked", el("small", {}, "Muse Spark named what else was there; SAM tracked it under a plain word.")),
     ...(items.length ? items : [el("p", { class: "empty" }, disc.length ? "Spark saw other animals, but SAM could not track them." : "Spark saw nothing else living in this clip.")]),
+    ...siteBlock(run),
     ...(missed.length ? [el("p", { class: "signs" }, "Seen but not trackable: ",
       ...missed.map((d, i) => [i ? "; " : "", el("b", {}, d.what), ` (tried ${d.tried.map((t) => t.word).join(", ")})`]))] : []),
     ...groupBlock(run));
+}
+
+// opt-in site memory: words a reviewer gave earlier videos of this site, and what SAM did with them
+function siteBlock(run) {
+  const s = run.site;
+  if (!s) return [];
+  if (!s.entries.length) return [el("p", { class: "signs" }, `Site memory (${s.name}): nothing remembered yet; renames you save here will be tried first on the next video from this site.`)];
+  return [el("p", { class: "signs sitemem" }, `Site memory (${s.name}) added: `,
+    ...s.entries.map((e, i) => [i ? "; " : "", el("b", {}, e.label),
+      ` (${(e.tried || []).map((t) => `${t.word} ${t.frames} frames`).join(", ") || "not tried"}${e.word || !(e.tried || []).length ? "" : ": tracked nothing"})`]))];
 }
 
 // the labels behind a group total, minus rows hidden elsewhere (MaxN 0 and "(unidentified)"); the numbers are unchanged
@@ -335,9 +349,11 @@ function drawQueue() {
     const said = el("div", { class: "said" }, `${it.name}: Spark says `,
       el("b", {}, it.is_target === false ? `not a ${it.category}` : (it.species || "unknown")),
       it.confidence != null ? [", ", el("span", { class: "num" }, `${Math.round(it.confidence * 100)}%`), " sure"] : null);
-    const body = [said, it.reason ? el("div", { class: "why" }, it.reason) : null];
+    const body = [said, it.from_site ? el("div", { class: "why" }, `Found because site memory asked SAM for '${it.from_site}'.`) : null,
+      it.reason ? el("div", { class: "why" }, it.reason) : null];
     if (it.reviewed) {
       body.push(el("div", { class: "set" }, it.label ? `You set: ${it.label}` : "You removed it from the counts"),
+        it.remembered ? el("div", { class: "why" }, `Remembered for site ${run.site.name}: '${it.remembered}' is tried first on its next video.`) : null,
         el("div", { class: "acts" }, el("button", { class: "btn ghost small", onclick: () => review(it.track, "__undo__") }, "Undo")));
     } else {
       const input = el("input", { value: guess, "aria-label": `New name for ${it.name}` });
@@ -413,7 +429,7 @@ function wireForm() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clip: $("clipSel").value, prompts: $("words").value.split(","), discover: $("discover").checked,
-          allow_api: $("allowApi").checked, max_usd: parseFloat($("cap").value) || 1,
+          allow_api: $("allowApi").checked, max_usd: parseFloat($("cap").value) || 1, site: $("site").value.trim() || null,
         }),
       });
       $("newRun").hidden = true; $("newBtn").setAttribute("aria-expanded", false);

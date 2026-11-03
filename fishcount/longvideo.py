@@ -84,6 +84,9 @@ def merge(rid, src_name, segs, fps, out_dir=None):
             if pl not in R["prompts"]:
                 R["prompts"].append(pl)
         R["jobs"] += [dict(j, name=p + j["name"], segment=tag) for j in res.get("jobs", [])]
+        if res.get("site"):      # opt-in site memory (docs/site_memory.md): one block, entries tagged with their segment
+            R.setdefault("site", dict(name=res["site"]["name"], entries=[]))["entries"] += [
+                dict(e, source=p + e["source"], segment=tag) for e in res["site"].get("entries", []) if e.get("source")]
         R["scout"].append(dict(segment=tag, **(res.get("scout") or {})))
         for t, v in res["tracks"].items():
             R["tracks"][p + t] = dict(v, source=p + v["source"], first=v["first"] + start, last=v["last"] + start, segment=tag)

@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, maxn_export, pipeline, tracks, video
+from fishcount import api, maxn_export, pipeline, sitememory, tracks, video
 
 ROOT, WEB = api.ROOT, os.path.dirname(os.path.abspath(__file__))
 RUNS, UPLOADS = pipeline.RUNS, os.path.join(api.ROOT, "clips")
@@ -121,8 +121,21 @@ def effective(rid):
                               + (f"Peak check saw another animal ({vd['peak_doubt']}). " if vd.get("peak_doubt") else "") + (vd.get("reason") or ""),
                               category=res["tracks"][t]["label"], auto=res["auto_labels"].get(t),
                               reviewed=t in review, label=labels.get(t)))
+    site = res.get("site")
+    site_src = {e["source"]: e for e in (site or {}).get("entries", []) if e.get("source") and e.get("word")}
+    site_rows = {}
+    for t, tv in res.get("tracks", {}).items():
+        ent = site_src.get(tv["source"])
+        l = labels.get(t, tv["label"])
+        if ent and l:
+            site_rows[l] = dict(remembered=ent["label"], word=ent["word"], frames=ent.get("frames"))
+    for q in queue:
+        ent = site_src.get(res["tracks"][q["track"]]["source"])
+        q["from_site"] = ent["label"] if ent else None
+        if site and q["reviewed"] and q["label"] and q["label"] != q["auto"]:
+            q["remembered"] = sitememory.noun_for(q["label"])
     out = {k: v for k, v in res.items() if k != "frames"}
-    out.update(metrics=m, group_metrics=gm, origin=origins(res, labels), queue=queue, review=review,
+    out.update(site_rows=site_rows, metrics=m, group_metrics=gm, origin=origins(res, labels), queue=queue, review=review,
                annotated=os.path.exists(os.path.join(d, "annotated.mp4")),
                n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]))
     return out
@@ -133,6 +146,7 @@ def start_run(body):
     if not src:
         raise ValueError("pick a clip from the list")
     prompts = [w.strip().lower() for w in body.get("prompts", ["fish"]) if w.strip()][:3] or ["fish"]
+    site = sitememory.norm_site(body["site"]) if (body.get("site") or "").strip() else None     # opt-in site memory
     if any(not re.fullmatch(r"[a-z][a-z -]{0,30}", p) for p in prompts):
         raise ValueError("request words: plain lowercase nouns, like fish or shark")
     live = bool(body.get("allow_api"))
@@ -152,7 +166,7 @@ def start_run(body):
             # discovery already has Spark look at the clip; the scout look only runs when discovery is off
             disc = bool(body.get("discover", True))
             pipeline.run_pipeline(src, rid, offline=not live, do_scout=not disc, do_audit=True, do_zoom=False, prompts=prompts,
-                                  max_usd=cap, do_discover=disc)
+                                  max_usd=cap, do_discover=disc, site=site)
         except Exception as e:      # surface the reason in status.json so the UI can show it
             p = os.path.join(RUNS, rid, "status.json")
             st = _json(p, dict(id=rid, log=[]))
@@ -197,7 +211,26 @@ def _save_review(rid, body):
     with open(os.path.join(d, "review.json.tmp"), "w") as f:
         json.dump(review, f)
     os.replace(os.path.join(d, "review.json.tmp"), os.path.join(d, "review.json"))
+    _remember(rid, res, review, body)
     return effective(rid)
+
+
+def _remember(rid, res, review, body):
+    """Site memory (opt-in: only a run started with a site). A person's confirmed or renamed label that differs from the
+    automatic one is remembered for the site; removal, Undo, the automatic label itself or a label that teaches nothing
+    forget what that track taught before. Never blocks the review itself (review.json is already saved)."""
+    site = (res.get("site") or {}).get("name")
+    if not site:
+        return
+    for t, l in body.items():
+        try:
+            lab = review.get(t)
+            if l != "__undo__" and lab and lab != res.get("auto_labels", {}).get(t):
+                sitememory.record(site, rid, t, lab, sitememory.source_word(res, t))
+            else:
+                sitememory.forget_track(site, rid, t)
+        except Exception:
+            traceback.print_exc()
 
 
 def export_csv(rid):
