@@ -104,6 +104,20 @@ class StitchAndMetrics(unittest.TestCase):
         new = tracks.stitch(fr, trk, max_gap=10)
         self.assertIn("s:3", new)   # far away and overlapping in time with s:1
 
+    def test_split_jumps_cuts_a_reused_id_but_keeps_a_short_gap(self):
+        # 11/3 TF_52: a big fish (frames 0-3) left, SAM reused its id for a speck far away at frame 30
+        fr = {f: [dict(track="p:1", label="fish", box=(100 + 20 * f, 50, 300 + 20 * f, 120))] for f in range(4)}
+        fr[30] = [dict(track="p:1", label="fish", box=(800, 800, 822, 822))]
+        fr[6] = [dict(track="p:2", label="fish", box=(10, 10, 40, 40))]
+        fr[25] = [dict(track="p:2", label="fish", box=(12, 10, 42, 40))]   # long gap, same place: not cut
+        trk = {"p:1": dict(label="fish", source="p", frames=[0, 1, 2, 3, 30]), "p:2": dict(label="fish", source="p", frames=[6, 25])}
+        fr, new = tracks.split_jumps(fr, trk, max_gap=10)
+        self.assertEqual(sorted(new), ["p:1", "p:1/2", "p:2"])
+        self.assertEqual(new["p:1"]["frames"], [0, 1, 2, 3])
+        self.assertEqual(new["p:1/2"]["frames"], [30])
+        self.assertEqual(new["p:1/2"]["source"], "p")
+        self.assertEqual(fr[30][0]["track"], "p:1/2")
+
     def test_maxn_and_first_arrival(self):
         fr, trk = self.frames()
         m = tracks.metrics(fr, trk, 10, 5)["fish"]

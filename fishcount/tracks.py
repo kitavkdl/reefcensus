@@ -138,6 +138,43 @@ def metrics(frames, tracks, n_frames, fps, labels=None):
     return out
 
 
+def _near(a, b, min_iou=0.2):
+    """Overlapping, or centres closer than 0.6 of the larger box side (stitch()'s continuation test)."""
+    if iou(a, b) >= min_iou:
+        return True
+    ca, cb = ((a[0] + a[2]) / 2, (a[1] + a[3]) / 2), ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
+    size = max(a[2] - a[0], a[3] - a[1], b[2] - b[0], b[3] - b[1])
+    return ((ca[0] - cb[0]) ** 2 + (ca[1] - cb[1]) ** 2) ** 0.5 < 0.6 * size
+
+
+def split_jumps(frames, tracks, max_gap=10):
+    """Cut a track where SAM reused its ID for another object. 11/3 IMAS TF_52: a large fish crossed the top of the
+    frame (frames 0-15) and left; SAM gave its ID to a 22 px speck at frame 52, so the audit's crops were the fish cut
+    off at the frame edge and the speck, and Spark rejected the fish as "kelp frond". A track is cut where it is gone
+    for more than `max_gap` frames and comes back somewhere its last box is not near (stitch()'s test, so stitch()
+    would not have joined the two pieces either); later pieces get ids "<id>/2", "/3", ...
+    Mutates `frames` in place; returns (frames, new tracks dict)."""
+    last = {}
+    for f in sorted(frames):
+        for k in frames[f]:
+            t = k["track"]
+            n = 1
+            if t in last:
+                lf, lb, n = last[t]
+                if f - lf > max_gap and not _near(lb, k["box"]):
+                    n += 1
+            last[t] = (f, k["box"], n)
+            if n > 1:
+                k["track"] = f"{t}/{n}"
+    base = lambda tid: tid.rsplit("/", 1)[0] if "/" in tid else tid
+    new = {}
+    for f in sorted(frames):
+        for k in frames[f]:
+            src = tracks[base(k["track"])]
+            new.setdefault(k["track"], dict(src, frames=[]))["frames"].append(f)
+    return frames, new
+
+
 def stitch(frames, tracks, max_gap=10, min_iou=0.2):
     """Re-join fragmented IDs: track B is a continuation of track A if B starts within `max_gap` frames after A
     ends, they never co-occur, share a label, and A's last box overlaps / is near B's first box.
@@ -147,12 +184,7 @@ def stitch(frames, tracks, max_gap=10, min_iou=0.2):
         for k in frames[f]:
             s = span.setdefault(k["track"], [f, f, k["box"], k["box"]])
             s[1], s[3] = f, k["box"]
-    def near(a, b):
-        if iou(a, b) >= min_iou:
-            return True
-        ca, cb = ((a[0] + a[2]) / 2, (a[1] + a[3]) / 2), ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
-        size = max(a[2] - a[0], a[3] - a[1], b[2] - b[0], b[3] - b[1])
-        return ((ca[0] - cb[0]) ** 2 + (ca[1] - cb[1]) ** 2) ** 0.5 < 0.6 * size
+    near = lambda a, b: _near(a, b, min_iou)
     alias = {}
     root = lambda t: root(alias[t]) if t in alias else t
     order = sorted(span, key=lambda t: span[t][0])

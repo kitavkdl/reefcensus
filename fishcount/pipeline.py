@@ -210,14 +210,22 @@ def _three_idx(L, i, span):
     return [lo, i, hi]
 
 
-def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None):
+def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None, frame_wh=None):
     """Show Spark three crops per track (early, largest box, late) in sheets of 12; returns {track: verdict}.
+    frame_wh=(W, H) (opt-in, clean tracks): the "largest box" moment skips boxes touching the frame edge when the
+    track has any other (11/3 TF_52: a fish leaving the frame had its largest box half cut off at the edge).
     Each sheet is saved as audit_<label>_<n>.jpg and each track's three crops as thumbs/T<k>_trio.jpg, so a person
     sees what Spark saw."""
     paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label}
     best, trios = {}, {}
     for t, p in paths.items():
-        i = max(range(len(p)), key=lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1]))
+        area = lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1])
+        if frame_wh:
+            W, H = frame_wh
+            inner = [j for j, (_, b) in enumerate(p) if b[0] > 1 and b[1] > 1 and b[2] < W - 1 and b[3] < H - 1]
+            i = max(inner or range(len(p)), key=area)
+        else:
+            i = max(range(len(p)), key=area)
         best[t] = (None, p[i][0], p[i][1])
         trios[t] = [(p[j][0], _ibox(p[j][1])) for j in _three_idx(len(p), i, max(1, len(p) // 3))]
     ids = sorted(best, key=lambda t: best[t][1])
@@ -275,9 +283,28 @@ def confirm_motion(run, clip, frames, ts, offline, sheet_no=1):
     return {t: got.get(names[t], {}) for t in ts}
 
 
+def crowd_tiles(W, H, cols=3, rows=2, pad=0.12):
+    """Overlapping tiles covering the whole frame (x, y, w, h), even sizes. 11/3 IMAS TF_52 (a school of seabream):
+    the small far fish in the upper water were missed by the full-frame pass, and the scout-picked zoom covers at
+    most two cells. Neighbours overlap by 2*pad of a tile so a fish on a seam is whole in at least one tile."""
+    ev = lambda v: int(v) // 2 * 2
+    w, h = W / cols, H / rows
+    out = []
+    for r in range(rows):
+        for c in range(cols):
+            x0, y0 = max(0, (c - pad) * w), max(0, (r - pad) * h)
+            x1, y1 = min(W, (c + 1 + pad) * w), min(H, (r + 1 + pad) * h)
+            out.append((f"r{r}c{c}", (ev(x0), ev(y0), ev(x1 - x0), ev(y1 - y0))))
+    return out
+
+
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None, lowlight="auto", site=None):
-    """site: opt-in site memory (fishcount/sitememory.py, docs/site_memory.md): words a reviewer gave to earlier
+                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=False):
+    """clean: opt-in track hygiene (11/3 TF_52): tracks.split_jumps() cuts IDs SAM reused for another object, and the
+    audit's "largest box" moment skips boxes cut by the frame edge. Off by default (frozen evaluations unchanged).
+    crowd: opt-in "crowded scene" pass (crowd_tiles): every overlapping 3x2 tile, upscaled 2x, gets SAM "fish";
+    tile duplicates merge as zoom tiles do. Off by default, so frozen evaluations are unchanged.
+    site: opt-in site memory (fishcount/sitememory.py, docs/site_memory.md): words a reviewer gave to earlier
     videos of this site are added as SAM ladders; with site=None nothing below changes.
     do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
     counted unchecked). The paper's no-audit discovery baseline sets it explicitly.
@@ -354,6 +381,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             tp = run.path(f"tile_{cell}.mp4")
             video.crop_tile(clip, tp, box, scale=2)
             jobs.append((f"zoom-{cell}", plist[-1][0], "fish", tp, box))
+    if crowd:
+        for name, box in crowd_tiles(inf["width"], inf["height"]):
+            tp = run.path(f"tile_crowd-{name}.mp4")
+            video.crop_tile(clip, tp, box, scale=2)
+            jobs.append((f"crowd-{name}", plist[-1][0], "fish", tp, box))
     est = (len(jobs) + sum(len(w) for _, w in others)) * max(api.SAM_MIN_FRAMES, inf["n_frames"]) * api.SAM_PER_FRAME
     run.stage("track", f"SAM 3.1 tracking {len(jobs)} prompt(s)/tile(s) in parallel: {[(j[2], j[0]) for j in jobs]} (est ${est:.2f} if not cached)")
     if est > max_usd and not offline:
@@ -392,6 +424,9 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     sources = [(name, label, d) for name, label, d, _, _ in results]
     frames, trk = tracks.merge(sources)
     n0 = len(trk)
+    if clean:
+        frames, trk = tracks.split_jumps(frames, trk)
+        run.stage("track", f"{n0} raw tracks -> {len(trk)} after cutting reused IDs")
     trk = tracks.stitch(frames, trk)
     run.stage("track", f"{n0} raw tracks -> {len(trk)} after re-joining broken IDs")
 
@@ -406,7 +441,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         asked.update({e["word"]: e["label"] for e in site_entries if e.get("word")})
         for label in sorted({t["label"] for t in trk.values()}, key=lambda l: (site_only(l), l)):
             run.stage("audit", f"Muse Spark checks every '{label}' track crop")
-            verdicts.update(audit(run, clip, frames, trk, label, context, offline, start=len(verdicts), target=asked.get(label)))
+            verdicts.update(audit(run, clip, frames, trk, label, context, offline, start=len(verdicts), target=asked.get(label),
+                                  frame_wh=(inf["width"], inf["height"]) if clean else None))
         n_flag = sum(1 for v in verdicts.values() if needs_review(v))
         run.stage("audit", f"{n_flag} of {len(verdicts)} tracks need a human look")
 
@@ -1163,6 +1199,8 @@ if __name__ == "__main__":
     ap.add_argument("--no-scout", action="store_true")
     ap.add_argument("--no-audit", action="store_true")
     ap.add_argument("--zoom", action="store_true")
+    ap.add_argument("--clean", action="store_true", help="cut SAM IDs reused for another object; audit skips edge-cut boxes")
+    ap.add_argument("--crowd", action="store_true", help="crowded scene: SAM 'fish' on every overlapping 3x2 tile (2x)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
@@ -1180,5 +1218,5 @@ if __name__ == "__main__":
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
-                         lowlight=a.lowlight, site=a.site)
+                         lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=a.clean)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
