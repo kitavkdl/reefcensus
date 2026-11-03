@@ -24,6 +24,27 @@ def reverse_text(text, n):
     return "\n".join(LINE.sub(lambda m: f"<{n - 1 - int(m.group(1))}f>{m.group(2)}", ln.strip()) for ln in text.splitlines())
 
 
+def shift_text(text, offset):
+    """Renumber a SAM output made on a clip that starts `offset` frames into the original."""
+    return "\n".join(LINE.sub(lambda m: f"<{int(m.group(1)) + offset}f>{m.group(2)}", ln.strip()) for ln in text.splitlines())
+
+
+# SAM 3.1 (API) hands out at most 16 object ids per call, for the whole clip, not per frame: of ~250 cached outputs
+# none has more than 16 distinct ids and 18 have exactly 16. 11/3 IMAS TF_52: the crowd tile r1c1 had its 16 by
+# frame 22 and never added another, so a large seabream that swam over the pale sand at frame ~45 got no box at all.
+SAM_MAX_OBJECTS = 16
+
+
+def saturation_frame(dets, cap=SAM_MAX_OBJECTS):
+    """First frame at which the call had used all `cap` ids (objects arriving after it were never looked at), or None."""
+    seen = set()
+    for f in sorted(dets):
+        seen.update(d["id"] for d in dets[f])
+        if len(seen) >= cap:
+            return f
+    return None
+
+
 def max_per_frame(dets):
     return max((len(ds) for ds in dets.values()), default=0)
 

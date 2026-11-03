@@ -144,7 +144,19 @@ def crop_tile(src, dst, box, scale=2, fps=5):
     return info(dst)
 
 
-REVERSE_CHUNK = 600   # frames held by ffmpeg's reverse filter at once (~1.9 GB at 1080p yuv420)
+def segment(src, dst, start, fps=5):
+    """Frames [start, end) of src as a clip of its own (a fresh SAM call gets a fresh set of 16 ids)."""
+    n = info(src)["n_frames"]
+    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
+                    f"select='gte(n,{start})',setpts=N/FRAME_RATE/TB", "-an", "-fps_mode", "cfr", "-r", str(fps),
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
+    out = info(dst)
+    if out["n_frames"] != n - start:
+        raise RuntimeError(f"segment from {start}: wanted {n - start} frames, got {out['n_frames']}")
+    return out
+
+
+REVERSE_CHUNK = 600  # frames held by ffmpeg's reverse filter at once (~1.9 GB at 1080p yuv420)
 
 
 def reverse(src, dst, chunk=REVERSE_CHUNK):

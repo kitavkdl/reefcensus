@@ -118,6 +118,19 @@ class StitchAndMetrics(unittest.TestCase):
         self.assertEqual(new["p:1/2"]["source"], "p")
         self.assertEqual(fr[30][0]["track"], "p:1/2")
 
+    def test_saturation_frame_is_where_the_16th_object_first_appears(self):
+        # 11/3 TF_52 crowd-r1c1: 16 ids by frame 22, then nothing new although a big fish swam in at frame ~45
+        d = {f: [det(i, (i, 0, i + 5, 5)) for i in range(min(16, 8 + f))] for f in range(30)}
+        self.assertEqual(tracks.saturation_frame(d), 8)
+        self.assertIsNone(tracks.saturation_frame({f: [det(i, (i, 0, i + 5, 5)) for i in range(15)] for f in range(30)}))
+        self.assertIsNone(tracks.saturation_frame({}))
+
+    def test_shift_text_moves_frame_numbers_and_keeps_payload(self):
+        txt = "<0f>0<|box;x1=1;y1=2;x2=3;y2=4;c=0.9|>\n<1f>\n<2f>3<|box;x1=5;y1=6;x2=7;y2=8;c=0.8|>"
+        sh = tracks.shift_text(txt, 22)
+        self.assertEqual(sorted(tracks.parse_boxes(sh)), [22, 23, 24])
+        self.assertEqual(tracks.parse_boxes(sh)[24], tracks.parse_boxes(txt)[2])
+
     def test_maxn_and_first_arrival(self):
         fr, trk = self.frames()
         m = tracks.metrics(fr, trk, 10, 5)["fish"]
