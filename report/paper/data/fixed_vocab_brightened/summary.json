@@ -1,0 +1,121 @@
+{
+ "fish": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "shark": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "ray": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "eel": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "crab": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "shrimp": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "lobster": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "octopus": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "squid": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "snail": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "shell": {
+  "frames": 9,
+  "maxn": 1,
+  "tracks": 1,
+  "tracks_matching_counted_nautilus": 1,
+  "tracks_matching_none": 0
+ },
+ "starfish": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "jellyfish": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "sea urchin": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "sea cucumber": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "worm": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ },
+ "nautilus": {
+  "frames": 0,
+  "maxn": 0,
+  "tracks": 0,
+  "tracks_matching_counted_nautilus": 0,
+  "tracks_matching_none": 0
+ }
+}
