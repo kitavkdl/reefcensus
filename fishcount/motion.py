@@ -215,3 +215,193 @@ def sheet(clip, picks, W, H, side=200, per_row=2, gap=16, n=None):
     groups = [trio(fr, tr, f"M{i + 1}", side) for i, tr in enumerate(trios)]
     meta = [(i + 1, tr[1][0], tr[1][1]) for i, tr in enumerate(trios)]
     return layout(groups, per_row, gap), meta
+
+
+# ---- camouflaged movers (opt-in --camo, 11/3) -------------------------------------------------------------------
+# 11/3 TF_52: two fish on a rock are the rock's colour; no still frame shows them (SAM "fish" on the whole frame, a 3x
+# rock crop and a brightened crop all gave 0, and a person looking at a still could not tell fish from rock either).
+# The person found them because they swim. candidates() above needs a blob to differ from the median frame in colour,
+# which a camouflaged fish does not, and uses one threshold for the whole frame, which a crowded scene pushes up. Here:
+# frame-to-frame change only, with a per-pixel threshold from that pixel's own history (still rock -> low, waving weed
+# -> high), and blob tracks ranked by how far and how straight they travel (weed sways in place, a fish goes somewhere).
+CAMO_GAP = 2                # change |L[t+g] - L[t-g]|
+CAMO_K = 4.0                # per-pixel threshold = median + K * (MAD + 0.5) of that pixel's change over the clip
+
+
+def _travel(path):
+    """(displacement, straightness) of a blob track: start-to-end distance of the centre, and that over the length of
+    the centre's path (1 = straight line)."""
+    cs = [((b[0] + b[2]) / 2, (b[1] + b[3]) / 2) for _, b in path]
+    if len(cs) < 2:
+        return 0.0, 0.0
+    disp = float(np.hypot(cs[-1][0] - cs[0][0], cs[-1][1] - cs[0][1]))
+    length = sum(float(np.hypot(b[0] - a[0], b[1] - a[1])) for a, b in zip(cs, cs[1:]))
+    return disp, disp / length if length else 0.0
+
+
+def camo_candidates(clip, known, gap=CAMO_GAP, k=CAMO_K, min_area=30, max_area=2500, link=14, max_skip=2, pad=6, scale=None):
+    """Like candidates() but from change over time only (see above). Returns blob tracks in full-res coordinates with
+    first/last/n/inside/area/path as candidates() gives, plus disp, straight, contrast (blob change over the
+    pixel's own threshold, median over the track) and score."""
+    n = video.info(clip)["n_frames"]
+    scale = scale or (SCALE if n <= LONG else SCALE * 2 / 3)
+    if scale != SCALE:
+        s2 = (scale / SCALE) ** 2
+        min_area, max_area, link, pad = max(4, int(min_area * s2)), int(max_area * s2), link * scale / SCALE, pad * scale / SCALE
+    frames, sx, sy = _frames(clip, scale)
+    L = [cv2.cvtColor(f, cv2.COLOR_BGR2LAB)[:, :, 0] for f in frames]
+    del frames
+
+    def change(t):
+        a, b = max(0, t - gap), min(len(L) - 1, t + gap)
+        d = cv2.absdiff(L[b], L[a])
+        d = cv2.medianBlur(d, 5)                    # marine snow: single bright specks
+        return cv2.GaussianBlur(d.astype(np.float32), (7, 7), 0)
+
+    step = 1 if len(L) <= LONG else 3
+    hist = np.stack([change(t) for t in range(0, len(L), step)])
+    med = np.median(hist, axis=0)
+    mad = np.median(np.abs(hist - med), axis=0)
+    del hist
+    thr = np.maximum(3.0, med + k * (mad + 0.5))
+    ks = {f: [[b[0] / sx, b[1] / sy, b[2] / sx, b[3] / sy] for b in bs] for f, bs in known.items()}
+    done, live = [], []
+    for t in range(len(L)):
+        d = change(t)
+        m = cv2.morphologyEx((d > thr).astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        nc, cc, st, cen = cv2.connectedComponentsWithStats(m, 8)
+        ratio = d / thr
+        blobs = []
+        for i in range(1, nc):
+            x, y, w, h, area = (int(v) for v in st[i])
+            if not (min_area <= area <= max_area):
+                continue
+            cx, cy = float(cen[i][0]), float(cen[i][1])
+            inside = any(x0 - pad <= cx <= x1 + pad and y0 - pad <= cy <= y1 + pad for x0, y0, x1, y1 in ks.get(t, []))
+            blobs.append(dict(t=t, c=(cx, cy), box=(x, y, x + w, y + h), area=area, inside=inside,
+                              contrast=float(np.median(ratio[cc == i])), bg=float(np.median(thr[y:y + h, x:x + w]))))
+        nxt, used = [], set()
+        for tr in live:
+            last, best, bd = tr[-1], None, link * (1 + 0.5 * (t - tr[-1]["t"] - 1))
+            for j, bl in enumerate(blobs):
+                if j not in used:
+                    dd = float(np.hypot(bl["c"][0] - last["c"][0], bl["c"][1] - last["c"][1]))
+                    if dd < bd:
+                        best, bd = j, dd
+            if best is not None:
+                used.add(best)
+                tr.append(blobs[best])
+                nxt.append(tr)
+            elif t - last["t"] <= max_skip:
+                nxt.append(tr)
+            else:
+                done.append(tr)
+        nxt += [[bl] for j, bl in enumerate(blobs) if j not in used]
+        live = nxt
+    out = []
+    for tr in done + live:
+        path = [[b["t"], [round(b["box"][0] * sx), round(b["box"][1] * sy), round(b["box"][2] * sx), round(b["box"][3] * sy)]] for b in tr]
+        disp, straight = _travel(path)
+        c = dict(first=tr[0]["t"], last=tr[-1]["t"], n=len(tr), inside=round(sum(b["inside"] for b in tr) / len(tr), 2),
+                 area=int(np.median([b["area"] for b in tr]) * (SCALE / scale) ** 2), path=path,
+                 disp=round(disp, 1), straight=round(straight, 2), contrast=round(float(np.median([b["contrast"] for b in tr])), 2),
+                 bg=round(float(np.median([b["bg"] for b in tr])), 2))
+        c["score"] = round(c["n"] * straight * min(disp, 150.0), 1)
+        out.append(c)
+    return out
+
+
+def _centre(b):
+    return (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+
+
+def camo_pick(cands, known, W, H, k=8, min_frames=5, edge=80, near=60):
+    """Candidates worth a look, best score first. Dropped (11/3 TF_52, where these filled the top of the list): a
+    track whose median centre is within `edge` px of the picture edge (the moving part of an animal mostly outside the
+    picture, or one already boxed whose box lags), one within `near` px of an already-found box in half or more of
+    its frames (a tracked fish's tail or shadow), and a second blob track on the same mover (centres within `near`
+    px in two or more shared frames: the lower score goes)."""
+    def edge_d(c):
+        xs = [_centre(b) for _, b in c["path"]]
+        mx, my = float(np.median([p[0] for p in xs])), float(np.median([p[1] for p in xs]))
+        return min(mx, W - mx, my, H - my)
+
+    def near_share(c):
+        hit = 0
+        for t, b in c["path"]:
+            x, y = _centre(b)
+            hit += any(x0 - near <= x <= x1 + near and y0 - near <= y <= y1 + near for x0, y0, x1, y1 in known.get(t, []))
+        return hit / len(c["path"])
+
+    keep = [c for c in cands if c["n"] >= min_frames and c["inside"] < 0.5 and edge_d(c) > edge and near_share(c) < 0.5]
+    keep.sort(key=lambda c: (-c["score"], c["first"]))
+    out = []
+    for c in keep:
+        at = {t: _centre(b) for t, b in c["path"]}
+        same = lambda o: sum(1 for t, b in o["path"] if t in at and np.hypot(*np.subtract(_centre(b), at[t])) < near) >= 2
+        if not any(same(o) for o in out):
+            out.append(c)
+        if len(out) >= k:
+            break
+    return out
+
+
+def change_image(fr, t, n, gap=CAMO_GAP, gain=4):
+    """What changed around frame t (|L[t+gap] - L[t-gap]|, specks removed, amplified) as a grey BGR image: a
+    camouflaged animal that no still frame shows is a bright shape here, moving from crop to crop."""
+    a, b = max(0, t - gap), min(n - 1, t + gap)
+    d = cv2.absdiff(cv2.cvtColor(fr[b], cv2.COLOR_BGR2LAB)[:, :, 0], cv2.cvtColor(fr[a], cv2.COLOR_BGR2LAB)[:, :, 0])
+    d = cv2.medianBlur(d, 5)
+    d = np.clip(d.astype(np.float32) * gain, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(d, cv2.COLOR_GRAY2BGR)
+
+
+def frames_for(tr, n, gap=CAMO_GAP):
+    """Frame indices camo_group needs for the (frame, box) list tr."""
+    need = set()
+    for t, _ in tr:
+        need |= {t, max(0, t - gap), min(n - 1, t + gap)}
+    return need
+
+
+def camo_group(fr, tr, name, n, side=200, words=("early", "middle", "late")):
+    """trio() of the still crops over trio() of the same crops of change_image(); fr must hold frames_for(tr, n)."""
+    half = max(max(b[2] - b[0], b[3] - b[1]) for _, b in tr)
+    chg = {t: change_image(fr, t, n) for t, _ in tr}
+    top = trio(fr, tr, name, side, half=half, words=words)
+    bottom = trio(chg, tr, "moved", side, half=half, words=words)
+    return np.vstack([top, np.full((6, top.shape[1], 3), 60, np.uint8), bottom])
+
+
+def camo_sheet(clip, picks, W, H, n, side=200, per_row=2, gap=16):
+    """Per candidate (K1, K2, ...): the three crops of three() on top, and below them the same crops of
+    change_image(), so a reader can judge what only movement shows (a person found the 11/3 TF_52 rock fish that
+    way). Returns JPEG bytes and [(number, prompt frame, prompt box)]."""
+    trios = [three(c, W, H, n=n) for c in picks]
+    fr = video.frames(clip, sorted(set().union(*[frames_for(tr, n) for tr in trios])))
+    groups = [camo_group(fr, tr, f"K{i + 1}", n, side) for i, tr in enumerate(trios)]
+    meta = [(i + 1, tr[1][0], tr[1][1]) for i, tr in enumerate(trios)]
+    return layout(groups, per_row, gap), meta
+
+
+def follows(dets, path, min_hits=3, min_move=30):
+    """Did a SAM box-prompt track follow this blob track? dets = {frame: [det]} from the box prompt, path = the blob
+    track's [[frame, box], ...]. A frame is a hit when some SAM box centre is within max(40 px, the blob box's
+    longer side) of the blob centre. True when hits >= max(min_hits, half the frames both have) and the SAM boxes on
+    the hit frames themselves travel >= min_move px (a box stuck on the rock while the blob moves does not count).
+    Returns (ok, hits, shared, moved_px)."""
+    hits, shared, cs = 0, 0, []
+    for t, b in path:
+        ds = dets.get(t) or []
+        if not ds:
+            continue
+        shared += 1
+        x, y = _centre(b)
+        r = max(40.0, b[2] - b[0], b[3] - b[1])
+        best = min(ds, key=lambda d: np.hypot(*np.subtract(_centre(d["box"]), (x, y))))
+        if np.hypot(*np.subtract(_centre(best["box"]), (x, y))) <= r:
+            hits += 1
+            cs.append(_centre(best["box"]))
+    moved = float(np.hypot(*np.subtract(cs[-1], cs[0]))) if len(cs) >= 2 else 0.0
+    ok = hits >= max(min_hits, shared / 2) and moved >= min_move
+    return ok, hits, shared, round(moved, 1)

@@ -69,6 +69,12 @@ is_animal = the rectangle mainly holds a living animal, even a small, pale, blur
 CONFIRM_PROMPT = """Each group (C1, C2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops), same zoom; the orange rectangle marks the object. The tracker was started from a moving spot, so it may have locked onto something that is not an animal.
 For every group return ONLY a JSON list: [{{"tile":"C1","is_animal":true|false,"name":"one plain noun or none","confidence":0.0-1.0,"reason":"<=10 words"}}]
 is_animal = the rectangle holds the same living animal in the crops (a whole one or most of one; small, pale or blurry is fine). Answer false when it holds a part of a trap, net, mesh, rope, cans, bait, rock, seagrass, a shadow, sediment or empty water, or only a tentacle, fin or tail of a bigger animal whose body is elsewhere. Things fixed to the trap or seabed keep the same place against them in every crop; an animal changes place or pose. Be honest: if you cannot see an animal, answer false."""
+# 11/3 TF_52 (--camo): two fish on a rock are the rock's colour. No still frame shows them, to SAM or to a person;
+# the person saw them swim. So the sheet shows what changed between frames under each still crop.
+CAMO_PROMPT = """Each group (K1, K2, ...) shows one spot of underwater survey video. Top row: the picture at three moments (early, middle, late), same zoom, following the spot. Bottom row ("moved"): the same crops showing only what changed between nearby frames - bright means the pixels changed, black means still. The orange rectangle marks the moving spot; no detector has boxed anything there.
+An animal camouflaged against rock or sand can be invisible in the top row; then judge by the bottom row. A swimming animal is one compact bright shape in the bottom row that keeps about the same size and outline (a fish shape, for example) and moves from crop to crop. Not an animal: a single tiny bright dot or speck (floating particles), a large soft patch with no outline, a dark shadow on the seabed (the top row shows it as a darker area), waving weed or seagrass (thin strands that stay rooted in place), sediment that spreads or thins, or flicker of light.
+For every group return ONLY a JSON list: [{{"tile":"K1","is_animal":true|false,"name":"one plain everyday English noun (fish, shrimp, crab, eel, octopus, ray) or none","what":"<=8 words","confidence":0.0-1.0}}]"""
+CAMO_VERSION = "c1"   # bump to recompute cached camo decisions (the key also hashes the prompt and the boxes)
 COUNT_MIDCONF_MOTION = True   # see run_pipeline: mid-confidence motion tracks get a second look of their own
 MOTION_VERSION = "v7"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
@@ -216,7 +222,8 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     track has any other (11/3 TF_52: a fish leaving the frame had its largest box half cut off at the edge).
     Each sheet is saved as audit_<label>_<n>.jpg and each track's three crops as thumbs/T<k>_trio.jpg, so a person
     sees what Spark saw."""
-    paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label}
+    # camo tracks (--camo) are left out: still crops cannot show a camouflaged animal; camo_look decided them
+    paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label and not trk[t]["source"].startswith("camo")}
     best, trios = {}, {}
     for t, p in paths.items():
         area = lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1])
@@ -339,8 +346,10 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True):
-    """refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
+                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False):
+    """camo: opt-in camo_look (needs audits): movers no still frame shows, tracked from a SAM box when SAM follows the
+    moving spot; their verdict comes from that look, not the audit. Off by default, so frozen evaluations are unchanged.
+    refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
     its number. On by default since 11/3 (refill=False reproduces the frozen evaluations before that).
     clean: track hygiene (11/3 TF_52): tracks.split_jumps() cuts IDs SAM reused for another object, and the
@@ -460,6 +469,13 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         except MOTION_ERRORS as e:
             run.stage("motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}")
         recovered += moved
+    camo_verdicts = {}
+    if camo and do_audit:
+        try:
+            got_log, camo_verdicts = camo_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found])
+            recovered += got_log
+        except MOTION_ERRORS as e:
+            run.stage("camo", f"camouflage look skipped: {type(e).__name__}: {str(e)[:160]}")
     site_entries = []
     if site:      # after recovery and the motion look, so their inputs and cache keys are exactly those of a run without site
         site_entries, site_results = site_look(run, clip, inf, site, {q for _, q in plist} | {f["word"] for f in found if f["word"]},
@@ -472,7 +488,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     if clean:
         frames, trk = tracks.split_jumps(frames, trk)
         run.stage("track", f"{n0} raw tracks -> {len(trk)} after cutting reused IDs")
-    trk = tracks.stitch(frames, trk)
+    trk = tracks.stitch(frames, trk, apart=("camo",))
     run.stage("track", f"{n0} raw tracks -> {len(trk)} after re-joining broken IDs")
 
     verdicts = {}
@@ -488,6 +504,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             run.stage("audit", f"Muse Spark checks every '{label}' track crop")
             verdicts.update(audit(run, clip, frames, trk, label, context, offline, start=len(verdicts), target=asked.get(label),
                                   frame_wh=(inf["width"], inf["height"]) if clean else None))
+        if camo_verdicts:
+            verdicts.update(camo_verdicts_for(run, clip, frames, trk, camo_verdicts, inf["n_frames"]))
         n_flag = sum(1 for v in verdicts.values() if needs_review(v))
         run.stage("audit", f"{n_flag} of {len(verdicts)} tracks need a human look")
 
@@ -985,6 +1003,141 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     return log
 
 
+def camo_verdicts_for(run, clip, frames, trk, by_source, n):
+    """The verdict camo_look gave each camo source, for its tracks (named K1, K2, ... in track order), with the queue
+    thumbnails a person needs: thumbs/K<k>.jpg (the middle crop) and thumbs/K<k>_trio.jpg (still crops over the
+    "what moved" crops, what Spark saw)."""
+    paths = _paths(frames)
+    ts = sorted((t for t in trk if trk[t]["source"] in by_source and t in paths), key=lambda t: paths[t][0][0])
+    os.makedirs(run.path("thumbs"), exist_ok=True)
+    out = {}
+    for j, t in enumerate(ts):
+        p = paths[t]
+        mid = len(p) // 2
+        tr = [(p[i][0], _ibox(p[i][1])) for i in _three_idx(len(p), mid, max(1, len(p) // 3))]
+        name = f"K{j + 1}"
+        imgs = video.frames(clip, motion.frames_for(tr, n))
+        open(run.path("thumbs", f"{name}.jpg"), "wb").write(video.jpg(render.crop(imgs[p[mid][0]], p[mid][1], pad=0.25, min_side=96), max_w=320))
+        open(run.path("thumbs", f"{name}_trio.jpg"), "wb").write(video.jpg(motion.camo_group(imgs, tr, name, n), max_w=900))
+        out[t] = dict(by_source[trk[t]["source"]], name=name, frame=p[mid][0], box=p[mid][1])
+    return out
+
+
+def camo_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=()):
+    """Opt-in (--camo): movers that no still frame shows (motion.camo_candidates). Up to `k` spots go to Spark on one
+    sheet with a "what moved" row under each still crop; up to `max_boxes` it calls animals go to SAM as box prompts.
+    A box track is kept only when motion.follows() says SAM followed the moving spot (and moved itself): that is the
+    second look for these tracks, because the audit's still crops cannot show a camouflaged animal (run_pipeline
+    leaves "camo" tracks out of the audit). Appends ("camo<i>", label, dets, text, None) to `results`; returns
+    (log entries, {source: verdict}). Spark's verdicts are cached like motion_look's."""
+    n, W, H = inf["n_frames"], inf["width"], inf["height"]
+    known = {}
+    for _, _, d, _, _ in results:
+        for f, ds in d.items():
+            for g in range(max(0, f - 3), min(n, f + 4)):
+                known.setdefault(g, []).extend(list(det["box"]) for det in ds)
+    kb = json.dumps(sorted((f, sorted([round(v) for v in b] for b in bs)) for f, bs in known.items()))
+    key = hashlib.sha256((api.file_sha(clip) + kb + CAMO_PROMPT + CAMO_VERSION).encode()).hexdigest()[:24]
+    cpath = os.path.join(api.CACHE, f"camo_{key}.json")
+    est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    if run.status["billed_usd"] + est > max_usd and not offline:
+        run.stage("camo", f"skipped camouflage look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        return [], {}
+    if os.path.exists(cpath):
+        mc = json.load(open(cpath))
+        if mc.get("sheet"):
+            shutil.copy(os.path.join(api.CACHE, mc["sheet"]), run.path("camo_sheet.jpg"))
+        run.stage("camo", f"camouflage look (saved): {mc['n_candidates']} moving spots, Spark saw {len(mc['said'])}")
+    elif offline:
+        run.stage("camo", "camouflage look not cached for this clip: skipped in the free replay")
+        return [dict(kind="motion-scan", camo=True, what="Movers no still frame shows", tried=[], word=None, note="not cached")], {}
+    else:
+        run.stage("camo", "looking for movers no still frame shows (frame-to-frame change, no model)")
+        cands = motion.camo_candidates(clip, known)
+        picks = motion.camo_pick(cands, known, W, H, k=k)
+        said, meta, sheet_name = {}, [], None
+        if picks:
+            jpg, meta = motion.camo_sheet(clip, picks, W, H, n)
+            sheet_name = f"camo_{key}.jpg"
+            open(os.path.join(api.CACHE, sheet_name), "wb").write(jpg)
+            open(run.path("camo_sheet.jpg"), "wb").write(jpg)
+            run.stage("camo", f"{len(cands)} moving spots; Muse Spark looks at the {len(picks)} that travel farthest and straightest")
+
+            def any_tile(text):
+                got_ = api.parse_json(text)
+                if not any(isinstance(v, dict) and str(v.get("tile", "")).startswith("K") for v in (got_ if isinstance(got_, list) else [got_])):
+                    raise ValueError("camo reply names no tile")
+            reply = _counted(run, api.spark, CAMO_PROMPT, [jpg], offline=offline, check=any_tile)
+            got = api.parse_json(reply)
+            for v in (got if isinstance(got, list) else [got]):
+                if isinstance(v, dict):
+                    said[str(v.get("tile"))] = v
+        mc = dict(n_candidates=len(cands), sheet=sheet_name,
+                  said=[dict(said.get(f"K{i}", {}), tile=f"K{i}", frame=t, box=b, path=picks[i - 1]["path"]) for i, t, b in meta])
+        with open(cpath + ".tmp", "w") as fh:
+            json.dump(mc, fh)
+        os.replace(cpath + ".tmp", cpath)
+    chosen = []
+    for v in sorted(mc["said"], key=lambda v: -_conf(v)):
+        lab = _named(v, names)
+        if v.get("is_animal") is not True or _conf(v) < min_conf or not lab:
+            continue
+        if any(abs(v["frame"] - c["frame"]) <= 5 and tracks.overlap(v["box"], c["box"]) >= 0.3 for c in chosen):
+            continue
+        chosen.append(dict(v, label=lab))
+    log = [dict(kind="motion-scan", camo=True, what="Movers no still frame shows", tried=[], word=None, candidates=mc["n_candidates"],
+                shown=len(mc["said"]), animals=sum(1 for v in mc["said"] if v.get("is_animal") is True),
+                said=[dict(tile=v["tile"], is_animal=v.get("is_animal"), what=v.get("what"), confidence=v.get("confidence")) for v in mc["said"]])]
+    if not chosen:
+        run.stage("camo", "Spark: none of the moving spots is an animal")
+        return log, {}
+    run.stage("camo", "SAM 3.1 tracks from a box, no word: " + ", ".join(f"{c['tile']} {c.get('what')} (frame {c['frame']})" for c in chosen))
+    prior, mine, calls, verdicts = list(results), [], 0, {}
+    for i, c in enumerate(chosen):
+        entry = dict(kind="motion", camo=True, tile=c["tile"], what=c.get("what") or c["label"], cell=None, frame=c["frame"], box=c["box"],
+                     tried=[dict(word="box", frames=None)], word=None)
+        if calls >= max_boxes:
+            break
+        same = next((t for t, d in mine if any(tracks.overlap(c["box"], q["box"]) >= 0.3 for q in d.get(c["frame"], []))), None)
+        if same:
+            entry.update(note=f"already followed by {same}")
+            log.append(entry)
+            continue
+        calls += 1
+        try:
+            txt = _counted(run, api.sam_video, clip, motion.box_prompt(c["frame"], c["box"], W, H), n, offline=offline)
+        except MOTION_ERRORS as e:
+            entry["note"] = f"{type(e).__name__}: {str(e)[:120]}"
+            log.append(entry)
+            run.stage("camo", f"{c['tile']}: SAM box prompt failed ({entry['note']})")
+            continue
+        d0 = tracks.parse_boxes(txt)
+        mine.append((c["tile"], d0))
+        ok, hits, shared, moved = motion.follows(d0, c["path"])
+        entry["follows"] = dict(ok=ok, hits=hits, shared=shared, moved_px=moved)
+        if not ok:
+            entry["note"] = f"SAM did not follow the moving spot ({hits} of {shared} frames, moved {moved} px)"
+            log.append(entry)
+            run.stage("camo", f"{c['tile']}: {entry['note']}, not kept")
+            continue
+        d, took, clash = _absorb(d0, prior)
+        k_frames = sum(1 for ds in d.values() if ds)
+        entry.update(word=(took or c["label"]) if k_frames else None, frames=k_frames, max_per_frame=tracks.max_per_frame(d),
+                     raw_frames=sum(1 for ds in d0.values() if ds), overlapped=clash, absorbed_into=took)
+        entry["tried"] = [dict(word="box", frames=k_frames)]
+        if k_frames:     # frames already tracked were removed by _absorb, as in motion_look
+            src = f"camo{i}"
+            results.append((src, took or c["label"], d, txt, None))
+            entry["source"] = src
+            verdicts[src] = dict(is_target=True, species=None, confidence=_conf(c), camo=dict(tile=c["tile"], what=c.get("what"),
+                                 hits=hits, shared=shared, moved_px=moved),
+                                 reason=f"moves like an animal ({c.get('what')}); SAM followed the moving spot in {hits} of {shared} frames")
+        log.append(entry)
+        run.stage("camo", f"{c['tile']} box -> '{c['label']}' tracked in {k_frames} of {n} frames, follows the moving spot in {hits} of {shared}"
+                  + (f" ({clash} frames already tracked removed, joined '{took}')" if clash else ""))
+    return log, verdicts
+
+
 def closer_look(run, clip, inf, jobs, results, max_usd, offline):
     """A block found nothing: crop just the cell Spark named at 3x and try every word, keeping the one tracked in
     the most frames (11/2 s002: 'crab' fired 5 frames on the nautilus' shell edge, 'shrimp' 12 frames on the real
@@ -1054,9 +1207,12 @@ def verify_peaks(run, clip, frames, trk, labels, n, fps, offline, rounds=3, wind
     recomputed, and the new peak frame is checked, up to `rounds`. Mutates `frames`; returns one log entry per
     checked frame."""
     log, done = [], set()
-    lab = lambda t: labels.get(t, trk[t]["label"])
+    # a camo track (--camo) is not shown: its still crops look like rock or empty water (11/3 TF_52: the second rock
+    # fish was removed as "empty water"); camo_look's "what moved" sheet and SAM following the moving spot decided it
+    lab = lambda t: None if trk[t]["source"].startswith("camo") else labels.get(t, trk[t]["label"])
     for _ in range(rounds):
         m = tracks.metrics(frames, trk, n, fps, labels)
+        # peak frames still come from every counted track, camo included (so a camo box can set the peak frame)
         todo = [(name, mm["maxn_frame"]) for name, mm in m.items() if mm["maxn_frame"] is not None and (name, mm["maxn_frame"]) not in done]
         if not todo:
             break
@@ -1246,6 +1402,8 @@ if __name__ == "__main__":
     ap.add_argument("--zoom", action="store_true")
     ap.add_argument("--no-clean", action="store_true", help="keep SAM IDs reused for another object (before 11/3)")
     ap.add_argument("--crowd", action="store_true", help="crowded scene: SAM 'fish' on every overlapping 3x2 tile (2x)")
+    ap.add_argument("--camo", action="store_true", help="also look for movers no still frame shows (frame-to-frame change -> "
+                    "Spark sees still and 'what moved' crops -> SAM box; kept when SAM follows the moving spot)")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
@@ -1262,8 +1420,9 @@ if __name__ == "__main__":
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                offline=a.offline, do_scout=not a.no_scout, do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
-                               crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill)
+                               crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
-                         lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill)
+                         lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
+                         camo=a.camo)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

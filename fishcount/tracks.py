@@ -196,9 +196,12 @@ def split_jumps(frames, tracks, max_gap=10):
     return frames, new
 
 
-def stitch(frames, tracks, max_gap=10, min_iou=0.2):
+def stitch(frames, tracks, max_gap=10, min_iou=0.2, apart=()):
     """Re-join fragmented IDs: track B is a continuation of track A if B starts within `max_gap` frames after A
     ends, they never co-occur, share a label, and A's last box overlaps / is near B's first box.
+    apart: source prefixes (e.g. ("camo",)) whose tracks are joined only with each other, so adding them leaves every
+    other track as it was (11/3 TF_52: a camo box joined a crowd track, every later track number moved by one and the
+    audit sheets were asked again).
     Mutates `frames` in place; returns the new tracks dict."""
     span = {}
     for f in sorted(frames):
@@ -214,6 +217,8 @@ def stitch(frames, tracks, max_gap=10, min_iou=0.2):
         for a in order:
             ra = root(a)
             if ra == b or a == b or tracks[a]["label"] != tracks[b]["label"]:
+                continue
+            if tracks[ra]["source"].startswith(apart) != tracks[b]["source"].startswith(apart):
                 continue
             sa = span[ra]
             gap = span[b][0] - sa[1]
