@@ -830,10 +830,10 @@ SAM calls ($0.55), the Spark-alone counting baseline 765 Spark calls ($2.47), th
 calls ($0.62), the held-out discovery runs 106 calls ($1.06) and their uncached second run 112 calls ($1.08), later
 development of the final code (low light, long videos, fixes) 153 calls ($1.82), the second held-out discovery set
 DH6–DH11 87 calls ($0.86) and its fixed-vocabulary baseline 83 SAM calls ($1.00), and the re-runs of previously seen
-data on the frozen code 42 calls ($0.11), an empty-cache live rehearsal 48 calls ($0.51), site-memory demo runs 3
+data on the frozen code 42 calls ($0.11), empty-cache live rehearsals of DH11 and s003 (two takes each) 48 and 40 calls ($0.51, $0.41), site-memory demo runs 3
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41) and the 53-min deployment below 82 calls
-($17.27 over three attempts), for a ledger total of $34.27 over 2,359 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+($17.27 over three attempts), for a ledger total of $34.68 over 2,399 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -1023,7 +1023,12 @@ go to the queue rather than to a vote.
 values moving across the 0.7 threshold between cosmetic variants and runs, and the identical frame-35 sheet received
 different verdicts across 25 calls (Table 4b), consistent with reports of nondeterministic outputs at fixed
 settings (Atil et al., 2024; He, 2025). Caching makes any given run exactly
-reproducible, but a fresh run can differ by a track.
+reproducible, but a fresh run can differ by a track, and by more when Spark's proposed words miss the one that works.
+In four empty-cache rehearsals through the web screen (request "fish", two takes per clip, $0.20–0.26 and 2–3 min
+each; `report/paper/data/rehearsal/`), DH11's amphipod was counted once (1) and queued once
+(0), and s003 counted 3 nautiluses in one take but 1 in the other: there Spark described "chambered nautilus
+cephalopod" and proposed only "cephalopod", "shell" and "snail", so "nautilus" was never tried and only a zoom tile's
+"cephalopod" track (40 frames) was counted. No take counted a non-animal.
 
 **Wrong rejections in the peak check.** A4 can remove a real animal. In s002 it rejected the only nautilus box in
 frame 0 as "anemone tentacles"; the nautilus still counts because a later frame, where it is clearer, became the
@@ -1180,7 +1185,7 @@ python3 report/paper/scripts/fig_ablation.py         # Figure 5
 reproduces the counting and cost numbers of §6.1, §6.2, §6.4 and §7.1–7.2 and Table 3b; we checked this in a clone with the live
 run files and video paths absent. Re-running the pipeline itself needs the source videos (luderick from PANGAEA, nautilus from the PLOS ONE
 supplement) and either the model-reply cache of our runs (`cache/`, 12 MB, in the repository) for a
-free, exact replay, or an API key and a spend cap for a live run, which can differ by a track (§7.5):
+free, exact replay, or an API key and a spend cap for a live run, which can differ from ours (§7.5):
 
 ```
 python3 fishcount/evaluate.py                                  # SAM "fish" alone vs. luderick boxes

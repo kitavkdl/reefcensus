@@ -26,4 +26,4 @@ spikes/L1/out/L1run_*.txt
 spikes/L1/out/s00?_*__*.txt
 cache_rerun_*/
 spikes/DHB/raw/
-rehearsal/
+/rehearsal/

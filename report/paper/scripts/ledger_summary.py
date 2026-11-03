@@ -23,6 +23,8 @@ T_CONC = 1793684200              # LONG1 attempt 3 started (reef-long1c unit, 05
                                  # loop ran at the same time, so after this point calls are split by run, not by time:
                                  # Wonder by ledger kind, LONG1 by runs/LONG1__S*/status.json billed_usd, the loop by
                                  # report/paper/data/sam_agent/<clip>.json usd (both metered per thread by fishcount/api.py)
+T_REHEARSAL2 = 1793697188           # s003 empty-cache rehearsal, 2 takes (rehearsal/cache_1103-0913*, -0915*), after LONG1 finished
+                                 # (1793696747) and nothing else paid; takes 1-2 started 1793697190 / 1793697355
 
 
 def main():
@@ -45,7 +47,8 @@ def main():
     sitedemo = [r for r in rows if T_SITEDEMO <= r["t"] < T_LONG1_EARLY]
     long1_early = [r for r in rows if T_LONG1_EARLY <= r["t"] < T_FIXED_BRIGHT]
     fixed_bright = [r for r in rows if T_FIXED_BRIGHT <= r["t"] < T_CONC]
-    conc = [r for r in rows if r["t"] >= T_CONC]
+    conc = [r for r in rows if T_CONC <= r["t"] < T_REHEARSAL2]
+    rehearsal2 = [r for r in rows if r["t"] >= T_REHEARSAL2]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
            and r not in probe and r not in dheld and r not in rerun
            and r not in later and r not in dh2 and r not in dh2f and r not in frz
@@ -78,6 +81,7 @@ def main():
     print(f"{'SAM 3 Agent-style loop (concurrent)':34s} {a_n:4d} calls (from {len(loop)} clip records)  ${a_usd:.3f}")
     rest = sum(r["usd"] for r in conc) - sum(r["usd"] for r in wonder) - l_usd - a_usd
     print(f"{'concurrent window, not attributed':34s} {len(conc) - len(wonder) - l_n - a_n:4d} calls  ${rest:.3f}")
+    show("live rehearsal s003, empty cache (2 takes)", rehearsal2)
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
     tin = [int(r["note"].split("in=")[1].split()[0]) for r in sp if "in=" in r.get("note", "")]
