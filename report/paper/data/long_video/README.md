@@ -80,3 +80,14 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
 - Attempt 2 uses the same command and settings. Segment 1's model answers come from the cache (no new charge); the
   $40 ceiling counts attempt 1's $2.18 (FISH_BUDGET = ledger total + $38). Run under a user systemd unit with
   `MemoryMax=8G` so a repeat would stop only this run.
+
+## Attempt 2 stopped at its 8 GB memory cap — reversal fix, no change to counting
+- Attempt 2 (`reef-long1b`, MemoryMax=8G) replayed segment 1 from the cache and was stopped by its own cgroup cap
+  (systemd `Result: oom-kill`, peak 8 G; no global OOM, nothing else killed) at "second look: backfill ['person']".
+- Cause: `video.reverse()` uses ffmpeg's `reverse` filter, which buffers every decoded frame (2,658 × 1080p yuv420
+  ≈ 8.3 GB). Attempt 1 got through this step only by swapping.
+- Fix: clips over 900 frames are reversed in 600-frame chunks joined last-first (clips up to 900 frames keep the old
+  single command, so every existing run and cache entry is unchanged). Checked on s004 with a forced 20-frame chunk:
+  60/60 frames, reversed order, mean absolute difference to the single-command reversal 0.38 (re-encoding noise),
+  fps 5.0; unit tests pass. Segment 1's reversed clip now differs byte-wise, so its reversed SAM pass is paid again.
+- Attempt 3: same command and settings, run with `memcap --bg` (MemoryMax 8G); ceiling still $40 including attempts 1–2.

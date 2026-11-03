@@ -144,9 +144,43 @@ def crop_tile(src, dst, box, scale=2, fps=5):
     return info(dst)
 
 
-def reverse(src, dst):
+REVERSE_CHUNK = 600   # frames held by ffmpeg's reverse filter at once (~1.9 GB at 1080p yuv420)
+
+
+def reverse(src, dst, chunk=REVERSE_CHUNK):
     """Same clip played backwards. SAM only tracks forward from the frame where it first recognises an object
-    (11/1 s003: forward 'nautilus' starts at frame 27; reversed run covers all 60), so a reversed pass back-fills."""
-    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", "reverse", "-an",
-                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
-    return info(dst)
+    (11/1 s003: forward 'nautilus' starts at frame 27; reversed run covers all 60), so a reversed pass back-fills.
+    The reverse filter buffers every decoded frame: a 532-s 1080p segment (2,658 frames) needed ~8 GB and was killed
+    at the 8 GB cap (11/3 LONG1). Clips up to 1.5 x chunk frames take the original single command (every existing
+    run and cache entry unchanged); longer ones are reversed in chunks of `chunk` frames and joined last-first."""
+    n = info(src)["n_frames"]
+    if n <= chunk * 1.5:
+        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", "reverse", "-an",
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
+        return info(dst)
+    import tempfile
+    fps = info(src)["fps"]
+    tmp = tempfile.mkdtemp(dir=os.path.dirname(os.path.abspath(dst)))
+    parts = []
+    for k, s in enumerate(range(0, n, chunk)):
+        e = min(n, s + chunk) - 1
+        part = os.path.join(tmp, f"part{k:03d}.mp4")
+        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
+                        f"select='between(n,{s},{e})',setpts=N/FRAME_RATE/TB,reverse", "-an", "-fps_mode", "cfr", "-r", str(fps),
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", part], check=True)
+        got = info(part)["n_frames"]
+        if got != e - s + 1:
+            raise RuntimeError(f"reverse chunk {k}: wanted {e - s + 1} frames, got {got}")
+        parts.append(part)
+    lst = os.path.join(tmp, "list.txt")
+    with open(lst, "w") as fh:
+        fh.writelines(f"file '{p}'\n" for p in reversed(parts))
+    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst,
+                    "-c", "copy", dst], check=True)
+    for p in parts + [lst]:
+        os.remove(p)
+    os.rmdir(tmp)
+    out = info(dst)
+    if out["n_frames"] != n:
+        raise RuntimeError(f"reversed clip has {out['n_frames']} frames, source {n}")
+    return out
