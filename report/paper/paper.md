@@ -623,7 +623,8 @@ boxes on 15/24 with 19. The pipeline's remaining errors are four under-counts by
 where the boxes miss the same second fish, and one over-count by one (20190709_11). Against the boxes it was
 judged on in Table 1c, the same output scores 20/24 and Σ|err| 12; against an independent count of the videos it is
 closer than the boxes are. The counter is the first author and had seen the three outlier clips flagged before he
-counted them; the other 21 were counted blind to clip identity and to every model output for them.
+counted them; the other 21 were counted blind to clip identity and to every count, though some of their pipeline
+boxes had appeared as unlabelled crops in the precision sheet above.
 
 ![**Figure 3.** The last frame of held-out clip 20190709_17. Cyan: pipeline boxes (7). Orange: the human reference boxes (2). The
 pipeline's five "false positives" here are fish; the fish in the seagrass at left is boxed by neither. A hand count
