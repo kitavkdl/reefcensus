@@ -541,6 +541,12 @@ median of five consecutive annotated frames (§6.2).</div>
 | Spark alone, per-frame count | — | — | 8/24 | 16/24 | 33 |
 | Spark alone, 5-frame median† | — | — | 15/24 | 22/24 | 17 |
 
+*Re-run of previously seen data on the final code.* After the DH6–DH11 runs, the 24 clips were run once more with the
+code frozen at `cbaf59b` (tag `frz`, $0.08; log `report/paper/data/heldout/frz_rerun.log`). With the queue accepted
+the result is the same as the V6 run on every count: recall 98.9%, MaxN exact 20/24, within ±1 21/24, Σ|err| 12, the
+same four clips off, and 15 of 49 tracks queued; precision is 77.2% against 77.6%. These clips were seen before this
+code was frozen, so this is not a second held-out test.
+
 With the queue accepted, the audits fix one over-count the length rule cannot (20190618_6, 1→2 becomes 1→1: A1
 rejected a 6-frame track as "empty blue water, no fish" at 0.85, too long for k = 4) and otherwise leave the segmenter's output as it was: three clips keep
 large over-counts (20190709_17 2→7, 20190709_9 1→5, 20190709_11 2→4). In the first two most tracks are queued
@@ -730,6 +736,13 @@ DH2's anemone, again counted no false discovery, and again sent DH3's shrimp-lik
 motion residual as a "vertical red shrimp", tracked in 60 of 60 frames, A1 confidence 0.5). Spark's proposed names
 differed in wording (DH3: "crab", "starfish", "eel"; DH5: "tiny swimming crustaceans", tracked by no word), and the
 queue held 27 tracks against 26.
+
+*Re-run of previously seen data on the final code.* The five clips were run once more with the code frozen at
+`cbaf59b` (`runs/DH*_frz`, $0.03, mostly cached; `report/paper/data/discovery_heldout/frz_rerun.md`). The counted rows
+are the same as in Table 3b (crab 1; crab 1 and sea anemone 1; spider crab 3; nothing; fish only) and DH3's
+shrimp-like animal again stays out of the count. New with the final code are three non-fish rows that are in the MaxN
+but queued (DH2 "coral (unidentified)" 0.4 and "crab (unidentified)" 0.45, DH3 "crab (unidentified)" 0.6): a person sees
+them as counts with a review flag. They were not judged with labels hidden and are reported apart.
 
 **A second held-out set (DH6–DH11).** Under a second protocol (`report/paper/discovery_heldout2_protocol.md`,
 amendment 2: code frozen at `cbaf59b`), six more videos from other PLOS ONE studies were run once: two fish-only
