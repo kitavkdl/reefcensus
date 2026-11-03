@@ -16,8 +16,10 @@ to a person instead of the count. Discovery is scored as presence of taxa. On fo
 pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one of four nautiluses, it
 counts all four. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
 the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
-requested species the audits keep the segmenter's recall and match a tuned track-length rule, and exact MaxN cannot
-separate methods because human MaxN is 1 or 2. As an auditor the VLM adopts names placed in its prompt. The result
+requested species, on 24 held-out clips, the pipeline's MaxN is closer to an independent hand count of the videos than
+the reference boxes are (summed error 6 against 16, within one fish on all 24), and none of 40 randomly drawn boxes
+scored as false positives was judged not a fish: corrected precision is 93.7–100%, against 77.2% on the boxes. The
+audits keep the segmenter's recall and match a tuned track-length rule. As an auditor the VLM adopts names placed in its prompt. The result
 is an annotation accelerator whose output a person confirms.
 
 </div>
@@ -28,7 +30,9 @@ is an annotation accelerator whose output a person confirms.
 |---|---|--:|---|
 | SAM 3.1 answers narrow words: "animal" gives no box on 29 of 39 clips; "luderick" gives nothing on all six clips of that species | §7.4, Table 6 | 39; 6 | our clips and one model version; not a property of SAM 3.1 in general |
 | On luderick the VLM audits match a tuned minimum-track-length rule and cannot raise box recall above the segmenter's | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary; the length threshold was chosen with test labels on the development clips; MaxN-exact cannot separate methods (always predicting the most common value is exact on 5 of 6 and 17 of 24) |
-| The person queue holds most tracks behind the largest over-counts, and also real fish | §6.1 Table 1b; §6.2 | 24 held-out | queue is 15 of 49 tracks; rejecting it costs 3.3 points of recall; part of an "over-count" is fish the human boxes omit |
+| Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | one counter, the first author; 21 counted blind and shuffled, 3 after being flagged as outliers |
+| Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7–100% vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | one judge, labels hidden; 10/10 matched controls called fish |
+| The person queue holds most tracks behind the largest over-counts, and also real fish | §6.1 Table 1b; §6.2 | 24 held-out | queue is 15 of 49 tracks; rejecting it costs 3.3 points of recall |
 | Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of 24 held-out clips | §6.2, Table 1c | 24; 6 | no locations, so a count cannot be checked; some "excess" may be unboxed fish |
 | On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | development data; taxa scored as present, not counts; the reference is a non-expert's list from four frames |
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips chosen by a rule that favours non-fish animals; presence only; "not an animal" judged by the author with labels hidden |
