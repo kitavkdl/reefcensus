@@ -1,0 +1,26 @@
+{
+ "protocol": "11/3: held-out recount. Jiyul Ahn counts MaxN (most fish visible at once) by hand from the full-rate original videos, no boxes, order shuffled with random.Random(1104), neutral names. 20190709_17/_11/_9 counted earlier (8, 3, 5) after being flagged as outliers. Use: second reference for all 24 held-out clips; score pipeline and human boxes against it.",
+ "key": {
+  "clip01.mov": "fish_20190710_2",
+  "clip02.mov": "fish_20190709_3",
+  "clip03.mov": "fish_20190709_8",
+  "clip04.mov": "fish_20190710_1",
+  "clip05.mov": "fish_20190710_3",
+  "clip06.mov": "fish_20190710_5",
+  "clip07.mov": "fish_20190618_1",
+  "clip08.mov": "fish_20190710_6",
+  "clip09.mov": "fish_20190618_11",
+  "clip10.mov": "fish_20190618_7",
+  "clip11.mov": "fish_20190618_5",
+  "clip12.mov": "fish_20190710_8",
+  "clip13.mov": "fish_20190618_4",
+  "clip14.mov": "fish_20190618_6",
+  "clip15.mov": "fish_20190618_10",
+  "clip16.mov": "fish_20190710_7",
+  "clip17.mov": "fish_20190710_9",
+  "clip18.mov": "fish_20190618_2",
+  "clip19.mov": "fish_20190709_2",
+  "clip20.mov": "fish_20190709_15",
+  "clip21.mov": "fish_20190618_8"
+ }
+}

@@ -605,6 +605,26 @@ already sent to the person queue), and none was called not a fish. Counting only
 is 93.7% (95% Wilson interval for the share 57–84%, so 90.2–96.3%) instead of 77.2%; with the two part-of-a-fish boxes
 it is 94.9%. One judge, the first author, and one sample of 40.
 
+*A second reference for all 24 clips.* Prompted by the three outliers, Jiyul Ahn then counted MaxN by hand on the
+other 21 held-out clips, from the full-rate videos without boxes, in a shuffled order under neutral file names (key
+fixed before counting; `report/paper/data/heldout/recount/`). Where he saw fish he could not tell from moving seagrass,
+he gave them separately (two clips, +1 and +2). Against this count (sure fish only):
+
+<div class="tablecap">**Table 1d.** Held-out MaxN against a hand count of the full videos (24 clips).</div>
+
+| system | MaxN exact | within ±1 | Σ\|err\| |
+|---|--:|--:|--:|
+| human reference boxes (luderick annotation) | 16/24 | 22/24 | 16 |
+| pipeline, queue accepted, annotated frames (as Table 1c) | 18/24 | 24/24 | 6 |
+| pipeline, queue accepted, every frame of the clip | 17/24 | 24/24 | 7 |
+
+With the faint fish added to the hand count, the pipeline (annotated frames) is exact on 17/24 with Σ|err| 9 and the
+boxes on 15/24 with 19. The pipeline's remaining errors are four under-counts by one (20190618_6, 20190710_1, _3, _8),
+where the boxes miss the same second fish, and one over-count by one (20190709_11). Against the boxes it was
+judged on in Table 1c, the same output scores 20/24 and Σ|err| 12; against an independent count of the videos it is
+closer than the boxes are. The counter is the first author and had seen the three outlier clips flagged before he
+counted them; the other 21 were counted blind to clip identity and to every model output for them.
+
 ![**Figure 3.** The last frame of held-out clip 20190709_17. Cyan: pipeline boxes (7). Orange: the human reference boxes (2). The
 pipeline's five "false positives" here are fish; the fish in the seagrass at left is boxed by neither. A hand count
 of the clip gives MaxN 8.](figures/annotation_gap.jpg)
