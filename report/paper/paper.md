@@ -790,8 +790,10 @@ SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens)
 §7.1 added 98 Spark calls ($0.54, including the 25 calls of the example test in §7.5 and one call lost to an
 interrupted script), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
 SAM calls ($0.55), the Spark-alone counting baseline 765 Spark calls ($2.47), the vocabulary probes of §7.4 45 SAM
-calls ($0.62), the held-out discovery runs 106 calls ($1.06) and their uncached second run 112 calls ($1.08), for a
-ledger total of $9.78 over 1,702 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+calls ($0.62), the held-out discovery runs 106 calls ($1.06) and their uncached second run 112 calls ($1.08), later
+development of the final code (low light, long videos, fixes) 153 calls ($1.82), the second held-out discovery set
+DH6–DH11 87 calls ($0.86) and its fixed-vocabulary baseline 83 SAM calls ($1.00), and the re-runs of previously seen
+data on the frozen code 42 calls ($0.11), for a ledger total of $13.57 over 2,067 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate

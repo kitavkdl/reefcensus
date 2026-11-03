@@ -11,6 +11,10 @@ T_FIXED = 1793611190              # fixed-vocabulary baseline launched (date +%s
 T_SPARKCOUNT = 1793612367         # Spark-alone counting protocol commit a814c9d; probe and runs after it
 T_DHRERUN = 1793652641             # last commit before the uncached second DH run (aecedfa)
 T_DISCHELD = 1793648572           # held-out discovery protocol commit c4c60d0; DH runs after it
+T_RERUN_END = 1793653590          # just after the 112th call of the uncached second DH run (next call ~1 h later)
+T_DH2 = 1793663752               # DH6-DH11 pipeline batch started (run log, UTC)
+T_DH2_FIXED = 1793664426         # DH6-DH11 pipeline batch done; fixed-vocabulary baseline after it
+T_FRZ = 1793666284               # re-runs of previously seen data (DH1-5 _frz, luderick frz) started
 
 
 def main():
@@ -24,9 +28,14 @@ def main():
     probe = [r for r in rows if r["t"] >= T_SPARKCOUNT and r["kind"] == "sam" and r.get("note", "").endswith((":animal", ":luderick"))]
     scount = [r for r in rows if T_SPARKCOUNT <= r["t"] < T_DISCHELD and r not in probe]
     dheld = [r for r in rows if T_DISCHELD <= r["t"] < T_DHRERUN and r not in probe and r not in rep]
-    rerun = [r for r in rows if r["t"] >= T_DHRERUN and r not in probe and r not in rep]
+    rerun = [r for r in rows if T_DHRERUN <= r["t"] < T_RERUN_END and r not in probe and r not in rep]
+    later = [r for r in rows if T_RERUN_END <= r["t"] < T_DH2 and r not in probe and r not in rep]
+    dh2 = [r for r in rows if T_DH2 <= r["t"] < T_DH2_FIXED]
+    dh2f = [r for r in rows if T_DH2_FIXED <= r["t"] < T_FRZ]
+    frz = [r for r in rows if r["t"] >= T_FRZ]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
-           and r not in probe and r not in dheld and r not in rerun]
+           and r not in probe and r not in dheld and r not in rerun
+           and r not in later and r not in dh2 and r not in dh2f and r not in frz]
     show("development + evaluation", dev)
     show("repeated-call experiment", rep)
     show("held-out runs", held)
@@ -35,6 +44,10 @@ def main():
     show("vocabulary probes (animal, luderick)", probe)
     show("held-out discovery runs", dheld)
     show("held-out discovery, second uncached run", rerun)
+    show("later development (final code, long video)", later)
+    show("second held-out discovery runs (DH6-11)", dh2)
+    show("DH6-11 fixed-vocabulary baseline", dh2f)
+    show("re-runs of seen data on frozen code", frz)
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
     tin = [int(r["note"].split("in=")[1].split()[0]) for r in sp if "in=" in r.get("note", "")]
