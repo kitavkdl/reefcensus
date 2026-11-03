@@ -99,6 +99,25 @@ annotation protocol: Langlois et al. (2020), *Methods in Ecology and Evolution* 
 We could not open a real EventMeasure or GlobalArchive export file, so the column order and names follow these
 documents, not a sample file: check the first upload against your own template (`OpCode` vs `Sample` is the likeliest rename).
 
+### Fix an old annotation: find the boxes it left out (`gapfind`)
+Added after the evaluation (not used in any paper number); it re-reads finished runs, so it calls no model and costs $0.
+Old annotation sets made for another purpose leave animals unboxed, and a count scored against them is penalised for
+being right: on our 24 held-out luderick clips, 40 "false positive" boxes drawn at random were judged with labels hidden
+and **none was "not a fish"** (paper §6.2). `gapfind` turns that check into a workflow:
+
+```
+python3 -m fishcount.gapfind sheet --manifest clips/manifest.json --runs runs --prefix <tag>_ --out sheet_dir [--controls 3]
+python3 -m fishcount.gapfind apply --key sheet_dir/key.json --answers answers.json --out fixed_annotations/
+```
+
+`sheet` collects every counted track with boxes that match no annotation box (IoU < 0.3) on annotated frames and writes
+one phone-friendly HTML page: per track, three crops (first, middle, last) with our box in yellow and the existing boxes
+in grey, no labels or scores. One tap per track: **O** an unboxed fish, **D** already boxed, **P** part of a fish,
+**X** not a fish, **?** can't tell. "Copy answers" gives JSON with the time from first to last tap. `apply` writes
+corrected annotation files in the same `[x, y, w, h, label]` format (added boxes labelled `<label> (added: gapfind)`),
+lists P and ? tracks for a person, and reports MaxN before and after. On the held-out set the 153 unmatched boxes come
+from 20 tracks, so 153 per-box judgements become 20 taps; in the 40-box sample no track mixed "fish" with "not a fish".
+
 ### Site memory (added after the evaluation; not used in any paper number)
 Off unless you pass `--site NAME` (or fill "Site" in the new-run form). When a reviewer confirms or renames a queued row in a
 run started with a site, the label is saved to `runs/_site_memory/<site>.json`. The next video run with the same site name
