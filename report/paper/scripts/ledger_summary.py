@@ -1,7 +1,7 @@
 """Cost section of the paper from the spend ledger (every paid call is appended by fishcount/api.py).
   python3 report/paper/scripts/ledger_summary.py      (reads cache/ledger.jsonl, else the copy in report/paper/data)
 Windows are fixed by time stamps recorded when each experiment started (UTC epoch seconds)."""
-import json, os, statistics
+import glob, json, os, statistics
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 LIVE = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache/ledger.jsonl")
@@ -15,6 +15,14 @@ T_RERUN_END = 1793653590          # just after the 112th call of the uncached se
 T_DH2 = 1793663752               # DH6-DH11 pipeline batch started (run log, UTC)
 T_DH2_FIXED = 1793664426         # DH6-DH11 pipeline batch done; fixed-vocabulary baseline after it
 T_FRZ = 1793666284               # re-runs of previously seen data (DH1-5 _frz, luderick frz) started
+T_REHEARSAL = 1793678208         # last commit before the empty-cache live rehearsal (9056d80); two DH11 takes, rehearsal/cache_1103-*
+T_SITEDEMO = 1793678867          # site-memory demo runs started (runs/site_demo_A/status.json "started")
+T_LONG1_EARLY = 1793679409       # LONG1 pre-run record committed, no paid call yet (1a50ab7); attempts 1 and 2 follow
+T_FIXED_BRIGHT = 1793683352      # attempt 1 render fix committed (96a1a8c); fixed 16-word list on the brightened s001 clip follows
+T_CONC = 1793684200              # LONG1 attempt 3 started (reef-long1c unit, 05:36:40 UTC); Muse Wonder swap and the SAM 3 Agent-style
+                                 # loop ran at the same time, so after this point calls are split by run, not by time:
+                                 # Wonder by ledger kind, LONG1 by runs/LONG1__S*/status.json billed_usd, the loop by
+                                 # report/paper/data/sam_agent/<clip>.json usd (both metered per thread by fishcount/api.py)
 
 
 def main():
@@ -32,10 +40,16 @@ def main():
     later = [r for r in rows if T_RERUN_END <= r["t"] < T_DH2 and r not in probe and r not in rep]
     dh2 = [r for r in rows if T_DH2 <= r["t"] < T_DH2_FIXED]
     dh2f = [r for r in rows if T_DH2_FIXED <= r["t"] < T_FRZ]
-    frz = [r for r in rows if r["t"] >= T_FRZ]
+    frz = [r for r in rows if T_FRZ <= r["t"] < T_REHEARSAL]
+    rehearsal = [r for r in rows if T_REHEARSAL <= r["t"] < T_SITEDEMO]
+    sitedemo = [r for r in rows if T_SITEDEMO <= r["t"] < T_LONG1_EARLY]
+    long1_early = [r for r in rows if T_LONG1_EARLY <= r["t"] < T_FIXED_BRIGHT]
+    fixed_bright = [r for r in rows if T_FIXED_BRIGHT <= r["t"] < T_CONC]
+    conc = [r for r in rows if r["t"] >= T_CONC]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
            and r not in probe and r not in dheld and r not in rerun
-           and r not in later and r not in dh2 and r not in dh2f and r not in frz]
+           and r not in later and r not in dh2 and r not in dh2f and r not in frz
+           and r["t"] < T_REHEARSAL]
     show("development + evaluation", dev)
     show("repeated-call experiment", rep)
     show("held-out runs", held)
@@ -48,6 +62,22 @@ def main():
     show("second held-out discovery runs (DH6-11)", dh2)
     show("DH6-11 fixed-vocabulary baseline", dh2f)
     show("re-runs of seen data on frozen code", frz)
+    show("live rehearsal, empty cache (2 takes)", rehearsal)
+    show("site-memory demo runs", sitedemo)
+    show("LONG1 attempts 1-2 (stopped at memory cap)", long1_early)
+    show("fixed list on brightened s001", fixed_bright)
+    wonder = [r for r in conc if r["kind"].startswith("muse-wonder")]
+    show("Muse Wonder swap (concurrent)", wonder)
+    seg = [json.load(open(f)) for f in sorted(glob.glob(os.path.join(ROOT, "runs/LONG1__S*/status.json")))]
+    l_usd, l_n = sum(d["billed_usd"] for d in seg), sum(d["live_calls"] for d in seg)
+    loop = [json.load(open(f)) for f in sorted(glob.glob(os.path.join(ROOT, "report/paper/data/sam_agent/*.json")))
+            if not f.endswith(("_dry.json", "blind_key.json")) and "usd" in json.load(open(f))]
+    a_usd = sum(d["usd"] or 0 for d in loop)
+    a_n = sum(d["sam_calls"] - d["sam_cached"] + d["spark_calls"] for d in loop)
+    print(f"{'LONG1 attempt 3 (concurrent)':34s} {l_n:4d} calls (from {len(seg)} segment status files)  ${l_usd:.3f}")
+    print(f"{'SAM 3 Agent-style loop (concurrent)':34s} {a_n:4d} calls (from {len(loop)} clip records)  ${a_usd:.3f}")
+    rest = sum(r["usd"] for r in conc) - sum(r["usd"] for r in wonder) - l_usd - a_usd
+    print(f"{'concurrent window, not attributed':34s} {len(conc) - len(wonder) - l_n - a_n:4d} calls  ${rest:.3f}")
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
     tin = [int(r["note"].split("in=")[1].split()[0]) for r in sp if "in=" in r.get("note", "")]
