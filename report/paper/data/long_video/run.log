@@ -1,0 +1,38 @@
+{
+ "fish (unidentified)": {
+  "maxn": 8,
+  "maxn_frame": 2730,
+  "maxn_time": 546.0,
+  "first_frame": 54,
+  "first_time": 10.8,
+  "tracks": 75,
+  "peak_checked": true
+ },
+ "human": {
+  "maxn": 3,
+  "maxn_frame": 113,
+  "maxn_time": 22.6,
+  "first_frame": 0,
+  "first_time": 0.0,
+  "tracks": 5,
+  "peak_checked": true
+ },
+ "jack": {
+  "maxn": 1,
+  "maxn_frame": 10667,
+  "maxn_time": 2133.4,
+  "first_frame": 10667,
+  "first_time": 2133.4,
+  "tracks": 1,
+  "peak_checked": true
+ },
+ "person (unidentified)": {
+  "maxn": 1,
+  "maxn_frame": 347,
+  "maxn_time": 69.4,
+  "first_frame": 347,
+  "first_time": 69.4,
+  "tracks": 1,
+  "peak_checked": true
+ }
+}

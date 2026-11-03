@@ -115,6 +115,8 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
   One "fish" track (S1:p0:0, 10.8–111.0 s, Spark 0.95 "Clear silvery fish in deck trap") is a fish in a trap on deck.
 - Audit: 116 tracks, 35 judged not a target by Spark (e.g. "Metal boat structure, no bird"), 81 kept; species words
   from Spark among kept tracks: unknown 71, human 6, flatfish 2, snail 1, jack 1.
+- Files: `result.json` here is the merged run (tracks, verdicts, per-frame boxes, metrics; 2.7 MB), `run.log` its final
+  MaxN printout.
 - Not done: no ground truth exists for this video, so none of these counts is scored. Deck frames are not shown in
   the paper, figures or demo.
 
