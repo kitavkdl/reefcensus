@@ -1,0 +1,197 @@
+[
+ {
+  "clip": "DH7",
+  "word": "starfish",
+  "track": 0,
+  "frames": 4,
+  "overlaps_counted": "crab",
+  "best_frame": 31,
+  "box": [
+   997.0,
+   640.0,
+   1121.0,
+   714.0
+  ],
+  "crop": 1
+ },
+ {
+  "clip": "DH7",
+  "word": "crab",
+  "track": 6,
+  "frames": 9,
+  "overlaps_counted": "crab",
+  "best_frame": 35,
+  "box": [
+   1055.0,
+   24.0,
+   1174.0,
+   255.0
+  ],
+  "crop": 2
+ },
+ {
+  "clip": "DH11",
+  "word": "worm",
+  "track": 0,
+  "frames": 60,
+  "overlaps_counted": "scavenging amphipod crustacean",
+  "best_frame": 0,
+  "box": [
+   130.0,
+   96.0,
+   243.0,
+   148.0
+  ],
+  "crop": 3
+ },
+ {
+  "clip": "DH7",
+  "word": "shark",
+  "track": 0,
+  "frames": 2,
+  "overlaps_counted": null,
+  "best_frame": 22,
+  "box": [
+   479.0,
+   51.0,
+   738.0,
+   411.0
+  ],
+  "crop": 4
+ },
+ {
+  "clip": "DH7",
+  "word": "starfish",
+  "track": 1,
+  "frames": 3,
+  "overlaps_counted": null,
+  "best_frame": 56,
+  "box": [
+   1115.0,
+   361.0,
+   1174.0,
+   467.0
+  ],
+  "crop": 5
+ },
+ {
+  "clip": "DH7",
+  "word": "crab",
+  "track": 1,
+  "frames": 5,
+  "overlaps_counted": null,
+  "best_frame": 26,
+  "box": [
+   970.0,
+   6.0,
+   1088.0,
+   104.0
+  ],
+  "crop": 6
+ },
+ {
+  "clip": "DH6",
+  "word": "shark",
+  "track": 2,
+  "frames": 51,
+  "overlaps_counted": null,
+  "best_frame": 9,
+  "box": [
+   0.0,
+   238.0,
+   140.0,
+   345.0
+  ],
+  "crop": 7
+ },
+ {
+  "clip": "DH8",
+  "word": "shark",
+  "track": 1,
+  "frames": 24,
+  "overlaps_counted": null,
+  "best_frame": 36,
+  "box": [
+   260.0,
+   201.0,
+   315.0,
+   256.0
+  ],
+  "crop": 8
+ },
+ {
+  "clip": "DH8",
+  "word": "shark",
+  "track": 2,
+  "frames": 13,
+  "overlaps_counted": null,
+  "best_frame": 47,
+  "box": [
+   9.0,
+   183.0,
+   48.0,
+   213.0
+  ],
+  "crop": 9
+ },
+ {
+  "clip": "DH6",
+  "word": "shark",
+  "track": 0,
+  "frames": 9,
+  "overlaps_counted": null,
+  "best_frame": 0,
+  "box": [
+   0.0,
+   75.0,
+   548.0,
+   333.0
+  ],
+  "crop": 10
+ },
+ {
+  "clip": "DH7",
+  "word": "crab",
+  "track": 0,
+  "frames": 4,
+  "overlaps_counted": null,
+  "best_frame": 15,
+  "box": [
+   822.0,
+   105.0,
+   914.0,
+   252.0
+  ],
+  "crop": 11
+ },
+ {
+  "clip": "DH6",
+  "word": "shark",
+  "track": 1,
+  "frames": 33,
+  "overlaps_counted": null,
+  "best_frame": 4,
+  "box": [
+   0.0,
+   136.0,
+   138.0,
+   224.0
+  ],
+  "crop": 12
+ },
+ {
+  "clip": "DH8",
+  "word": "shark",
+  "track": 0,
+  "frames": 28,
+  "overlaps_counted": null,
+  "best_frame": 0,
+  "box": [
+   31.0,
+   135.0,
+   324.0,
+   224.0
+  ],
+  "crop": 13
+ }
+]

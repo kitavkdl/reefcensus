@@ -1,0 +1,714 @@
+{
+ "DH6": {
+  "counted_nonfish": [],
+  "words": {
+   "fish": {
+    "frames": 60,
+    "maxn": 2,
+    "tracks": 3,
+    "overlaps": [],
+    "unmatched": 3
+   },
+   "shark": {
+    "frames": 60,
+    "maxn": 2,
+    "tracks": 3,
+    "overlaps": [],
+    "unmatched": 3
+   },
+   "ray": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "eel": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "crab": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shrimp": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "lobster": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "octopus": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "squid": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "snail": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shell": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "starfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "jellyfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea urchin": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea cucumber": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "worm": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   }
+  }
+ },
+ "DH7": {
+  "counted_nonfish": [
+   "crab"
+  ],
+  "words": {
+   "fish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shark": {
+    "frames": 2,
+    "maxn": 1,
+    "tracks": 1,
+    "overlaps": [],
+    "unmatched": 1
+   },
+   "ray": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "eel": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "crab": {
+    "frames": 22,
+    "maxn": 5,
+    "tracks": 10,
+    "overlaps": [
+     "crab"
+    ],
+    "unmatched": 8
+   },
+   "shrimp": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "lobster": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "octopus": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "squid": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "snail": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shell": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "starfish": {
+    "frames": 7,
+    "maxn": 1,
+    "tracks": 2,
+    "overlaps": [
+     "crab"
+    ],
+    "unmatched": 1
+   },
+   "jellyfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea urchin": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea cucumber": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "worm": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   }
+  }
+ },
+ "DH8": {
+  "counted_nonfish": [],
+  "words": {
+   "fish": {
+    "frames": 29,
+    "maxn": 16,
+    "tracks": 16,
+    "overlaps": [],
+    "unmatched": 16
+   },
+   "shark": {
+    "frames": 52,
+    "maxn": 2,
+    "tracks": 3,
+    "overlaps": [],
+    "unmatched": 3
+   },
+   "ray": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "eel": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "crab": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shrimp": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "lobster": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "octopus": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "squid": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "snail": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shell": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "starfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "jellyfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea urchin": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea cucumber": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "worm": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   }
+  }
+ },
+ "DH9": {
+  "counted_nonfish": [],
+  "words": {
+   "fish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shark": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "ray": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "eel": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "crab": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shrimp": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "lobster": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "octopus": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "squid": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "snail": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shell": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "starfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "jellyfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea urchin": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea cucumber": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "worm": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   }
+  }
+ },
+ "DH10": {
+  "counted_nonfish": [],
+  "words": {
+   "fish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shark": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "ray": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "eel": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "crab": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shrimp": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "lobster": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "octopus": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "squid": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "snail": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shell": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "starfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "jellyfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea urchin": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea cucumber": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "worm": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   }
+  }
+ },
+ "DH11": {
+  "counted_nonfish": [
+   "scavenging amphipod crustacean"
+  ],
+  "words": {
+   "fish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shark": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "ray": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "eel": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "crab": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shrimp": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "lobster": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "octopus": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "squid": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "snail": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "shell": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "starfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "jellyfish": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea urchin": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "sea cucumber": {
+    "frames": 0,
+    "maxn": 0,
+    "tracks": 0,
+    "overlaps": [],
+    "unmatched": 0
+   },
+   "worm": {
+    "frames": 60,
+    "maxn": 1,
+    "tracks": 1,
+    "overlaps": [
+     "scavenging amphipod crustacean"
+    ],
+    "unmatched": 0
+   }
+  }
+ }
+}

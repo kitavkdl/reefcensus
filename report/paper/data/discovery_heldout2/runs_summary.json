@@ -1,0 +1,193 @@
+[
+ {
+  "clip": "DH6",
+  "named": [
+   "giant clam beside bait"
+  ],
+  "rows": [
+   {
+    "label": "shark",
+    "counted": true,
+    "in_maxn": true,
+    "non_fish": false,
+    "tracks": 1,
+    "maxn": 1,
+    "track": "p0:1",
+    "frame": 10,
+    "box": [
+     31.0,
+     138.0,
+     276.0,
+     222.0
+    ],
+    "confidence": 0.85,
+    "reason": "shark body swims steadily right"
+   },
+   {
+    "label": "leopard shark",
+    "counted": true,
+    "in_maxn": true,
+    "non_fish": false,
+    "tracks": 1,
+    "maxn": 1,
+    "track": "p0:0",
+    "frame": 50,
+    "box": [
+     0.0,
+     78.0,
+     578.0,
+     348.0
+    ],
+    "confidence": 0.9,
+    "reason": "spotted shark body clearly visible"
+   }
+  ],
+  "queued_tracks": 0,
+  "cost_usd": 0.2112,
+  "live_calls": 20
+ },
+ {
+  "clip": "DH7",
+  "named": [
+   "crab"
+  ],
+  "rows": [
+   {
+    "label": "crab",
+    "counted": true,
+    "in_maxn": true,
+    "non_fish": true,
+    "tracks": 8,
+    "maxn": 3,
+    "track": "d0:1",
+    "frame": 28,
+    "box": [
+     769.0,
+     229.0,
+     933.0,
+     436.0
+    ],
+    "confidence": 0.95,
+    "reason": "clear carapace and legs middle",
+    "crop": 1
+   }
+  ],
+  "queued_tracks": 2,
+  "cost_usd": 0.0925,
+  "live_calls": 10
+ },
+ {
+  "clip": "DH8",
+  "named": [
+   "thresher shark"
+  ],
+  "rows": [
+   {
+    "label": "fish (unidentified)",
+    "counted": true,
+    "in_maxn": true,
+    "non_fish": false,
+    "tracks": 16,
+    "maxn": 15,
+    "track": "p0:1",
+    "frame": 22,
+    "box": [
+     200.0,
+     0.0,
+     238.0,
+     28.0
+    ],
+    "confidence": 0.9,
+    "reason": "clear schooling fish tracked"
+   },
+   {
+    "label": "thresher shark",
+    "counted": true,
+    "in_maxn": true,
+    "non_fish": false,
+    "tracks": 2,
+    "maxn": 2,
+    "track": "d0:0",
+    "frame": 2,
+    "box": [
+     15.0,
+     129.0,
+     301.0,
+     223.0
+    ],
+    "confidence": 0.95,
+    "reason": "Clear side view with long tail"
+   },
+   {
+    "label": "shark (unidentified)",
+    "counted": false,
+    "in_maxn": true,
+    "non_fish": false,
+    "tracks": 1,
+    "maxn": 1,
+    "track": "d0:2",
+    "frame": 52,
+    "box": [
+     20.0,
+     189.0,
+     88.0,
+     219.0
+    ],
+    "confidence": 0.4,
+    "reason": "Faint blurry body holds shape moving"
+   }
+  ],
+  "queued_tracks": 5,
+  "cost_usd": 0.1034,
+  "live_calls": 14
+ },
+ {
+  "clip": "DH9",
+  "named": [],
+  "rows": [],
+  "queued_tracks": 1,
+  "cost_usd": 0.0404,
+  "live_calls": 5
+ },
+ {
+  "clip": "DH10",
+  "named": [
+   "pale branching worm"
+  ],
+  "rows": [],
+  "queued_tracks": 0,
+  "cost_usd": 0.1847,
+  "live_calls": 16
+ },
+ {
+  "clip": "DH11",
+  "named": [
+   "scavenging amphipod crustacean",
+   "colonial tube worms"
+  ],
+  "rows": [
+   {
+    "label": "scavenging amphipod crustacean",
+    "counted": true,
+    "in_maxn": true,
+    "non_fish": true,
+    "tracks": 1,
+    "maxn": 1,
+    "track": "d1:0",
+    "frame": 14,
+    "box": [
+     128.0,
+     95.0,
+     254.0,
+     179.0
+    ],
+    "confidence": 0.95,
+    "reason": "Amphipod not tube worm",
+    "crop": 2
+   }
+  ],
+  "queued_tracks": 0,
+  "cost_usd": 0.2305,
+  "live_calls": 22
+ }
+]

@@ -1,0 +1,13 @@
+DH6 counted non-fish: []
+    {'fish': (3, []), 'shark': (3, [])}
+DH7 counted non-fish: ['crab']
+    {'shark': (1, []), 'crab': (10, ['crab']), 'starfish': (2, ['crab'])}
+DH8 counted non-fish: []
+    {'fish': (16, []), 'shark': (3, [])}
+DH9 counted non-fish: []
+    {}
+DH10 counted non-fish: []
+    {}
+DH11 counted non-fish: ['scavenging amphipod crustacean']
+    {'worm': (1, ['scavenging amphipod crustacean'])}
+13 label-free crops for the judge
