@@ -3,7 +3,7 @@ Only what the screen shows is copied: result.json, status.json, review.json if a
 the sheets Spark judged (audit_*, verify_*, confirm_*),
 annotated.mp4 (~2 MB a run). web/server.py seeds runs/ from demo/runs/ on start.
 
-    python3 demo/pack_runs.py L1_s001_v16 L1_s002_v16 L1_s003_v16 L1_s004_v16
+    python3 demo/pack_runs.py mg2_s001 mg2_s002 mg2_s003 mg2_s004
 """
 import os, shutil, sys
 

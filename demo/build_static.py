@@ -15,15 +15,15 @@ REPO = "https://github.com/kitavkdl/reefcensus"
 
 # Landing block for judges: the claim in one line, then one card per run (asked vs. found, with its evidence frame).
 # Captions are the measured facts from README "Discovery" (development clips, Barord et al. 2014).
-ORDER = ["L1_s004_v16", "L1_s003_v16", "L1_s002_v16", "L1_s001_v16"]
+ORDER = ["mg2_s004", "mg2_s003", "mg2_s002", "mg2_s001"]
 CAPTION = {
-    "L1_s004_v16": "A shrimp swarm, a hagfish and a nautilus at the bait. SAM found nothing for “hagfish”; Spark tried “eel” and it locked on.",
-    "L1_s003_v16": "Three nautiluses, one partly behind another, counted as three.",
-    "L1_s002_v16": "A nautilus and a small red crab nobody asked for.",
-    "L1_s001_v16": "Night, behind a wire trap. No word found them; moving pixels did. 2 counted of at least 4 there.",
+    "mg2_s004": "A shrimp swarm, a hagfish and a nautilus at the bait. SAM found nothing for “hagfish”; Spark tried “eel” and it locked on.",
+    "mg2_s003": "Three nautiluses, one partly behind another, counted as three.",
+    "mg2_s002": "A nautilus and a small red crab nobody asked for.",
+    "mg2_s001": "Night, behind a wire trap. No word found them; moving pixels did. 4 counted of at least 4 there.",
 }
-SHOW = {"L1_s004_v16": "caridean shrimp", "L1_s003_v16": "chambered nautilus",
-        "L1_s002_v16": "small red crab", "L1_s001_v16": "nautilus"}
+SHOW = {"mg2_s004": "caridean shrimp", "mg2_s003": "chambered nautilus",
+        "mg2_s002": "small red crab", "mg2_s001": "nautilus"}
 HERO_CSS = """
 .hero { background: var(--graphite); color: var(--slate); padding: 28px 24px 24px; }
 .hero h2 { margin: 0 0 6px; font-size: clamp(26px, 4.4vw, 46px); line-height: 1.05; font-weight: 800; font-variation-settings: "wdth" 70; max-width: 30ch; }

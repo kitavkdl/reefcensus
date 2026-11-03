@@ -7,7 +7,7 @@ sys.path.insert(0, ROOT)
 from fishcount import _pylib  # noqa: F401
 from fishcount import longvideo
 
-DEMO = sorted(glob.glob(os.path.join(ROOT, "demo", "runs", "L1_s00*_v16")))
+DEMO = sorted(glob.glob(os.path.join(ROOT, "demo", "runs", "mg2_s00?")))
 KEYS = ("maxn", "maxn_frame", "maxn_time", "first_frame", "first_time", "tracks", "curve", "peak_checked")
 
 
@@ -42,7 +42,7 @@ class Merge(unittest.TestCase):
             self.assertEqual(pick(R["metrics"]), pick(res["metrics"]), d)
 
     def test_two_segments_lay_curves_end_to_end(self):
-        d = next(x for x in DEMO if x.endswith("s003_v16"))
+        d = next(x for x in DEMO if x.endswith("s003"))
         res = json.load(open(os.path.join(d, "result.json")))
         n, fps = res["video"]["n_frames"], res["video"]["fps"]
         with tempfile.TemporaryDirectory() as out:
@@ -59,7 +59,7 @@ class Merge(unittest.TestCase):
         self.assertEqual([s["start_frame"] for s in R["segments"]], [0, n])
 
     def test_first_arrival_is_offset_by_the_segment_start(self):
-        d = next(x for x in DEMO if x.endswith("s003_v16"))
+        d = next(x for x in DEMO if x.endswith("s003"))
         res = json.load(open(os.path.join(d, "result.json")))
         n, fps = res["video"]["n_frames"], res["video"]["fps"]
         empty = json.loads(json.dumps(res))
@@ -75,7 +75,7 @@ class Merge(unittest.TestCase):
             self.assertEqual(R["metrics"][name]["maxn"], m["maxn"])
 
     def test_names_sharing_a_head_noun_are_listed_not_merged(self):
-        d = next(x for x in DEMO if x.endswith("s003_v16"))
+        d = next(x for x in DEMO if x.endswith("s003"))
         res = json.load(open(os.path.join(d, "result.json")))
         n, fps = res["video"]["n_frames"], res["video"]["fps"]
         other = json.loads(json.dumps(res))
