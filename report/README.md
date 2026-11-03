@@ -20,6 +20,7 @@ Results (details in **Evaluation**):
 - **Held out (24 luderick clips never used in development, frozen code, one run, protocol committed first):** recall 98.9%, MaxN exact on 20 of 24 with the queue accepted (SAM alone and the length rule: 19); with the queue rejected every clip is within ±1 (recall 95.6%). The review screen shows MaxN as the range between those two cases until the queue is checked; it contains the human MaxN on 22 of 24 held-out clips (5 of 6 in development), a summary added after the run. Same estuary as the development clips.
 - **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net, and cost one nautilus in s001 (queued). The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
 - **Finding what was not asked for, held out (5 new videos from other studies, frozen code, one run, protocol committed first):** Spark named all 4 non-fish animals the author and an AI assistant had marked before the run; 3 were counted and the 4th (a squat lobster that no word tracked, followed by a motion box in all 60 frames) was sent to a person to confirm. 0 false discoveries: every counted crop was judged an animal with its label hidden, and nothing non-fish was counted on the two clips without one. $1.06 for all five.
+- **Second held-out set (6 more videos, final frozen code, protocol committed first):** counted the one non-fish animal two people marked beforehand (an amphipod at a 2186 m vent), 0 false discoveries, nothing non-fish on two shark-only clips; also counted 3 crabs in a cold-seep time-lapse that neither person listed from four frames (none of the crabs is on those frames; judged crabs with labels hidden). $0.86 for six.
 - **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.40 (discovery; $0.22–0.27 on the development clips) in API calls; all answers are cached by content, so a rerun is free.
 
 ![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3_luderick.jpg)
@@ -169,6 +170,29 @@ assistant (Claude) marked and at a coarse group level, the non-fish animals they
 
 Rows, evidence crops, both reference lists and the judgement: `report/paper/data/discovery_heldout/`
 (`python3 report/paper/scripts/score_discovery_heldout.py`).
+
+### 4.4 A second held-out set (DH6–DH11), final frozen code
+Six videos from other PLOS ONE studies: two fish-only shark cameras (DH6 BRUV, DH8 cleaning station), a cold-seep
+time-lapse at two images an hour (DH7), two sediment-profile Wormcam time-lapses (DH9, DH10) and a hydrothermal vent
+at 2186 m (DH11). Protocol `report/paper/discovery_heldout2_protocol.md` (amendment 2: code frozen at `cbaf59b`); each
+clip run once. Before the run the author and a second person (an undergraduate who had not seen the project's output,
+marking alone) listed the non-fish animals on label-free four-frame sheets; Claude's list is for agreement only.
+
+| clip | marked (not fish) | Spark named | counted (MaxN) | to a person | cost |
+|---|---|---|---|--:|--:|
+| DH6 | none | giant clam beside bait | shark 1, leopard shark 1 (fish) | 0 | $0.21 |
+| DH7 | none | crab | **crab 3** (outside the reference, see below) | 2 | $0.09 |
+| DH8 | none | thresher shark | fish 15, thresher shark 2 | 5 | $0.10 |
+| DH9 | none | — | nothing | 1 | $0.04 |
+| DH10 | none | pale branching worm | nothing | 0 | $0.18 |
+| DH11 | bug/worm-like | scavenging amphipod crustacean, colonial tube worms | **amphipod 1** | 0 | $0.23 |
+
+Recall 1/1, false discoveries 0/2 (crops judged "a crab" and "a bug/worm or a crustacean" with labels hidden). The
+fixed-vocabulary baseline also finds the amphipod (as "worm"); on the shark clips neither method counts anything
+non-fish. DH7: both people marked nothing, yet three crabs were counted; none of their boxes falls on the four frames
+the people saw (a time-lapse shows each crab in a few images), the label-free crop was judged a crab, and the source
+paper names lithodid crabs. By protocol this is neither recall nor a false discovery; it shows the limit of a
+four-frame reference. The baseline called the same crab "starfish" too. Details: `report/paper/data/discovery_heldout2/results.md`.
 
 ## 5. Reading the numbers
 - **Scope.** Counting: 30 luderick clips from one estuary (6 development, 24 held-out). Discovery: 9 clips of 12 s

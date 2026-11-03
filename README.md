@@ -89,6 +89,20 @@ the five clips, none in two of them.
 | something wrong counted | 0 (every counted crop judged an animal with its label hidden; nothing non-fish counted on the two clips without one) |
 | cost | $1.06 for all five |
 
+**Six more new videos, held out (measured, final frozen code).** Six PLOS ONE videos (two fish-only shark cameras, a
+cold-seep time-lapse, two sediment-profile time-lapses, a 2186 m vent), run once with the code frozen at `cbaf59b`
+under a second protocol committed first. Before the run the author and a second person who had never seen the
+project's output marked, separately, the non-fish animals in four frames per clip: one animal over the six clips (a
+bug/worm-like animal at the vent).
+
+| | result |
+|---|---|
+| counted at the end | 1 of 1 (an amphipod, DH11) |
+| something wrong counted | 0 (both counted non-fish crops judged animals with labels hidden; nothing non-fish on the two shark clips) |
+| outside the reference | DH7: 3 crabs counted in a cold-seep time-lapse where both people marked nothing; the crabs appear in none of the four frames they saw. Judged "a crab" with the label hidden; the source paper names lithodid crabs. Not scored either way |
+| SAM with 16 fixed words | finds the amphipod as "worm", but also calls the DH7 crab "starfish" |
+| cost | $0.86 for all six (fixed-word baseline $1.00) |
+
 ## How well it counts (measured)
 Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames, IoU >= 0.3. MaxN over the annotated
 frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).

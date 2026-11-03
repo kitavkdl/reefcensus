@@ -28,7 +28,8 @@ On four nautilus clips requested as "fish", VLM naming finds six of seven untarg
 a motion cue), and the audits correct names, duplicates and one false taxon. On five held-out videos from other
 studies, run once with frozen code under a pre-committed protocol, the pipeline names all four non-fish animals that
 the author and, separately, an AI assistant marked beforehand, counts three and sends the fourth to the person queue, and counts nothing that is not
-an animal. We present an annotation accelerator whose counts a person confirms, not a finished census.
+an animal. On six more such videos, run once with the final frozen code, it counts the one animal two people marked beforehand
+and again nothing that is not an animal; it also counts crabs in a time-lapse that neither person listed from four frames, judged crabs with labels hidden. We present an annotation accelerator whose counts a person confirms, not a finished census.
 
 </div>
 
@@ -729,6 +730,45 @@ DH2's anemone, again counted no false discovery, and again sent DH3's shrimp-lik
 motion residual as a "vertical red shrimp", tracked in 60 of 60 frames, A1 confidence 0.5). Spark's proposed names
 differed in wording (DH3: "crab", "starfish", "eel"; DH5: "tiny swimming crustaceans", tracked by no word), and the
 queue held 27 tracks against 26.
+
+**A second held-out set (DH6–DH11).** Under a second protocol (`report/paper/discovery_heldout2_protocol.md`,
+amendment 2: code frozen at `cbaf59b`), six more videos from other PLOS ONE studies were run once: two fish-only
+shark videos (a BRUV and a cleaning-station camera), a cold-seep time-lapse (two images an hour), two sediment-profile
+"Wormcam" time-lapses and a hydrothermal-vent observatory clip. Before any run, Jiyul Ahn and a second person (an
+undergraduate who had not seen any output of the project and marked alone) listed the non-fish animals on the same
+label-free four-frame sheets; Claude's list is reported for agreement only. Both people listed one animal in the six
+clips, a bug- or worm-like animal in DH11, and nothing in DH6–DH10.
+
+<div class="tablecap">**Table 3c.** Second held-out discovery set, one run with code frozen at `cbaf59b`. Reference =
+non-fish animals any person listed before the run. Baseline = SAM 3.1 with the 16 fixed words of §6.3.</div>
+
+| clip | reference (not fish) | Spark named | counted (MaxN) | queue | cost | baseline non-fish words with tracks |
+|-----|----------|----------|-----------|--:|--:|----------|
+| DH6 (BRUV, tiger sharks) | none | giant clam beside bait | shark 1, leopard shark 1 (fish) | 0 | $0.21 | — |
+| DH7 (cold seep, time-lapse) | none | crab | **crab 3** | 2 | $0.09 | crab (10 tracks), starfish (2, on the crab) |
+| DH8 (cleaning station, threshers) | none | thresher shark | fish 15, thresher shark 2 (fish) | 5 | $0.10 | — |
+| DH9 (Wormcam) | none | — | none | 1 | $0.04 | — |
+| DH10 (Wormcam) | none | pale branching worm | none | 0 | $0.18 | — |
+| DH11 (vent, 2186 m) | bug/worm-like | scavenging amphipod crustacean, colonial tube worms | amphipod 1 | 0 | $0.23 | worm (1, on the amphipod) |
+| **total** | **1 animal** | **1 of 1** | **1 of 1 counted; 0 false** | 8 | $0.86 | baseline $1.00 |
+
+The pipeline counts the one reference animal, as an amphipod (the scoring note fixed before the run counts a worm or
+a bug-like small crustacean for "bug/worm-like"), and the fixed-vocabulary baseline finds it too, as "worm". Shown the
+two counted non-fish crops with labels hidden, Jiyul Ahn called them "a crab" and "a bug/worm or a crustacean": no
+false discovery. On the two fish-only clips neither method produced a non-fish row. Spark's other proposals (a giant
+clam in DH6, a branching worm in DH10, tube worms in DH11) ended in no counted row.
+
+The crabs of DH7 are the one result outside the protocol's metrics. Neither person listed an animal in DH7, yet the
+pipeline counted three crabs, at their peak in frame 34; none of its crab boxes falls on the four frames (0, 20, 40,
+59) of the markers' sheet, since the time-lapse shows each crab in only a few images (the counted tracks lie in frames
+14–58 and cover 1 to 11 frames each). The label-free judge called the evidence crop "a
+crab", the source paper's description of the video names lithodid crabs, and the baseline's "crab" tracks overlap
+the counted one. They are not in the recall, since the reference list did not have them, and not a false discovery.
+We read it as a limit of four-frame reference lists, not as the pipeline seeing better than a person who watches
+the whole video. The fixed-vocabulary baseline called the same crab "starfish" as well as "crab", and made one
+"shark" track on this clip where no person saw a fish. With a single reference animal this set mainly tests false
+discoveries, of which there were none. Rows, crops, judgements and the markers' sheets are in
+`report/paper/data/discovery_heldout2/` (`results.md`).
 
 ## Cost and time
 

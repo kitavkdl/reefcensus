@@ -14,7 +14,8 @@ DH11 bug/worm-like; DH6–DH10 none.
 
 Also reported (not in the protocol metrics):
 - **DH7: the pipeline counted crabs (MaxN 3, at 6.8 s / frame 34) that neither human marker listed** on the four-frame
-  sheet (frames 0/20/40/59). The label-free judge called the evidence crop "a crab", and the source text names
+  sheet (frames 0/20/40/59); none of the pipeline's crab boxes falls on those four frames (counted crab tracks lie in
+  frames 14–58, 1–11 frames each; `runs/DH7_eval/result.json`). The label-free judge called the evidence crop "a crab", and the source text names
   lithodid crabs for this video. By protocol these do not enter the recall (not on the reference list) and they are
   not false discoveries (metric 3). The four-frame sheet is the limitation: the pipeline sees all 60 frames.
 - Spark named three other things that did not end in a counted row: DH6 'giant clam beside bait', DH10 'pale branching
