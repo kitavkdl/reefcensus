@@ -492,6 +492,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     rid = rid or time.strftime("%m%d-%H%M%S")
     run = Run(rid)
     clip = run.path("clip.mp4")
+    # 11/3: identical clip copies of finished runs are hard links to each other (disk full); writing into one would
+    # rewrite them all, so a run starts from fresh files.
+    for f in ("clip.mp4", "clip_rev.mp4"):
+        if os.path.lexists(run.path(f)):
+            os.unlink(run.path(f))
     run.stage("ingest", f"re-encoding {os.path.basename(src)} to 5 fps")
     if src.endswith(".mp4") and video.info(src)["fps"] == 5.0:
         shutil.copy(src, clip)      # already analysis-ready (keeps the cache key stable)
