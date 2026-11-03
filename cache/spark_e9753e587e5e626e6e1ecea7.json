@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T18\",\"is_target\":true,\"species\":\"snail\",\"confidence\":0.35,\"reason\":\"Faint shell-like shape, stationary dark lump\"}]", "usage": {"completion_tokens": 1051, "prompt_tokens": 533, "total_tokens": 1584, "completion_tokens_details": {"reasoning_tokens": 1007}, "prompt_tokens_details": {"cached_tokens": 0}}}

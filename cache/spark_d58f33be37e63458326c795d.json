@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.95,\"reason\":\"Metal boat structure, no bird\"}]", "usage": {"completion_tokens": 396, "prompt_tokens": 531, "total_tokens": 927, "completion_tokens_details": {"reasoning_tokens": 356}, "prompt_tokens_details": {"cached_tokens": 0}}}

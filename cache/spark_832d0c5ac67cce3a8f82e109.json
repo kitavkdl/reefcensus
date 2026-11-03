@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"Blurry static speck no crab features\"}]", "usage": {"completion_tokens": 529, "prompt_tokens": 527, "total_tokens": 1056, "completion_tokens_details": {"reasoning_tokens": 488}, "prompt_tokens_details": {"cached_tokens": 0}}}

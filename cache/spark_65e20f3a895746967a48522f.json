@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.4,\"reason\":\"No consistent crab body shape visible\"}]", "usage": {"completion_tokens": 649, "prompt_tokens": 527, "total_tokens": 1176, "completion_tokens_details": {"reasoning_tokens": 609}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T2\",\"is_target\":false,\"species\":\"caridean shrimp\",\"confidence\":0.6,\"reason\":\"Pale bent crustacean with shining eyestalk, not fish\"}]", "usage": {"completion_tokens": 1662, "prompt_tokens": 542, "total_tokens": 2204, "completion_tokens_details": {"reasoning_tokens": 1611}, "prompt_tokens_details": {"cached_tokens": 0}}}

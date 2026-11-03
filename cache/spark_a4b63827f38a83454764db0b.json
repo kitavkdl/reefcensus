@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"person behind trap\"}]", "usage": {"completion_tokens": 644, "prompt_tokens": 510, "total_tokens": 1154, "completion_tokens_details": {"reasoning_tokens": 615}, "prompt_tokens_details": {"cached_tokens": 0}}}

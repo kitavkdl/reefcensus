@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"hagfish\",\"confidence\":0.9,\"reason\":\"Pale elongated body undulates, consistent shape moving\"}]", "usage": {"completion_tokens": 394, "prompt_tokens": 545, "total_tokens": 939, "completion_tokens_details": {"reasoning_tokens": 349}, "prompt_tokens_details": {"cached_tokens": 0}}}

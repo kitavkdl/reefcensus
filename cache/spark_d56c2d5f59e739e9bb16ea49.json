@@ -1,0 +1,1 @@
+{"text": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"plankton\",\"reason\":\"small white specks visible in later frames\"}]", "usage": {"completion_tokens": 918, "prompt_tokens": 2455, "total_tokens": 3373, "completion_tokens_details": {"reasoning_tokens": 878}, "prompt_tokens_details": {"cached_tokens": 99}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T3\",\"is_target\":true,\"species\":\"chambered nautilus\",\"confidence\":0.97,\"reason\":\"Striped spiral shell, eye, tentacles persist across crops\"}]", "usage": {"completion_tokens": 279, "prompt_tokens": 552, "total_tokens": 831, "completion_tokens_details": {"reasoning_tokens": 229}, "prompt_tokens_details": {"cached_tokens": 0}}}

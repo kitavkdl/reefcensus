@@ -1,0 +1,1 @@
+{"text": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"larva\",\"reason\":\"Branching pale structure visible but not detected\"}]", "usage": {"completion_tokens": 803, "prompt_tokens": 4732, "total_tokens": 5535, "completion_tokens_details": {"reasoning_tokens": 763}, "prompt_tokens_details": {"cached_tokens": 0}}}

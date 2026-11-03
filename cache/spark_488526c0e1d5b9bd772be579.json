@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T18\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"Blurry pale shape not clearly snail\"}]", "usage": {"completion_tokens": 895, "prompt_tokens": 527, "total_tokens": 1422, "completion_tokens_details": {"reasoning_tokens": 854}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"id\":\"P1\",\"verdict\":\"keep\",\"new_phrase\":\"\",\"reason\":\"Boxes correctly enclose visible crabs\"}]", "usage": {"completion_tokens": 470, "prompt_tokens": 2987, "total_tokens": 3457, "completion_tokens_details": {"reasoning_tokens": 436}, "prompt_tokens_details": {"cached_tokens": 0}}}

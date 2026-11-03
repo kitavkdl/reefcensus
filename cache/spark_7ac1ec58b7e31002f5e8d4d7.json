@@ -1,0 +1,1 @@
+{"text": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"oyster\",\"reason\":\"Giant clam visible beside bait basket\"}]", "usage": {"completion_tokens": 598, "prompt_tokens": 2965, "total_tokens": 3563, "completion_tokens_details": {"reasoning_tokens": 559}, "prompt_tokens_details": {"cached_tokens": 0}}}

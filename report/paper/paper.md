@@ -1,6 +1,6 @@
 ---
 title: "Ask for Fish, Find the Hagfish: A VLM Names What a Promptable Segmenter Cannot See, for Abundance Counts in Baited Underwater Video"
-author: "Jiyul Ahn · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 2 Nov 2026"
+author: "Jiyul Ahn · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 3 Nov 2026"
 lang: en
 ---
 
@@ -1158,7 +1158,8 @@ MaxN can be wrong for reasons that are invisible in a table (a wrongly rejected 
 and survey counts feed management decisions. We mitigate this by reporting the queue as part of the output and by
 publishing failure cases alongside successes. The footage contains no people except the first two minutes of the
 NOAA recording, where crew on the boat deck are visible (mostly torsos and legs); the pipeline counts them as
-"human", and we do not show those frames in the paper, figures or demo. We used only openly published research
+"human"; we do not show those frames in the paper, figures or demo, though the reply cache in the repository keeps the
+crops Spark was shown. We used only openly published research
 footage, under CC BY licences or, for the NOAA recording, as US federal government work (Data statement). The discovery reference lists were made by people who are not marine
 biologists, as stated where they are used.
 

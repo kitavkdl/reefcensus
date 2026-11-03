@@ -1,0 +1,1 @@
+{"text": "[{\"id\":\"P1\",\"verdict\":\"drop\",\"new_phrase\":\"\",\"reason\":\"shark is fish excluded from survey\"}]", "usage": {"completion_tokens": 640, "prompt_tokens": 3767, "total_tokens": 4407, "completion_tokens_details": {"reasoning_tokens": 605}, "prompt_tokens_details": {"cached_tokens": 0}}}

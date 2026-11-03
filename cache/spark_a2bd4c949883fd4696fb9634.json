@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"scavenging amphipod crustacean\",\"confidence\":0.92,\"reason\":\"Segmented translucent crustacean moving over tube worm colony\"}]", "usage": {"completion_tokens": 403, "prompt_tokens": 548, "total_tokens": 951, "completion_tokens_details": {"reasoning_tokens": 350}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T8\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.65,\"reason\":\"Pale static patch, no shrimp body features\"}]", "usage": {"completion_tokens": 485, "prompt_tokens": 543, "total_tokens": 1028, "completion_tokens_details": {"reasoning_tokens": 442}, "prompt_tokens_details": {"cached_tokens": 0}}}

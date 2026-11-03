@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T4\",\"is_target\":false,\"species\":\"small red crab\",\"confidence\":0.6,\"reason\":\"red round carapace, crab-like body, not shrimp\"}]", "usage": {"completion_tokens": 711, "prompt_tokens": 548, "total_tokens": 1259, "completion_tokens_details": {"reasoning_tokens": 663}, "prompt_tokens_details": {"cached_tokens": 0}}}

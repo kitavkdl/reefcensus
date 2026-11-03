@@ -1,0 +1,1 @@
+{"text": "[{\"id\":\"P1\",\"verdict\":\"revise\",\"new_phrase\":\"starfish\",\"reason\":\"Pale branching structure visible in frames\"}]", "usage": {"completion_tokens": 697, "prompt_tokens": 4740, "total_tokens": 5437, "completion_tokens_details": {"reasoning_tokens": 658}, "prompt_tokens_details": {"cached_tokens": 0}}}
