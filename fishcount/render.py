@@ -129,7 +129,9 @@ def annotate(clip, raw, result, out_path):
     """Whole clip with every counted object masked and boxed, coloured by asked/found, plus a live count per
     label in the corner. Encoded H.264 so a browser plays it."""
     n = result["video"]["n_frames"]
-    imgs = video.frames(clip, range(n))
+    # 11/3: stream frames instead of video.frames(clip, range(n)) -- holding every 1080p frame of a 532-s segment
+    # (2,658 frames, ~6 MB each) was OOM-killed at 9.4 GB on the 12 GB server. Same frames, same order, same output.
+    cap = cv2.VideoCapture(clip)
     labels = result.get("auto_labels", {})
     trk = result["tracks"]
     lab = lambda t: labels.get(t, trk[t]["label"]) if t in trk else None
@@ -144,7 +146,9 @@ def annotate(clip, raw, result, out_path):
             decoded = list(ex.map(all_masks, [t for t, _ in srcs]))
     tmp = tempfile.mkdtemp(dir=os.path.dirname(out_path))
     for f in range(n):
-        img = imgs[f]
+        ok, img = cap.read()
+        if not ok:
+            break
         H, W = img.shape[:2]
         kept = [k for k in result["frames"].get(str(f), []) if lab(k["track"])]
         over = img.copy()
@@ -170,6 +174,7 @@ def annotate(clip, raw, result, out_path):
             cv2.putText(img, txt, (24, y), cv2.FONT_HERSHEY_DUPLEX, 1.1, (255, 255, 255) if is_asked(l) else (90, 170, 255), 2)
             y += 44
         cv2.imwrite(os.path.join(tmp, f"{f:05d}.jpg"), img, [cv2.IMWRITE_JPEG_QUALITY, 88])
+    cap.release()
     subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-framerate", str(result["video"]["fps"] or 5),
                     "-i", os.path.join(tmp, "%05d.jpg"), "-vf", "scale='min(1280,iw)':-2", "-c:v", "libx264", "-preset", "veryfast",
                     "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out_path], check=True)

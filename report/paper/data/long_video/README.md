@@ -67,3 +67,16 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
   `clip.mp4` and `annotated.mp4` are untouched. Everything deleted can be regenerated from the cache (replay) at no cost.
 - Ground truth: none. This is a cost / time / robustness measurement and a MaxN-per-taxon list for the reviewer's queue,
   not an accuracy evaluation.
+
+## Attempt 1 crashed (out of memory) — rendering fix, no change to counting
+- Launched 2026-11-03 04:16 UTC at `1a50ab7` (= `78649bb` code). Segment 1 finished every model call, the counts and
+  the evidence frames (14 live calls, $2.18, `runs/LONG1__S1/result.json`), then the process was killed by the kernel
+  OOM killer at 04:49 UTC while drawing the annotated video (python3 at 9.4 GB resident on a 12 GB server; kernel log).
+- Cause: `render.annotate()` loaded every frame of the segment into memory at once (`video.frames(clip, range(n))`,
+  2,658 frames × ~6 MB at 1080p). Clips of 12–53 s never reached this.
+- Fix (commit after `1a50ab7`): stream the frames with one sequential `cv2.VideoCapture`. Drawing only; nothing that
+  decides a count changed. Checked: the replayed s004 annotated video is identical frame by frame (60/60 frames,
+  mean absolute pixel difference 0) to `demo/runs/mg2_s004/annotated.mp4`; 50 unit tests pass.
+- Attempt 2 uses the same command and settings. Segment 1's model answers come from the cache (no new charge); the
+  $40 ceiling counts attempt 1's $2.18 (FISH_BUDGET = ledger total + $38). Run under a user systemd unit with
+  `MemoryMax=8G` so a repeat would stop only this run.
