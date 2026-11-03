@@ -1,7 +1,17 @@
 # reefcensus — count what you asked for, find what you didn't
 
-Say what to count; get per-species MaxN and time of first arrival **with an evidence frame behind every number**,
-and a short queue of uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026).
+Say what to count; get per-species MaxN (the most animals of a species on screen at once, the standard count of
+baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
+uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026).
+
+![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four (right)](report/figures/split_s001_night_f55.jpg)
+
+**What it found (measured, details below):**
+- Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of shrimp and a hagfish.
+- At night behind a trap, where 17 fixed words box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
+  tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
+- On eleven videos from other studies, run with frozen code under protocols committed before any run, it named all
+  five animals on the reference lists written beforehand.
 
 Technical report with every measurement and what it changed in the design: [report/README.md](report/README.md).
 
