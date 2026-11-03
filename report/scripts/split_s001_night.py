@@ -65,7 +65,7 @@ def main():
             x = 0 if side == 0 else PW + 32
             img.paste(pil, (x, 150))
             title = "SAM with 17 fixed words" if side == 0 else "Muse Spark points, SAM tracks a box"
-            sub = "(16-word list + 'nautilus')" if side == 0 else "(no word at all)"
+            sub = "(16-word list + 'nautilus')" if side == 0 else "(each one tracked from a box, no word)"
             d.text((x + PW // 2, 112), title, font=mid, fill=col, anchor="mm")
             d.text((x + PW // 2, 150 + PH + 40), sub, font=small, fill=(200, 200, 200), anchor="mm")
             d.text((x + PW // 2, 150 + PH + 110), f"animals boxed in this frame: {len(boxes)}", font=big, fill=col, anchor="mm")

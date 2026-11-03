@@ -702,7 +702,12 @@ pipeline's words also get reversed passes and zoom passes (1.5× block, 3× cell
 cell), and a taxon counts as found only when a list track overlaps a track the audited run counted, so the list can
 never be credited with an animal the pipeline missed. On these clips a fixed list is thus at least as good at finding
 taxa as Spark's naming without audits. On s001 "octopus" tracks a spot for 57 frames that matches no counted animal; the baseline cannot say
-whether it is the uncounted nautilus inside the trap or nothing. A fixed list thus recovers most taxa on these clips
+whether it is the uncounted nautilus inside the trap or nothing. That run used the original dark clip; on the
+brightened copy that the final code tracks, the 16 words plus "nautilus" box one of the four counted nautiluses, as
+"shell", in 9 of 60 frames, and the other 16 words return nothing ($0.17, `report/paper/data/fixed_vocab_brightened/`).
+The final run counts all four: Spark's word "shell" gives the same 9-frame track, and each of the four animals is
+also tracked from a box with no word on a moving spot Spark picked (50, 60, 59 and 60 of 60 frames; frames already
+tracked are not counted twice; side-by-side video `report/scripts/split_s001_night.py`). A fixed list thus recovers most taxa on these clips
 if it happens to contain the target, but it names them by whichever word fired; what the VLM adds is the name, and a
 list it did not need to be given.
 
