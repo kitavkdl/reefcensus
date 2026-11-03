@@ -1,0 +1,28 @@
+"""11/3: LONG1 once more on the final code (clean + refill on), tag LONG1_cr. The 5 fps source was removed to free disk,
+but each segment's clip.mp4 from the original run is kept; run_pipeline copies a 5 fps mp4 as is, so every cache key
+(clip hash + prompt) is the original run's and only calls the new code changes are made. Segment starts are those of
+the original run's log. Low light was decided once for the whole video in that run ("off"), so it is passed as is.
+    FISH_BUDGET=<cap> python3 report/paper/scripts/rerun_long1_cr.py"""
+import json, os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, ROOT)
+from fishcount import longvideo, pipeline, video
+
+old = json.load(open(os.path.join(pipeline.RUNS, "LONG1", "result.json")))
+rid, done, start = "LONG1_cr", [], 0
+os.makedirs(os.path.join(pipeline.RUNS, rid), exist_ok=True)
+for k in range(1, 7):
+    sp = os.path.join(pipeline.RUNS, f"LONG1__S{k}", "clip.mp4")
+    n = video.info(sp)["n_frames"]
+    srid = f"{rid}__S{k}"
+    if not os.path.exists(os.path.join(pipeline.RUNS, srid, "result.json")):
+        pipeline.run_pipeline(sp, srid, do_scout=False, prompts=["fish"], do_discover=True, do_zoom=True, max_usd=8,
+                              lowlight="off")
+    st = json.load(open(os.path.join(pipeline.RUNS, srid, "status.json")))
+    print(f"S{k} start {start} n {n} billed ${st['billed_usd']:.3f}", flush=True)
+    done.append((os.path.join(pipeline.RUNS, srid), start, n))
+    start += n
+R = longvideo.merge(rid, old["source"], done, old["video"]["fps"])
+R["video"]["lowlight"] = old["video"]["lowlight"]
+json.dump(R, open(os.path.join(pipeline.RUNS, rid, "result.json"), "w"))
+print("merged:", {m: v["maxn"] for m, v in R["metrics"].items()})

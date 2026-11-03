@@ -19,13 +19,17 @@ import numpy as np
 
 OUT = os.path.join(ROOT, "report", "paper", "data", "discovery_heldout")
 FISHY = ("fish",)
+# fish names the pipeline's word groups do not know. Added 11/3 after the clean+refill re-run (DH5_cr): the audit
+# called DH5's cusk-eel "new zealand ling", the same species (Genypterus blacodes) the frozen run had called "pink
+# cusk-eel", and "ling" in no group made a fish look like a non-fish discovery. A correction found after the run.
+FISH_NAMES = ("ling",)
 
 
 def is_fish(label):
     """The word "fish" or a name of the pipeline's fish group (shark, ray, eel, goby ...): the run was asked for fish,
     so a shark is not a discovery (11/2 pre-freeze review; the paper already treated DH5's "pink cusk-eel" as a fish)."""
     base = label.split(" (")[0]
-    return any(w in base.split() for w in FISHY) or pipeline.name_group(base) == "fish"
+    return any(w in base.split() for w in FISHY + FISH_NAMES) or pipeline.name_group(base) == "fish"
 
 
 def run_dir(n):
