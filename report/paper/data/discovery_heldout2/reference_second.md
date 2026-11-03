@@ -6,8 +6,9 @@ Marker: an undergraduate student (MEC department), not a marine expert. Shown th
 Result, as relayed by Jiyul Ahn: **the same as Jiyul Ahn's list** — nothing other than fish in DH6–DH10, one bug/worm-
 like shape in the centre of DH11. No separate marked sheet was kept.
 
-Not confirmed at the time of this commit (recorded so the paper does not overstate it): whether this person marked
-without seeing Jiyul Ahn's marks, and whether they had seen any output of this project before marking.
+Independence (confirmed by Jiyul Ahn after the first commit of this file, before any result was seen): this person
+marked on their own without seeing Jiyul Ahn's marks and had not seen any output of this project; Jiyul Ahn only
+explained how to mark. (The first commit of this file listed both points as unconfirmed.)
 
 | Clip | Mobile animals (primary) | Sessile | Unsure |
 |---|---|---|---|
