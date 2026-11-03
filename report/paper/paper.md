@@ -6,32 +6,35 @@ lang: en
 
 <div class="abstract">
 
-**Abstract.** Baited remote underwater video (BRUV) surveys report abundance as MaxN, the largest number of
-individuals of a species visible in one frame, and people still produce it by watching the footage. We analyse what
-happens when two general-purpose models are combined for this task without training: SAM 3.1, a promptable video
-segmenter that tracks whatever a short noun names, and Muse Spark, a vision-language model (VLM) that we use on still
-frames to name and judge, not to track. The paper is organised around measured failure modes. What the segmenter
-finds depends on the word: on the 39 clips we use, "animal" returned no box on 29, never more than one per frame on
-the 30 seagrass clips where "fish" returned up to 10, and overlapped 3 of the 11 non-fish animals our pipeline
-counted, while the species' own name, "luderick", returned nothing on all six clips of that species. Animals nobody
-asked about are mostly missed unless the VLM names them. The VLM, used as an auditor, adopts names
-placed in its prompt and changes its verdict with the layout of the evidence it is shown. We build a pipeline around
-these observations, in which the VLM names, translates and audits and a person reviews a queue, and evaluate it
-against model-free baselines and against the VLM counting on its own. On counting luderick, the audits match a tuned minimum-track-length rule on six
-development clips and are exact on one clip more than it (20 vs 19 of 24) on held-out clips scored once under a
-pre-committed protocol; since audits only remove tracks, neither the audits nor the length rule can raise box recall
-above the segmenter's. The human queue holds most of the tracks behind the large count disagreements, together with real fish the VLM was unsure of.
-Reported as a range between rejecting and accepting the queue (a post-hoc summary), MaxN contains the human count on 22 of the 24 held-out clips.
-Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of the 24 held-out clips; the
-boxes appear to omit faint fish on several of those clips (Figure 3), and a count without locations cannot be checked against them.
-On four nautilus clips requested as "fish", VLM naming finds six of seven untargeted taxa without any audit (seven with
-a motion cue), and the audits correct names, duplicates and one false taxon. On five held-out videos from other
-studies, run once with frozen code under a pre-committed protocol, the pipeline names all four non-fish animals that
-the author and, separately, an AI assistant marked beforehand, counts three and sends the fourth to the person queue, and counts nothing that is not
-an animal. On six more such videos, run once with the final frozen code, it counts the one animal two people marked beforehand
-and again nothing that is not an animal; it also counts crabs in a time-lapse that neither person listed from four frames, judged crabs with labels hidden. We present an annotation accelerator whose counts a person confirms, not a finished census.
+**Abstract.** Baited underwater video surveys report abundance as MaxN, the largest number of individuals of a
+species visible in one frame. We combine two general-purpose models without training: SAM 3.1, a segmenter that
+tracks whatever short noun it is given, and Muse Spark, a vision-language model (VLM) that names and judges animals
+on still frames. We report measured failure modes. On our 39 clips, "animal" returned no box on 29, and the
+species' own name, "luderick", returned nothing on all six clips of that species; animals nobody asked about were
+mostly missed unless the VLM named them. As an auditor, the VLM adopted names placed in its prompt and changed its
+verdict with the layout of the evidence. For luderick, the VLM's audits do about as well as a track-length rule and
+cannot raise box recall above the segmenter's. Human MaxN is 1 or 2 on almost every clip, so exact MaxN cannot separate
+methods: always predicting 1 is exact on 17 of 24 held-out clips, against 19 to 21 for the pipeline variants.
+Discovery is scored as presence of taxa, not counts of individuals. On four development nautilus clips the pipeline
+finds all seven taxa a person listed. On five held-out videos it names all four non-fish animals marked beforehand,
+counts three, queues the fourth and counts nothing that is not an animal; on six more it counts the one animal two
+people marked. It is an annotation accelerator whose output a person confirms, not a finished census.
 
 </div>
+
+**Claims and evidence.** n = clips.
+
+| claim | evidence | n | caveat |
+|---|---|--:|---|
+| SAM 3.1 answers narrow words: "animal" gives no box on 29 of 39 clips; "luderick" gives nothing on all six clips of that species | §7.4, Table 6 | 39; 6 | our clips and one model version; not a property of SAM 3.1 in general |
+| On luderick the VLM audits match a tuned minimum-track-length rule and cannot raise box recall above the segmenter's | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary; the length threshold was chosen with test labels on the development clips; MaxN-exact cannot separate methods (always predicting the most common value is exact on 5 of 6 and 17 of 24) |
+| The person queue holds most tracks behind the largest over-counts, and also real fish | §6.1 Table 1b; §6.2 | 24 held-out | queue is 15 of 49 tracks; rejecting it costs 3.3 points of recall; part of an "over-count" is fish the human boxes omit |
+| Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of 24 held-out clips | §6.2, Table 1c | 24; 6 | no locations, so a count cannot be checked; some "excess" may be unboxed fish |
+| On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | development data; taxa scored as present, not counts; the reference is a non-expert's list from four frames |
+| On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips chosen by a rule that favours non-fish animals; presence only; "not an animal" judged by the author with labels hidden |
+| On six more held-out videos it counts the one animal marked beforehand and no non-animal | §6.3, Table 3c | 6; 1 animal | four of the six were chosen because their source text names a non-fish animal; the fixed 16-word baseline finds the same animals |
+| The VLM auditor adopts names in its prompt and changes verdicts with the layout of the evidence | §7.1, §7.5 | 6 development | development clips; repeated calls also vary on their own |
+
 
 # Introduction
 
@@ -453,6 +456,13 @@ rejected*: the same run with every queued track removed.</div>
 | 20190709_13 | 40 | 100% / 100% / 2→2 | 100% / 100% / 2→2 | 100% / 100% / 2→2 | 100% / 100% / 2→2 | 0 of 3 |
 | 20190709_4 | 11 | 100% / 71% / 2→3 | 100% / 77% / 2→2 | 100% / 77% / 2→2 | 0% / — / 2→0 | 3 of 3 |
 | **all** | **319** | **97.4% / 78.7%**, exact 2/6, Σ\|err\| 4 | **97.4% / 79.2%**, exact 4/6, Σ\|err\| 2 | **97.4% / 79.2%**, exact 4/6, Σ\|err\| 2 | **84.2% / 85.3%**, exact 3/6, Σ\|err\| 4 | **9 of 27** |
+| *constant, no model: always predict 2* | | exact 5/6, within ±1 5/6, Σ\|err\| 7 | — | — | — | |
+
+*A constant baseline.* Human MaxN is 2 on five of the six development clips and 9 on one. Always predicting 2 (the most
+common value, a rule that uses no model and no video) is exact on 5 of 6 clips and within ±1 on 5 of 6, with Σ|err| 7:
+more exact clips than any row of Table 1, and a larger total error than the pipeline (2) because it misses the nine-fish
+clip by 7. MaxN-exact therefore cannot separate methods on clips whose targets are almost all 2, and the row is a
+reference point, not a competitor. The box recall and precision columns and the queue are the informative numbers here.
 
 **The audits remove the over-counts SAM makes, and so does a length rule.** On 20190618_3 and 20190709_4 SAM alone
 counts 3 where people counted 2 (here and below, an over-count is a MaxN above the human one, not necessarily a
@@ -540,6 +550,16 @@ median of five consecutive annotated frames (§6.2).</div>
 | audited, queue rejected | 95.6% | 88.5% | 21/24 | 24/24 | 3 |
 | Spark alone, per-frame count | — | — | 8/24 | 16/24 | 33 |
 | Spark alone, 5-frame median† | — | — | 15/24 | 22/24 | 17 |
+| constant, no model: always predict 1 (the most common human MaxN) | — | — | 17/24 | 24/24 | 7 |
+| constant, no model: always predict 2 (the development-clip value) | — | — | 7/24 | 24/24 | 17 |
+
+*A constant baseline.* Human MaxN is 1 on 17 of the 24 held-out clips and 2 on the other 7. Always predicting 1, the
+most common human value, is exact on 17 clips, within ±1 on all 24, with Σ|err| 7 (Table 1c, computed from the same
+per-clip human MaxN as the rescoring script; the last row predicts 2, the value the development clips would suggest).
+The four pipeline rows are exact on 19 to 21 clips, two to four more than a rule with no model. MaxN-exact and
+within ±1 cannot separate methods when the targets are 1 or 2: the queue-rejected row's 24/24 within ±1 is also reached
+by the constant. Box recall and precision, which a constant does not have, and the queue are the informative numbers on
+these clips. The audited pipeline's one extra exact clip over SAM alone (20 vs 19) is read in that light.
 
 *Re-run of previously seen data on the final code.* After the DH6–DH11 runs, the 24 clips were run once more with the
 code frozen at `cbaf59b` (tag `frz`, $0.08; log `report/paper/data/heldout/frz_rerun.log`). With the queue accepted
@@ -783,6 +803,15 @@ the whole video. The fixed-vocabulary baseline called the same crab "starfish" a
 discoveries, of which there were none. Rows, crops, judgements and the markers' sheets are in
 `report/paper/data/discovery_heldout2/` (`results.md`).
 
+**How these six clips were chosen.** By the protocol's rule, a clip was taken when its file description or source article
+names a non-fish animal, or, for the fish-only clips, names fish only (`report/paper/discovery_heldout2_protocol.md`;
+every candidate is logged in `report/paper/data/discovery_heldout2/candidates.md`). Four clips (DH7, DH9, DH10, DH11) were
+taken because their source text names a non-fish animal, and two (DH6, DH8) as fish-only. The pipeline counted a non-fish
+animal on two of the four (DH7, DH11) and none on DH9 and DH10. This is not a recall on the clips: the source text
+describes whole videos, while each clip is a 12-s window that need not show the animal. The fixed 16-word baseline also
+found the DH11 animal (as "worm") and the DH7 crab (as "crab", and as "starfish" on the same crab); what the VLM adds on
+these two clips is the name, "amphipod" and "crab", not the finding.
+
 ## Cost and time
 
 All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
@@ -1012,8 +1041,8 @@ counted twice (for example body only vs. body with legs).](figures/pairs_s004.jp
 
 # Scope
 
-Counting was measured on 30 luderick clips from one estuary, discovery on nine 12-s clips from four studies in three
-seas; every number above is for these clips. Counts are what a reviewer confirms from the queue and the evidence
+Counting was measured on 30 luderick clips from one estuary, discovery on 15 12-s clips from nine studies (4 nautilus
+development clips, 5 and then 6 held-out clips); every number above is for these clips. Counts are what a reviewer confirms from the queue and the evidence
 frames, and species names are the VLM's proposals (§7.5). Videos over 10 minutes are split into
 segments and merged (§6.4); an hour-long deployment has not been run (estimated about $30 and 7.5 h sequentially).
 
@@ -1074,6 +1103,10 @@ Hyperparameters are listed in Appendix B.
 * **Held-out discovery:** Wikimedia Commons copies of PLOS ONE supplementary videos: S4, S1 and S3 of Anderson & Bell
   (2014) (DH1–DH3) and S2 of Anderson & Bell (2016) (DH4), CC BY 4.0; Video S1 of Zintzen et al. (2012) (DH5),
   CC BY 2.5. URLs and SHA-256 hashes are in `report/paper/data/discovery_heldout/clips.json`.
+* **Second held-out discovery set:** Wikimedia Commons copies of PLOS ONE supplementary videos: Video S2 of Werry et
+  al. (2014) (DH6), CC BY 4.0; Video S1 of Niemann et al. (2013) (DH7), Video S4 of Oliver et al. (2011) (DH8) and
+  Videos S4 and S1 of Sturdivant, Diaz & Cutter (2012) (DH9, DH10), CC BY 2.5; Video S4 of Cuvelier et al. (2014)
+  (DH11), CC BY 4.0. URLs are in `report/paper/data/discovery_heldout2/clips.json`.
 
 # References
 
@@ -1108,6 +1141,8 @@ detection. *CVPR 2024*. arXiv:2401.17270.
 Connolly, R.M., Fairclough, D.V., Jinks, E.L., Ditria, E.M., Jackson, G., Lopez-Marcano, S., Olds, A.D., Jinks,
 K.I. (2021). Improved accuracy for automated counting of a fish in baited underwater videos for stock assessment.
 *Frontiers in Marine Science* 8: 658135. doi:10.3389/fmars.2021.658135.
+
+Cuvelier, D., et al. (2014). Rhythms and community dynamics of a hydrothermal tubeworm assemblage at Main Endeavour Field – a multidisciplinary deep-sea observatory approach. *PLoS ONE* 9(5): e96924. doi:10.1371/journal.pone.0096924.
 
 Dang, Y., Gao, M., Yan, Y., Zou, X., Gu, Y., Li, J., et al. (2024). Exploring response uncertainty in MLLMs: an
 empirical evaluation under misleading scenarios. arXiv:2411.02708.
@@ -1215,9 +1250,13 @@ arXiv:2306.09683.
 Nebbia, G., Kovashka, A. (2024). Synonym relations affect object detection learned on vision-language data.
 *Findings of NAACL 2024*.
 
+Niemann, H., et al. (2013). Methane-carbon flow into the benthic food web at cold seeps – a case study from the Costa Rica subduction zone. *PLoS ONE* 8(10): e74894. doi:10.1371/journal.pone.0074894.
+
 Norouzzadeh, M.S., Nguyen, A., Kosmala, M., Swanson, A., Palmer, M.S., Packer, C., Clune, J. (2018). Automatically
 identifying, counting, and describing wild animals in camera-trap images with deep learning. *PNAS* 115(25):
 E5716–E5725. doi:10.1073/pnas.1719367115.
+
+Oliver, S.P., et al. (2011). Oceanic sharks clean at coastal seamount. *PLoS ONE* 6(3): e14755. doi:10.1371/journal.pone.0014755.
 
 Orenstein, E.C., Barnard, K., Lundsten, L., Patterson, G., Woodward, B., Katija, K. (2023). The FathomNet2023
 competition dataset. arXiv:2307.08781.
@@ -1252,6 +1291,8 @@ Salman, A., Siddiqui, S.A., Shafait, F., Mian, A., Shortis, M.R., Khurshid, K., 
 Automatic fish detection in underwater videos by a deep neural network-based hybrid motion learning system. *ICES
 Journal of Marine Science* 77(4): 1295–1307. doi:10.1093/icesjms/fsz025.
 
+Sturdivant, S.K., Díaz, R.J., Cutter, G.R. (2012). Bioturbation in a declining oxygen environment, in situ observations from Wormcam. *PLoS ONE* 7(4): e34539. doi:10.1371/journal.pone.0034539.
+
 Sánchez, J.S., Lisani, J.-L., Catalán, I.A., Álvarez-Ellacuría, A. (2026). A dataset for fish segmentation and
 tracking in underwater videos. *Scientific Data* 13: 1181. doi:10.1038/s41597-026-07786-z.
 
@@ -1279,6 +1320,8 @@ vision-language models. *CVPR 2025*. arXiv:2503.13792.
 Varini, F., Gayford, J.H., Jenrette, J., Witt, M.J., Garzon, F., Ferretti, F., et al. (2024). SharkTrack: an
 accurate, generalisable software for streamlining shark and ray underwater video analysis. arXiv:2407.20623.
 Journal version: *Ecological Informatics* 95: 103713 (2026).
+
+Werry, J.M., et al. (2014). Reef-fidelity and migration of tiger sharks, *Galeocerdo cuvier*, across the Coral Sea. *PLoS ONE* 9(1): e83249. doi:10.1371/journal.pone.0083249.
 
 Whitmarsh, S.K., Fairweather, P.G., Huveneers, C. (2017; online 2016). What is Big BRUVver up to? Methods and uses of baited
 underwater video. *Reviews in Fish Biology and Fisheries* 27: 53–73. doi:10.1007/s11160-016-9450-1.
