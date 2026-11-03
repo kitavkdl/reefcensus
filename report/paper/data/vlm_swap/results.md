@@ -38,10 +38,12 @@ Wonder would have rejected tiles on 3 of 7: DH3 spider crab (audit T3, T6, T7, T
 names). 0 rejections on DH1 crab, DH5 cusk-eel, DH7 crab, DH11 amphipod. Tile level only; the run is not recomputed.
 
 ## Measure 4 — cost and time
-Wonder $2.33 for 101 calls by reply usage, **$0.023 per call** (Spark's ledger mean ≈ $0.0042, about 5.5×);
+Wonder $2.33 for 101 calls by reply usage, $0.023 per call. On the 87 questions whose cached Spark reply stored its
+usage (the 14 motion looks did not; `scripts/vlm_swap_spark_cost.py` → `spark_cost.json`, $0): **Spark $0.0047 vs
+Wonder $0.020 per call, about 4.3×**. (An earlier draft said 5.5× against a ledger-wide Spark mean; corrected.)
 4.7 s mean, 61.6 s max per call (Spark's times were not logged per call).
 
 ## Reading
 On the same questions the larger model is more conservative: it says "no" to tiles Spark kept, including true
 animals a person confirmed (DH3 spider crab), names more things that are not there (12 vs 5 unsupported, 4 of them
-non-animals), and costs about 5.5× more. Nothing here argues for swapping Spark out.
+non-animals), and costs about 4.3× more per call. Nothing here argues for swapping Spark out.

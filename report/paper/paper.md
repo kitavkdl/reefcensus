@@ -34,6 +34,7 @@ people marked. It is an annotation accelerator whose output a person confirms, n
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips chosen by a rule that favours non-fish animals; presence only; "not an animal" judged by the author with labels hidden |
 | On six more held-out videos it counts the one animal marked beforehand and no non-animal | §6.3, Table 3c | 6; 1 animal | four of the six were chosen because their source text names a non-fish animal; the fixed 16-word baseline finds the same animals |
 | The VLM auditor adopts names in its prompt and changes verdicts with the layout of the evidence | §7.1, §7.5 | 6 development | development clips; repeated calls also vary on their own |
+| Muse Wonder, Meta's larger VLM, given Spark's 101 questions, rejects tiles of a crab a person was certain of, gives 12 unsupported names against Spark's 5, and costs about 4.3× per call | §7.6, Table 7 | 15; 101 questions | same questions, not Wonder's own run; yes/no per tile without confidence thresholds |
 
 
 # Introduction
@@ -218,7 +219,8 @@ OpenAI-compatible chat endpoint with images. SAM 3.1 is billed per processed fra
 was fine-tuned. Every call is cached by a hash of its exact input (clip bytes and prompt for SAM; images and text for
 Spark), so that any run can be replayed offline at zero cost and a replay reproduces the stored decisions exactly.
 Spending is capped twice: an environment variable caps the cumulative total of the project's spend ledger, and a
-per-run option caps the estimated cost of one run.
+per-run option caps the estimated cost of one run. Spark is the cheaper of the two image-reading models the API offers (Muse Wonder costs about 3 to 5 times as
+much per token; no Llama vision model is offered); §7.6 puts Wonder on the same questions.
 
 ## Word-prompted tracking
 
@@ -1038,6 +1040,47 @@ no label, no names: "looks like trap mesh, not animal". The track is not counted
 
 ![**Figure 8.** A3 sheet, s004: nested masks drawn red and cyan; Spark judged six of eight pairs to be one shrimp
 counted twice (for example body only vs. body with legs).](figures/pairs_s004.jpg){.half}
+
+
+## Swapping the VLM: Muse Wonder on the same questions
+
+Meta's API offers no Llama vision model (`GET /v1/models`, 3 Nov 2026: Muse Wonder, SAM 3.1, Muse Spark 1.1–1.3,
+Voice Transcribe, Image), so the only other model on it that reads images is Muse Wonder, Meta's largest, priced at
+$4.00 / $20.00 per million input / output tokens against Spark's $1.25 / $4.25. We asked whether the larger model
+would change what the pipeline concludes. The protocol was committed before any Wonder reply was seen
+(`report/paper/vlm_swap_protocol.md`). Each of the 15 discovery clips' final runs was replayed offline with Spark's
+cached answers driving every step and no SAM call; each of the 101 questions Spark answered (audit 30, peak check 29,
+discovery 15, motion look 14, motion confirm 9, pair 4) was sent unchanged, with the same images, settings and reply
+check, to `muse-wonder-1.0`. This is a same-question comparison, not Wonder's own end-to-end run: SAM never tracked
+Wonder's names, and the later questions are the ones Spark's answers led to.
+
+<div class="tablecap">**Table 7.** Muse Spark 1.3 and Muse Wonder 1.0 on the same 101 questions. Discovery names were
+graded blind by a separate grader (a Claude Sonnet subagent, read-only) that saw both lists per clip in random order
+without the model names. Data and scorer: `report/paper/data/vlm_swap/`, `scripts/vlm_swap_score.py`.</div>
+
+| measure | Spark 1.3 | Wonder 1.0 |
+|---|---|---|
+| Held-out DH1–DH11: marked non-fish animals named, strict (crab and shrimp/lobster separate) | 5 of 5 | 4 of 5 (DH3 crab named only "squat lobster") |
+| same, lenient (one crustacean group) | 5 of 5 | 5 of 5 |
+| Development s001–s004: taxa named (of the seven in Table 3) | 7 of 7 | 7 of 7 |
+| Names supported by no reference list, 15 clips | 5 | 12, of them 4 not animals (bait carcass, bacterial mat ×2, seaweed) |
+| Rows a person judged "animal" (metric 3, 7 rows): rows with tiles the model rejects | — (all 7 counted from Spark's answers) | 3 (DH3 spider crab on 4 audit and 2 peak-check tiles; DH2 crab and sea anemone, 3 shared audit tiles) |
+| Cost per call, the 87 questions whose Spark reply stored its usage (the 14 motion looks did not) | $0.0047 | $0.020, about 4.3× ($0.023 over all 101) |
+| Seconds per call | not logged | 4.7 mean, 61.6 max |
+
+Tile by tile, Wonder agreed with Spark on 106 of 121 audit tiles, 71 of 77 peak-check tiles, 12 of 15 motion
+confirmations, 88 of 111 motion-look tiles and 11 of 12 same-animal pair verdicts; where they differed, Wonder said "no" to a tile Spark
+kept in 38 cases and "yes" to one Spark dropped in 10. This compares the per-tile yes/no field only; the protocol
+said the pipeline's own parsing would be used, which also applies confidence thresholds, and we did not apply them.
+The first attempt lost 26 Wonder calls to HTTP 503 "service overloaded" and 16 more to our own error: the spending
+cap is on the project's whole ledger, and an hour-long run (§6.4) was spending at the same time. The second attempt
+retried 503s, which are transport errors rather than replies, and finished all 101 with no unreadable reply; the
+first attempt's calls are kept. Wonder cost $2.33 (Spark's cost on the same questions: `scripts/vlm_swap_spark_cost.py`, $0 to rerun).
+
+On these questions the larger model is more conservative where it matters for counting (it rejects tiles of an
+animal a person was certain of) and less careful where it matters for discovery (more names with nothing behind
+them, four of them not animals), at about 4.3 times the cost per call. Nothing here argues for replacing Spark, and
+because Spark's answers chose the questions, it does not show what a pipeline built around Wonder would count.
 
 # Scope
 

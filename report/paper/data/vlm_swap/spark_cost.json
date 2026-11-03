@@ -1,0 +1,13 @@
+{
+ "calls": 87,
+ "calls_without_usage": 0,
+ "spark_usd": 0.4114,
+ "spark_usd_per_call": 0.00473,
+ "by_kind": {
+  "audit": 30,
+  "confirm": 9,
+  "discover": 15,
+  "pair": 4,
+  "verify": 29
+ }
+}
