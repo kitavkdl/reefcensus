@@ -82,9 +82,9 @@ CAMO_VERSION = "c1"   # bump to recompute cached camo decisions (the key also ha
 # and 95th percentile L at most 8 above it; dark-water camo fish are not darker than their ring.
 SHADOW_DARK = -10       # box median Lab L minus the surrounding ring's median
 SHADOW_BRIGHT = 10      # box 95th percentile L minus the ring's median: a fish has an eye, fin edge or pale belly
-SHADOW_PROMPT = """Each group (S1, S2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops), same zoom, with a wide view around it; the orange rectangle marks the object. The object is darker than the seabed around it, so it may be a fish or only the shadow that a fish casts on the seabed in sunlight.
+SHADOW_PROMPT = """Each group (S1, S2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops); the orange rectangle marks the object. Top row: close view. Bottom row: the same moments in a wide view around it. The object is darker than its surroundings, so it may be a fish or only the shadow that a fish casts on the seabed in sunlight.
 For every group return ONLY a JSON list: [{{"tile":"S1","is_animal":true|false,"what":"fish|shadow|sand|water|other","confidence":0.0-1.0,"reason":"<=10 words"}}]
-is_animal = the rectangle itself holds an animal: even a dark fish shows an eye, fins, a lighter belly or highlights, keeps a body outline and sits in front of other things. Answer false for a shadow on the seabed (evenly dark, soft edges, no eye, fin edge or lighter parts, flat on the sand, often with a lighter fish of the same outline nearby moving the same way), and for empty sand or water. If you cannot tell, answer true with low confidence."""
+is_animal = the rectangle itself holds an animal: a small, faint or distant fish in open water still counts, and even a dark fish shows an eye, fins, a lighter belly or highlights, or keeps a body outline in front of other things. what = "shadow" only for a dark patch lying on the seabed (evenly dark, soft edges, no eye, fin edge or lighter parts, flat on the sand, often with a lighter fish of the same outline nearby moving the same way). If you cannot tell, answer true with low confidence."""
 COUNT_MIDCONF_MOTION = True   # see run_pipeline: mid-confidence motion tracks get a second look of their own
 MOTION_VERSION = "v7"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
@@ -350,8 +350,11 @@ def shadow_look(run, clip, frames, ts, offline):
     imgs = video.frames(clip, {f for t in ts for f, _ in trios[t]})
     for i, t in enumerate(ts):
         names[t] = f"S{i + 1}"
+        # close view (the audit's zoom) over a wide one: 11/3 cr2 luderick 20190618_3, a faint far fish in open water
+        # was a few pixels in the wide view alone, Spark said "empty blue water" and a real fish was taken out
         wide = max(96, int(2.5 * max(max(b[2] - b[0], b[3] - b[1]) for _, b in trios[t])))
-        groups.append(motion.trio(imgs, trios[t], names[t], half=wide, words=("first", "middle", "last")))
+        groups.append(np.vstack([motion.trio(imgs, trios[t], names[t], half=_half(trios[t]), words=("first", "middle", "last")),
+                                 motion.trio(imgs, trios[t], "", half=wide, words=("wide", "wide", "wide"))]))
     del imgs
     sheet = motion.layout(groups)
     open(run.path("shadow_1.jpg"), "wb").write(sheet)
@@ -666,7 +669,9 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             said = shadow_look(run, clip, frames, dark, offline)
             for t in dark:
                 c = said.get(t, {})
-                if c.get("is_animal") is False and _conf(c) >= 0.7:
+                # only an answer of "shadow" takes a track out: "water"/"sand" from this look does not overrule the
+                # audit's close-up yes (the luderick fish above)
+                if c.get("is_animal") is False and str(c.get("what", "")).lower() == "shadow" and _conf(c) >= 0.7:
                     verdicts[t]["shadow"] = c
                     labels[t] = None        # needs_review keeps it in the queue, where a person can restore it
             run.stage("audit", f"{len(dark)} counted track(s) darker than the seabed around them; Muse Spark, wide view: "
