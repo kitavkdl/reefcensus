@@ -1135,7 +1135,8 @@ the reference lists.
 The loop missed the DH3 spider crab ("crab", "spider", "crayfish": 0 frames on the full frame), the s002 red crab
 ("crab", "lobster", "bug": 0) and the s003 nautilus ("shell", "snail", "octopus": 0), and found one of the four s001
 nautiluses ("shell", 9 frames). Each miss is an animal the pipeline reaches by another route: "crab" or "shrimp" in a
-3× cell for the two crabs, the listed word "nautilus" (33 frames) for s003, motion box prompts for s001. Revisions
+3× cell for the two crabs, the listed word "nautilus" (33 frames) for s003 (in one of two empty-cache rehearsals the
+pipeline's own Spark did not list it either and counted 1 of 3, §7.5), motion box prompts for s001. Revisions
 rarely helped (2 of 16 revised things were kept, as "coral" for a sea anemone and "bug" for an amphipod) and in s003
 moved away from the word that works. Like the pipeline, the loop kept nothing that is not an animal. The blind sheet's
 pipeline list for s004 lacked "hagfish" because a shared helper drops labels of the fish group; the pipeline counts it
