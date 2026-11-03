@@ -1,5 +1,5 @@
 ---
-title: "Ask for Fish, Find the Hagfish: Failure Modes of a VLM-Audited Promptable Segmenter for Abundance Counts in Baited Underwater Video"
+title: "Ask for Fish, Find the Hagfish: A VLM Names What a Promptable Segmenter Cannot See, for Abundance Counts in Baited Underwater Video"
 author: "Jiyul Ahn · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 2 Nov 2026"
 lang: en
 ---
@@ -7,18 +7,18 @@ lang: en
 <div class="abstract">
 
 **Abstract.** Baited underwater video surveys report abundance as MaxN, the largest number of individuals of a
-species visible in one frame. We combine two general-purpose models without training: SAM 3.1, a segmenter that
-tracks whatever short noun it is given, and Muse Spark, a vision-language model (VLM) that names and judges animals
-on still frames. We report measured failure modes. On our 39 clips, "animal" returned no box on 29, and the
-species' own name, "luderick", returned nothing on all six clips of that species; animals nobody asked about were
-mostly missed unless the VLM named them. As an auditor, the VLM adopted names placed in its prompt and changed its
-verdict with the layout of the evidence. For luderick, the VLM's audits do about as well as a track-length rule and
-cannot raise box recall above the segmenter's. Human MaxN is 1 or 2 on almost every clip, so exact MaxN cannot separate
-methods: always predicting 1 is exact on 17 of 24 held-out clips, against 19 to 21 for the pipeline variants.
-Discovery is scored as presence of taxa, not counts of individuals. On four development nautilus clips the pipeline
-finds all seven taxa a person listed. On five held-out videos it names all four non-fish animals marked beforehand,
-counts three, queues the fourth and counts nothing that is not an animal; on six more it counts the one animal two
-people marked. It is an annotation accelerator whose output a person confirms, not a finished census.
+species visible in one frame. SAM 3.1, a promptable segmenter, tracks whatever short noun it is given, and only that:
+on our 39 clips "animal" returned no box on 29, and the name "luderick" returned nothing on all six clips of that
+species. Without training, we put a vision-language model (VLM), Muse Spark, in front of it. The VLM names animals
+the request left out, in nouns the segmenter answers; where no word works, it picks moving spots that keep their
+shape, and the segmenter tracks each from a box with no word. The VLM then audits every track, and doubtful ones go
+to a person instead of the count. Discovery is scored as presence of taxa. On four development nautilus clips the
+pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one of four nautiluses, it
+counts all four. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
+the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
+requested species the audits keep the segmenter's recall and match a tuned track-length rule, and exact MaxN cannot
+separate methods because human MaxN is 1 or 2. As an auditor the VLM adopts names placed in its prompt. The result
+is an annotation accelerator whose output a person confirms.
 
 </div>
 
