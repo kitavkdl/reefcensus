@@ -82,6 +82,14 @@ CAMO_VERSION = "c1"   # bump to recompute cached camo decisions (the key also ha
 # and 95th percentile L at most 8 above it; dark-water camo fish are not darker than their ring.
 SHADOW_DARK = -10       # box median Lab L minus the surrounding ring's median
 SHADOW_BRIGHT = 10      # box 95th percentile L minus the ring's median: a fish has an eye, fin edge or pale belly
+# 11/3 TF_52 T50 (the 7 s shadow): Spark, close and wide view, said "faint vertical fish in water column". The fish that
+# casts it is tracked (crowd-r1c1:0, just above and right), and the two keep the same offset: spread 0.06 of the shadow's
+# size, distance 1.1 sizes, the fish above. Among the real dark fish (luderick dev + holdout, DH8's school of 23) the
+# closest any counted fish came was a spread of 0.21 at about the same height, so a rigid companion above is the cue.
+SHADOW_PAIR_SPREAD = 0.12   # std of the companion's offset over shared frames, in the dark box's size
+SHADOW_PAIR_DIST = 2.0      # mean offset at most this many sizes
+SHADOW_PAIR_ABOVE = 0.2     # the companion's centre at least this many sizes higher in the picture (sun from above)
+SHADOW_PAIR_RATIO = (0.6, 1.6)   # companion size over the dark box's size
 SHADOW_PROMPT = """Each group (S1, S2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops); the orange rectangle marks the object. Top row: close view. Bottom row: the same moments in a wide view around it. The object is darker than its surroundings, so it may be a fish or only the shadow that a fish casts on the seabed in sunlight.
 For every group return ONLY a JSON list: [{{"tile":"S1","is_animal":true|false,"what":"fish|shadow|sand|water|other","confidence":0.0-1.0,"reason":"<=10 words"}}]
 is_animal = the rectangle itself holds an animal: a small, faint or distant fish in open water still counts, and even a dark fish shows an eye, fins, a lighter belly or highlights, or keeps a body outline in front of other things. what = "shadow" only for a dark patch lying on the seabed (evenly dark, soft edges, no eye, fin edge or lighter parts, flat on the sand, often with a lighter fish of the same outline nearby moving the same way). If you cannot tell, answer true with low confidence."""
@@ -334,6 +342,41 @@ def dark_tracks(clip, frames, ts, W, H):
         if dl and np.median(dl) <= SHADOW_DARK and np.median(hi) <= SHADOW_BRIGHT:
             out.append(t)
     del imgs
+    return out
+
+
+def shadow_pairs(frames, dark, counted):
+    """{dark track: (companion, spread, dist)} for dark tracks that move rigidly with a counted, not dark fish above them
+    of about their size (SHADOW_PAIR_*), over at least 2 shared frames: the fish and its shadow on the seabed."""
+    import numpy as np
+    paths = {t: dict(p) for t, p in _paths(frames).items()}
+
+    def c(b):
+        return np.array([(b[0] + b[2]) / 2, (b[1] + b[3]) / 2])
+
+    def size(b):
+        return max(b[2] - b[0], b[3] - b[1], 1)
+    out = {}
+    for d in dark:
+        p = paths.get(d, {})
+        best = None
+        for f_ in counted:
+            if f_ == d or f_ in dark:
+                continue
+            q = paths.get(f_, {})
+            com = sorted(set(p) & set(q))
+            if len(com) < 2:
+                continue
+            s = float(np.mean([size(p[f]) for f in com]))
+            off = np.array([c(q[f]) - c(p[f]) for f in com])
+            spread = float(np.linalg.norm(off.std(0))) / s
+            dist = float(np.linalg.norm(off.mean(0))) / s
+            ratio = float(np.mean([size(q[f]) / size(p[f]) for f in com]))
+            if (spread <= SHADOW_PAIR_SPREAD and dist <= SHADOW_PAIR_DIST and off.mean(0)[1] / s <= -SHADOW_PAIR_ABOVE
+                    and SHADOW_PAIR_RATIO[0] <= ratio <= SHADOW_PAIR_RATIO[1]) and (best is None or spread < best[1]):
+                best = (f_, round(spread, 3), round(dist, 2))
+        if best:
+            out[d] = best
     return out
 
 
@@ -667,6 +710,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         dark = dark_tracks(clip, frames, counted, inf["width"], inf["height"]) if counted else []
         if dark:
             said = shadow_look(run, clip, frames, dark, offline)
+            pairs = shadow_pairs(frames, dark, counted)
             for t in dark:
                 c = said.get(t, {})
                 # only an answer of "shadow" takes a track out: "water"/"sand" from this look does not overrule the
@@ -674,9 +718,15 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 if c.get("is_animal") is False and str(c.get("what", "")).lower() == "shadow" and _conf(c) >= 0.7:
                     verdicts[t]["shadow"] = c
                     labels[t] = None        # needs_review keeps it in the queue, where a person can restore it
+                elif t in pairs:            # a counted fish above moves rigidly with it: that fish's shadow (T50)
+                    comp, spread, dist = pairs[t]
+                    verdicts[t]["shadow"] = {"what": "shadow", "pair": comp, "spread": spread, "dist": dist,
+                                             "reason": f"moves with {verdicts.get(comp, {}).get('name', comp)} above it"}
+                    labels[t] = None
             run.stage("audit", f"{len(dark)} counted track(s) darker than the seabed around them; Muse Spark, wide view: "
                       + ", ".join(f"{verdicts[t]['name']} {'shadow' if verdicts[t].get('shadow') else 'animal'} "
-                                  f"({said.get(t, {}).get('reason', 'no answer')})" for t in dark))
+                                  f"({verdicts[t].get('shadow', {}).get('reason') or said.get(t, {}).get('reason', 'no answer')})"
+                                  for t in dark))
     for mv in moved:
         if mv.get("source"):
             mine_t = [t for t, v in trk.items() if v["source"] == mv["source"]]
