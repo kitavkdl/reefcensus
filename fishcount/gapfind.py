@@ -177,14 +177,16 @@ z-index:10;background:var(--bg)}header,main{padding-left:max(16px,env(safe-area-
 padding-right:max(16px,env(safe-area-inset-right,0px))}main{padding-block:12px 80px;max-width:760px;margin:auto}
 button:focus-visible{outline:2px solid var(--on);outline-offset:2px}.c{background:var(--card);border-radius:10px;padding:10px;margin:0 0 14px}
 .c h2{font-size:15px;margin:0 0 8px}.im{display:flex;gap:6px;overflow-x:auto}.im img{height:150px;border-radius:6px}
-.b{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.b button{flex:1;min-width:52px;padding:12px 0;font-size:16px;
+.b{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.b button{flex:1;min-width:58px;padding:8px 2px;font-size:16px;
 border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}.b button.on{background:var(--on);color:#fff}
-p.k{color:var(--mut);font-size:14px;margin:4px 0}textarea{width:100%;height:120px}
+p.k{color:var(--mut);font-size:14px;margin:4px 0}
+.g{background:var(--card);border-radius:10px;padding:4px 14px 10px;margin:0 0 16px;max-width:65ch}.g h3{font-size:16px;margin:12px 0 4px}
+.g dt{font-weight:700;margin-top:8px}.g dd{margin:2px 0 0 0}.g p,.g li{margin:4px 0}.g ul{padding-left:20px;margin:4px 0}
+.b button small{display:block;font-size:12px;opacity:.85}.y{color:#c9a400;font-weight:700}.gr{color:var(--mut);font-weight:700}textarea{width:100%;height:120px}
 #done{width:100%;padding:12px;font-size:16px;margin-top:6px}</style></head><body>
-<header><b>Is there an unboxed fish in the yellow box?</b> <span id="prog"></span>
-<p class="k">Grey = boxes already in the annotation. One answer per row (up to three moments of one track).<br>
-O fish, no grey box &middot; D same fish as a grey box &middot; P part of a fish &middot; X not a fish &middot; ? can't tell</p></header>
-<main>__CARDS__<button id="done">Copy answers</button><textarea id="out" readonly aria-label="answers"></textarea></main>
+<header><b>__Q__</b> <span id="prog"></span><p class="k">__LEGEND__</p></header>
+<main><section class="g">__GUIDE__</section>__CARDS__<button id="done">__COPY__</button>
+<textarea id="out" readonly aria-label="answers"></textarea></main>
 <script>
 const SHEET="__SHEET__",N=__N__,K="gapfind:"+SHEET;let A={},T={};try{const s=JSON.parse(localStorage.getItem(K)||"{}");
 A=s.a||{};T=s.t||{}}catch(e){}
@@ -195,20 +197,64 @@ A[n]=A[n]===b.dataset.a?undefined:b.dataset.a;if(A[n]===undefined)delete A[n];T[
 try{localStorage.setItem(K,JSON.stringify({a:A,t:T}))}catch(e){}draw()});
 document.getElementById("done").onclick=()=>{const ts=Object.values(T);const t=JSON.stringify({sheet:SHEET,answers:A,
 seconds_first_to_last:ts.length?Math.round((Math.max(...ts)-Math.min(...ts))/1000):null,n_answered:Object.keys(A).length});const o=document.getElementById("out");
-o.value=t;o.select();try{navigator.clipboard.writeText(t).then(()=>{document.getElementById("done").textContent="Copied"},
+o.value=t;o.select();try{navigator.clipboard.writeText(t).then(()=>{document.getElementById("done").textContent="__COPIED__"},
 ()=>{})}catch(e){}};draw();
 </script></body></html>"""
 
 
-def write_sheet(cards, out_dir, sheet_id, protocol=""):
+TEXT = {
+ "en": dict(q="Is there an unboxed fish in the yellow box?", copy="Copy answers", copied="Copied",
+            legend="O new fish &middot; D already boxed &middot; P part of a fish &middot; X not a fish &middot; ? can't tell",
+            btn={"O": "new fish", "D": "boxed", "P": "part", "X": "not fish", "?": "unsure"},
+            guide="""<h3>What to do</h3><p>Answer every card below with one button. When done, press <b>Copy answers</b> at the
+bottom and send the text to whoever made the sheet.</p><h3>How to read a card</h3><ul><li>One card is one object the computer
+followed through the video. Its photos (up to three; swipe sideways) are the same object at the start, middle and end.</li>
+<li><span class="y">Yellow box</span>: what the computer boxed as a fish. This is what you judge.</li>
+<li><span class="gr">Grey boxes</span>: boxes a person already drew in the existing annotation.</li></ul>
+<h3>The answers</h3><dl><dt>O new fish</dt><dd>The yellow box holds a fish (faint is fine) and that fish has no grey box.
+Its box is added to the annotation.</dd><dt>D already boxed</dt><dd>It is a fish, but a grey box already sits on the same fish.
+Nothing is added, so the fish is not counted twice.</dd><dt>P part of a fish</dt><dd>There is a fish, but the yellow box covers
+only part of it (head or tail only) or is far off. Nothing is added; a person redraws it later.</dd><dt>X not a fish</dt>
+<dd>Seagrass, rock, shadow, light on the water, debris.</dd><dt>? can't tell</dt><dd>Too small or blurry to decide, or the
+photos show different things.</dd></dl><p>Judge by most of the photos. Time is recorded, but there is no need to hurry.</p>"""),
+ "ko": dict(q="노란 상자 안에, 회색 상자가 없는 물고기가 있나요?", copy="답 복사", copied="복사됨 — 채팅에 붙여 넣어 주세요",
+            legend="O 새 물고기 &middot; D 이미 있음 &middot; P 일부만 &middot; X 물고기 아님 &middot; ? 모르겠음",
+            btn={"O": "새 물고기", "D": "이미 있음", "P": "일부만", "X": "아님", "?": "모르겠음"},
+            guide="""<h3>할 일</h3><p>아래 카드마다 버튼 <b>하나</b>씩 누르면 됩니다. 다 누르면 맨 아래 <b>답 복사</b>를 누르고,
+복사된 글을 Claude 채팅에 그대로 붙여 넣어 주세요. 답은 이 기기에 저장되니 중간에 닫았다 다시 와도 됩니다.</p>
+<h3>카드 보는 법</h3><ul><li>카드 한 장 = 컴퓨터가 영상에서 따라간 물체 <b>하나</b>입니다. 사진(최대 3장, 옆으로 넘기기)은
+같은 물체의 처음·중간·끝 순간입니다.</li><li><span class="y">노란 상자</span> = 컴퓨터가 "물고기"라고 그린 상자. 이것을 판정합니다.</li>
+<li><span class="gr">회색 상자</span> = 원래 주석에서 사람이 이미 그려 둔 상자입니다.</li></ul>
+<h3>선택지 — 무엇을 누르면 어떻게 되나</h3><dl>
+<dt>O 새 물고기</dt><dd>노란 상자 안이 물고기이고(희미해도 물고기로 보이면 O), 그 물고기에 회색 상자가 <b>없다</b>.
+→ 이 물고기 상자를 주석에 <b>추가</b>합니다. 원래 주석이 놓친 물고기를 찾는 것이 이 시트의 목적입니다.</dd>
+<dt>D 이미 있음</dt><dd>물고기는 맞는데, 같은 물고기에 회색 상자가 이미 겹쳐 있다(노랑과 회색이 같은 물고기를 가리킴).
+→ 추가하지 않습니다. 같은 물고기를 두 번 세지 않게 하려는 선택지입니다.</dd>
+<dt>P 일부만</dt><dd>물고기는 있는데 노란 상자가 물고기의 일부(머리나 꼬리만)만 감싸거나 많이 어긋나 있다.
+→ 추가하지 않고, 나중에 상자를 다시 그릴 목록에 올립니다.</dd>
+<dt>X 물고기 아님</dt><dd>해초·바위·그림자·물빛·떠다니는 부스러기 등 물고기가 아니다. → 추가하지 않습니다.</dd>
+<dt>? 모르겠음</dt><dd>너무 작거나 흐려서 판단이 안 되거나, 사진 세 장이 서로 다른 것을 가리킨다. → 미해결 목록에 올립니다.
+억지로 고르지 말고 ?를 누르셔도 됩니다.</dd></dl>
+<p>사진 여러 장 중 <b>대부분</b>을 기준으로 판단해 주세요. 걸린 시간이 자동으로 기록되지만 서두르실 필요는 없습니다.</p>"""),
+}
+
+
+def write_sheet(cards, out_dir, sheet_id, protocol="", lang="en"):
+    T = TEXT[lang]
     os.makedirs(out_dir, exist_ok=True)
     parts = []
     for c in cards:
         imgs = "".join(f'<img alt="crop" src="data:image/jpeg;base64,{base64.b64encode(j).decode()}">' for j in c["crops"])
-        btns = "".join(f'<button data-a="{html.escape(a)}">{html.escape(a)}</button>' for a in CODES)
+        btns = "".join(f'<button data-a="{html.escape(a)}">{html.escape(a)}<small>{html.escape(T["btn"][a])}</small></button>'
+                       for a in CODES)
         parts.append(f'<div class="c" data-n="{c["n"]}"><h2>#{c["n"]}</h2><div class="im">{imgs}</div>'
                      f'<div class="b">{btns}</div></div>')
-    page = PAGE.replace("__CARDS__", "".join(parts)).replace("__SHEET__", sheet_id).replace("__N__", str(len(cards)))
+    page = PAGE
+    if lang != "en":
+        page = page.replace('<html lang="en">', '<html lang="%s">' % lang)
+    for k in ("q", "legend", "guide", "copy", "copied"):
+        page = page.replace("__%s__" % k.upper(), T[k])
+    page = page.replace("__CARDS__", "".join(parts)).replace("__SHEET__", sheet_id).replace("__N__", str(len(cards)))
     open(os.path.join(out_dir, "sheet.html"), "w").write(page)
     key = dict(sheet=sheet_id, protocol=protocol, codes=CODES, iou_match=IOU_MATCH,
                cards=[{k: v for k, v in c.items() if k not in ("crops",)} for c in cards])
@@ -276,7 +322,7 @@ def main(argv=None):
     s.add_argument("--manifest"); s.add_argument("--runs", default="runs"); s.add_argument("--prefix", default="")
     s.add_argument("--run"); s.add_argument("--gt"); s.add_argument("--video")
     s.add_argument("--out", required=True); s.add_argument("--controls", type=int, default=0)
-    s.add_argument("--seed", type=int, default=0)
+    s.add_argument("--seed", type=int, default=0); s.add_argument("--lang", choices=sorted(TEXT), default="en")
     p = sub.add_parser("apply")
     p.add_argument("--key", required=True); p.add_argument("--answers", required=True); p.add_argument("--out", required=True)
     a = ap.parse_args(argv)
@@ -292,7 +338,7 @@ def main(argv=None):
         sid = "%s-%d" % (os.path.basename(os.path.normpath(a.out)), a.seed)
         path = write_sheet(cards, a.out, sid, protocol="gapfind sheet: counted tracks with boxes matching no "
                            "annotation box at IoU>=%.1f on annotated frames; shuffled with seed %d; %d controls" %
-                           (IOU_MATCH, a.seed, a.controls))
+                           (IOU_MATCH, a.seed, a.controls), lang=a.lang)
         gaps = [c for c in cards if c["kind"] == "gap"]
         print("%s: %d tracks to judge (%d unmatched boxes, %d on frames with more run boxes than annotated), "
               "%d controls" % (path, len(gaps), sum(c["n_unmatched"] for c in gaps), sum(c["raises"] for c in gaps),
