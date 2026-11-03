@@ -597,6 +597,14 @@ were made to train a single-species detector, not to count every fish, so on the
 an unboxed fish. This is one person and three clips, chosen because they were outliers; it explains the low
 precision on them but is not a corrected precision for the set.
 
+*A corrected precision.* To measure one, 40 of the 153 unmatched held-out boxes were drawn at random (seed and
+scoring rule fixed before judging) and mixed with 10 matched boxes; Jiyul Ahn judged each crop with labels hidden as
+fish, not fish or unsure (`report/paper/data/heldout/fp_sheet/`). All 10 matched boxes were called fish. Of the 40
+unmatched boxes, 29 were fish, 2 were boxes on part of a fish, 9 were unsure (7 of them on tracks the pipeline had
+already sent to the person queue), and none was called not a fish. Counting only the 29 as correct, held-out precision
+is 93.7% (95% Wilson interval for the share 57–84%, so 90.2–96.3%) instead of 77.2%; with the two part-of-a-fish boxes
+it is 94.9%. One judge, the first author, and one sample of 40.
+
 ![**Figure 3.** The last frame of held-out clip 20190709_17. Cyan: pipeline boxes (7). Orange: the human reference boxes (2). The
 pipeline's five "false positives" here are fish; the fish in the seagrass at left is boxed by neither. A hand count
 of the clip gives MaxN 8.](figures/annotation_gap.jpg)
