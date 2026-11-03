@@ -192,10 +192,16 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   before the run, `report/paper/heldout_protocol.md`): recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
   (SAM alone 19, the length rule 19); rejecting the queue puts every clip within ±1 at 95.6% recall. Same estuary, so
   this tests transfer within one site, not to new habitats.
+- **Against an independent count, the pipeline beats the reference boxes.** The author counted MaxN by hand on all 24
+  held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed
+  error 6; the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
+  the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3).
 - Of the two MaxN misses left, 20190618_9 (9→10) is two real fish the annotators did not box in that frame (one cut
-  by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds. Earlier, 6 of 12
-  "false-positive" tracks were checked by eye and all 6 were real luderick the annotators left unboxed, so precision
-  is a lower bound.
+  by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds.
+- **Most "false positives" are unboxed fish.** On the held-out set, 40 of the 153 boxes scored as false were drawn at
+  random and judged with labels hidden, mixed with 10 matched controls (all 10 called fish): 29 fish, 2 part of a fish,
+  9 unsure, **0 not a fish**. Corrected precision is 93.7% (clear fish only) to 100% (unsure counted as the fish they
+  were drawn on), against 77.2% scored on the boxes. `gapfind` (above) does this check for a whole annotation set.
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — PANGAEA doi:10.1594/PANGAEA.926930,

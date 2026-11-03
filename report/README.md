@@ -111,8 +111,11 @@ is taken over the annotated frames only, for both columns.
 - **The two MaxN misses left.** 20190618_9 (9→10): in the frame that sets the count, two real fish (one cut by the
   left edge) have no human box. 20190710_4 (2→1): a dark fish in murky seagrass that SAM never finds, so no check
   can add it.
-- **Precision is a lower bound.** Of 12 tracks scored as false positives in an earlier run, 6 were checked by eye and
-  all 6 were real luderick the annotators had not boxed.
+- **Precision is a lower bound, and we measured how low.** Of 12 tracks scored as false positives in an earlier run, 6
+  were checked by eye and all 6 were real luderick the annotators had not boxed. On the 24 held-out clips, 40 of the
+  153 unmatched boxes drawn at random and judged with labels hidden were 29 fish, 2 part of a fish, 9 unsure and 0 not
+  a fish: corrected precision 93.7–100% against 77.2% scored. Against a hand count of all 24 videos the pipeline's
+  MaxN is within ±1 on all 24 with summed error 6, the reference boxes' 16 (paper Table 1d).
 
 ### 4.2 Finding what was not asked for (nautilus)
 Four nautilus BRUV clips (Barord et al. 2014), 12 s each, request = "fish" only. Before looking at any pipeline
@@ -199,7 +202,7 @@ four-frame reference. The baseline called the same crab "starfish" too. Details:
   from four studies (4 development, 5 held-out). Counts are what a reviewer confirms from the queue and the evidence
   frames; species names are Spark's proposals.
 - **Precision is a lower bound.** Six of twelve "false-positive" luderick tracks were checked by eye and all six were
-  real fish the annotators left unboxed.
+  real fish the annotators left unboxed; on the held-out set none of 40 random "false" boxes was judged not a fish.
 - **Spark's confidence means something.** Over 74 judged luderick tracks, the share that match a human box rises from
   0 of 7 (confidence below 0.5) to 45%, 77% and 96% (0.9 and above), so the 0.7 threshold sends the mixed band to a
   person (`report/paper/scripts/calibration.py`).
