@@ -28,7 +28,7 @@ segmenter responds to). An open-vocabulary detector is the obvious alternative t
    judged here (it would need a label-free crop judgement like metric 3; if one is made later it is reported as an
    addition, with the crops chosen by a fixed rule: the 3 highest-scoring loose boxes per clip).
 3. **Frames with an "animal" box**, per clip.
-4. **CPU time per frame** (6-core server shared with other jobs; reported as measured, `DET_THREADS=2`).
+4. **CPU time per frame** (6-core server shared with other jobs; reported as measured, `DET_THREADS=4`).
 
 ## Limits stated in advance
 One detector, base size, CPU; no fine-tuning. Grounding DINO is not run (one detector keeps memory inside the cap

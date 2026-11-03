@@ -57,7 +57,7 @@ def detect(clips):
             with torch.no_grad():
                 o = model(**inp)
             side = max(img.size)                       # OWLv2 pads to a square: boxes are relative to the long side
-            r = proc.post_process_object_detection(o, threshold=KEEP, target_sizes=torch.tensor([[side, side]]))[0]
+            r = proc.post_process_grounded_object_detection(o, threshold=KEEP, target_sizes=torch.tensor([[side, side]]))[0]
             out[i] = [dict(q=QUERIES[int(l)], s=round(float(s), 4), box=[round(float(v), 1) for v in b])
                       for s, l, b in zip(r["scores"], r["labels"], r["boxes"])]
         det[c] = dict(frames=out, seconds=round(time.time() - t0, 1), n_frames=len(out))
