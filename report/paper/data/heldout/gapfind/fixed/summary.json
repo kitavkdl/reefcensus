@@ -1,0 +1,89 @@
+{
+ "added_boxes": 145,
+ "added_tracks": 15,
+ "by_answer": {
+  "gap:O": 15,
+  "gap:?": 3,
+  "gap:P": 1,
+  "control:D": 3,
+  "gap:D": 1
+ },
+ "redraw": [
+  {
+   "n": 6,
+   "clip": "fish_20190709_17",
+   "track": "p0:3",
+   "frames": [
+    21,
+    22
+   ]
+  }
+ ],
+ "unresolved": [
+  {
+   "n": 5,
+   "clip": "fish_20190709_15",
+   "track": "p0:0",
+   "frames": [
+    10,
+    11,
+    12
+   ]
+  },
+  {
+   "n": 9,
+   "clip": "fish_20190618_7",
+   "track": "p0:1000",
+   "frames": [
+    10
+   ]
+  },
+  {
+   "n": 12,
+   "clip": "fish_20190618_4",
+   "track": "p0:1",
+   "frames": [
+    18
+   ]
+  }
+ ],
+ "controls": {
+  "13": "D",
+  "17": "D",
+  "18": "D"
+ },
+ "clips": {
+  "fish_20190709_9": {
+   "maxn_before": 1,
+   "maxn_after": 5
+  },
+  "fish_20190709_15": {
+   "maxn_before": 2,
+   "maxn_after": 3
+  },
+  "fish_20190709_17": {
+   "maxn_before": 2,
+   "maxn_after": 7
+  },
+  "fish_20190618_7": {
+   "maxn_before": 2,
+   "maxn_after": 2
+  },
+  "fish_20190709_11": {
+   "maxn_before": 2,
+   "maxn_after": 4
+  },
+  "fish_20190618_4": {
+   "maxn_before": 2,
+   "maxn_after": 2
+  },
+  "fish_20190618_8": {
+   "maxn_before": 1,
+   "maxn_after": 1
+  },
+  "fish_20190710_3": {
+   "maxn_before": 1,
+   "maxn_after": 1
+  }
+ }
+}
