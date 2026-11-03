@@ -4,10 +4,10 @@ Bound to 127.0.0.1 only: POST /api/run can spend API credit (only when the reque
 FISH_BUDGET guard in fishcount/api.py still applies on top)."""
 import argparse, csv, io, json, mimetypes, os, re, sys, threading, time, traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, pipeline, tracks, video
+from fishcount import api, maxn_export, pipeline, tracks, video
 
 ROOT, WEB = api.ROOT, os.path.dirname(os.path.abspath(__file__))
 RUNS, UPLOADS = pipeline.RUNS, os.path.join(api.ROOT, "clips")
@@ -317,8 +317,16 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, dict(runs=run_list(), running=_current.get("id")))
             if path == "/api/clips":
                 return self.send(200, dict(clips=clips()))
-            m = re.fullmatch(r"/api/runs/([^/]+)(/export\.csv)?", path)
+            m = re.fullmatch(r"/api/runs/([^/]+)(/export\.csv|/export_globalarchive\.csv)?", path)
             if m and SAFE.match(m.group(1)):
+                if m.group(2) == "/export_globalarchive.csv":
+                    # optional ?opcode=CODE; same human-review logic as the plain CSV (maxn_export re-lays out effective())
+                    oc = (parse_qs(urlparse(self.path).query).get("opcode") or [""])[0].strip()[:80] or None
+                    e = effective(m.group(1))
+                    if not e:
+                        return self.send(404, {"error": "no result yet"})
+                    return self.send(200, maxn_export.to_csv(e, oc), "text/csv",
+                                     [("Content-Disposition", f'attachment; filename="{m.group(1)}_globalarchive_maxn.csv"')])
                 if m.group(2):
                     return self.send(200, export_csv(m.group(1)), "text/csv",
                                      [("Content-Disposition", f'attachment; filename="{m.group(1)}_maxn.csv"')])

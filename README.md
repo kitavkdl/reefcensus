@@ -65,6 +65,30 @@ of low-confidence tracks to confirm, rename or remove (counts and the CSV are re
 is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
 New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used, so all saved runs replay for $0).
 
+### Standard MaxN export (GlobalArchive layout)
+Added after the evaluation (not used in any paper number). Next to the plain CSV, the review screen offers
+"Download in GlobalArchive layout"; the same table comes from `python3 fishcount/maxn_export.py <run id> [--opcode CODE] [-o out.csv]`
+or `GET /api/runs/<id>/export_globalarchive.csv?opcode=CODE`. It re-lays-out the same reviewed numbers as the plain CSV (human
+renames and removals apply), one row per label with MaxN > 0, no group rows:
+
+`OpCode, Family, Genus, Species, MaxN, Frame, Time_mins` then our own columns `spark_common_name, maxn_confirmed, origin,
+taxonomy_status, source_file, run_id, human_edits`.
+
+Only what we have is filled. **Family, Genus and Species are always blank**: Muse Spark gives common names, not verified
+taxonomy, so the name is in `spark_common_name` (a reviewer's rename too) and `taxonomy_status` says it is unverified; a
+person adds the taxonomy. `OpCode` defaults to the video's file name (we know no deployment code; pass `--opcode`).
+`Frame` is the 0-based frame of our 5 fps analysis copy, not the original video's frame number; `Time_mins` is that frame's time.
+
+Sources for the columns (checked 11/3): the GlobalArchive generic-data manual, count file = required `Sample, Family,
+Genus, Species, Count` plus any user columns (<https://globalarchivemanual.github.io/generic-datatables>); the CheckEM
+workflow, whose MaxN table is `campaignid, sample, family, genus, species, maxn`, keeps rows with maxn > 0, and whose
+raw EventMeasure points carry `frame`, `time`, `period`, `family`, `genus`, `species`, `number`
+(<https://globalarchivemanual.github.io/CheckEM/articles/r-workflows/check-fish.html>); the NOAA BRUVS data dictionary's
+`OpCode`, `Frame`, `Time_min`, `MaxN` definitions (<https://www.fisheries.noaa.gov/inport/item/50417>); MaxN and the
+annotation protocol: Langlois et al. (2020), *Methods in Ecology and Evolution* 11(11), doi:10.1111/2041-210X.13470.
+We could not open a real EventMeasure or GlobalArchive export file, so the column order and names follow these
+documents, not a sample file: check the first upload against your own template (`OpCode` vs `Sample` is the likeliest rename).
+
 ## Finding what you didn't ask for (measured)
 Four nautilus BRUV clips (12 s each), request = "fish" only. Before looking at any output, every non-fish animal in
 four frames per clip was listed by eye at taxon level (not an expert's list): 7 taxa.

@@ -50,6 +50,7 @@ async function openRun(id) {
   state.id = id;
   history.replaceState(null, "", `#${encodeURIComponent(id)}`);
   $("exportBtn").href = `/api/runs/${encodeURIComponent(id)}/export.csv`;
+  $("exportGaBtn").href = `/api/runs/${encodeURIComponent(id)}/export_globalarchive.csv`;
   let st;
   try { st = await api(`/runs/${encodeURIComponent(id)}/status.json`); }
   catch { state.poll = setTimeout(() => openRun(id), 1000); return; }   // being written or not there yet
