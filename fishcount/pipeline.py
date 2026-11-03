@@ -469,8 +469,10 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False):
-    """camo: opt-in camo_look (needs audits): movers no still frame shows, tracked from a SAM box when SAM follows the
+                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
+                 misslook=False):
+    """misslook: opt-in miss_look (Spark points at animals without a box on a few frames -> SAM box prompts).
+    camo: opt-in camo_look (needs audits): movers no still frame shows, tracked from a SAM box when SAM follows the
     moving spot; their verdict comes from that look, not the audit. Off by default, so frozen evaluations are unchanged.
     refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
@@ -600,6 +602,12 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             recovered += got_log
         except MOTION_ERRORS as e:
             run.stage("camo", f"camouflage look skipped: {type(e).__name__}: {str(e)[:160]}")
+    if misslook:
+        try:
+            recovered += miss_look(run, clip, inf, results, max_usd, offline, labels=[lab for lab, _ in plist],
+                                   names=[f["what"] for f in found])
+        except MOTION_ERRORS as e:
+            run.stage("miss", f"missed-animal look skipped: {type(e).__name__}: {str(e)[:160]}")
     site_entries = []
     if site:      # after recovery and the motion look, so their inputs and cache keys are exactly those of a run without site
         site_entries, site_results = site_look(run, clip, inf, site, {q for _, q in plist} | {f["word"] for f in found if f["word"]},
@@ -1173,6 +1181,127 @@ def camo_verdicts_for(run, clip, frames, trk, by_source, n):
     return out
 
 
+# 11/3 recall (대표님: "재현율 98~99%"): of the 20 human boxes the luderick runs miss (dev 14, holdout 6), none is
+# recovered by filling gaps between a track's boxes, a contrast-stretched copy, the camo look or the crowd tiles: SAM
+# never boxed those fish at all. 9 of them are one faint fish far back in murky water (20190710_4 frames 52-61); shown
+# that frame with the found boxes drawn, Spark named it ("distant faint fish", 0.45) and SAM, given its box, tracked
+# it in 32 frames (4 more human boxes matched). Opt-in (--misslook): frozen evaluations stay as they were.
+MISS_PROMPT = """Underwater survey video frame, {w}x{h} pixels. Every animal already found has a green rectangle. Look carefully, including faint, hazy or distant animals far back in murky water, small ones, and ones partly hidden by seagrass, rock or the frame edge.
+Return ONLY a JSON list of animals that have NO green rectangle: [{{"box":[x1,y1,x2,y2],"name":"one plain everyday English noun (fish, shrimp, crab, eel, octopus, ray)","what":"<=6 words","confidence":0.0-1.0}}] in pixel coordinates of this image. Return [] if every animal has a rectangle."""
+MISS_FRAMES = 6         # frames shown per clip, evenly spaced (the busiest frame among them)
+MISS_MAX_BOXES = 4      # SAM box prompts per clip
+MISS_MAX_OVERLAP = 0.3   # a box-prompt track on existing tracks in this share of its frames is one we have
+MISS_MIN_CONF = 0.4     # the faint 20190710_4 fish came at 0.45; the audit then judges the track like any other
+
+
+def _miss_reply(text):
+    v = api.parse_json_list(text)
+    if not isinstance(v, list):
+        raise ValueError("miss look: not a JSON list")
+    return True
+
+
+def miss_look(run, clip, inf, results, max_usd, offline, labels=(), names=(), k=MISS_FRAMES, max_boxes=MISS_MAX_BOXES,
+              min_conf=MISS_MIN_CONF):
+    """Opt-in (--misslook): show Spark `k` frames with every box found so far drawn, ask for animals with no box,
+    and give up to `max_boxes` of them to SAM as box prompts (most confident first). Appends ("x<i>", label, dets,
+    text, None) to `results`: ordinary tracks for the audit. Returns log entries for the UI."""
+    import cv2
+    n, W, H = inf["n_frames"], inf["width"], inf["height"]
+    known = {}
+    for _, _, d, _, _ in results:
+        for f, ds in d.items():
+            known.setdefault(f, []).extend(list(det["box"]) for det in ds)
+    est = k * 0.005 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    if run.status["billed_usd"] + est > max_usd and not offline:
+        run.stage("miss", f"skipped the missed-animal look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        return []
+    step = n / k
+    show = sorted({min(n - 1, int(step * (i + 0.5))) for i in range(k)})
+    imgs = video.frames(clip, set(show))
+    s = min(1.0, 960 / W)
+    w2, h2 = int(W * s), int(H * s)
+    props = []
+    for f in show:
+        im = imgs[f].copy()
+        for b in known.get(f, []):
+            x0, y0, x1, y1 = (int(round(v)) for v in b)
+            cv2.rectangle(im, (x0, y0), (x1, y1), (0, 255, 0), max(2, int(3 / s)))
+        jpg = video.jpg(cv2.resize(im, (w2, h2)))
+        try:
+            reply = _counted(run, api.spark, MISS_PROMPT.format(w=w2, h=h2), [jpg], offline=offline, check=_miss_reply)
+        except MOTION_ERRORS as e:
+            run.stage("miss", f"frame {f}: missed-animal look failed ({type(e).__name__})")
+            continue
+        for v in api.parse_json_list(reply):
+            try:
+                b = [float(x) / s for x in v["box"]][:4]
+            except (KeyError, TypeError, ValueError):
+                continue
+            if len(b) < 4 or b[2] - b[0] < 8 or b[3] - b[1] < 8:
+                continue
+            b = [max(0, min(W, b[0])), max(0, min(H, b[1])), max(0, min(W, b[2])), max(0, min(H, b[3]))]
+            if any(tracks.overlap(b, kb) >= 0.3 for kb in known.get(f, [])):
+                continue        # Spark pointed at an animal that has a box after all
+            lab = _named(v, list(labels) + list(names))
+            if not lab:
+                continue
+            if lab not in [norm_label(l) for l in labels] and len(labels) == 1 and name_group(lab) == name_group(labels[0]):
+                lab = norm_label(labels[0])     # "luderick" or "bream" in a fish request is a fish
+            props.append(dict(frame=f, box=[int(round(x)) for x in b], label=lab, what=v.get("what"), confidence=_conf(v)))
+    del imgs
+    log = [dict(kind="miss-scan", what="Animals without a box", tried=[], word=None, frames=show, proposed=len(props),
+                said=[dict(p) for p in props])]
+    chosen = sorted((p for p in props if p["confidence"] >= min_conf), key=lambda p: -p["confidence"])
+    if not chosen:
+        run.stage("miss", f"Muse Spark looked at {len(show)} frames with every box drawn: no animal without a box")
+        return log
+    run.stage("miss", f"Muse Spark looked at {len(show)} frames with every box drawn: " + ", ".join(
+        f"{p['what'] or p['label']} (frame {p['frame']}, {p['confidence']:.2f})" for p in chosen))
+    prior, mine, calls = list(results), [], 0
+    for i, c in enumerate(chosen):
+        entry = dict(kind="miss", tile=f"X{i + 1}", what=c["what"] or c["label"], cell=None, frame=c["frame"], box=c["box"],
+                     tried=[dict(word="box", frames=None)], word=None)
+        if calls >= max_boxes:
+            break
+        same = next((t for t, d in mine if any(tracks.overlap(c["box"], kk["box"]) >= 0.3 for kk in d.get(c["frame"], []))), None)
+        if same:
+            entry.update(note=f"already followed by {same}")
+            log.append(entry)
+            continue
+        calls += 1
+        try:
+            txt = _counted(run, api.sam_video, clip, motion.box_prompt(c["frame"], c["box"], W, H), n, offline=offline)
+        except MOTION_ERRORS as e:
+            entry["note"] = f"{type(e).__name__}: {str(e)[:120]}"
+            log.append(entry)
+            run.stage("miss", f"X{i + 1}: SAM box prompt failed ({entry['note']})")
+            continue
+        d0 = tracks.parse_boxes(txt)
+        d, took, clash = _absorb(d0, prior)
+        label = took or c["label"]
+        k_frames = sum(1 for ds in d.values() if ds)
+        entry.update(word=label if k_frames else None, frames=k_frames, raw_frames=sum(1 for ds in d0.values() if ds),
+                     overlapped=clash, absorbed_into=took)
+        entry["tried"] = [dict(word="box", frames=k_frames)]
+        mine.append((f"X{i + 1}", d0))
+        raw_n = entry["raw_frames"]
+        if raw_n and clash / raw_n >= MISS_MAX_OVERLAP:
+            # mostly on a track we already have: the same animal, Spark's box a little off it (11/3 20190709_4: 31 of
+            # 66 frames on the counted fish, the rest added a second box and MaxN 2 -> 4) -> not a new animal
+            entry.update(note=f"same animal as an existing track ({clash} of {raw_n} frames)", word=None)
+            log.append(entry)
+            run.stage("miss", f"X{i + 1}: {clash} of {raw_n} frames on an existing track, the same animal: dropped")
+            continue
+        if k_frames:
+            results.append((f"x{i}", label, d, txt, None))
+            entry["source"] = f"x{i}"
+        log.append(entry)
+        run.stage("miss", f"X{i + 1} box -> '{label}' tracked in {k_frames} of {n} frames"
+                  + (f" ({clash} frames already tracked removed)" if clash else ""))
+    return log
+
+
 def camo_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=()):
     """Opt-in (--camo): movers that no still frame shows (motion.camo_candidates). Up to `k` spots go to Spark on one
     sheet with a "what moved" row under each still crop; up to `max_boxes` it calls animals go to SAM as box prompts.
@@ -1556,6 +1685,7 @@ if __name__ == "__main__":
     ap.add_argument("--crowd", action="store_true", help="crowded scene: SAM 'fish' on every overlapping 3x2 tile (2x)")
     ap.add_argument("--camo", action="store_true", help="also look for movers no still frame shows (frame-to-frame change -> "
                     "Spark sees still and 'what moved' crops -> SAM box; kept when SAM follows the moving spot)")
+    ap.add_argument("--misslook", action="store_true", help="Spark points at animals with no box on a few frames -> SAM box prompts")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
@@ -1572,9 +1702,10 @@ if __name__ == "__main__":
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                offline=a.offline, do_scout=not a.no_scout, do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
-                               crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo)
+                               crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
+                               misslook=a.misslook)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
-                         camo=a.camo)
+                         camo=a.camo, misslook=a.misslook)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

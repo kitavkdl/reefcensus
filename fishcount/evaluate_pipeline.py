@@ -38,6 +38,7 @@ def main():
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--tag", default="eval3")   # eval3 = three-crop audit and peak check (11/2)
     ap.add_argument("--manifest", default="manifest_fish.json", help="manifest_heldout.json = the held-out clips (paper)")
+    ap.add_argument("--misslook", action="store_true", help="opt-in missed-animal look (pipeline.miss_look)")
     a = ap.parse_args()
     man = json.load(open(f"{SMOKE}/clips/{a.manifest}"))
     rows, tot = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}
@@ -48,7 +49,8 @@ def main():
         sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(api.sam_video(clip, "fish", c["n_frames"], offline=not a.run)).items()}
         rp = os.path.join(RUNS, f"{a.tag}_{cid}", "result.json")
         if a.run and not os.path.exists(rp):
-            pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.2)
+            pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.5 if a.misslook else 0.2,
+                                  misslook=a.misslook)   # miss look: 4 SAM box prompts on a 260-frame clip ~$0.2
         res = json.load(open(rp)) if os.path.exists(rp) else None
         r = dict(clip=cid, frames=len(gt), sam=score(sam, gt))
         if res:
