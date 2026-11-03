@@ -168,6 +168,82 @@ def _near(a, b, min_iou=0.2):
     return ((ca[0] - cb[0]) ** 2 + (ca[1] - cb[1]) ** 2) ** 0.5 < 0.6 * size
 
 
+def _step(a, b):
+    """Centre distance between two boxes, in sides of the larger box."""
+    ca, cb = ((a[0] + a[2]) / 2, (a[1] + a[3]) / 2), ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
+    size = max(a[2] - a[0], a[3] - a[1], b[2] - b[0], b[3] - b[1], 1)
+    return ((ca[0] - cb[0]) ** 2 + (ca[1] - cb[1]) ** 2) ** 0.5 / size
+
+
+# 11/3 TF_52 (demo_TF52f, 2,090 frame-to-frame steps): a box that keeps its object moves at most ~1.2 of its side per
+# 5 fps frame; every step over 2 was an id handed to another object for one frame (the box that starts a shifted run
+# is 2-5 sides off; the rest of the run is found through it). Over 1.5 would also catch a school's first frame, before
+# it has a velocity (tests/test_repair_ids.py).
+SWAP_JUMP = 2.0
+SWAP_ON = 0.6      # a handed-over box sits on the other id's predicted spot (TF_52: 0.02-0.25 of a side)
+
+
+def _predict(hist, f):
+    """Where an id's box should be at frame f: its last box moved on at its last velocity (hist = [(frame, box)], last
+    two sightings), so a school swimming together or a fast fish is not read as a jump. The cost is the nearer of this
+    and the last box, so a fish that stops is not one either."""
+    (lf, lb) = hist[-1]
+    if len(hist) < 2 or lf - hist[-2][0] > 2:
+        return lb
+    pf, pb = hist[-2]
+    k = min(f - lf, 2) / (lf - pf)
+    return tuple(lb[j] + (lb[j] - pb[j]) * k for j in range(4))
+
+
+def repair_ids(dets, max_gap=3, jump=SWAP_JUMP, on=SWAP_ON):
+    """Undo SAM 3.1 handing a frame's boxes the wrong ids. 11/3 TF_52, raw output of crowd tile r1c1: at frames 9, 11
+    and 14 a run of ids is shifted by one (id 12 is on id 11's fish, 13 on 12's, the first id of the run on a box seen
+    nowhere near it), and the next frame is right again. Read as given, the rendered box hopped between fish and back,
+    and a track's audit crop could be another object (the "fish" that sat on a fish's shadow at 7 s).
+    Ids seen in the last `max_gap` frames get a predicted box (_predict). A box is suspect when it is more than `jump`
+    sides (per frame, up to 2) off its own id's prediction, or when it is off its own by more than `on`, sits within
+    `on` of another id's prediction, and its id is new, or a suspect sits on its id, or it sits on a suspect's id (TF_52
+    frame 14: a run of six shifted ids, only some far enough to start it). Suspects are matched to ids within `on` sides, nearest first, never to
+    an id a non-suspect box keeps; a suspect matched to nothing whose own id went to another box, or that is more than
+    2 x `jump` off its own prediction, gets a fresh id (1000+), a track of its own (the shadow). Everything else keeps SAM's id, so two fish crossing or a school are not reshuffled
+    on a guess. Ids, not boxes, change: masks are matched to tracks by box, so drawing is unaffected. A changed box
+    keeps SAM's id in `sam_id`. Returns a new {frame: [det]}."""
+    hist, fresh, out = {}, iter(range(1000, 10 ** 9)), {}
+    for f in sorted(dets):
+        ds = [dict(d) for d in dets[f]]
+        recent = {i: h for i, h in hist.items() if f - h[-1][0] <= max_gap}
+        pred = {i: _predict(h, f) for i, h in recent.items()}
+        cost = lambda i, box: min(_step(pred[i], box), _step(recent[i][-1][1], box)) / min(f - recent[i][-1][0], 2)
+        own = {k: cost(d["id"], d["box"]) if d["id"] in recent else None for k, d in enumerate(ds)}
+        sus = {k for k, s in own.items() if s is not None and s > jump}
+        if sus:
+            tight = lambda k: {i for i in recent if i != ds[k]["id"] and cost(i, ds[k]["box"]) <= on}
+            grow = True
+            while grow:       # a box joins the run if a suspect sits on its id, or it sits on a suspect's id
+                wanted = {i for k in sus for i in tight(k)}
+                held = {ds[k]["id"] for k in sus}
+                add = {k for k, d in enumerate(ds) if k not in sus and (own[k] is None or own[k] > on) and tight(k)
+                       and (d["id"] in wanted or own[k] is None or tight(k) & held)}
+                grow = bool(add)
+                sus |= add
+            kept = {d["id"] for k, d in enumerate(ds) if k not in sus}
+            got, used = {}, set()
+            for s, k, i in sorted((cost(i, ds[k]["box"]), k, i) for k in sus for i in recent if i not in kept):
+                if s <= on and k not in got and i not in used:
+                    got[k] = i
+                    used.add(i)
+            for k in sus:
+                i = got.get(k)
+                if i is None:
+                    i = ds[k]["id"] if (own[k] is None or own[k] <= 2 * jump) and ds[k]["id"] not in used else next(fresh)
+                if i != ds[k]["id"]:
+                    ds[k]["sam_id"], ds[k]["id"] = ds[k]["id"], i
+        for d in ds:
+            hist[d["id"]] = (hist.get(d["id"], []) + [(f, d["box"])])[-2:]
+        out[f] = ds
+    return out
+
+
 def split_jumps(frames, tracks, max_gap=10):
     """Cut a track where SAM reused its ID for another object. 11/3 IMAS TF_52: a large fish crossed the top of the
     frame (frames 0-15) and left; SAM gave its ID to a 22 px speck at frame 52, so the audit's crops were the fish cut

@@ -75,6 +75,16 @@ CAMO_PROMPT = """Each group (K1, K2, ...) shows one spot of underwater survey vi
 An animal camouflaged against rock or sand can be invisible in the top row; then judge by the bottom row. A swimming animal is one compact bright shape in the bottom row that keeps about the same size and outline (a fish shape, for example) and moves from crop to crop. Not an animal: a single tiny bright dot or speck (floating particles), a large soft patch with no outline, a dark shadow on the seabed (the top row shows it as a darker area), waving weed or seagrass (thin strands that stay rooted in place), sediment that spreads or thins, or flicker of light.
 For every group return ONLY a JSON list: [{{"tile":"K1","is_animal":true|false,"name":"one plain everyday English noun (fish, shrimp, crab, eel, octopus, ray) or none","what":"<=8 words","confidence":0.0-1.0}}]"""
 CAMO_VERSION = "c1"   # bump to recompute cached camo decisions (the key also hashes the prompt and the boxes)
+# 11/3 TF_52 v5 (대표님: "물고기의 그림자를 보고 오인"): on sunlit sand every fish casts a dark shadow of its own
+# outline, SAM boxes it as "fish" and the audit said "faint dark silhouette holds shape". A counted track whose box is
+# darker than the seabed around it and holds no highlight gets one more look with a wide view, where the fish that
+# casts it is usually in the picture. Thresholds from demo_TF52g: the 6 shadows had box median L 12-43 below the ring
+# and 95th percentile L at most 8 above it; dark-water camo fish are not darker than their ring.
+SHADOW_DARK = -10       # box median Lab L minus the surrounding ring's median
+SHADOW_BRIGHT = 10      # box 95th percentile L minus the ring's median: a fish has an eye, fin edge or pale belly
+SHADOW_PROMPT = """Each group (S1, S2, ...) follows one tracked object in underwater survey video at three moments (captions under the crops), same zoom, with a wide view around it; the orange rectangle marks the object. The object is darker than the seabed around it, so it may be a fish or only the shadow that a fish casts on the seabed in sunlight.
+For every group return ONLY a JSON list: [{{"tile":"S1","is_animal":true|false,"what":"fish|shadow|sand|water|other","confidence":0.0-1.0,"reason":"<=10 words"}}]
+is_animal = the rectangle itself holds an animal: even a dark fish shows an eye, fins, a lighter belly or highlights, keeps a body outline and sits in front of other things. Answer false for a shadow on the seabed (evenly dark, soft edges, no eye, fin edge or lighter parts, flat on the sand, often with a lighter fish of the same outline nearby moving the same way), and for empty sand or water. If you cannot tell, answer true with low confidence."""
 COUNT_MIDCONF_MOTION = True   # see run_pipeline: mid-confidence motion tracks get a second look of their own
 MOTION_VERSION = "v7"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
@@ -290,6 +300,73 @@ def confirm_motion(run, clip, frames, ts, offline, sheet_no=1):
     return {t: got.get(names[t], {}) for t in ts}
 
 
+def dark_tracks(clip, frames, ts, W, H):
+    """Tracks (of `ts`) whose boxes are darker than the seabed around them with no highlight inside (SHADOW_DARK,
+    SHADOW_BRIGHT), measured at the first eighth, middle and last eighth of the path, median of the three."""
+    import cv2
+    import numpy as np
+    paths = _paths(frames)
+    at = {t: [paths[t][j] for j in sorted({min(len(paths[t]) - 1, len(paths[t]) // 8), len(paths[t]) // 2,
+                                             max(0, len(paths[t]) - 1 - len(paths[t]) // 8)})] for t in ts}
+    imgs = video.frames(clip, {f for t in ts for f, _ in at[t]})
+    lab = {}
+    out = []
+    for t in ts:
+        dl, hi = [], []
+        for f, b in at[t]:
+            if f not in lab:
+                lab[f] = cv2.cvtColor(imgs[f], cv2.COLOR_BGR2LAB)[:, :, 0].astype(np.float32)
+            x0, y0, x1, y1 = (int(round(v)) for v in b)
+            x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
+            w, h = x1 - x0, y1 - y0
+            if w < 5 or h < 5:
+                continue
+            inner = lab[f][y0 + h // 5:y1 - h // 5, x0 + w // 5:x1 - w // 5]
+            X0, Y0, X1, Y1 = max(0, x0 - w // 2), max(0, y0 - h // 2), min(W, x1 + w // 2), min(H, y1 + h // 2)
+            m = np.ones((Y1 - Y0, X1 - X0), bool)
+            m[y0 - Y0:y1 - Y0, x0 - X0:x1 - X0] = False
+            ring = lab[f][Y0:Y1, X0:X1][m]
+            if inner.size < 4 or ring.size < 4:
+                continue
+            r = float(np.median(ring))
+            dl.append(float(np.median(inner)) - r)
+            hi.append(float(np.percentile(inner, 95)) - r)
+        if dl and np.median(dl) <= SHADOW_DARK and np.median(hi) <= SHADOW_BRIGHT:
+            out.append(t)
+    del imgs
+    return out
+
+
+def shadow_look(run, clip, frames, ts, offline):
+    """Ask, with a wide view, whether each dark track is an animal or a fish's shadow / bare seabed (SHADOW_PROMPT).
+    Saved as shadow_1.jpg. Returns {track: reply dict}."""
+    paths = _paths(frames)
+    groups, names, trios = [], {}, {}
+    for t in ts:
+        p = paths[t]
+        L = len(p)
+        idx = [min(L - 1, L // 8), L // 2, max(0, L - 1 - L // 8)]
+        trios[t] = [(p[j][0], _ibox(p[j][1])) for j in idx]
+    imgs = video.frames(clip, {f for t in ts for f, _ in trios[t]})
+    for i, t in enumerate(ts):
+        names[t] = f"S{i + 1}"
+        wide = max(96, int(2.5 * max(max(b[2] - b[0], b[3] - b[1]) for _, b in trios[t])))
+        groups.append(motion.trio(imgs, trios[t], names[t], half=wide, words=("first", "middle", "last")))
+    del imgs
+    sheet = motion.layout(groups)
+    open(run.path("shadow_1.jpg"), "wb").write(sheet)
+    want = set(names.values())
+
+    def every_tile(text):
+        got_ = {str(v.get("tile", "")).upper() for v in api.parse_json_list(text) if isinstance(v, dict)}
+        if not want <= got_:
+            raise ValueError(f"shadow reply misses {sorted(want - got_)}")
+        return True
+    reply = _counted(run, api.spark, SHADOW_PROMPT, [sheet], offline=offline, check=every_tile)
+    got = {str(v.get("tile", "")).upper(): v for v in api.parse_json_list(reply) if isinstance(v, dict)}
+    return {t: got.get(names[t], {}) for t in ts}
+
+
 def crowd_tiles(W, H, cols=3, rows=2, pad=0.12):
     """Overlapping tiles covering the whole frame (x, y, w, h), even sizes. 11/3 IMAS TF_52 (a school of seabream):
     the small far fish in the upper water were missed by the full-frame pass, and the scout-picked zoom covers at
@@ -352,7 +429,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
     its number. On by default since 11/3 (refill=False reproduces the frozen evaluations before that).
-    clean: track hygiene (11/3 TF_52): tracks.split_jumps() cuts IDs SAM reused for another object, and the
+    clean: track hygiene (11/3 TF_52): tracks.repair_ids() gives back the ids SAM shuffled for a frame (boxes that
+    hopped between fish, a fish's id on its shadow), tracks.split_jumps() cuts IDs SAM reused for another object, and the
     audit's "largest box" moment skips boxes cut by the frame edge. On by default since 11/3 (clean=False: the old runs).
     crowd: opt-in "crowded scene" pass (crowd_tiles): every overlapping 3x2 tile, upscaled 2x, gets SAM "fish";
     tile duplicates merge as zoom tiles do. Off by default, so frozen evaluations are unchanged.
@@ -482,7 +560,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                                                max_usd, offline)
         results[0:0] = site_results       # a remembered specific kind wins overlaps, like the scout's words
     raw = {name: (txt, tile) for name, _, _, txt, tile in results}   # tile=None: full-frame text (masks drawable)
-    sources = [(name, label, d) for name, label, d, _, _ in results]
+    # clean: SAM 3.1 sometimes hands a frame's boxes the wrong ids (tracks.repair_ids); ids only, boxes and counts stay
+    sources = [(name, label, tracks.repair_ids(d) if clean else d) for name, label, d, _, _ in results]
     frames, trk = tracks.merge(sources)
     n0 = len(trk)
     if clean:
@@ -577,6 +656,22 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                     verdicts[t]["midconf_counted"] = True
             run.stage("audit", f"second look at {len(maybe)} mid-confidence motion track(s): "
                       + ", ".join(f"{verdicts[t]['name']} {'counted' if labels.get(t) else 'not counted'} ({said.get(t, {}).get('reason', 'no answer')})" for t in maybe))
+    if do_audit and clean:
+        for f in os.listdir(run.path()):
+            if f.startswith("shadow_") and f.endswith(".jpg"):
+                os.remove(run.path(f))
+        counted = [t for t in verdicts if labels.get(t) and not trk[t]["source"].startswith("camo")]
+        dark = dark_tracks(clip, frames, counted, inf["width"], inf["height"]) if counted else []
+        if dark:
+            said = shadow_look(run, clip, frames, dark, offline)
+            for t in dark:
+                c = said.get(t, {})
+                if c.get("is_animal") is False and _conf(c) >= 0.7:
+                    verdicts[t]["shadow"] = c
+                    labels[t] = None        # needs_review keeps it in the queue, where a person can restore it
+            run.stage("audit", f"{len(dark)} counted track(s) darker than the seabed around them; Muse Spark, wide view: "
+                      + ", ".join(f"{verdicts[t]['name']} {'shadow' if verdicts[t].get('shadow') else 'animal'} "
+                                  f"({said.get(t, {}).get('reason', 'no answer')})" for t in dark))
     for mv in moved:
         if mv.get("source"):
             mine_t = [t for t, v in trk.items() if v["source"] == mv["source"]]
@@ -1363,6 +1458,8 @@ def needs_review(v):
     if not v:
         return True
     if v.get("peak_doubt") or v.get("name_disagrees"):   # a later look named another animal: a person decides the name
+        return True
+    if v.get("shadow"):         # taken out as a fish's shadow (shadow_look): a person can put it back
         return True
     c = v.get("confirm")
     if c is not None:
