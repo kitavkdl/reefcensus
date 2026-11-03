@@ -1,0 +1,386 @@
+{
+ "calls": 101,
+ "errors": 0,
+ "error_kinds": [],
+ "wonder_usd": 2.3315,
+ "wonder_usd_per_call": 0.02308,
+ "wonder_seconds_mean": 4.7,
+ "wonder_seconds_max": 61.57,
+ "agreement": {
+  "audit": {
+   "tiles": 121,
+   "agree": 106,
+   "unreadable": 0,
+   "flips": [
+    {
+     "clip": "DH2",
+     "tile": "T1",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH2",
+     "tile": "T3",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH2",
+     "tile": "T7",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "T3",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "T6",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "T7",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "T8",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "T9",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "T10",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "T11",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "T17",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "T21",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "s003",
+     "tile": "T5",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "s004",
+     "tile": "T6",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "s004",
+     "tile": "T31",
+     "spark": false,
+     "wonder": true
+    }
+   ]
+  },
+  "verify": {
+   "tiles": 77,
+   "agree": 71,
+   "unreadable": 0,
+   "flips": [
+    {
+     "clip": "DH3",
+     "tile": "D1",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "D2",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "D8",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH7",
+     "tile": "D1",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "s002",
+     "tile": "D1",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "s004",
+     "tile": "D13",
+     "spark": true,
+     "wonder": false
+    }
+   ]
+  },
+  "confirm": {
+   "tiles": 15,
+   "agree": 12,
+   "unreadable": 0,
+   "flips": [
+    {
+     "clip": "DH2",
+     "tile": "C1",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "C1",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "DH11",
+     "tile": "C1",
+     "spark": true,
+     "wonder": false
+    }
+   ]
+  },
+  "motion": {
+   "tiles": 111,
+   "agree": 88,
+   "unreadable": 0,
+   "flips": [
+    {
+     "clip": "DH2",
+     "tile": "M1",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH2",
+     "tile": "M2",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH2",
+     "tile": "M6",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "M4",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "M5",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "M6",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH3",
+     "tile": "M7",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "M2",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "M3",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "M4",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH5",
+     "tile": "M5",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH6",
+     "tile": "M3",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "DH6",
+     "tile": "M5",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH7",
+     "tile": "M5",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH8",
+     "tile": "M3",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "DH11",
+     "tile": "M1",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "DH11",
+     "tile": "M3",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "DH11",
+     "tile": "M4",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "DH11",
+     "tile": "M6",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "DH11",
+     "tile": "M8",
+     "spark": false,
+     "wonder": true
+    },
+    {
+     "clip": "s002",
+     "tile": "M3",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "s003",
+     "tile": "M7",
+     "spark": true,
+     "wonder": false
+    },
+    {
+     "clip": "s004",
+     "tile": "M5",
+     "spark": true,
+     "wonder": false
+    }
+   ]
+  },
+  "pair": {
+   "tiles": 12,
+   "agree": 11,
+   "unreadable": 0,
+   "flips": [
+    {
+     "clip": "s004",
+     "tile": "P3",
+     "spark": true,
+     "wonder": false
+    }
+   ]
+  }
+ },
+ "judged_rows": [
+  {
+   "clip": "DH1",
+   "row": "crab",
+   "wonder_rejects": []
+  },
+  {
+   "clip": "DH2",
+   "row": "sea anemone",
+   "wonder_rejects": [
+    "audit T1",
+    "audit T3",
+    "audit T7"
+   ]
+  },
+  {
+   "clip": "DH2",
+   "row": "crab",
+   "wonder_rejects": [
+    "audit T1",
+    "audit T3",
+    "audit T7"
+   ]
+  },
+  {
+   "clip": "DH3",
+   "row": "spider crab",
+   "wonder_rejects": [
+    "audit T3",
+    "audit T6",
+    "audit T7",
+    "audit T8",
+    "verify D1",
+    "verify D2"
+   ]
+  },
+  {
+   "clip": "DH5",
+   "row": "pink cusk-eel",
+   "wonder_rejects": []
+  },
+  {
+   "clip": "DH7",
+   "row": "crab",
+   "wonder_rejects": []
+  },
+  {
+   "clip": "DH11",
+   "row": "scavenging amphipod crustacean",
+   "wonder_rejects": []
+  }
+ ]
+}
