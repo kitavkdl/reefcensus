@@ -2,14 +2,14 @@
 but each segment's clip.mp4 from the original run is kept; run_pipeline copies a 5 fps mp4 as is, so every cache key
 (clip hash + prompt) is the original run's and only calls the new code changes are made. Segment starts are those of
 the original run's log. Low light was decided once for the whole video in that run ("off"), so it is passed as is.
-    FISH_BUDGET=<cap> python3 report/paper/scripts/rerun_long1_cr.py"""
+    FISH_BUDGET=<cap> python3 report/paper/scripts/rerun_long1_cr.py [run id, default LONG1_cr]"""
 import json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, ROOT)
 from fishcount import longvideo, pipeline, video
 
 old = json.load(open(os.path.join(pipeline.RUNS, "LONG1", "result.json")))
-rid, done, start = "LONG1_cr", [], 0
+rid, done, start = (sys.argv[1] if len(sys.argv) > 1 else "LONG1_cr"), [], 0   # 11/3 evening: LONG1_cr2
 os.makedirs(os.path.join(pipeline.RUNS, rid), exist_ok=True)
 for k in range(1, 7):
     sp = os.path.join(pipeline.RUNS, f"LONG1__S{k}", "clip.mp4")
