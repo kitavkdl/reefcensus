@@ -12,7 +12,7 @@ from fishcount import api, pipeline, tracks, video
 ROOT, WEB = api.ROOT, os.path.dirname(os.path.abspath(__file__))
 RUNS, UPLOADS = pipeline.RUNS, os.path.join(api.ROOT, "clips")
 # spikes/L1/clips also holds tiles and helper cuts from experiments; only the source clips are offered
-CLIP_DIRS = [(UPLOADS, re.compile(r".")), (os.path.join(ROOT, "spikes", "L1", "clips"), re.compile(r"^(imas_TF_\d+|nautilus_s\d{3}_0_12)\.mp4$"))]
+CLIP_DIRS = [(UPLOADS, re.compile(r".")), (os.path.join(ROOT, "spikes", "L1", "clips"), re.compile(r"^nautilus_s\d{3}_0_12\.mp4$"))]
 VIDEO_EXT = (".mp4", ".mov", ".ogv", ".webm", ".mkv")
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$")
 MAX_UPLOAD = 1 << 30
@@ -209,6 +209,8 @@ def export_csv(rid):
                 "evidence_frame", "source", "human_edits"])
     cell = lambda v: "'" + v if isinstance(v, str) and v[:1] in "=+-@" else v    # no formulas from model text
     for name, m in sorted(e["metrics"].items(), key=lambda kv: -kv[1]["maxn"]):
+        if m["maxn"] == 0 and name.endswith(" (unidentified)"):     # empty "(unidentified)" rows are hidden on screen too
+            continue
         w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
                     m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"]])
     # group rows: same-frame totals over the labels listed in origin (e.g. "group: caridean shrimp + shrimp (unidentified)")
