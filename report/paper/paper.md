@@ -36,6 +36,7 @@ is an annotation accelerator whose output a person confirms.
 | The VLM auditor adopts names in its prompt and changes verdicts with the layout of the evidence | §7.1, §7.5 | 6 development | development clips; repeated calls also vary on their own |
 | Muse Wonder, Meta's larger VLM, given Spark's 101 questions, rejects tiles of a crab a person was certain of, gives 12 unsupported names against Spark's 5, and costs about 4.3× per call | §7.6, Table 7 | 15; 101 questions | same questions, not Wonder's own run; yes/no per tile without confidence thresholds |
 | A plain propose–segment–look–revise loop (the SAM 3 Agent pattern) with the same models reaches 3 of 5 held-out marked animals and 5 of 7 development taxa, against 4 of 5 and 7 of 7 | §7.7, Table 8 | 15 | text prompts, full frame, forward only; the published agent's prompts are not reproduced |
+| An open-vocabulary detector (OWLv2) given "animal" and the same 16 words overlaps 39 of the 45 counted non-fish tracks, but none through "animal", 17 only as "fish" and 11 with a word of the right group, and adds 1,716 unmatched non-fish boxes | §7.8, Table 9 | 15 | one detector, base size, no tracking; the reference is what the pipeline counted, so it measures agreement, not recall |
 
 
 # Introduction
@@ -1142,6 +1143,32 @@ moved away from the word that works. Like the pipeline, the loop kept nothing th
 pipeline list for s004 lacked "hagfish" because a shared helper drops labels of the fish group; the pipeline counts it
 (Table 2). This supports positioning the pipeline as an application of the known pattern: the pattern supplies the
 naming, and the counts depend on the extra routes to the segmenter.
+
+## An open-vocabulary detector as the discovery step
+
+An open-vocabulary detector is the obvious way to look for animals without a VLM. We fixed a protocol before running
+one (`report/paper/open_detector_protocol.md`): OWLv2 (Minderer et al., 2023; `google/owlv2-base-patch16-ensemble`,
+CPU, no fine-tuning) on every frame of the 15 discovery clips that the final runs tracked, with 17 queries ("animal" plus
+the 16 fixed words of §6.3), score threshold 0.2 (0.1 and 0.3 as sensitivity). The reference is the 45 non-fish tracks
+the pipeline counted; a track is found when some detector box overlaps it (IoU ≥ 0.3) in at least 3 frames.
+
+<div class="tablecap">**Table 9.** OWLv2 on the 15 discovery clips (900 frames), against the 45 counted non-fish tracks.</div>
+
+| threshold | tracks overlapped | only through "fish" | through a non-fish word | right-group word | only through "animal" | clips / frames with an "animal" box | non-fish boxes off every pipeline track |
+|---|---|---|---|---|---|---|---|
+| 0.1 | 39 | 14 | 24 | 12 | 0 | 5 / 40 | 6,107 of 8,123 |
+| **0.2** | **39** | **17** | **21** | **11** | **0** | **3 / 30** | **1,716 of 2,903** |
+| 0.3 | 37 | 19 | 18 | 10 | 0 | 2 / 22 | 685 of 1,530 |
+
+The detector puts a box on most of what the pipeline counted, but it does not name it: "animal" never accounts for
+an overlap and fires in 30 of 900 frames, 17 tracks are boxed only as "fish" (18 of the 19 s004 shrimp tracks are overlapped, none by a
+crustacean word), and only 11 carry a word of the animal's group. The misses are five DH7 crab tracks (the cold-seep
+time-lapse) and one s004 shrimp track. As a discovery step it would leave a person 1,716 unnamed non-fish boxes
+(about two per frame) that match no pipeline track; whether any of them is an animal the pipeline missed is not
+judged here. It ran at 14.9 s per frame on a shared 6-core CPU. Added after the protocol: s004's counted "hagfish",
+which falls outside the reference because its name maps to the fish group, is overlapped in 29 of its frames.
+Outputs and per-clip rows: `report/paper/data/open_detector/`. One detector at base size is a limit: a larger
+detector or Grounding DINO might name more, and measure 1 measures agreement with the pipeline, not recall.
 
 # Scope
 

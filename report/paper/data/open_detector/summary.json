@@ -1,0 +1,662 @@
+{
+ "DH1": {
+  "n_frames": 60,
+  "seconds": 953.7,
+  "pipeline_counted_nonfish": 1,
+  "0.1": {
+   "pipeline_tracks_found": 1,
+   "with_right_word": 1,
+   "found": [
+    "crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 224,
+   "nonfish_boxes_off_every_pipeline_track": 105,
+   "frames_with_animal_box": 6
+  },
+  "0.2": {
+   "pipeline_tracks_found": 1,
+   "with_right_word": 1,
+   "found": [
+    "crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 64,
+   "nonfish_boxes_off_every_pipeline_track": 14,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 1,
+   "with_right_word": 1,
+   "found": [
+    "crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 28,
+   "nonfish_boxes_off_every_pipeline_track": 3,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH2": {
+  "n_frames": 60,
+  "seconds": 890.1,
+  "pipeline_counted_nonfish": 2,
+  "0.1": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "sea anemone",
+    "crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 962,
+   "nonfish_boxes_off_every_pipeline_track": 582,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "sea anemone",
+    "crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 448,
+   "nonfish_boxes_off_every_pipeline_track": 210,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "sea anemone",
+    "crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 252,
+   "nonfish_boxes_off_every_pipeline_track": 82,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH3": {
+  "n_frames": 60,
+  "seconds": 882.9,
+  "pipeline_counted_nonfish": 3,
+  "0.1": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 3,
+   "found": [
+    "spider crab",
+    "spider crab",
+    "spider crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 1715,
+   "nonfish_boxes_off_every_pipeline_track": 1240,
+   "frames_with_animal_box": 1
+  },
+  "0.2": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 3,
+   "found": [
+    "spider crab",
+    "spider crab",
+    "spider crab"
+   ],
+   "missed": [],
+   "nonfish_boxes": 550,
+   "nonfish_boxes_off_every_pipeline_track": 351,
+   "frames_with_animal_box": 1
+  },
+  "0.3": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "spider crab",
+    "spider crab"
+   ],
+   "missed": [
+    "spider crab"
+   ],
+   "nonfish_boxes": 266,
+   "nonfish_boxes_off_every_pipeline_track": 152,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH4": {
+  "n_frames": 60,
+  "seconds": 931.1,
+  "pipeline_counted_nonfish": 0,
+  "0.1": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 364,
+   "nonfish_boxes_off_every_pipeline_track": 364,
+   "frames_with_animal_box": 27
+  },
+  "0.2": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 92,
+   "nonfish_boxes_off_every_pipeline_track": 92,
+   "frames_with_animal_box": 26
+  },
+  "0.3": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 50,
+   "nonfish_boxes_off_every_pipeline_track": 50,
+   "frames_with_animal_box": 21
+  }
+ },
+ "DH5": {
+  "n_frames": 60,
+  "seconds": 845.3,
+  "pipeline_counted_nonfish": 0,
+  "0.1": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 832,
+   "nonfish_boxes_off_every_pipeline_track": 721,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 354,
+   "nonfish_boxes_off_every_pipeline_track": 266,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 214,
+   "nonfish_boxes_off_every_pipeline_track": 133,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH6": {
+  "n_frames": 60,
+  "seconds": 991.3,
+  "pipeline_counted_nonfish": 0,
+  "0.1": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 182,
+   "nonfish_boxes_off_every_pipeline_track": 77,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 122,
+   "nonfish_boxes_off_every_pipeline_track": 34,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 90,
+   "nonfish_boxes_off_every_pipeline_track": 4,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH7": {
+  "n_frames": 60,
+  "seconds": 864.9,
+  "pipeline_counted_nonfish": 8,
+  "0.1": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 2,
+   "found": [
+    "crab",
+    "crab",
+    "crab"
+   ],
+   "missed": [
+    "crab",
+    "crab",
+    "crab",
+    "crab",
+    "crab"
+   ],
+   "nonfish_boxes": 190,
+   "nonfish_boxes_off_every_pipeline_track": 146,
+   "frames_with_animal_box": 4
+  },
+  "0.2": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 2,
+   "found": [
+    "crab",
+    "crab",
+    "crab"
+   ],
+   "missed": [
+    "crab",
+    "crab",
+    "crab",
+    "crab",
+    "crab"
+   ],
+   "nonfish_boxes": 74,
+   "nonfish_boxes_off_every_pipeline_track": 43,
+   "frames_with_animal_box": 3
+  },
+  "0.3": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "crab",
+    "crab"
+   ],
+   "missed": [
+    "crab",
+    "crab",
+    "crab",
+    "crab",
+    "crab",
+    "crab"
+   ],
+   "nonfish_boxes": 30,
+   "nonfish_boxes_off_every_pipeline_track": 8,
+   "frames_with_animal_box": 1
+  }
+ },
+ "DH8": {
+  "n_frames": 60,
+  "seconds": 840.3,
+  "pipeline_counted_nonfish": 0,
+  "0.1": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 81,
+   "nonfish_boxes_off_every_pipeline_track": 13,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 67,
+   "nonfish_boxes_off_every_pipeline_track": 8,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 55,
+   "nonfish_boxes_off_every_pipeline_track": 3,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH9": {
+  "n_frames": 60,
+  "seconds": 955.0,
+  "pipeline_counted_nonfish": 0,
+  "0.1": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 12,
+   "nonfish_boxes_off_every_pipeline_track": 2,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 1,
+   "nonfish_boxes_off_every_pipeline_track": 0,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 0,
+   "nonfish_boxes_off_every_pipeline_track": 0,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH10": {
+  "n_frames": 60,
+  "seconds": 842.1,
+  "pipeline_counted_nonfish": 0,
+  "0.1": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 0,
+   "nonfish_boxes_off_every_pipeline_track": 0,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 0,
+   "nonfish_boxes_off_every_pipeline_track": 0,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 0,
+   "with_right_word": 0,
+   "found": [],
+   "missed": [],
+   "nonfish_boxes": 0,
+   "nonfish_boxes_off_every_pipeline_track": 0,
+   "frames_with_animal_box": 0
+  }
+ },
+ "DH11": {
+  "n_frames": 60,
+  "seconds": 954.3,
+  "pipeline_counted_nonfish": 1,
+  "0.1": {
+   "pipeline_tracks_found": 1,
+   "with_right_word": 0,
+   "found": [
+    "scavenging amphipod crustacean"
+   ],
+   "missed": [],
+   "nonfish_boxes": 1516,
+   "nonfish_boxes_off_every_pipeline_track": 1406,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 1,
+   "with_right_word": 0,
+   "found": [
+    "scavenging amphipod crustacean"
+   ],
+   "missed": [],
+   "nonfish_boxes": 302,
+   "nonfish_boxes_off_every_pipeline_track": 232,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 1,
+   "with_right_word": 0,
+   "found": [
+    "scavenging amphipod crustacean"
+   ],
+   "missed": [],
+   "nonfish_boxes": 160,
+   "nonfish_boxes_off_every_pipeline_track": 99,
+   "frames_with_animal_box": 0
+  }
+ },
+ "s001": {
+  "n_frames": 60,
+  "seconds": 888.0,
+  "pipeline_counted_nonfish": 5,
+  "0.1": {
+   "pipeline_tracks_found": 5,
+   "with_right_word": 0,
+   "found": [
+    "nautilus",
+    "nautilus",
+    "nautilus",
+    "nautilus",
+    "nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 993,
+   "nonfish_boxes_off_every_pipeline_track": 768,
+   "frames_with_animal_box": 2
+  },
+  "0.2": {
+   "pipeline_tracks_found": 5,
+   "with_right_word": 0,
+   "found": [
+    "nautilus",
+    "nautilus",
+    "nautilus",
+    "nautilus",
+    "nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 329,
+   "nonfish_boxes_off_every_pipeline_track": 156,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 5,
+   "with_right_word": 0,
+   "found": [
+    "nautilus",
+    "nautilus",
+    "nautilus",
+    "nautilus",
+    "nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 158,
+   "nonfish_boxes_off_every_pipeline_track": 30,
+   "frames_with_animal_box": 0
+  }
+ },
+ "s002": {
+  "n_frames": 60,
+  "seconds": 867.3,
+  "pipeline_counted_nonfish": 2,
+  "0.1": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "small red crab",
+    "chambered nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 381,
+   "nonfish_boxes_off_every_pipeline_track": 246,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "small red crab",
+    "chambered nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 162,
+   "nonfish_boxes_off_every_pipeline_track": 92,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 2,
+   "with_right_word": 2,
+   "found": [
+    "small red crab",
+    "chambered nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 64,
+   "nonfish_boxes_off_every_pipeline_track": 31,
+   "frames_with_animal_box": 0
+  }
+ },
+ "s003": {
+  "n_frames": 60,
+  "seconds": 851.4,
+  "pipeline_counted_nonfish": 3,
+  "0.1": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 1,
+   "found": [
+    "chambered nautilus",
+    "chambered nautilus",
+    "chambered nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 299,
+   "nonfish_boxes_off_every_pipeline_track": 168,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 1,
+   "found": [
+    "chambered nautilus",
+    "chambered nautilus",
+    "chambered nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 129,
+   "nonfish_boxes_off_every_pipeline_track": 65,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 3,
+   "with_right_word": 1,
+   "found": [
+    "chambered nautilus",
+    "chambered nautilus",
+    "chambered nautilus"
+   ],
+   "missed": [],
+   "nonfish_boxes": 59,
+   "nonfish_boxes_off_every_pipeline_track": 16,
+   "frames_with_animal_box": 0
+  }
+ },
+ "s004": {
+  "n_frames": 60,
+  "seconds": 848.1,
+  "pipeline_counted_nonfish": 20,
+  "added_after_protocol": {
+   "0.1": {
+    "hagfish (d2rev:1)": 29
+   },
+   "0.2": {
+    "hagfish (d2rev:1)": 29
+   },
+   "0.3": {
+    "hagfish (d2rev:1)": 28
+   }
+  },
+  "0.1": {
+   "pipeline_tracks_found": 19,
+   "with_right_word": 1,
+   "found": [
+    "chambered nautilus",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp"
+   ],
+   "missed": [
+    "caridean shrimp"
+   ],
+   "nonfish_boxes": 372,
+   "nonfish_boxes_off_every_pipeline_track": 269,
+   "frames_with_animal_box": 0
+  },
+  "0.2": {
+   "pipeline_tracks_found": 19,
+   "with_right_word": 0,
+   "found": [
+    "chambered nautilus",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp"
+   ],
+   "missed": [
+    "caridean shrimp"
+   ],
+   "nonfish_boxes": 209,
+   "nonfish_boxes_off_every_pipeline_track": 153,
+   "frames_with_animal_box": 0
+  },
+  "0.3": {
+   "pipeline_tracks_found": 19,
+   "with_right_word": 0,
+   "found": [
+    "chambered nautilus",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp",
+    "caridean shrimp"
+   ],
+   "missed": [
+    "caridean shrimp"
+   ],
+   "nonfish_boxes": 104,
+   "nonfish_boxes_off_every_pipeline_track": 74,
+   "frames_with_animal_box": 0
+  }
+ }
+}

@@ -1,0 +1,31 @@
+Loading weights:   0%|          | 0/418 [00:00<?, ?it/s]Loading weights: 100%|██████████| 418/418 [00:00<00:00, 9266.73it/s]
+DH1 60 frames 953.7 s
+DH2 60 frames 890.1 s
+DH3 60 frames 882.9 s
+DH4 60 frames 931.1 s
+DH5 60 frames 845.3 s
+DH6 60 frames 991.3 s
+DH7 60 frames 864.9 s
+DH8 60 frames 840.3 s
+DH9 60 frames 955.0 s
+DH10 60 frames 842.1 s
+DH11 60 frames 954.3 s
+s001 60 frames 888.0 s
+s002 60 frames 867.3 s
+s003 60 frames 851.4 s
+s004 60 frames 848.1 s
+DH1 pipeline non-fish 1, found 1 (right word 1), non-fish boxes 64 (14 off every track), 953.7 s
+DH2 pipeline non-fish 2, found 2 (right word 2), non-fish boxes 448 (210 off every track), 890.1 s
+DH3 pipeline non-fish 3, found 3 (right word 3), non-fish boxes 550 (351 off every track), 882.9 s
+DH4 pipeline non-fish 0, found 0 (right word 0), non-fish boxes 92 (92 off every track), 931.1 s
+DH5 pipeline non-fish 0, found 0 (right word 0), non-fish boxes 354 (266 off every track), 845.3 s
+DH6 pipeline non-fish 0, found 0 (right word 0), non-fish boxes 122 (34 off every track), 991.3 s
+DH7 pipeline non-fish 8, found 3 (right word 2), non-fish boxes 74 (43 off every track), 864.9 s
+DH8 pipeline non-fish 0, found 0 (right word 0), non-fish boxes 67 (8 off every track), 840.3 s
+DH9 pipeline non-fish 0, found 0 (right word 0), non-fish boxes 1 (0 off every track), 955.0 s
+DH10 pipeline non-fish 0, found 0 (right word 0), non-fish boxes 0 (0 off every track), 842.1 s
+DH11 pipeline non-fish 1, found 1 (right word 0), non-fish boxes 302 (232 off every track), 954.3 s
+s001 pipeline non-fish 5, found 5 (right word 0), non-fish boxes 329 (156 off every track), 888.0 s
+s002 pipeline non-fish 2, found 2 (right word 2), non-fish boxes 162 (92 off every track), 867.3 s
+s003 pipeline non-fish 3, found 3 (right word 1), non-fish boxes 129 (65 off every track), 851.4 s
+s004 pipeline non-fish 20, found 19 (right word 0), non-fish boxes 209 (153 off every track), 848.1 s
