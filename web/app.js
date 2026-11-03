@@ -249,13 +249,17 @@ function drawFound() {
     ...groupBlock(run));
 }
 
+// the labels behind a group total, minus rows hidden elsewhere (MaxN 0 and "(unidentified)"); the numbers are unchanged
+const groupParts = (run, m) => m.labels.filter((n) => !run.metrics[n] || !hidden(n, run.metrics[n]))
+  .map((n) => `${run.metrics[n]?.curve?.[m.maxn_frame] || 0} ${n}`);
+
 // same-frame totals per animal group (server: pipeline.group_metrics), shown under both count panels
 function groupBlock(run) {
   const gm = Object.entries(run.group_metrics || {});
   if (!gm.length) return [];
   return [el("div", { class: "groups" }, el("h3", {}, "By animal group", el("small", {}, " the labels below added frame by frame")),
     ...gm.map(([g, m]) => el("div", { class: "climb" }, `All ${g === "fish" ? "fish" : g + "s"}: `,
-      el("span", { class: "num" }, m.maxn), ` in one frame (${m.labels.map((n) => `${run.metrics[n]?.curve?.[m.maxn_frame] || 0} ${n}`).join(" + ")}) `,
+      el("span", { class: "num" }, m.maxn), ` in one frame (${groupParts(run, m).join(" + ")}) `,
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `at ${secs(m.maxn_time)}`) : null,
       m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "")))];
 }
