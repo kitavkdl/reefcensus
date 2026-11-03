@@ -23,6 +23,10 @@ PRIMARY = 0.2
 KEEP = 0.05                           # stored, so other thresholds can be scored without a rerun
 OUT = "report/paper/data/open_detector"
 MODEL = "google/owlv2-base-patch16-ensemble"
+# Addition, found after the protocol was written (reported apart, measure 1 unchanged): counted pipeline tracks whose
+# name maps to the fish group are outside measure 1's reference, which drops s004 "hagfish", a counted discovery on the
+# development reference list (paper Table 3). Scored with the same overlap rule as its own line.
+ADDED = {"s004": ("hagfish",)}
 
 
 def frames(path):
@@ -71,10 +75,12 @@ def is_fish(label):
     return "fish" in base.split() or pipeline.name_group(base) == "fish"
 
 
-def counted_nonfish(c):
+def counted_nonfish(c, names=None):
+    """Counted non-fish tracks (measure 1); with names, instead the counted tracks carrying one of those names."""
     r = json.load(open(f"runs/vswap_{c}/result.json"))
     keep = {t: lab for t, lab in r["auto_labels"].items()
-            if lab and not is_fish(lab) and not pipeline.needs_review(r["verdicts"].get(t, {}))}
+            if lab and not pipeline.needs_review(r["verdicts"].get(t, {}))
+            and (lab.split(" (")[0] in names if names else not is_fish(lab))}
     ref = {}
     for f, ks in r["frames"].items():
         for k in ks:
@@ -102,6 +108,12 @@ def score(det):
                 right_word[t] = len(rw) >= 3
             loose = [x for f, xs in fr.items() for x in xs if x["q"] != "fish"
                      and not any(tracks.iou(x["box"], b) >= 0.3 for b in allboxes.get(f, []))]
+            if c in ADDED:
+                add, _ = counted_nonfish(c, ADDED[c])
+                row.setdefault("added_after_protocol", {})[str(th)] = {
+                    rr["label"] + f" ({t})": sum(1 for f, b in rr["boxes"].items()
+                                                 if any(tracks.iou(x["box"], b) >= 0.3 for x in fr.get(f, [])))
+                    for t, rr in add.items()}   # frames with an overlapping box (found if >= 3)
             row[str(th)] = dict(
                 pipeline_tracks_found=sum(found.values()), with_right_word=sum(right_word.values()),
                 found=[ref[t]["label"] for t in found if found[t]], missed=[ref[t]["label"] for t in found if not found[t]],
