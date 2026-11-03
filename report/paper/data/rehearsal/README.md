@@ -18,5 +18,5 @@ evaluation; no code change between takes.
   tracked 60 of 60 frames) went to the queue or was dropped in both takes; a person judged that spot not an animal
   earlier (it does not hold its shape across frames).
 - DH11 takes ran at code `9056d80` plus uncommitted site-memory changes (site memory off by default); s003 takes ran
-  at `8687166`. Spend: ledger stages "live rehearsal, empty cache" and "live rehearsal s003" in
+  at `4ff2f11`. Spend: ledger stages "live rehearsal, empty cache" and "live rehearsal s003" in
   `report/paper/scripts/ledger_summary.py`.
