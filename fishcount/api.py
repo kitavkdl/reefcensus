@@ -32,6 +32,7 @@ LEDGER = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache", "ledger.js
 SAM_PER_FRAME = 0.20 / 1000
 SAM_MIN_FRAMES = 50
 SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
+PRICES = {"muse-wonder-1.0": (4.0e-6, 20.0e-6)}   # $/token (in, out); everything else is priced as Spark
 SPARK_MODEL = os.environ.get("FISH_SPARK_MODEL", "muse-spark-1.3")
 
 
@@ -154,14 +155,15 @@ def _valid(check, text):
         return False
 
 
-def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check=None):
+def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check=None, model=None):
     """One chat call with optional JPEG images (bytes). Returns the reply text. Cached by content.
     `check(text)` raising ValueError marks a bad reply (11/2: Spark twice sent broken JSON, e.g. `{ polo":1 }:`,
     and the cached reply then killed every rerun): a bad reply is never cached, a cached bad one counts as a miss,
     and one more live call is made before giving up."""
     content = [{"type": "text", "text": prompt}] + [
         {"type": "image_url", "image_url": {"url": img_data_url(b)}} for b in images]
-    payload = {"model": SPARK_MODEL, "messages": [{"role": "user", "content": content}], "max_tokens": max_tokens}
+    model = model or SPARK_MODEL
+    payload = {"model": model, "messages": [{"role": "user", "content": content}], "max_tokens": max_tokens}
     if effort:
         payload["reasoning_effort"] = effort
     cp = _cache_path("spark", payload)
@@ -178,8 +180,9 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
             raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
         j = r.json()
         u = j.get("usage") or {}
-        usd = u.get("prompt_tokens", 0) * SPARK_IN + u.get("completion_tokens", 0) * SPARK_OUT
-        _log("spark", usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
+        p_in, p_out = PRICES.get(model, (SPARK_IN, SPARK_OUT))
+        usd = u.get("prompt_tokens", 0) * p_in + u.get("completion_tokens", 0) * p_out
+        _log("spark" if model == SPARK_MODEL else model, usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
         text = j["choices"][0]["message"]["content"] or ""
         if not text.strip():
             raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
