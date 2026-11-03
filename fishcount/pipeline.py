@@ -298,12 +298,19 @@ def crowd_tiles(W, H, cols=3, rows=2, pad=0.12):
     return out
 
 
-def refill_saturated(run, jobs, results, n, offline, max_segments=4):
+REFILL_WINDOW = 100     # frames per refill call (20 s at 5 fps; SAM bills at least SAM_MIN_FRAMES=50 per call)
+REFILL_OVERLAP = 2      # frames shared by consecutive windows, so merge() drops the repeat and stitch() joins the pieces
+
+
+def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFILL_WINDOW, overlap=REFILL_OVERLAP):
     """SAM 3.1 gives one call at most 16 object ids for the whole clip (tracks.SAM_MAX_OBJECTS). When a prompt/tile
     pass has used them all at frame s, nothing that arrives later is ever boxed (11/3 TF_52: the large seabream over
-    the pale sand at the end, in tile r1c1 whose 16 ids were gone by frame 22). The same video from frame s is sent
-    again as a new call with fresh ids, and again from where that one runs out, up to `max_segments` calls per pass.
-    A call that runs out on its first frame (more than 16 in view) gains nothing and stops the chain.
+    the pale sand at the end, in tile r1c1 whose 16 ids were gone by frame 22). From s the video is sent again in
+    windows of at most `window` frames, each a new call with fresh ids: a window that runs out at frame r is sent again
+    from r, one that does not (or runs out on its first frame: more than 16 in view, a re-send gains nothing) is
+    followed by the next window, `overlap` frames back. A short clip is one window, so this is the old chain there.
+    Windows keep a long segment (LONG1: 2,658 frames, out of ids at frame 78) from re-sending everything left on
+    every call. At most `max_segments` calls per window's worth of frames.
     Returns extra sources (name "<pass>+<start>", frames renumbered to the clip) to merge after all others."""
     out_res = {r[0]: r for r in results}
 
@@ -311,14 +318,16 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4):
         name, label, prompt, path, box = job
         s = tracks.saturation_frame(tracks.parse_boxes(out_res[name][3]))
         out = []
-        while s is not None and s < n - 2 and len(out) < max_segments:
+        cap = max_segments * -(-(n - s) // (window - overlap)) if s is not None else 0
+        while s is not None and s < n - 2 and len(out) < cap:
+            e = min(n, s + window)
             seg = run.path(f"seg_{name}+{s}.mp4")
-            video.segment(path, seg, s)
-            txt = tracks.shift_text(_counted(run, api.sam_video, seg, prompt, n - s, offline=offline), s)
+            video.segment(path, seg, s, length=None if e == n else e - s)
+            txt = tracks.shift_text(_counted(run, api.sam_video, seg, prompt, e - s, offline=offline), s)
             d = tracks.parse_boxes(txt)
             out.append((f"{name}+{s}", label, tracks.from_tile(d, box, 2) if box else d, txt, box))
             r = tracks.saturation_frame(d)
-            s = None if r is None or r == s else r
+            s = r if r is not None and r > s else (e - overlap if e < n else None)
         return out
 
     todo = [j for j in jobs if j[0] in out_res]
@@ -330,12 +339,12 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4):
 
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
-                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=False, refill=False):
-    """refill: opt-in (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
+                 do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True):
+    """refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
-    its number. Off by default.
-    clean:opt-in track hygiene (11/3 TF_52): tracks.split_jumps() cuts IDs SAM reused for another object, and the
-    audit's "largest box" moment skips boxes cut by the frame edge. Off by default (frozen evaluations unchanged).
+    its number. On by default since 11/3 (refill=False reproduces the frozen evaluations before that).
+    clean: track hygiene (11/3 TF_52): tracks.split_jumps() cuts IDs SAM reused for another object, and the
+    audit's "largest box" moment skips boxes cut by the frame edge. On by default since 11/3 (clean=False: the old runs).
     crowd: opt-in "crowded scene" pass (crowd_tiles): every overlapping 3x2 tile, upscaled 2x, gets SAM "fish";
     tile duplicates merge as zoom tiles do. Off by default, so frozen evaluations are unchanged.
     site: opt-in site memory (fishcount/sitememory.py, docs/site_memory.md): words a reviewer gave to earlier
@@ -1235,9 +1244,9 @@ if __name__ == "__main__":
     ap.add_argument("--no-scout", action="store_true")
     ap.add_argument("--no-audit", action="store_true")
     ap.add_argument("--zoom", action="store_true")
-    ap.add_argument("--clean", action="store_true", help="cut SAM IDs reused for another object; audit skips edge-cut boxes")
+    ap.add_argument("--no-clean", action="store_true", help="keep SAM IDs reused for another object (before 11/3)")
     ap.add_argument("--crowd", action="store_true", help="crowded scene: SAM 'fish' on every overlapping 3x2 tile (2x)")
-    ap.add_argument("--refill", action="store_true", help="re-run a SAM pass from the frame it used up its 16 object ids")
+    ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
@@ -1252,8 +1261,9 @@ if __name__ == "__main__":
     if a.segment or secs > longvideo.MAX_SEGMENT_S:
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                offline=a.offline, do_scout=not a.no_scout, do_audit=not a.no_audit, do_zoom=a.zoom,
-                               prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site)
+                               prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
+                               crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
-                         lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=a.clean, refill=a.refill)
+                         lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

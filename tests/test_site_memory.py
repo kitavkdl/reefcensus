@@ -187,7 +187,7 @@ class OffByDefault(Isolated):
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")
 
     def replay(self, rid, **kw):
-        return pipeline.run_pipeline(self.CLIP, rid, True, False, True, True, ["fish"], 0.0, True, **kw)
+        return pipeline.run_pipeline(self.CLIP, rid, True, False, True, True, ["fish"], 0.0, True, clean=False, refill=False, **kw)   # saved run predates clean/refill
 
     def test_site_run_with_nothing_usable_gives_the_saved_counts(self):
         if not os.path.exists(self.CLIP):

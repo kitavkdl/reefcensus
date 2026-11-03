@@ -144,15 +144,18 @@ def crop_tile(src, dst, box, scale=2, fps=5):
     return info(dst)
 
 
-def segment(src, dst, start, fps=5):
-    """Frames [start, end) of src as a clip of its own (a fresh SAM call gets a fresh set of 16 ids)."""
+def segment(src, dst, start, fps=5, length=None):
+    """Frames [start, start+length) of src (to the end when length is None) as a clip of its own (a fresh SAM call
+    gets a fresh set of 16 ids). length=None keeps the exact ffmpeg command, so cached segment calls stay valid."""
     n = info(src)["n_frames"]
+    end = n if length is None else min(n, start + length)
+    sel = f"gte(n,{start})" if end == n else f"between(n,{start},{end - 1})"
     subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
-                    f"select='gte(n,{start})',setpts=N/FRAME_RATE/TB", "-an", "-fps_mode", "cfr", "-r", str(fps),
+                    f"select='{sel}',setpts=N/FRAME_RATE/TB", "-an", "-fps_mode", "cfr", "-r", str(fps),
                     "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
     out = info(dst)
-    if out["n_frames"] != n - start:
-        raise RuntimeError(f"segment from {start}: wanted {n - start} frames, got {out['n_frames']}")
+    if out["n_frames"] != end - start:
+        raise RuntimeError(f"segment {start}-{end}: wanted {end - start} frames, got {out['n_frames']}")
     return out
 
 

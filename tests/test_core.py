@@ -268,7 +268,7 @@ class Replay(unittest.TestCase):
         if not os.path.exists(self.CLIP):
             self.skipTest("clip not present (videos are not in git; see README Data)")
         from fishcount import pipeline
-        r = pipeline.run_pipeline(self.CLIP, "test_replay_s004", True, False, True, True, ["fish"], 0.0, True)
+        r = pipeline.run_pipeline(self.CLIP, "test_replay_s004", True, False, True, True, ["fish"], 0.0, True, clean=False, refill=False)   # the saved run predates clean/refill
         saved = json.load(open(self.SAVED))["metrics"]
         got = {k: (v["maxn"], v["maxn_frame"], v["first_frame"]) for k, v in r["metrics"].items()}
         want = {k: (v["maxn"], v["maxn_frame"], v["first_frame"]) for k, v in saved.items()}
