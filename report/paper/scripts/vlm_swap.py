@@ -26,6 +26,21 @@ _orig = api.spark
 _lock = threading.Lock()
 
 
+def ask_other(prompt, images, model, dry, **kw):
+    """The second model's call; HTTP 503 (service_overloaded) is retried up to 4 times with a pause (a transport error,
+    not a reply: attempt 1 lost 26 of 101 calls to it). Returns (text, usd from the reply's usage, cached or not)."""
+    for k in range(5):
+        try:
+            text = _orig(prompt, images, model=model, offline=dry, **kw)
+            u = getattr(api._tl, "last_usage", {}) or {}
+            p_in, p_out = api.PRICES.get(model, (api.SPARK_IN, api.SPARK_OUT))
+            return text, round(u.get("prompt_tokens", 0) * p_in + u.get("completion_tokens", 0) * p_out, 6), u
+        except RuntimeError as e:
+            if "HTTP 503" not in str(e) or k == 4:
+                raise
+            time.sleep(15 * (k + 1))
+
+
 def kind_of(prompt):
     for name, head in KINDS.items():
         if prompt.startswith(head):
@@ -41,7 +56,7 @@ def make_shadow(model, clip, out, dry=False):
         before = api.thread_spent()
         t0 = time.time()
         try:
-            rec["other"] = _orig(prompt, images, model=model, offline=dry, **kw)
+            rec["other"], rec["usd_usage"], rec["usage"] = ask_other(prompt, images, model, dry, **kw)
         except Exception as e:                                    # unreadable twice, HTTP error: recorded, not retried
             rec["other"], rec["error"] = None, f"{type(e).__name__}: {e}"[:400]
         rec["seconds"] = round(time.time() - t0, 2)
@@ -69,13 +84,15 @@ def motion_shadow(model, clip, out, dry):
     else:
         return
     rec = {"clip": clip, "kind": "motion", "prompt": pipeline.MOTION_PROMPT, "spark": json.dumps(mc["said"])}
+    before = api.thread_spent()
     t0 = time.time()
     try:
-        rec["other"] = _orig(pipeline.MOTION_PROMPT, [open(sheet, "rb").read()], model=model, offline=dry,
-                             check=pipeline._motion_reply)
+        rec["other"], rec["usd_usage"], rec["usage"] = ask_other(pipeline.MOTION_PROMPT, [open(sheet, "rb").read()],
+                                                                 model, dry, check=pipeline._motion_reply)
     except Exception as e:
         rec["other"], rec["error"] = None, f"{type(e).__name__}: {e}"[:400]
     rec["seconds"] = round(time.time() - t0, 2)
+    rec["usd"] = round(api.thread_spent() - before, 6)
     with _lock, open(out, "a") as f:
         f.write(json.dumps(rec) + "\n")
 

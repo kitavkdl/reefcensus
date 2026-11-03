@@ -168,8 +168,10 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
         payload["reasoning_effort"] = effort
     cp = _cache_path("spark", payload)
     if os.path.exists(cp):
-        text = json.load(open(cp))["text"]
+        cj = json.load(open(cp))
+        text = cj["text"]
         if check is None or _valid(check, text):
+            _tl.last_usage = cj.get("usage") or {}
             return text
     if offline:
         raise FileNotFoundError("not cached: spark call")
@@ -191,6 +193,7 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
             with open(tmp, "w") as fh:
                 json.dump({"text": text, "usage": u}, fh)
             os.replace(tmp, cp)
+            _tl.last_usage = u
             return text
     raise ValueError(f"Spark sent an unreadable reply twice: {text[:120]!r}")
 
