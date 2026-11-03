@@ -97,8 +97,11 @@ function showScreen(msg) {
 }
 
 // ---------- finished run ----------
+// a row that is both MaxN 0 and "(unidentified)" says nothing: not shown here, not in the CSV (server.export_csv)
+const hidden = (name, m) => m.maxn === 0 && name.endsWith(" (unidentified)");
+
 function order(run) {
-  return Object.entries(run.metrics).sort(([a, x], [b, y]) =>
+  return Object.entries(run.metrics).filter(([n, m]) => !hidden(n, m)).sort(([a, x], [b, y]) =>
     (run.origin[a] === "asked" ? 0 : 1) - (run.origin[b] === "asked" ? 0 : 1) || y.maxn - x.maxn || a.localeCompare(b));
 }
 

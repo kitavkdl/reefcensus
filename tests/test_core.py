@@ -217,10 +217,25 @@ class ShortNameFallback(unittest.TestCase):
         self.assertNotIn("mat", _GROUP_OF)
 
 
+class ExportCsv(unittest.TestCase):
+    def test_empty_unidentified_rows_are_left_out(self):
+        sys.path.insert(0, os.path.join(ROOT, "web"))
+        import server
+        m = lambda n: dict(maxn=n, maxn_confirmed=n, maxn_time=0.0, maxn_frame=0, first_time=0.0, tracks=n, peak_checked=False, evidence=None)
+        e = dict(metrics={"nautilus": m(3), "fish (unidentified)": m(0), "crab (unidentified)": m(2), "fish": m(0)},
+                 origin={}, source="x", n_reviewed=0, group_metrics={})
+        orig, server.effective = server.effective, lambda rid: e
+        try:
+            rows = [r.split(",")[0] for r in server.export_csv("x").splitlines()[1:]]
+        finally:
+            server.effective = orig
+        self.assertEqual(sorted(rows), ["crab (unidentified)", "fish", "nautilus"])
+
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")
-    SAVED = os.path.join(ROOT, "demo", "runs", "L1_s004_v16", "result.json")
+    SAVED = os.path.join(ROOT, "demo", "runs", "mg2_s004", "result.json")
 
     def test_s004_offline_replay_matches_saved_run(self):
         if not os.path.exists(self.CLIP):
