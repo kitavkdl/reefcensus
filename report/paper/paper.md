@@ -830,7 +830,10 @@ SAM calls ($0.55), the Spark-alone counting baseline 765 Spark calls ($2.47), th
 calls ($0.62), the held-out discovery runs 106 calls ($1.06) and their uncached second run 112 calls ($1.08), later
 development of the final code (low light, long videos, fixes) 153 calls ($1.82), the second held-out discovery set
 DH6–DH11 87 calls ($0.86) and its fixed-vocabulary baseline 83 SAM calls ($1.00), and the re-runs of previously seen
-data on the frozen code 42 calls ($0.11), for a ledger total of $13.57 over 2,067 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+data on the frozen code 42 calls ($0.11), an empty-cache live rehearsal 48 calls ($0.51), site-memory demo runs 3
+calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
+101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41) and the 53-min deployment below 82 calls
+($17.27 over three attempts), for a ledger total of $34.27 over 2,359 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -841,9 +844,22 @@ SAM 3.1 accepts at most 10 minutes per file, so the final code cuts a longer vid
 at most 600 s and merges them into one ordinary run (`fishcount/longvideo.py`, `report/long_video.md`). Our longest
 source is 40 s (Barord et al. S3): in one pass it counts the same 3 nautiluses as its 12-s clip ($0.35, 297 s live;
 replayed on the frozen code: 3). Forced 20-s segments counted 1, for reasons inside a segment (one SAM ID covering two
-animals; a five-word name never tried as a word, which the final code's short names address, not re-measured). We have
-not run an hour-long deployment; by the measured per-frame price and run time, one hour at 5 fps would cost about $30
-and take about 7.5 h run sequentially (parallel segments are not implemented).
+animals; a five-word name never tried as a word, which the final code's short names address, not re-measured).
+
+One full deployment has been run end to end: a 53.2-min baited reef-fish recording from NOAA's Southeast Fisheries
+Science Center (Data statement), 15,945 frames at 5 fps in six 600-s segments, with the discovery settings of Table 2,
+no code change for this video and no ground truth, so it measures cost, time and robustness, not accuracy
+(`report/paper/data/long_video/README.md`). The completed attempt cost $15.08 (68 live calls) and took 3.5 h run
+sequentially; segments 2–6 cost $1.63–5.88 and took 23–57 min each (2.6–6.4 times real time), and segment 1 reused 11
+answers paid in the first attempt. The two earlier attempts ($2.18) were stopped by memory, not by the counting: drawing
+the annotated video held every frame of a 600-s segment in memory, and reversing the clip buffered every frame. Both
+now stream or work in chunks; on the development clips the outputs are unchanged (annotated video identical frame by
+frame; reversed frames equal up to re-encoding noise) and the unit tests pass. Per hour of video that is about $17 for
+the completed attempt and $19.5 counting all three, below our earlier extrapolation from the 40-s clip (about $30
+and 7.5 h). The merged run reports fish (unidentified) MaxN 8 at 546 s and jack 1 at 2,133 s; in the first two
+minutes, while the camera is still on the boat deck, it also counts the crew (human 3, and one figure behind a
+trap named "person (unidentified)", a name split of the same kind as §7.5) and a fish lying in a trap on deck. The
+auditor rejected 35 of the 116 tracks. Segments run one after another; running them in parallel is not implemented.
 
 # Analysis
 
@@ -1126,7 +1142,8 @@ naming, and the counts depend on the extra routes to the segmenter.
 Counting was measured on 30 luderick clips from one estuary, discovery on 15 12-s clips from nine studies (4 nautilus
 development clips, 5 and then 6 held-out clips); every number above is for these clips. Counts are what a reviewer confirms from the queue and the evidence
 frames, and species names are the VLM's proposals (§7.5). Videos over 10 minutes are split into
-segments and merged (§6.4); an hour-long deployment has not been run (estimated about $30 and 7.5 h sequentially).
+segments and merged (§6.4); one 53-min deployment has been run end to end ($15.08 and 3.5 h in its completed
+attempt), without ground truth, so counts on long videos are measured for cost and robustness only.
 
 # Ethics and broader impact
 
@@ -1134,8 +1151,10 @@ The intended use is to reduce the hours ecologists spend watching survey footage
 traceable to a frame and every doubtful track in front of a person. The main risk is misplaced trust: an automated
 MaxN can be wrong for reasons that are invisible in a table (a wrongly rejected faint animal, a split species name),
 and survey counts feed management decisions. We mitigate this by reporting the queue as part of the output and by
-publishing failure cases alongside successes. The footage contains no people. We used only openly published research
-footage under CC BY licences (Data statement). The discovery reference lists were made by people who are not marine
+publishing failure cases alongside successes. The footage contains no people except the first two minutes of the
+NOAA recording, where crew on the boat deck are visible (mostly torsos and legs); the pipeline counts them as
+"human", and we do not show those frames in the paper, figures or demo. We used only openly published research
+footage, under CC BY licences or, for the NOAA recording, as US federal government work (Data statement). The discovery reference lists were made by people who are not marine
 biologists, as stated where they are used.
 
 # Reproducibility
@@ -1189,6 +1208,11 @@ Hyperparameters are listed in Appendix B.
   al. (2014) (DH6), CC BY 4.0; Video S1 of Niemann et al. (2013) (DH7), Video S4 of Oliver et al. (2011) (DH8) and
   Videos S4 and S1 of Sturdivant, Diaz & Cutter (2012) (DH9, DH10), CC BY 2.5; Video S4 of Cuvelier et al. (2014)
   (DH11), CC BY 4.0. URLs are in `report/paper/data/discovery_heldout2/clips.json`.
+* **Long video (§6.4):** NOAA Fisheries, Southeast Fisheries Science Center, reef fish baited video, station
+  `T60233001`, camera A, from NOAA's Open Data Dissemination bucket `nmfs_odp_sefsc` (Gulf of Mexico reef fish
+  videos). US federal government work (public domain, 17 U.S.C. § 105); the files carry no per-file licence text,
+  and NOAA asks for attribution to the Southeast Fisheries Science Center. Position, depth and date are not stated in
+  the folder. Download script and SHA-256 hashes: `report/paper/data/long_video/`.
 
 # References
 

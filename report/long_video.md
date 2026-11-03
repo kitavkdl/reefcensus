@@ -33,7 +33,14 @@ Spend for both: $1.068 (SAM 3.1 $0.975 = 91%, Muse Spark $0.093).
   (600 s); short segments are for testing only.** Not done yet: carrying a word that worked in one segment to the
   segments that did not find one (it would have tried "nautilus" in segment 2).
 
-## Scaling to one hour (extrapolated, not run)
+## One full deployment (measured 2026-11-03)
+A 53.2-min NOAA SEFSC reef-fish BRUV recording (15,945 frames at 5 fps, six 600 s segments) ran end to end: $15.08 and
+3.5 h for the completed attempt (segments 2–6: 23–57 min each, 2.6–6.4× real time), $17.27 over all three attempts
+(the first two were stopped by memory while drawing and reversing, fixed without touching counting). Per hour of
+video that is about $17–19.5, below the extrapolation below. Details, per-segment table and the deck-footage note:
+`report/paper/data/long_video/README.md`.
+
+## Scaling to one hour (extrapolated before the run above)
 - SAM is billed per frame per pass ($0.20 per 1,000 frames) and was 91% of the spend. The one-pass run paid $0.351
   for 199 frames, about $0.0018 per frame, roughly 8 passes over the clip (words, reversed pass, zoom tiles, motion
   boxes). At the same rate, one hour at 5 fps (18,000 frames, six 600 s segments) is **about $30**; the real figure
@@ -41,7 +48,7 @@ Spend for both: $1.068 (SAM 3.1 $0.975 = 91%, Muse Spark $0.093).
 - Wall clock: 297 s for 40 s of video, about 7.5× real time with four SAM calls in parallel. If that holds, an hour
   of video takes about 7.5 hours with segments run one after another; segments are independent and could run in
   parallel, which would bring an hour down to roughly the time of one segment (an estimate, not measured; left as
-  future work after the hackathon). No single 600 s SAM call has been made yet.
+  future work after the hackathon). (600 s SAM calls were later made in the run above.)
 - Sampling at fewer frames per second would cut both in proportion (MaxN of slow animals at bait may tolerate it); not
   measured.
 

@@ -91,3 +91,30 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
   60/60 frames, reversed order, mean absolute difference to the single-command reversal 0.38 (re-encoding noise),
   fps 5.0; unit tests pass. Segment 1's reversed clip now differs byte-wise, so its reversed SAM pass is paid again.
 - Attempt 3: same command and settings, run with `memcap --bg` (MemoryMax 8G); ceiling still $40 including attempts 1–2.
+
+## Result (attempt 3, finished 2026-11-03 09:05 UTC = 04:05 ET)
+- All six segments done; merged run `runs/LONG1/` (run folders are git-ignored; every model answer is in `cache/`).
+- Completed attempt: **$15.082**, 68 live + 11 cached calls, 12,546 s (3.5 h) wall clock, segments run one after another.
+
+| segment | start (s) | frames | wall clock (s) | live / cached calls | billed | MaxN |
+|---|---|---|---|---|---|---|
+| S1 | 0.0 | 2,658 | 627 | 4 / 11 | $0.544 | fish (unidentified) 5, human 3, person (unidentified) 1 |
+| S2 | 531.6 | 2,658 | 3,404 | 17 / 0 | $5.883 | fish (unidentified) 8 |
+| S3 | 1063.2 | 2,658 | 2,202 | 14 / 0 | $2.698 | fish (unidentified) 3 |
+| S4 | 1594.8 | 2,658 | 2,343 | 11 / 0 | $2.690 | fish (unidentified) 2 |
+| S5 | 2126.4 | 2,658 | 1,565 | 11 / 0 | $1.632 | fish (unidentified) 3, jack 1 |
+| S6 | 2658.0 | 2,655 | 1,405 | 11 / 0 | $1.636 | fish (unidentified) 5 |
+
+- Merged MaxN: fish (unidentified) 8 @ 546.0 s, human 3 @ 22.6 s, jack 1 @ 2133.4 s, person (unidentified) 1 @ 69.4 s.
+- All three attempts on this video: $17.27 (attempts 1–2 $2.183 + attempt 3 $15.082). Per hour of video: about $17
+  (attempt 3 alone) or $19.5 (all attempts); the 40-s extrapolation in `report/long_video.md` said about $30 and 7.5 h.
+- **The first ~2 minutes are on the boat deck**, not underwater: the human tracks run from 0 to 117.8 s. The "human"
+  count (3) is the crew. "person (unidentified)" (track S1:d0rev:4, 3 frames at 69.4–71.0 s, box 1596–1660 × 349–571,
+  Spark 0.65 "silhouette behind trap") was checked by eye on its evidence thumbnails: a crew member standing behind
+  a trap on deck, i.e. a real person under a second name (name split), not an animal mistaken for a person.
+  One "fish" track (S1:p0:0, 10.8–111.0 s, Spark 0.95 "Clear silvery fish in deck trap") is a fish in a trap on deck.
+- Audit: 116 tracks, 35 judged not a target by Spark (e.g. "Metal boat structure, no bird"), 81 kept; species words
+  from Spark among kept tracks: unknown 71, human 6, flatfish 2, snail 1, jack 1.
+- Not done: no ground truth exists for this video, so none of these counts is scored. Deck frames are not shown in
+  the paper, figures or demo.
+
