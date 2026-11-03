@@ -476,6 +476,12 @@ segmenter's 97.4% (529 of 543 boxes): of the 529 matched boxes, the audits remov
 independent (they sit in 27 tracks on six clips), so we give a percentile bootstrap over clips rather than a binomial
 interval: 92.4–100% for SAM alone, the length rule and the audited pipeline alike, and 72.1–96.4% if the queue is
 rejected. With six clips these intervals are wide, and none of the counting differences in Table 1 is outside them.
+The 14 boxes SAM misses are of two kinds. Nine are one faint, distant fish in 20190710_4 (frames 52–61) that no SAM
+box touches (IoU 0), and the reason that clip's MaxN is one short; the other five are in 20190618_9, where SAM draws
+one box over two overlapping fish (IoU 0.11–0.31 with each human box). An audit that only removes tracks cannot bring
+either back. An opt-in step that shows Spark six frames with every box drawn and box-prompts SAM on what it points at
+(`--misslook`) recovers the faint fish here (recall 98.9%, MaxN exact), but on the 24 held-out clips it leaves recall
+at 98.9% and adds boxes the reference does not have (precision 77.6 → 69.4%), so it stays off by default.
 Merge and stitch alone change nothing on this task (identical to SAM alone), and SAM's own confidence is no help
 either: every cut-off from 0.5 to 0.7 leaves the output unchanged, and 0.8 drops recall to 35.7%. But dropping
 tracks shorter than four frames, with no model call, removes exactly the same two tracks and gives exactly the same
@@ -579,7 +585,23 @@ within ±1 (Σ|err| 3) at a recall cost of 3.3 points overall, but the cost fall
 to 52% on 20190709_15 and from 79% to 50% on 20190710_9, whose MaxN becomes an under-count (2→1).
 We looked at the peak frame of the worst clip by eye: all seven boxes in 20190709_17 frame 15 are fish-shaped,
 three clearly fish and four faint ones, against two human boxes, so much of the "over-count" is likely unboxed fish
-rather than false detections (consistent with the precision caveat of §6.1). The held-out
+rather than false detections (consistent with the precision caveat of §6.1).
+
+*Checking the outliers: the reference, not the model.* The three clips with the largest over-counts (20190709_17,
+_11 and _9) hold 145 of the 153 held-out boxes scored as false. After the runs, Jiyul Ahn counted their MaxN by hand
+from the full-rate videos, without boxes: 8, 3 and 5 fish. The human boxes give 2, 2 and 1; the pipeline (queue
+accepted, final code) gives 7, 4 and 5. Against this count the pipeline is off by 2 in total and the boxes by 11.
+Figure 3 shows the last frame of 20190709_17: every pipeline box is on a fish, the human boxes cover two of them, and
+one fish in the seagrass is boxed by neither, which is the eighth fish of the hand count. The luderick annotations
+were made to train a single-species detector, not to count every fish, so on these clips a "false positive" is mostly
+an unboxed fish. This is one person and three clips, chosen because they were outliers; it explains the low
+precision on them but is not a corrected precision for the set.
+
+![**Figure 3.** The last frame of held-out clip 20190709_17. Cyan: pipeline boxes (7). Orange: the human reference boxes (2). The
+pipeline's five "false positives" here are fish; the fish in the seagrass at left is boxed by neither. A hand count
+of the clip gives MaxN 8.](figures/annotation_gap.jpg)
+
+The held-out
 result therefore repeats the development finding in a weaker form: the audits do not beat the segmenter or a length
 rule on box metrics, and their useful output on this task is the queue, which contains most of the tracks behind
 the clip-level over-counts, but also real fish Spark was unsure of; it narrows a person's work rather than replacing it.
@@ -608,7 +630,7 @@ which re-scores everything here from the bundled replies), still behind SAM alon
 Whether the remaining excess is false counting cannot be decided against these boxes. Spark's largest excesses fall
 on the clips where SAM also exceeds the boxes (20190709_17: Spark 8, SAM 8, human 2; 20190709_9: 6, 5, 1), where we
 have already seen unboxed fish. On 11 of the 19 held-out clips where SAM's MaxN equals the human count, Spark's is
-higher, by up to 3. We looked by eye at the frame where Spark's count most exceeds the boxes on four of them (Figure 3): each shows, besides
+higher, by up to 3. We looked by eye at the frame where Spark's count most exceeds the boxes on four of them (Figure 4): each shows, besides
 the boxed fish, two or three faint fish-like shapes without a box. On such clips the
 agreement of SAM and the boxes may be agreement in leaving faint fish out, and the prompt asked Spark to count
 exactly those fish. Because Spark's reply is a number without locations, we cannot tell whether those shapes are what
@@ -619,7 +641,7 @@ spent on reasoning). The script committed with the protocol stopped on such a re
 further call the protocol allows (and to send calls in parallel) and re-ran it with every earlier reply served from
 the cache (commit eeb952b). No frame is missing. The 765 calls cost $2.47.
 
-![**Figure 3.** The frame where Spark's count (Spark alone) most exceeds the human boxes, on four held-out clips where SAM's MaxN equals the human
+![**Figure 4.** The frame where Spark's count (Spark alone) most exceeds the human boxes, on four held-out clips where SAM's MaxN equals the human
 count. Green: dataset boxes. Dashed yellow: fish-like shapes without a box, marked by us from eye inspection
 (non-expert). Spark's reply has no locations, so these are not known to be what it counted. Script
 `report/paper/scripts/fig_spark_over.py`.](figures/spark_over.jpg)
@@ -675,7 +697,7 @@ has no word), under the one-word name Spark gave the moving spot.</div>
 Eight correspond to animals in the person's list; one, s003's "large striped shrimp", corresponds to nothing the
 person found. SAM prompted with "fish" found none of the seven taxa (in s002 it boxed two objects as low-confidence
 "fish", at least one of them a crustacean; see below). Spark's naming plus SAM's word ladder and zoom, with no audit at all, already counts six of
-the seven taxa, and adding the motion residual (Figure 4), still without audits, reaches seven of seven (Table 3). The taxon
+the seven taxa, and adding the motion residual (Figure 5), still without audits, reaches seven of seven (Table 3). The taxon
 score of the full pipeline is therefore owed to discovery, not to A1–A4. What the audits change is visible in the
 other rows. Without them the hagfish is counted as "eel" and the crab as "shrimp", because SAM's handle is the only
 label; with them both carry the animal Spark named. With the motion residual but no audits, the s003 trap mesh is counted as two "shrimp" (a
@@ -726,7 +748,7 @@ Counts of individuals are not scored: four frames per clip are not enough for a 
 shrimp. In s001 v16 counted the taxon with a number (2) below what a person sees (4 or more); the final code, which
 brightens this clip, counts 4.
 
-![**Figure 4.** Motion-residual sheet, s004. Each group is one moving spot no box covered, shown early / middle / late
+![**Figure 5.** Motion-residual sheet, s004. Each group is one moving spot no box covered, shown early / middle / late
 at the same zoom. Spark calls the shrimp animals and the sediment puffs not; the shrimp then go to SAM 3.1 as box
 prompts with no word.](figures/motion_s004.jpg){.half}
 
@@ -868,7 +890,7 @@ auditor rejected 35 of the 116 tracks. Segments run one after another; running t
 
 We re-scored the saved luderick runs of six audit variants (Table 4). V1–V4 differ only in the audit sheets; V5
 restores the V2 layout and adds steps that are inactive on this task, and V6 changes only A4's question, so V5 and
-V6 share one sheet design and the same counts. Figure 5 shows the five sheet designs (V1–V5). Each
+V6 share one sheet design and the same counts. Figure 6 shows the five sheet designs (V1–V5). Each
 variant was run once, so a single run cannot separate a layout effect from run-to-run variation; for the central
 case we therefore repeated the judgement on the saved sheets (below).
 
@@ -886,7 +908,7 @@ case we therefore repeated the judgement on the saved sheets (below).
 | V6 | V5, but A4 asks about the requested category ("fish"), not A1's species; A3 also checks pairs across words (none here) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
 | final (frozen `cbaf59b`) | V6, with A4's example of another animal no longer naming the category, and the rules of §5 *Protocol* (replayed, $0) | 97.4% | 79.2% | 4/6 | 2 | 9/27 |
 
-![**Figure 5.** The same SAM tracks audited with five sheet designs (V1–V5; V6 uses the V5 sheets). Recall is drawn as dots because its axis does
+![**Figure 6.** The same SAM tracks audited with five sheet designs (V1–V5; V6 uses the V5 sheets). Recall is drawn as dots because its axis does
 not start at zero. V4 has the best MaxN score and the worst recall of the three-moment designs; see text.](figures/ablation.png){.half}
 
 **One crop is not enough.** With a single crop per track (V1), A1 called a faint fish behind seagrass "only seagrass
@@ -897,7 +919,7 @@ crop is a moving fish across three.
 **Position within the strip matters, not only content.** V4 changed one detail of A4: when a track starts in the
 judged frame, the strip showed that frame first and two later frames, instead of repeating it on the left. The faint
 fish in frame 35 of 20190618_9, whose track starts there, was again called "seagrass, no fish" and recall fell to
-96.3% (Figure 6). Restoring the middle position (V5) restored 97.4%.
+96.3% (Figure 7). Restoring the middle position (V5) restored 97.4%.
 
 To check that this is not one unlucky call, we sent the saved A4 sheets for frame 35 byte for byte, 24 more times each without the
 cache: the V4 sheet and the V5 sheet, each with the prompt of the code version that produced it (both verified to hit
@@ -938,7 +960,7 @@ and against the s004 peak frame before accepting it, which is also why these cli
 changes (borders, captions) and between runs. The queue size is therefore a noisy quantity at this sample size; we
 report the final run's 9 of 27 and the observed range of 7 to 10.
 
-![**Figure 6.** A4 sheet for the peak frame of 20190618_9 (V5). Each tile shows "this frame" in the middle with the
+![**Figure 7.** A4 sheet for the peak frame of 20190618_9 (V5). Each tile shows "this frame" in the middle with the
 same track before and after. The faint fish that V1 and V4 rejected is kept when its frame sits in the middle of the
 strip.](figures/verify_luderick_f35.jpg){.half}
 
@@ -963,7 +985,7 @@ Across the four discovery clips the pipeline produced 44 tracks after merging: 3
 zoom or reversed passes, 10 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
 queued). Seven tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
 A3 judged 9 nested pairs (8 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
-shrimp crowd; Figure 8) and 3 were kept apart; A4 checked 11 peak frames and rejected 3 boxes: a box on the trap's blue pipe (correct, checked by
+shrimp crowd; Figure 9) and 3 were kept apart; A4 checked 11 peak frames and rejected 3 boxes: a box on the trap's blue pipe (correct, checked by
 eye), an 11 × 15-pixel box in empty water (not checked), and the only box of the real nautilus in s002's frame 0,
 called "anemone tentacles" (wrong; the MaxN survived because a later frame became the peak, but the removal window
 erased the first arrival, reported at 1.2 s instead of 0 s). Of the 10 motion
@@ -1005,7 +1027,7 @@ The asymmetry between word and box prompts is consistent with Lian and Li (2024)
 **Name anchoring.** In s003, a motion box had drifted onto the legs of the trap's net. A1, whose context string
 listed the discovery step's (wrong) guess "large striped shrimp", passed the track as that animal with confidence
 0.75. Shown the same track at other moments with no label and no names, Spark answered "looks like trap mesh, not
-animal" (Figure 7). The mechanism is the anchoring and misleading-cue effect reported for LLMs and MLLMs (Jones and
+animal" (Figure 8). The mechanism is the anchoring and misleading-cue effect reported for LLMs and MLLMs (Jones and
 Steinhardt, 2022; Dang et al., 2024; Lou and Sun, 2024); the consequence here is a false taxon in a count. Lou and Sun
 (2024) report that instructing a model to ignore an anchor does not remove the effect; we removed the anchor instead,
 which is the independence step of Chain-of-Verification (Dhuliawala et al., 2023).
@@ -1061,12 +1083,12 @@ a taxonomic list for the survey region would be a natural constraint to add.
 <figure>
 <img class="half" src="figures/audit_s003_mesh.jpg" alt="A1 sheet, s003">
 <img class="half" src="figures/confirm_s003.jpg" alt="Second look, s003">
-<figcaption>**Figure 7.** Name anchoring, s003. Top: A1 sheet; the right group (T6) is a motion box on the trap's net legs that
+<figcaption>**Figure 8.** Name anchoring, s003. Top: A1 sheet; the right group (T6) is a motion box on the trap's net legs that
 A1 passed as "large striped shrimp" (0.75), a name listed in its context. Bottom: the second look at other moments,
 no label, no names: "looks like trap mesh, not animal". The track is not counted.</figcaption>
 </figure>
 
-![**Figure 8.** A3 sheet, s004: nested masks drawn red and cyan; Spark judged six of eight pairs to be one shrimp
+![**Figure 9.** A3 sheet, s004: nested masks drawn red and cyan; Spark judged six of eight pairs to be one shrimp
 counted twice (for example body only vs. body with legs).](figures/pairs_s004.jpg){.half}
 
 
@@ -1208,7 +1230,7 @@ python3 report/paper/scripts/rescore_heldout.py      # Table 1c: held-out clips,
 python3 report/paper/scripts/spark_count_rescore.py  # Table 1c Spark rows, per-frame agreement and MAE
 python3 report/paper/scripts/score_discovery_heldout.py  # Table 3b: held-out discovery rows, queue, cost
 python3 report/paper/scripts/ledger_summary.py       # cost paragraph (§6.4)
-python3 report/paper/scripts/fig_ablation.py         # Figure 5
+python3 report/paper/scripts/fig_ablation.py         # Figure 6
 ```
 
 reproduces the counting and cost numbers of §6.1, §6.2, §6.4 and §7.1–7.2 and Table 3b; we checked this in a clone with the live

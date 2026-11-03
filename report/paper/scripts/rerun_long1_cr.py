@@ -3,7 +3,7 @@ but each segment's clip.mp4 from the original run is kept; run_pipeline copies a
 (clip hash + prompt) is the original run's and only calls the new code changes are made. Segment starts are those of
 the original run's log. Low light was decided once for the whole video in that run ("off"), so it is passed as is.
     FISH_BUDGET=<cap> python3 report/paper/scripts/rerun_long1_cr.py [run id, default LONG1_cr]"""
-import json, os, sys
+import filecmp, json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, ROOT)
 from fishcount import longvideo, pipeline, video
@@ -18,7 +18,16 @@ for k in range(1, 7):
     if not os.path.exists(os.path.join(pipeline.RUNS, srid, "result.json")):
         pipeline.run_pipeline(sp, srid, do_scout=False, prompts=["fish"], do_discover=True, do_zoom=True, max_usd=8,
                               lowlight="off")
-    st = json.load(open(os.path.join(pipeline.RUNS, srid, "status.json")))
+    # 11/3: the disk filled during LONG1_cr2. A finished segment's SAM chunks (seg_*.mp4, cut again from the clip on
+    # any re-run) go, and its clip.mp4, a byte copy of the source segment, becomes a hard link to it.
+    sd = os.path.join(pipeline.RUNS, srid)
+    for f in os.listdir(sd):
+        if f.startswith("seg_") and f.endswith(".mp4"):
+            os.remove(os.path.join(sd, f))
+    cp = os.path.join(sd, "clip.mp4")
+    if os.path.exists(cp) and not os.path.samefile(cp, sp) and filecmp.cmp(cp, sp, shallow=False):
+        os.link(sp, cp + ".lnk_tmp"); os.replace(cp + ".lnk_tmp", cp)
+    st =json.load(open(os.path.join(pipeline.RUNS, srid, "status.json")))
     print(f"S{k} start {start} n {n} billed ${st['billed_usd']:.3f}", flush=True)
     done.append((os.path.join(pipeline.RUNS, srid), start, n))
     start += n
