@@ -8,6 +8,9 @@ const STAGES = [
 const $ = (id) => document.getElementById(id);
 const state = { id: null, run: null, status: null, lastStage: null, poll: null, fps: 5, n: 0 };
 
+// replaceChildren() turns null into the text "null"; drop null/false the way el() does
+function fill(node, ...kids) { node.replaceChildren(...kids.flat().filter((k) => k != null && k !== false)); }
+
 function el(tag, attrs = {}, ...kids) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -37,7 +40,7 @@ const colour = (origin) => (origin === "asked" ? "var(--asked)" : "var(--found)"
 async function loadRuns(select) {
   const { runs } = await api("/api/runs");
   const sel = $("runSel");
-  sel.replaceChildren(...runs.map((r) => el("option", { value: r.id },
+  fill(sel, ...runs.map((r) => el("option", { value: r.id },
     `${r.id}${r.stage === "done" ? "" : `  (${r.stage})`}`)));
   const want = select || decodeURIComponent(location.hash.slice(1)) || (runs.find((r) => r.stage === "done") || runs[0] || {}).id;
   if (want) { sel.value = want; openRun(want); }
@@ -70,7 +73,7 @@ async function openRun(id) {
 
 function drawRail(st) {
   const at = STAGES.findIndex(([k]) => k === (st.stage === "error" ? state.lastStage : st.stage));
-  $("rail").replaceChildren(...STAGES.map(([, name], i) => el("li", {
+  fill($("rail"), ...STAGES.map(([, name], i) => el("li", {
     class: i < at || st.stage === "done" ? "past" : i === at ? (st.stage === "error" ? "fail" : "now") : "",
     "aria-current": i === at ? "step" : null,
   }, name)));
@@ -79,7 +82,7 @@ function drawRail(st) {
 function drawMeter(st) {
   const live = st.live_calls > 0;
   const took = st.done ? `, ${Math.round(st.done - st.started)} s` : "";
-  $("meter").replaceChildren(
+  fill($("meter"), 
     el("b", { class: live ? "live" : "cache" }, live ? "Live API calls" : "Replayed from saved answers"),
     el("span", { class: "num" }, live
       ? `${st.live_calls} calls, ${st.cached_calls} reused, $${st.billed_usd.toFixed(3)} billed${took}`
@@ -87,7 +90,7 @@ function drawMeter(st) {
 }
 
 function drawLog(st) {
-  $("log").replaceChildren(...st.log.map((l) => el("li", {}, l)));
+  fill($("log"), ...st.log.map((l) => el("li", {}, l)));
 }
 
 function showScreen(msg) {
@@ -144,7 +147,7 @@ function drawStrip() {
   const axis = el("div", { class: "axis" }, el("span"), el("div", { class: "num" },
     ...[0, 0.25, 0.5, 0.75, 1].map((p) => el("span", {}, `${(dur * p).toFixed(0)} s`))), el("span"));
   const head = el("div", { class: "head" });
-  strip.replaceChildren(...(lanes.length ? lanes : [el("p", { class: "empty", style: "padding:0 12px" }, "Nothing was counted in this clip.")]), axis, head);
+  fill(strip, ...(lanes.length ? lanes : [el("p", { class: "empty", style: "padding:0 12px" }, "Nothing was counted in this clip.")]), axis, head);
   const reviewed = run.n_reviewed;
   $("strip").nextElementSibling?.classList?.contains("stale") && $("strip").nextElementSibling.remove();
   if (reviewed) strip.after(el("p", { class: "stale" },
@@ -166,7 +169,7 @@ function movePlayhead() {
 
 function drawEvidence() {
   const run = state.run;
-  $("evidence").replaceChildren(...order(run).filter(([, m]) => m.evidence).map(([name, m]) => {
+  fill($("evidence"), ...order(run).filter(([, m]) => m.evidence).map(([name, m]) => {
     const src = `/runs/${encodeURIComponent(run.id)}/${m.evidence}`;
     const cap = `${name}: ${m.maxn} at ${secs(m.maxn_time)}${m.peak_checked ? ", every box checked by Spark" : ""}`;
     return el("figure", { class: run.origin[name], tabindex: 0, onclick: () => zoom(src, cap), onkeydown: (e) => e.key === "Enter" && zoom(src, cap) },
@@ -210,7 +213,7 @@ function drawAsked() {
   const run = state.run;
   const words = run.prompts.map(([, p]) => p);
   const rows = order(run).filter(([n]) => run.origin[n] === "asked");
-  $("askedPanel").replaceChildren(
+  fill($("askedPanel"), 
     el("h2", {}, `You asked for ${words.join(", ")}`, el("small", {}, "SAM 3.1 tracks only the words it is given. MaxN is the most seen in one frame.")),
     ...(rows.length ? rows.map(([n, m]) => countRow(n, m, "asked"))
       : [el("p", { class: "empty" }, `No ${words.join(" or ")} in this clip.`)]));
@@ -245,7 +248,7 @@ function drawFound() {
     return countRow(name, m, "found", extra);
   });
   const missed = disc.filter((d) => !d.word);
-  $("foundPanel").replaceChildren(
+  fill($("foundPanel"), 
     el("h2", {}, "Found without being asked", el("small", {}, "Muse Spark named what else was there; SAM tracked it under a plain word.")),
     ...(items.length ? items : [el("p", { class: "empty" }, disc.length ? "Spark saw other animals, but SAM could not track them." : "Spark saw nothing else living in this clip.")]),
     ...siteBlock(run),
@@ -338,7 +341,7 @@ function drawSecond() {
     el("span", {}, `Spark compared ${dups.length} pair${dups.length === 1 ? "" : "s"} of nested outlines: ${same} ${same === 1 ? "was one animal" : "were one animal"} boxed twice (removed from the count)`
       + (dups.length > same ? `. Kept apart: ${dups.filter((d) => !d.same).map((d) => d.said).join("; ")}` : ""))));
   const signs = run.signs || [];
-  $("secondPanel").replaceChildren(
+  fill($("secondPanel"), 
     el("h2", {}, "Second look", el("small", {}, "SAM recognises an animal late or misses it in a crowded frame, so the pipeline tries again.")),
     steps.length || peaks.length ? el("ul", { class: "steps" }, ...steps, ...peaks) : el("p", { class: "empty" }, "No second look was needed."),
     signs.length ? el("p", { class: "signs" }, "Indirect signs Spark noticed: ",
@@ -379,7 +382,7 @@ function drawQueue() {
   // every answer, so accepting one can drop others. The rest cannot change any count as things stand.
   const rest = items.filter((x) => x.dataset.rest), head = items.filter((x) => !x.dataset.rest);
   const left = run.n_decisive || 0;
-  $("queuePanel").replaceChildren(
+  fill($("queuePanel"), 
     el("h2", {}, "Needs a person",
       el("small", {}, total ? `${run.n_flagged} of ${total} tracks: Spark was unsure, or said it is not the animal.` : "Spark did not audit this run.")),
     run.n_flagged ? el("p", { class: "settle" }, left
@@ -405,7 +408,7 @@ function zoom(src, cap) {
 // ---------- new run ----------
 async function loadClips(select) {
   const { clips } = await api("/api/clips");
-  $("clipSel").replaceChildren(...clips.map((c) => el("option", { value: c.name }, `${c.name}  (${c.mb} MB)`)));
+  fill($("clipSel"), ...clips.map((c) => el("option", { value: c.name }, `${c.name}  (${c.mb} MB)`)));
   if (select) $("clipSel").value = select;
 }
 
