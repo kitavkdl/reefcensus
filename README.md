@@ -93,7 +93,8 @@ their evidence frames, motion sheets and human queue. No model is called. The we
 longer videos run from the command line (below).
 
 **To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
-is a hard cap on total spend. A fresh discovery run on a 12 s clip makes 21–30 calls for an estimated $0.22–0.27 (paper §6.4).
+is a hard cap on total spend in your local `cache/ledger.jsonl`; a fresh clone starts it empty ($0). The project's own
+development spend is in `report/paper/data/ledger.jsonl`. A fresh discovery run on a 12 s clip makes 21–30 calls for an estimated $0.22–0.27 (paper §6.4).
 
 ```
 python3 fishcount/pipeline.py <video> [--prompts WORD ...] [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]

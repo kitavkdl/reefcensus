@@ -242,7 +242,7 @@ are pinned. Both were found when the build machine went from 6 cores without AVX
 tests failed; after pinning, the demo runs and all unit tests replay exactly on the new CPU. The brightened night clip
 of s001 (low light, Appendix B) still comes out different on the two CPUs (cause not found), so its answers are cached
 for both; on a third CPU its re-run may call the API again.
-Spending is capped twice: an environment variable caps the cumulative total of the project's spend ledger, and a
+Spending is capped twice: an environment variable caps the cumulative total of the local spend ledger (`cache/ledger.jsonl`, empty in a fresh clone), and a
 per-run option caps the estimated cost of one run. Spark is the cheaper of the two image-reading models the API offers (Muse Wonder costs about 3 to 5 times as
 much per token; no Llama vision model is offered); §7.6 puts Wonder on the same questions.
 
@@ -1033,7 +1033,7 @@ calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.1
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the held-out runs with the re-runs of every
 evaluation, the crowd check and the demo runs 1,004 calls ($8.06), the re-runs of the 53-min video 423 calls ($12.02) and the live take filmed for the demo video (development clip s002, run fresh with an empty cache) 34 calls ($0.35) and the NOAA held-out set (§6.2, run and re-run) 140 calls ($1.29), for a ledger total of $56.39 over 4,000 calls (the items sum to $56.41 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
-spend ledger (a copy is in the scoring bundle). From the call counts of the final
+development spend ledger, `report/paper/data/ledger.jsonl`. From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
 the luderick counting runs from development calls; by the price list, one SAM pass over their 665 frames costs
@@ -1497,7 +1497,7 @@ Ditria et al., 2021, CC BY 4.0), SAM 3.1's reply for "fish" on each clip, the `r
 run (V1–V6 and the merge-only baseline), the held-out runs (§6.2), the no-audit discovery runs, the held-out discovery runs with both reference lists, the
 circled sheets and the label-free judgement (`data/discovery_heldout`), the two frame-35 sheets, the replies of the
 repeated calls, the per-frame replies of the Spark-alone baseline (`data/spark_count`), the fixed-vocabulary tracks
-(`data/fixed_vocab`) and a copy of the cost ledger. From a fresh clone, with no data download and no API key (Python 3 with NumPy, OpenCV and, for the figure,
+(`data/fixed_vocab`) and the development cost ledger (`ledger.jsonl`). From a fresh clone, with no data download and no API key (Python 3 with NumPy, OpenCV and, for the figure,
 matplotlib),
 
 ```
