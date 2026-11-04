@@ -190,7 +190,7 @@ function tally(n, col) {
 function countRow(name, m, origin, extra = []) {
   return el("div", { class: "count" },
     el("div", { class: "name" }, name),
-    el("div", { class: "big num" }, m.maxn),
+    el("div", { class: "big num" }, (m.lower_bound ? "≥" : "") + m.maxn),
     tally(m.maxn, colour(origin)),
     el("div", { class: "facts" },
       el("span", {}, `first seen ${secs(m.first_time)}`),
@@ -202,6 +202,7 @@ function countRow(name, m, origin, extra = []) {
         el("span", { class: "num" }, `${m.maxn_confirmed}–${m.maxn}`),
         ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
       : null,
+    crowdNote(m),
     ...extra);
 }
 
@@ -267,15 +268,20 @@ function siteBlock(run) {
 const groupParts = (run, m) => m.labels.filter((n) => !run.metrics[n] || !hidden(n, run.metrics[n]))
   .map((n) => `${run.metrics[n]?.curve?.[m.maxn_frame] || 0} ${n}`);
 
+// crowd check: Spark, shown the peak frame with no boxes, counted clearly more than were tracked -> a person counts it
+const crowdNote = (m) => m.lower_bound ? el("div", { class: "range crowd" }, "Crowded: Spark counts about ", el("span", { class: "num" }, m.crowd_total),
+  " in this frame without boxes, more than were tracked. The count is a lower bound; please count this frame.") : null;
+
 // same-frame totals per animal group (server: pipeline.group_metrics), shown under both count panels
 function groupBlock(run) {
   const gm = Object.entries(run.group_metrics || {});
   if (!gm.length) return [];
   return [el("div", { class: "groups" }, el("h3", {}, "By animal group", el("small", {}, " the labels below added frame by frame")),
     ...gm.map(([g, m]) => el("div", { class: "climb" }, `All ${g === "fish" ? "fish" : g + "s"}: `,
-      el("span", { class: "num" }, m.maxn), ` in one frame (${groupParts(run, m).join(" + ")}) `,
+      el("span", { class: "num" }, (m.lower_bound ? "≥" : "") + m.maxn), ` in one frame (${groupParts(run, m).join(" + ")}) `,
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `at ${secs(m.maxn_time)}`) : null,
-      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "")))];
+      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "",
+      crowdNote(m))))];
 }
 
 // "shrimp (unidentified)" and "caridean shrimp" are both shrimp: one track has one label, so per-frame counts add.

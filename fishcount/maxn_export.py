@@ -16,7 +16,8 @@ import csv, io, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 COLUMNS = ["OpCode", "Family", "Genus", "Species", "MaxN", "Frame", "Time_mins",
-           "spark_common_name", "maxn_confirmed", "origin", "taxonomy_status", "source_file", "run_id", "human_edits"]
+           "spark_common_name", "maxn_confirmed", "origin", "taxonomy_status", "source_file", "run_id", "human_edits",
+           "maxn_lower_bound"]
 
 
 def default_opcode(e):
@@ -39,8 +40,17 @@ def rows(e, opcode=None):
         out.append([_cell(opcode), "", "", "", m["maxn"], m["maxn_frame"], mins,
                     _cell(name), m.get("maxn_confirmed", m["maxn"]), e.get("origin", {}).get(name, ""),
                     "not verified: common name from Muse Spark or a reviewer", _cell(e.get("source") or ""), e.get("id", ""),
-                    e.get("n_reviewed", 0)])
+                    e.get("n_reviewed", 0), _lower_bound(e, name, m)])
     return out
+
+
+def _lower_bound(e, name, m):
+    """Crowd check (pipeline.crowd_check): the label's own row or its animal group's row is a lower bound."""
+    rows = [(name, m)] + [(g, gg) for g, gg in (e.get("group_metrics") or {}).items() if name in gg.get("labels", [])]
+    for row, r in rows:
+        if r.get("lower_bound"):
+            return f"yes ({row}): Spark counts about {r.get('crowd_total')} in frame {r.get('crowd_frame')} without boxes"
+    return ""
 
 
 def to_csv(e, opcode=None):

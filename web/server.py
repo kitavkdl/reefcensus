@@ -112,6 +112,13 @@ def effective(rid):
     glo = pipeline.group_metrics(lo, v["fps"], min_labels=1) if open_q else {}
     for g, gg in gm.items():
         gg["maxn_confirmed"] = glo.get(g, {}).get("maxn", 0) if open_q else gg["maxn"]
+    # crowd check (pipeline.crowd_check): Spark, unprimed, counted clearly more in the peak frame -> MaxN is a lower bound
+    for c in res.get("crowd_checks", []):
+        if not c.get("lower_bound"):
+            continue
+        row = gm.get(c["row"]) or (m.get(c["labels"][0]) if len(c["labels"]) == 1 else None)
+        if row is not None and row.get("maxn") == c["maxn"]:      # a person's edit since the run changes the count: drop the mark
+            row.update(lower_bound=True, crowd_total=c["total"], crowd_frame=c["frame"])
     queue = []
     for t, vd in res.get("verdicts", {}).items():
         if pipeline.needs_review(vd) or t in review:

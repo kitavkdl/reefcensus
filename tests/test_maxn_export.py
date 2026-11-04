@@ -65,3 +65,17 @@ class GlobalArchiveExport(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CrowdLowerBound(unittest.TestCase):
+    def test_group_lower_bound_reaches_every_label_row(self):
+        from fishcount import maxn_export
+        m = {"maxn": 9, "maxn_frame": 29, "maxn_time": 5.8}
+        e = {"metrics": {"fish (unidentified)": dict(m), "thresher shark": dict(m, maxn=1)},
+             "group_metrics": {"fish": {"labels": ["fish (unidentified)", "thresher shark"], "maxn": 16,
+                                        "lower_bound": True, "crowd_total": 35, "crowd_frame": 29}}}
+        rows = maxn_export.rows(e, "DH8")
+        col = maxn_export.COLUMNS.index("maxn_lower_bound")
+        self.assertTrue(all(r[col].startswith("yes (fish): Spark counts about 35 in frame 29") for r in rows))
+        e["group_metrics"]["fish"]["lower_bound"] = False
+        self.assertTrue(all(r[col] == "" for r in maxn_export.rows(e, "DH8")))
