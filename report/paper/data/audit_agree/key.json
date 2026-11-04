@@ -1,0 +1,2147 @@
+{
+ "sheet": "auditagree-1105",
+ "protocol": "Phone page to measure how often the auditor (A1, Muse Spark) agrees with a person. Pool: every A1 verdict in the cr6 runs (30 luderick clips, s001-s004, DH1-DH11), less the 5 tracks whose name a later look changed (relabelled or name_disagrees: the question would not be the one A1 answered). Three strata by A1's answer: rejected (any confidence), accepted with confidence < 0.7 (queued), accepted with confidence >= 0.7 (counted). 20 drawn from each with random.Random(1105), shuffled together. A card shows three crops of the track with our box and the label A1 was asked about; it does NOT show A1's answer, confidence, note, or whether the track was counted. The person answers Y \"yes, a <label>\", O \"an animal, but not a <label>\", N \"not an animal\", ? \"can't tell\". Scoring is fixed here, before the person sees the sheet (audit_agree_score.py): A1 accept = Y, A1 reject = O or N; Cohen's kappa and per-stratum agreement over answered cards (? left out, and separately counted as disagreement); the population estimate weights each stratum by its pool size.",
+ "pool_sizes": {
+  "rejected": 32,
+  "accepted_low": 56,
+  "accepted_high": 131
+ },
+ "excluded_renamed": 5,
+ "seed": 1105,
+ "per_stratum": 20,
+ "cards": [
+  {
+   "run": "DH9_cr6",
+   "track": "m0:1",
+   "label": "crab",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.4,
+   "a1_reason": "No consistent crab body shape visible",
+   "n": 1,
+   "show": [
+    [
+     8,
+     [
+      54.0,
+      25.0,
+      75.0,
+      60.0
+     ]
+    ],
+    [
+     20,
+     [
+      52.0,
+      33.0,
+      115.0,
+      70.0
+     ]
+    ],
+    [
+     31,
+     [
+      54.0,
+      36.0,
+      83.0,
+      49.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_9",
+   "track": "p0:3",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.35,
+   "a1_reason": "Very faint blurry shape, possibly fish",
+   "n": 2,
+   "show": [
+    [
+     2,
+     [
+      432.0,
+      418.0,
+      568.0,
+      485.0
+     ]
+    ],
+    [
+     5,
+     [
+      378.0,
+      435.0,
+      478.0,
+      490.0
+     ]
+    ],
+    [
+     8,
+     [
+      330.0,
+      456.0,
+      424.0,
+      501.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "s0-center:6",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.4,
+   "a1_reason": "thin streak likely shrimp",
+   "n": 3,
+   "show": [
+    [
+     41,
+     [
+      325.3,
+      196.7,
+      366.7,
+      267.3
+     ]
+    ],
+    [
+     42,
+     [
+      319.3,
+      186.7,
+      326.0,
+      196.0
+     ]
+    ],
+    [
+     44,
+     [
+      303.3,
+      278.7,
+      317.3,
+      296.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH3_cr6",
+   "track": "d0c-bottom:1",
+   "label": "crab",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.9,
+   "a1_reason": "Clear body and jointed legs",
+   "n": 4,
+   "show": [
+    [
+     40,
+     [
+      272.3,
+      347.3,
+      385.7,
+      441.0
+     ]
+    ],
+    [
+     50,
+     [
+      272.0,
+      343.3,
+      389.7,
+      441.0
+     ]
+    ],
+    [
+     59,
+     [
+      271.7,
+      343.0,
+      389.7,
+      441.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190710_9",
+   "track": "p0:1",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.6,
+   "a1_reason": "Indistinct weed sway no fish features",
+   "n": 5,
+   "show": [
+    [
+     7,
+     [
+      848.0,
+      803.0,
+      994.0,
+      1078.0
+     ]
+    ],
+    [
+     9,
+     [
+      942.0,
+      872.0,
+      1021.0,
+      1080.0
+     ]
+    ],
+    [
+     10,
+     [
+      955.0,
+      919.0,
+      1039.0,
+      1080.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "p0:1001",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.5,
+   "a1_reason": "tiny streak likely shrimp not fish",
+   "n": 6,
+   "show": [
+    [
+     39,
+     [
+      368.0,
+      281.0,
+      379.0,
+      298.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "p0+34:3",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "Small distant fish consistent movement",
+   "n": 7,
+   "show": [
+    [
+     34,
+     [
+      528.0,
+      200.0,
+      545.0,
+      215.0
+     ]
+    ],
+    [
+     37,
+     [
+      570.0,
+      172.0,
+      595.0,
+      183.0
+     ]
+    ],
+    [
+     40,
+     [
+      614.0,
+      155.0,
+      627.0,
+      163.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1rev:6",
+   "label": "shrimp",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.8,
+   "a1_reason": "Shrimp by pole early and late",
+   "n": 8,
+   "show": [
+    [
+     0,
+     [
+      929.0,
+      680.0,
+      1007.0,
+      897.0
+     ]
+    ],
+    [
+     23,
+     [
+      975.0,
+      675.0,
+      1007.0,
+      811.0
+     ]
+    ],
+    [
+     39,
+     [
+      860.0,
+      634.0,
+      1011.0,
+      806.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "p0:12",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "bright elongate body maintains shape",
+   "n": 9,
+   "show": [
+    [
+     46,
+     [
+      671.0,
+      60.0,
+      704.0,
+      71.0
+     ]
+    ],
+    [
+     51,
+     [
+      685.0,
+      35.0,
+      697.0,
+      53.0
+     ]
+    ],
+    [
+     52,
+     [
+      704.0,
+      88.0,
+      719.0,
+      119.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH3_cr6",
+   "track": "m3:1",
+   "label": "crab",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.2,
+   "a1_reason": "Empty sediment no animal shape",
+   "n": 10,
+   "show": [
+    [
+     0,
+     [
+      429.0,
+      412.0,
+      495.0,
+      459.0
+     ]
+    ],
+    [
+     22,
+     [
+      429.0,
+      407.0,
+      498.0,
+      461.0
+     ]
+    ],
+    [
+     59,
+     [
+      427.0,
+      412.0,
+      510.0,
+      463.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_4",
+   "track": "p0:1",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "hazy fish shape persists across frames",
+   "n": 11,
+   "show": [
+    [
+     25,
+     [
+      1755.0,
+      560.0,
+      1912.0,
+      664.0
+     ]
+    ],
+    [
+     45,
+     [
+      1638.0,
+      583.0,
+      1689.0,
+      681.0
+     ]
+    ],
+    [
+     66,
+     [
+      1726.0,
+      504.0,
+      1798.0,
+      573.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH3_cr6",
+   "track": "d0c-bottom:0",
+   "label": "crab",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "Pointed leg tip among legs",
+   "n": 12,
+   "show": [
+    [
+     33,
+     [
+      376.0,
+      320.0,
+      420.7,
+      352.0
+     ]
+    ],
+    [
+     46,
+     [
+      367.7,
+      320.0,
+      424.0,
+      360.7
+     ]
+    ],
+    [
+     59,
+     [
+      352.7,
+      320.0,
+      424.0,
+      365.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_11",
+   "track": "p0:3",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.9,
+   "a1_reason": "Striped fish clear in middle",
+   "n": 13,
+   "show": [
+    [
+     13,
+     [
+      8.0,
+      398.0,
+      78.0,
+      489.0
+     ]
+    ],
+    [
+     25,
+     [
+      1205.0,
+      522.0,
+      1287.0,
+      657.0
+     ]
+    ],
+    [
+     38,
+     [
+      1229.0,
+      308.0,
+      1304.0,
+      360.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_9",
+   "track": "p0:4",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.45,
+   "a1_reason": "Faint pale body, shape consistent",
+   "n": 14,
+   "show": [
+    [
+     4,
+     [
+      1049.0,
+      450.0,
+      1190.0,
+      555.0
+     ]
+    ],
+    [
+     6,
+     [
+      1059.0,
+      476.0,
+      1154.0,
+      577.0
+     ]
+    ],
+    [
+     10,
+     [
+      1060.0,
+      522.0,
+      1141.0,
+      577.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "d0:0",
+   "label": "shark",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "Clear side view long tail thresher",
+   "n": 15,
+   "show": [
+    [
+     0,
+     [
+      31.0,
+      135.0,
+      324.0,
+      224.0
+     ]
+    ],
+    [
+     8,
+     [
+      9.0,
+      116.0,
+      228.0,
+      207.0
+     ]
+    ],
+    [
+     15,
+     [
+      9.0,
+      78.0,
+      162.0,
+      183.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "p0+30:1",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.85,
+   "a1_reason": "thin vertical fish consistent shape",
+   "n": 16,
+   "show": [
+    [
+     30,
+     [
+      454.0,
+      49.0,
+      468.0,
+      75.0
+     ]
+    ],
+    [
+     31,
+     [
+      467.0,
+      15.0,
+      478.0,
+      44.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1:1",
+   "label": "shrimp",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "Clear shrimp on blue pole all frames",
+   "n": 17,
+   "show": [
+    [
+     0,
+     [
+      857.0,
+      437.0,
+      1056.0,
+      521.0
+     ]
+    ],
+    [
+     30,
+     [
+      849.0,
+      439.0,
+      1050.0,
+      514.0
+     ]
+    ],
+    [
+     59,
+     [
+      852.0,
+      436.0,
+      1057.0,
+      515.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH2_cr6",
+   "track": "m0:1",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.65,
+   "a1_reason": "long dark body with tail visible",
+   "n": 18,
+   "show": [
+    [
+     0,
+     [
+      110.0,
+      374.0,
+      162.0,
+      404.0
+     ]
+    ],
+    [
+     26,
+     [
+      174.0,
+      356.0,
+      254.0,
+      438.0
+     ]
+    ],
+    [
+     56,
+     [
+      350.0,
+      419.0,
+      422.0,
+      440.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "p0:1004",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.8,
+   "a1_reason": "bright elongate fish clearly moving",
+   "n": 19,
+   "show": [
+    [
+     51,
+     [
+      166.0,
+      191.0,
+      207.0,
+      205.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s002",
+   "track": "p0:1",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.5,
+   "a1_reason": "reddish stationary shape likely crab",
+   "n": 20,
+   "show": [
+    [
+     11,
+     [
+      895.0,
+      216.0,
+      985.0,
+      300.0
+     ]
+    ],
+    [
+     31,
+     [
+      939.0,
+      233.0,
+      989.0,
+      264.0
+     ]
+    ],
+    [
+     59,
+     [
+      896.0,
+      223.0,
+      987.0,
+      299.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "s0-center:9",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "small diagonal streak consistent across",
+   "n": 21,
+   "show": [
+    [
+     44,
+     [
+      586.7,
+      120.7,
+      600.0,
+      136.7
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190618_9",
+   "track": "p0:13",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.65,
+   "a1_reason": "Hazy fish shape persists across frames",
+   "n": 22,
+   "show": [
+    [
+     65,
+     [
+      1880.0,
+      203.0,
+      1920.0,
+      256.0
+     ]
+    ],
+    [
+     85,
+     [
+      1445.0,
+      99.0,
+      1627.0,
+      176.0
+     ]
+    ],
+    [
+     106,
+     [
+      833.0,
+      174.0,
+      1032.0,
+      300.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_17",
+   "track": "p0:2",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.4,
+   "a1_reason": "Very hazy but fish shape persists",
+   "n": 23,
+   "show": [
+    [
+     0,
+     [
+      145.0,
+      489.0,
+      308.0,
+      578.0
+     ]
+    ],
+    [
+     14,
+     [
+      88.0,
+      613.0,
+      129.0,
+      682.0
+     ]
+    ],
+    [
+     29,
+     [
+      209.0,
+      515.0,
+      350.0,
+      573.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "m1:1",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.8,
+   "a1_reason": "Green vegetation sways, no fish",
+   "n": 24,
+   "show": [
+    [
+     0,
+     [
+      526.0,
+      394.0,
+      578.0,
+      429.0
+     ]
+    ],
+    [
+     30,
+     [
+      531.0,
+      383.0,
+      580.0,
+      428.0
+     ]
+    ],
+    [
+     59,
+     [
+      533.0,
+      394.0,
+      585.0,
+      432.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1z-center:9",
+   "label": "shrimp",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.85,
+   "a1_reason": "elongate shrimp body near blue structure",
+   "n": 25,
+   "show": [
+    [
+     23,
+     [
+      930.0,
+      742.0,
+      982.0,
+      880.7
+     ]
+    ],
+    [
+     41,
+     [
+      935.3,
+      771.3,
+      984.0,
+      880.7
+     ]
+    ],
+    [
+     59,
+     [
+      971.3,
+      769.3,
+      1001.3,
+      863.3
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "m0:1",
+   "label": "shrimp",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "Blurry faint shrimp under green net",
+   "n": 26,
+   "show": [
+    [
+     0,
+     [
+      926.0,
+      617.0,
+      1013.0,
+      694.0
+     ]
+    ],
+    [
+     17,
+     [
+      930.0,
+      616.0,
+      1013.0,
+      688.0
+     ]
+    ],
+    [
+     41,
+     [
+      908.0,
+      613.0,
+      1012.0,
+      682.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190618_2",
+   "track": "p0:0",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.7,
+   "a1_reason": "Fish body shape persists across frames",
+   "n": 27,
+   "show": [
+    [
+     0,
+     [
+      1566.0,
+      286.0,
+      1653.0,
+      403.0
+     ]
+    ],
+    [
+     9,
+     [
+      1547.0,
+      296.0,
+      1707.0,
+      477.0
+     ]
+    ],
+    [
+     18,
+     [
+      1699.0,
+      341.0,
+      1920.0,
+      499.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "s0-center:1000",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.4,
+   "a1_reason": "tiny diagonal streak shrimp-like",
+   "n": 28,
+   "show": [
+    [
+     43,
+     [
+      277.3,
+      249.3,
+      292.0,
+      264.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "p0+29:8",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.9,
+   "a1_reason": "box on black edge no fish",
+   "n": 29,
+   "show": [
+    [
+     33,
+     [
+      414.0,
+      0.0,
+      422.0,
+      10.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_13",
+   "track": "p0:2",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "Clear striped fish in all frames",
+   "n": 30,
+   "show": [
+    [
+     101,
+     [
+      1656.0,
+      361.0,
+      1920.0,
+      722.0
+     ]
+    ],
+    [
+     103,
+     [
+      519.0,
+      326.0,
+      1920.0,
+      1080.0
+     ]
+    ],
+    [
+     104,
+     [
+      0.0,
+      449.0,
+      1409.0,
+      1080.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH6_cr6",
+   "track": "p0:1",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.9,
+   "a1_reason": "clear shark swimming across frames",
+   "n": 31,
+   "show": [
+    [
+     4,
+     [
+      0.0,
+      137.0,
+      138.0,
+      224.0
+     ]
+    ],
+    [
+     20,
+     [
+      282.0,
+      158.0,
+      510.0,
+      217.0
+     ]
+    ],
+    [
+     36,
+     [
+      609.0,
+      197.0,
+      640.0,
+      227.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1z-center:8",
+   "label": "shrimp",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.7,
+   "a1_reason": "Blurry close shrimp body shape persists",
+   "n": 32,
+   "show": [
+    [
+     16,
+     [
+      800.0,
+      500.7,
+      864.7,
+      579.3
+     ]
+    ],
+    [
+     38,
+     [
+      800.7,
+      500.0,
+      845.3,
+      584.0
+     ]
+    ],
+    [
+     59,
+     [
+      825.3,
+      496.0,
+      863.3,
+      570.7
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH2_cr6",
+   "track": "m2:1",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "dark elongate body persists moving",
+   "n": 33,
+   "show": [
+    [
+     0,
+     [
+      242.0,
+      335.0,
+      297.0,
+      375.0
+     ]
+    ],
+    [
+     26,
+     [
+      372.0,
+      361.0,
+      430.0,
+      394.0
+     ]
+    ],
+    [
+     52,
+     [
+      527.0,
+      427.0,
+      564.0,
+      440.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH2_cr6",
+   "track": "m4:1",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.4,
+   "a1_reason": "bright elongate shape moves consistently",
+   "n": 34,
+   "show": [
+    [
+     13,
+     [
+      583.0,
+      400.0,
+      614.0,
+      440.0
+     ]
+    ],
+    [
+     17,
+     [
+      568.0,
+      371.0,
+      620.0,
+      393.0
+     ]
+    ],
+    [
+     25,
+     [
+      604.0,
+      405.0,
+      650.0,
+      425.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "p0+29:3",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "thin fish middle late frames",
+   "n": 35,
+   "show": [
+    [
+     29,
+     [
+      403.0,
+      108.0,
+      414.0,
+      129.0
+     ]
+    ],
+    [
+     34,
+     [
+      447.0,
+      105.0,
+      455.0,
+      123.0
+     ]
+    ],
+    [
+     36,
+     [
+      456.0,
+      49.0,
+      472.0,
+      68.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "p0:17",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.35,
+   "a1_reason": "shape lost middle and late",
+   "n": 36,
+   "show": [
+    [
+     54,
+     [
+      643.0,
+      233.0,
+      675.0,
+      261.0
+     ]
+    ],
+    [
+     56,
+     [
+      529.0,
+      96.0,
+      704.0,
+      239.0
+     ]
+    ],
+    [
+     59,
+     [
+      584.0,
+      94.0,
+      600.0,
+      112.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1z-right:3",
+   "label": "shrimp",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "Clear vertical shrimp by blue pole",
+   "n": 37,
+   "show": [
+    [
+     14,
+     [
+      907.3,
+      685.3,
+      1007.3,
+      894.0
+     ]
+    ],
+    [
+     17,
+     [
+      902.0,
+      682.7,
+      1006.7,
+      880.0
+     ]
+    ],
+    [
+     22,
+     [
+      978.0,
+      685.3,
+      1008.0,
+      811.3
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "p0:6",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.4,
+   "a1_reason": "small blurry streak not fish",
+   "n": 38,
+   "show": [
+    [
+     40,
+     [
+      643.0,
+      136.0,
+      676.0,
+      178.0
+     ]
+    ],
+    [
+     42,
+     [
+      524.0,
+      26.0,
+      564.0,
+      63.0
+     ]
+    ],
+    [
+     46,
+     [
+      706.0,
+      194.0,
+      720.0,
+      231.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "p0:5",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.4,
+   "a1_reason": "thin streak likely shrimp",
+   "n": 39,
+   "show": [
+    [
+     36,
+     [
+      331.0,
+      155.0,
+      359.0,
+      188.0
+     ]
+    ],
+    [
+     38,
+     [
+      314.0,
+      224.0,
+      326.0,
+      235.0
+     ]
+    ],
+    [
+     47,
+     [
+      327.0,
+      203.0,
+      339.0,
+      215.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "p0:2",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.6,
+   "a1_reason": "Small blurry distant fish stable",
+   "n": 40,
+   "show": [
+    [
+     23,
+     [
+      441.0,
+      164.0,
+      463.0,
+      175.0
+     ]
+    ],
+    [
+     28,
+     [
+      522.0,
+      124.0,
+      548.0,
+      142.0
+     ]
+    ],
+    [
+     33,
+     [
+      628.0,
+      64.0,
+      631.0,
+      71.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190618_3",
+   "track": "p0:2",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.95,
+   "a1_reason": "No fish visible only water",
+   "n": 41,
+   "show": [
+    [
+     56,
+     [
+      0.0,
+      95.0,
+      58.0,
+      159.0
+     ]
+    ],
+    [
+     57,
+     [
+      0.0,
+      82.0,
+      69.0,
+      161.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH8_cr6",
+   "track": "p0+29:12",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.9,
+   "a1_reason": "empty blue water no fish",
+   "n": 42,
+   "show": [
+    [
+     29,
+     [
+      380.0,
+      165.0,
+      393.0,
+      177.0
+     ]
+    ],
+    [
+     31,
+     [
+      404.0,
+      148.0,
+      413.0,
+      159.0
+     ]
+    ],
+    [
+     33,
+     [
+      424.0,
+      146.0,
+      430.0,
+      164.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1z-center:11",
+   "label": "shrimp",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.35,
+   "a1_reason": "very blurry faint reddish shrimp shape",
+   "n": 43,
+   "show": [
+    [
+     29,
+     [
+      428.0,
+      808.7,
+      540.0,
+      900.0
+     ]
+    ],
+    [
+     31,
+     [
+      421.3,
+      812.7,
+      504.0,
+      900.0
+     ]
+    ],
+    [
+     32,
+     [
+      417.3,
+      810.7,
+      496.0,
+      900.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1rev:8",
+   "label": "shrimp",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.85,
+   "a1_reason": "Swimming shrimp clear middle frame",
+   "n": 44,
+   "show": [
+    [
+     3,
+     [
+      738.0,
+      676.0,
+      915.0,
+      876.0
+     ]
+    ],
+    [
+     8,
+     [
+      746.0,
+      659.0,
+      912.0,
+      870.0
+     ]
+    ],
+    [
+     21,
+     [
+      1218.0,
+      613.0,
+      1414.0,
+      772.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190710_2",
+   "track": "p0:0",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.9,
+   "a1_reason": "Clear striped fish moves through seagrass",
+   "n": 45,
+   "show": [
+    [
+     0,
+     [
+      53.0,
+      874.0,
+      438.0,
+      1080.0
+     ]
+    ],
+    [
+     16,
+     [
+      333.0,
+      528.0,
+      807.0,
+      1078.0
+     ]
+    ],
+    [
+     32,
+     [
+      1556.0,
+      222.0,
+      1836.0,
+      620.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s003",
+   "track": "d0z-center:1",
+   "label": "nautilus",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "clear striped shell and tentacles closeup",
+   "n": 46,
+   "show": [
+    [
+     22,
+     [
+      493.3,
+      566.7,
+      759.3,
+      733.3
+     ]
+    ],
+    [
+     40,
+     [
+      956.7,
+      412.0,
+      1200.7,
+      560.7
+     ]
+    ],
+    [
+     59,
+     [
+      936.0,
+      368.0,
+      1056.0,
+      514.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH3_cr6",
+   "track": "d0c-bottom-left:0",
+   "label": "crab",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.7,
+   "a1_reason": "Crab body with long leg visible",
+   "n": 47,
+   "show": [
+    [
+     0,
+     [
+      83.7,
+      320.0,
+      183.7,
+      391.7
+     ]
+    ],
+    [
+     29,
+     [
+      83.3,
+      320.0,
+      200.0,
+      389.3
+     ]
+    ],
+    [
+     59,
+     [
+      101.3,
+      365.7,
+      206.0,
+      423.7
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH6_cr6",
+   "track": "p0:1/2",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.35,
+   "a1_reason": "extremely blurry indistinct pale shape",
+   "n": 48,
+   "show": [
+    [
+     57,
+     [
+      0.0,
+      267.0,
+      42.0,
+      303.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "s0-center:1001",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.5,
+   "a1_reason": "dark faint fish holds shape",
+   "n": 49,
+   "show": [
+    [
+     50,
+     [
+      168.0,
+      240.7,
+      198.7,
+      270.7
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH7_cr6",
+   "track": "m0:1/2",
+   "label": "crab",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.2,
+   "a1_reason": "elongated fish with tail, not crab",
+   "n": 50,
+   "show": [
+    [
+     26,
+     [
+      180.0,
+      348.0,
+      473.0,
+      512.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190618_8",
+   "track": "p0:0",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.9,
+   "a1_reason": "Clear fish body moving across seagrass",
+   "n": 51,
+   "show": [
+    [
+     0,
+     [
+      0.0,
+      217.0,
+      32.0,
+      289.0
+     ]
+    ],
+    [
+     24,
+     [
+      615.0,
+      111.0,
+      956.0,
+      333.0
+     ]
+    ],
+    [
+     49,
+     [
+      1682.0,
+      262.0,
+      1883.0,
+      384.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "d1z-right:1000",
+   "label": "shrimp",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.85,
+   "a1_reason": "empty dark blur no animal shape",
+   "n": 52,
+   "show": [
+    [
+     54,
+     [
+      802.0,
+      738.7,
+      851.3,
+      764.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190618_6",
+   "track": "p0:1",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.85,
+   "a1_reason": "Empty blue water no fish visible",
+   "n": 53,
+   "show": [
+    [
+     10,
+     [
+      493.0,
+      91.0,
+      606.0,
+      138.0
+     ]
+    ],
+    [
+     12,
+     [
+      579.0,
+      73.0,
+      687.0,
+      119.0
+     ]
+    ],
+    [
+     15,
+     [
+      701.0,
+      51.0,
+      817.0,
+      95.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "m1:1",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.4,
+   "a1_reason": "amorphous blob no fish shape",
+   "n": 54,
+   "show": [
+    [
+     0,
+     [
+      327.0,
+      168.0,
+      361.0,
+      197.0
+     ]
+    ],
+    [
+     16,
+     [
+      393.0,
+      191.0,
+      430.0,
+      219.0
+     ]
+    ],
+    [
+     32,
+     [
+      395.3,
+      147.3,
+      429.3,
+      177.3
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190618_7",
+   "track": "p0:1000",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.6,
+   "a1_reason": "static seagrass no moving body",
+   "n": 55,
+   "show": [
+    [
+     10,
+     [
+      816.0,
+      875.0,
+      1050.0,
+      978.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_9",
+   "track": "p0:0",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.45,
+   "a1_reason": "Faint pale body persists across frames",
+   "n": 56,
+   "show": [
+    [
+     0,
+     [
+      66.0,
+      552.0,
+      233.0,
+      634.0
+     ]
+    ],
+    [
+     6,
+     [
+      0.0,
+      574.0,
+      102.0,
+      650.0
+     ]
+    ],
+    [
+     12,
+     [
+      42.0,
+      600.0,
+      79.0,
+      654.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH5_cr6",
+   "track": "s0-center:12",
+   "label": "fish",
+   "stratum": "accepted_low",
+   "a1_is_target": true,
+   "a1_confidence": 0.65,
+   "a1_reason": "diagonal blue body persists",
+   "n": 57,
+   "show": [
+    [
+     52,
+     [
+      429.3,
+      197.3,
+      460.7,
+      218.0
+     ]
+    ],
+    [
+     54,
+     [
+      341.3,
+      255.3,
+      368.0,
+      272.7
+     ]
+    ],
+    [
+     55,
+     [
+      312.7,
+      275.3,
+      336.7,
+      292.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_s004",
+   "track": "m4:1",
+   "label": "fish",
+   "stratum": "rejected",
+   "a1_is_target": false,
+   "a1_confidence": 0.6,
+   "a1_reason": "early fish overlap but box tracks shadow",
+   "n": 58,
+   "show": [
+    [
+     21,
+     [
+      1198.0,
+      953.0,
+      1385.0,
+      1020.0
+     ]
+    ],
+    [
+     29,
+     [
+      1440.0,
+      870.0,
+      1518.0,
+      956.0
+     ]
+    ],
+    [
+     45,
+     [
+      1562.0,
+      1031.0,
+      1665.0,
+      1080.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "DH7_cr6",
+   "track": "d0:5",
+   "label": "crab",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "clear carapace and legs visible",
+   "n": 59,
+   "show": [
+    [
+     34,
+     [
+      710.0,
+      601.0,
+      792.0,
+      714.0
+     ]
+    ],
+    [
+     39,
+     [
+      627.0,
+      471.0,
+      805.0,
+      684.0
+     ]
+    ]
+   ]
+  },
+  {
+   "run": "cr6_fish_20190709_17",
+   "track": "p0:3",
+   "label": "fish",
+   "stratum": "accepted_high",
+   "a1_is_target": true,
+   "a1_confidence": 0.95,
+   "a1_reason": "Clear striped fish moves across seagrass",
+   "n": 60,
+   "show": [
+    [
+     0,
+     [
+      612.0,
+      591.0,
+      885.0,
+      787.0
+     ]
+    ],
+    [
+     14,
+     [
+      635.0,
+      592.0,
+      913.0,
+      720.0
+     ]
+    ],
+    [
+     29,
+     [
+      552.0,
+      557.0,
+      883.0,
+      729.0
+     ]
+    ]
+   ]
+  }
+ ]
+}
