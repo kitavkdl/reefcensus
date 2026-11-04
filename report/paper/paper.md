@@ -633,13 +633,23 @@ other 21 held-out clips, from the full-rate videos without boxes, in a shuffled 
 fixed before counting; `report/paper/data/heldout/recount/`). Fish the counter could not tell from moving seagrass
 were recorded separately (two clips, +1 and +2). Against this count (sure fish only):
 
-<div class="tablecap">**Table 1d.** Held-out MaxN against a hand count of the full videos (24 clips).</div>
+<div class="tablecap">**Table 1d.** Held-out MaxN against a hand count of the full videos (24 clips). Error = system − hand
+count per clip; bias is its mean. Script: `report/paper/scripts/handcount_table.py`.</div>
 
-| system | MaxN exact | within ±1 | Σ\|err\| |
-|---|--:|--:|--:|
-| human reference boxes (luderick annotation) | 16/24 | 22/24 | 16 |
-| pipeline, queue accepted, annotated frames (as Table 1c) | 18/24 | 24/24 | 6 |
-| pipeline, queue accepted, every frame of the clip | 17/24 | 24/24 | 7 |
+| system | MaxN exact | within ±1 | Σ\|err\| | MAE | RMSE | bias |
+|---|--:|--:|--:|--:|--:|--:|
+| human reference boxes (luderick annotation) | 16/24 | 22/24 | 16 | 0.67 | 1.55 | −0.67 |
+| pipeline, queue accepted, annotated frames (as Table 1c) | 18/24 | 24/24 | 6 | 0.25 | 0.50 | −0.17 |
+| pipeline, queue accepted, every frame of the clip | 17/24 | 24/24 | 7 | 0.29 | 0.54 | −0.12 |
+| constant: always 1 (the most common hand count) | 12/24 | 20/24 | 23 | 0.96 | 1.84 | −0.96 |
+| constant: always 2 | 8/24 | 22/24 | 23 | 0.96 | 1.57 | +0.04 |
+
+*Constant baselines.* Scored against the reference boxes instead (Table 1c's reference), predicting 1 for every clip
+is closer than the pipeline: Σ|err| 7 against 12, exact on 17/24. That is a property of the reference: the boxes
+put MaxN at 1 or 2 on all but one clip, including the four clips whose videos show 3, 3, 5 and 8 fish at once
+(20190709_15, _11, _9, _17; boxes 2, 2, 1, 2; pipeline 3, 4, 5, 7). Against the independent hand count the constant
+falls to Σ|err| 23 and the pipeline stays at 6, and on those four crowded clips the constant's error is 15 against
+the pipeline's 2. A metric on which "always 1" wins is measuring the missing boxes.
 
 With the faint fish added to the hand count, the pipeline (annotated frames) is exact on 17/24 with Σ|err| 9 and the
 boxes on 15/24 with 19. The pipeline's remaining errors are four under-counts by one (20190618_6, 20190710_1, _3, _8),
