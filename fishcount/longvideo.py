@@ -17,6 +17,9 @@ Boundary design (why the merge is exact for the survey numbers):
   in one segment, "nautilus" in another). Rows are merged only on the exact same name. Names that share a head noun
   are listed in result["name_variants"] for the reviewer, who can rename one to the other on the review screen (the
   counts are then recomputed). They are never merged silently: "hermit crab" and "red crab" share a head noun too.
+- Links across a cut (boundary_links): a box in the last frame before a cut and one in the first frame after it that
+  overlap (IoU >= 0.3) are recorded as one animal continuing; if the two sides counted it under different names, the
+  pair is added to name_variants for the reviewer. Counts are unchanged.
 - Evidence frames, the annotated video and the queue thumbnails come from the segment runs (an evidence image is
   labelled with the frame number inside its segment; result["segments"] gives each segment's start)."""
 import json, math, os, shutil, subprocess, sys, time
@@ -64,6 +67,31 @@ def _status(d, **kw):
     return st
 
 
+BOUNDARY_IOU = 0.3
+
+
+def boundary_links(frames, cuts, labels, thr=BOUNDARY_IOU):
+    """Tracks that continue across a cut: a box in the last frame before the cut and one in the first frame after it
+    overlapping at IoU >= thr, paired one to one (highest IoU first). Each link records both counted names (None =
+    not counted); name_conflict = both counted under different names. Counts are not changed: MaxN counts boxes in
+    one frame and no frame belongs to two segments; the links tell a reviewer which two queue items are one animal."""
+    out = []
+    for c in cuts:
+        before, after = frames.get(c - 1, []), frames.get(c, [])
+        cand = sorted(((tracks.iou(a["box"], b["box"]), i, j) for i, a in enumerate(before) for j, b in enumerate(after)),
+                      reverse=True)
+        used_a, used_b = set(), set()
+        for v, i, j in cand:
+            if v < thr or i in used_a or j in used_b:
+                continue
+            used_a.add(i); used_b.add(j)
+            ta, tb = before[i]["track"], after[j]["track"]
+            la, lb = labels.get(ta), labels.get(tb)
+            out.append(dict(cut_frame=c, before=ta, after=tb, before_label=la, after_label=lb, iou=round(v, 3),
+                            name_conflict=bool(la and lb and la != lb)))
+    return out
+
+
 def merge(rid, src_name, segs, fps, out_dir=None):
     """segs: [(segment run dir, start_frame, n_frames)] in order. Writes <out_dir or runs/rid>/result.json etc."""
     d = out_dir or os.path.join(pipeline.RUNS, rid)
@@ -106,6 +134,7 @@ def merge(rid, src_name, segs, fps, out_dir=None):
         for f, ks in res["frames"].items():
             frames[int(f) + start] = [dict(kk, track=p + kk["track"]) for kk in ks]
     R["video"] = dict(n_frames=total, fps=fps, width=W, height=H)
+    R["boundary_links"] = boundary_links(frames, [start for _, start, _ in segs[1:]], R["auto_labels"])
     m = tracks.metrics(frames, R["tracks"], total, fps, R["auto_labels"])
     checked = {(c["label"], c["frame"]) for c in R["peak_checks"]}
     for name, mm in m.items():
@@ -117,6 +146,10 @@ def merge(rid, src_name, segs, fps, out_dir=None):
         if h:
             heads.setdefault(h, []).append(name)
     R["name_variants"] = [sorted(v) for v in heads.values() if len(v) > 1]
+    for b in R["boundary_links"]:       # one animal across a cut, named differently on each side: a person picks
+        pair = sorted({b["before_label"], b["after_label"]})
+        if b["name_conflict"] and pair not in R["name_variants"]:
+            R["name_variants"].append(pair)
     R["frames"] = {str(f): ks for f, ks in sorted(frames.items())}
     with open(os.path.join(d, "result.json"), "w") as f:
         json.dump(R, f)

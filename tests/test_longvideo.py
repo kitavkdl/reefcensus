@@ -89,6 +89,34 @@ class Merge(unittest.TestCase):
         self.assertIn("chambered nautilus", R["metrics"])
         self.assertIn(["chambered nautilus", "nautilus"], R["name_variants"])
 
+    def test_an_animal_across_a_cut_is_linked_and_a_name_change_is_listed(self):
+        """Segment 2 opens with the boxes segment 1 ended on (one animal crossing the cut), and its Spark named the
+        counted tracks differently: each box pairs with its continuation, the counts stay those of the segments, and
+        the two names go to the reviewer's name_variants. A box with no overlap on the other side links to nothing."""
+        d = next(x for x in DEMO if x.endswith("s003"))
+        res = json.load(open(os.path.join(d, "result.json")))
+        n, fps = res["video"]["n_frames"], res["video"]["fps"]
+        last = res["frames"][str(n - 1)]
+        self.assertTrue(last, "s003 should end with boxes on screen")
+        other = json.loads(json.dumps(res))
+        other["frames"]["0"] = json.loads(json.dumps(last)) + [dict(track="zz:9", box=[0, 0, 5, 5])]
+        other["auto_labels"] = {t: ("hermit crab" if l else l) for t, l in other["auto_labels"].items()}
+        with tempfile.TemporaryDirectory() as tmp:
+            o = os.path.join(tmp, "other")
+            os.makedirs(o)
+            json.dump(other, open(os.path.join(o, "result.json"), "w"))
+            R = longvideo.merge("t", res["source"], [(d, 0, n), (o, n, n)], fps, out_dir=os.path.join(tmp, "out"))
+        links = R["boundary_links"]
+        self.assertEqual({(x["before"], x["after"]) for x in links}, {("S1:" + k["track"], "S2:" + k["track"]) for k in last})
+        self.assertTrue(all(x["cut_frame"] == n and x["iou"] == 1.0 for x in links))
+        self.assertTrue(any(x["name_conflict"] for x in links), "s003's last frame should hold a counted track")
+        for x in links:
+            self.assertEqual(x["name_conflict"], bool(x["before_label"] and x["after_label"]))
+            if x["name_conflict"]:
+                self.assertIn(sorted([x["before_label"], "hermit crab"]), R["name_variants"])
+        for name, m in res["metrics"].items():
+            self.assertEqual(R["metrics"][name]["maxn"], m["maxn"])
+
 
 if __name__ == "__main__":
     unittest.main()
