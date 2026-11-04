@@ -1,0 +1,223 @@
+{
+ "DH1": [
+  {
+   "crab": 1
+  },
+  {},
+  [
+   [
+    "crab",
+    "crab",
+    [
+     "crab"
+    ],
+    1
+   ]
+  ]
+ ],
+ "DH2": [
+  {
+   "coral (unidentified)": 1,
+   "crab": 1,
+   "crab (unidentified)": 1,
+   "sea anemone": 1
+  },
+  {},
+  [
+   [
+    "sea anemone",
+    "coral",
+    [
+     "anemone",
+     "coral"
+    ],
+    1
+   ],
+   [
+    "crab",
+    "crab",
+    [
+     "crab"
+    ],
+    2
+   ],
+   [
+    "eel",
+    null,
+    [
+     "eel",
+     "worm",
+     "snake"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH3": [
+  {
+   "crab (unidentified)": 1,
+   "spider crab": 3
+  },
+  {},
+  [
+   [
+    "spider crab",
+    null,
+    [
+     "crab",
+     "lobster",
+     "shell"
+    ],
+    0
+   ],
+   [
+    "sunflower sea star",
+    null,
+    [
+     "starfish",
+     "star",
+     "urchin"
+    ],
+    0
+   ],
+   [
+    "squat lobster shrimp",
+    null,
+    [
+     "shrimp",
+     "prawn",
+     "lobster"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH4": [
+  {},
+  {},
+  []
+ ],
+ "DH5": [
+  {
+   "fish (unidentified)": 8,
+   "pink cusk-eel": 1
+  },
+  {},
+  [
+   [
+    "small shrimp",
+    null,
+    [
+     "shrimp",
+     "krill",
+     "prawn"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH6": [
+  {
+   "leopard shark": 1,
+   "shark": 1
+  },
+  {
+   "fish": 2
+  },
+  [
+   [
+    "giant clam beside bait",
+    null,
+    [
+     "clam",
+     "shell",
+     "oyster"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH7": [
+  {
+   "crab": 3
+  },
+  {},
+  [
+   [
+    "crab",
+    "crab",
+    [
+     "crab"
+    ],
+    5
+   ]
+  ]
+ ],
+ "DH8": [
+  {
+   "fish (unidentified)": 15,
+   "shark (unidentified)": 1,
+   "thresher shark": 2
+  },
+  {
+   "fish": 16
+  },
+  [
+   [
+    "thresher shark",
+    "shark",
+    [
+     "shark"
+    ],
+    2
+   ]
+  ]
+ ],
+ "DH9": [
+  {},
+  {},
+  []
+ ],
+ "DH10": [
+  {},
+  {},
+  [
+   [
+    "pale branching worm",
+    null,
+    [
+     "worm",
+     "tube",
+     "hole"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH11": [
+  {
+   "scavenging amphipod crustacean": 1
+  },
+  {},
+  [
+   [
+    "scavenging amphipod crustacean",
+    null,
+    [
+     "crustacean",
+     "shrimp",
+     "crab"
+    ],
+    0
+   ],
+   [
+    "colonial tube worms",
+    "worm",
+    [
+     "worm"
+    ],
+    1
+   ]
+  ]
+ ]
+}

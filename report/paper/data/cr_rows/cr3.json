@@ -1,0 +1,350 @@
+{
+ "s001": [
+  {
+   "nautilus": 4
+  },
+  {},
+  [
+   [
+    "nautilus",
+    "shell",
+    [
+     "nautilus",
+     "shell"
+    ],
+    1
+   ]
+  ]
+ ],
+ "s002": [
+  {
+   "chambered nautilus": 1,
+   "fish (unidentified)": 2,
+   "small red crab": 1
+  },
+  {},
+  [
+   [
+    "chambered nautilus",
+    "nautilus",
+    [
+     "nautilus"
+    ],
+    1
+   ],
+   [
+    "small red crab on seabed",
+    null,
+    [
+     "crab",
+     "shrimp",
+     "lobster"
+    ],
+    0
+   ],
+   [
+    "small blue shrimp at bait",
+    null,
+    [
+     "shrimp",
+     "crab",
+     "lobster"
+    ],
+    0
+   ]
+  ]
+ ],
+ "s003": [
+  {
+   "chambered nautilus": 3
+  },
+  {},
+  [
+   [
+    "chambered nautilus",
+    "nautilus",
+    [
+     "nautilus"
+    ],
+    1
+   ],
+   [
+    "large striped shrimp",
+    null,
+    [
+     "shrimp",
+     "prawn",
+     "lobster"
+    ],
+    0
+   ]
+  ]
+ ],
+ "s004": [
+  {
+   "caridean shrimp": 14,
+   "chambered nautilus": 1,
+   "hagfish": 1,
+   "shrimp (unidentified)": 2
+  },
+  {
+   "crustacean": 15
+  },
+  [
+   [
+    "chambered nautilus",
+    "nautilus",
+    [
+     "nautilus"
+    ],
+    1
+   ],
+   [
+    "caridean shrimp",
+    "shrimp",
+    [
+     "shrimp"
+    ],
+    9
+   ],
+   [
+    "hagfish",
+    "eel",
+    [
+     "hagfish",
+     "eel"
+    ],
+    1
+   ]
+  ]
+ ],
+ "DH1": [
+  {
+   "crab": 1
+  },
+  {},
+  [
+   [
+    "crab",
+    "crab",
+    [
+     "crab"
+    ],
+    1
+   ]
+  ]
+ ],
+ "DH2": [
+  {
+   "coral (unidentified)": 1,
+   "crab": 1,
+   "crab (unidentified)": 1,
+   "sea anemone": 1
+  },
+  {
+   "cnidarian": 2,
+   "crustacean": 2
+  },
+  [
+   [
+    "sea anemone",
+    "coral",
+    [
+     "anemone",
+     "coral"
+    ],
+    1
+   ],
+   [
+    "crab",
+    "crab",
+    [
+     "crab"
+    ],
+    2
+   ],
+   [
+    "eel",
+    null,
+    [
+     "eel",
+     "worm",
+     "snake"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH3": [
+  {
+   "crab (unidentified)": 1,
+   "spider crab": 3
+  },
+  {
+   "crustacean": 4
+  },
+  [
+   [
+    "spider crab",
+    null,
+    [
+     "crab",
+     "lobster",
+     "shell"
+    ],
+    0
+   ],
+   [
+    "sunflower sea star",
+    null,
+    [
+     "star",
+     "starfish",
+     "urchin"
+    ],
+    0
+   ],
+   [
+    "squat lobster shrimp",
+    null,
+    [
+     "shrimp",
+     "prawn",
+     "lobster"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH4": [
+  {},
+  {},
+  []
+ ],
+ "DH5": [
+  {
+   "fish (unidentified)": 9
+  },
+  {},
+  [
+   [
+    "small shrimp",
+    null,
+    [
+     "shrimp",
+     "krill",
+     "prawn"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH6": [
+  {
+   "fish (unidentified)": 1,
+   "shark": 1,
+   "tiger shark": 1
+  },
+  {
+   "fish": 2
+  },
+  [
+   [
+    "giant clam beside bait",
+    null,
+    [
+     "clam",
+     "shell",
+     "oyster"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH7": [
+  {
+   "crab": 3,
+   "crab (unidentified)": 1
+  },
+  {
+   "crustacean": 3
+  },
+  [
+   [
+    "crab",
+    "crab",
+    [
+     "crab"
+    ],
+    5
+   ]
+  ]
+ ],
+ "DH8": [
+  {
+   "fish (unidentified)": 17,
+   "shark (unidentified)": 1,
+   "thresher shark": 2
+  },
+  {
+   "fish": 18
+  },
+  [
+   [
+    "thresher shark",
+    "shark",
+    [
+     "shark"
+    ],
+    2
+   ]
+  ]
+ ],
+ "DH9": [
+  {},
+  {},
+  []
+ ],
+ "DH10": [
+  {},
+  {},
+  [
+   [
+    "pale branching worm",
+    null,
+    [
+     "worm",
+     "tube",
+     "hole"
+    ],
+    0
+   ]
+  ]
+ ],
+ "DH11": [
+  {
+   "scavenging amphipod crustacean": 1
+  },
+  {},
+  [
+   [
+    "scavenging amphipod crustacean",
+    null,
+    [
+     "crustacean",
+     "shrimp",
+     "crab"
+    ],
+    0
+   ],
+   [
+    "colonial tube worms",
+    "worm",
+    [
+     "worm"
+    ],
+    1
+   ]
+  ]
+ ]
+}
