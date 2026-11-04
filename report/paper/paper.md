@@ -537,7 +537,7 @@ fish in murky seagrass is never detected by SAM, so no audit can add it; audits 
 *How long the queue takes.* After the evaluation, Jiyul Ahn cleared the queue of four development clips (20190618_3,
 _9, 20190709_4, _14; 9 queued tracks) on a phone page that shows what the review screen shows: three crops of each track
 with our box and the auditor's note (`report/paper/scripts/qtime_sheet.py`, `report/paper/data/qtime/`). It took
-**121 s from Start to the last answer**, about 13 s per track. Six tracks were accepted and three left unsure (an unsure
+**121 s from Start to tapping Copy answers after the last answer** (the timer stops at Copy, so answering itself took at most that), about 13 s per track. Six tracks were accepted and three left unsure (an unsure
 track stays out of the count). Against the human boxes, every accepted track overlaps the reference on annotated
 frames (2 of 7, 7 of 43, 7 of 11, 44 of 44, 10 of 11 and 2 of 4 of its boxes match), and all three unsure tracks match
 none (one is the video's timestamp overlay, one open water, one a very faint shape). No track the reference lacks was
