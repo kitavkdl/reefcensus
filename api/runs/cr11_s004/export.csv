@@ -1,0 +1,6 @@
+label,origin,maxn,maxn_confirmed,maxn_time_s,maxn_frame,first_arrival_s,tracks,peak_frame_checked,evidence_frame,source,human_edits
+caridean shrimp,found,14,12,5.8,29,0.0,24,True,evidence_caridean_shrimp.jpg,nautilus_s004_0_12.mp4,0
+shrimp (unidentified),found,2,0,6.2,31,2.8,3,True,evidence_shrimp__unidentified_.jpg,nautilus_s004_0_12.mp4,0
+chambered nautilus,found,1,1,0.0,0,0.0,1,True,evidence_chambered_nautilus.jpg,nautilus_s004_0_12.mp4,0
+hagfish,found,1,1,0.0,0,0.0,1,True,evidence_hagfish.jpg,nautilus_s004_0_12.mp4,0
+all crustaceans,group: caridean shrimp + shrimp (unidentified),15,12,5.8,29,0.0,27,,,nautilus_s004_0_12.mp4,0
