@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T171\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.4,\"reason\":\"Faint elongated shape with eye persists\"}]", "usage": {"completion_tokens": 719, "prompt_tokens": 531, "total_tokens": 1250, "completion_tokens_details": {"reasoning_tokens": 678}, "prompt_tokens_details": {"cached_tokens": 99}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T234\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"no clear shell shape visible\"}]", "usage": {"completion_tokens": 586, "prompt_tokens": 527, "total_tokens": 1113, "completion_tokens_details": {"reasoning_tokens": 547}, "prompt_tokens_details": {"cached_tokens": 0}}}

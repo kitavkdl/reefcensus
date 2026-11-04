@@ -1,0 +1,1 @@
+{"text": "[{\"box\":[623,398,667,456],\"name\":\"fish\",\"what\":\"small striped fish in seagrass\",\"confidence\":0.55}]", "usage": {"completion_tokens": 585, "prompt_tokens": 791, "total_tokens": 1376, "completion_tokens_details": {"reasoning_tokens": 545}, "prompt_tokens_details": {"cached_tokens": 99}}}

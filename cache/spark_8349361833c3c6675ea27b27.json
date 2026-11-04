@@ -1,0 +1,1 @@
+{"text": "[{\"box\":[170,70,210,92],\"name\":\"fish\",\"what\":\"distant faint fish background\",\"confidence\":0.55}]", "usage": {"completion_tokens": 694, "prompt_tokens": 791, "total_tokens": 1485, "completion_tokens_details": {"reasoning_tokens": 656}, "prompt_tokens_details": {"cached_tokens": 99}}}

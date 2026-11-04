@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"S1\",\"is_animal\":true,\"what\":\"fish\",\"confidence\":0.55,\"reason\":\"dark solid body moves over seagrass\"}]", "usage": {"completion_tokens": 823, "prompt_tokens": 544, "total_tokens": 1367, "completion_tokens_details": {"reasoning_tokens": 780}, "prompt_tokens_details": {"cached_tokens": 227}}}

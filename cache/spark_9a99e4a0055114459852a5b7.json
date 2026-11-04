@@ -1,0 +1,1 @@
+{"text": "[{\"box\":[0,371,40,454],\"name\":\"fish\",\"what\":\"partial fish at edge\",\"confidence\":0.4}]", "usage": {"completion_tokens": 737, "prompt_tokens": 791, "total_tokens": 1528, "completion_tokens_details": {"reasoning_tokens": 700}, "prompt_tokens_details": {"cached_tokens": 99}}}

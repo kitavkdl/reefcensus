@@ -1,0 +1,1 @@
+{"text": "[{\"box\":[195,178,246,207],\"name\":\"fish\",\"what\":\"faint distant fish in haze\",\"confidence\":0.5}]", "usage": {"completion_tokens": 696, "prompt_tokens": 791, "total_tokens": 1487, "completion_tokens_details": {"reasoning_tokens": 656}, "prompt_tokens_details": {"cached_tokens": 99}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T278\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"faint elongated shape persists across frames\"}]", "usage": {"completion_tokens": 582, "prompt_tokens": 526, "total_tokens": 1108, "completion_tokens_details": {"reasoning_tokens": 541}, "prompt_tokens_details": {"cached_tokens": 0}}}

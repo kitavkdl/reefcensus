@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D13\",\"is_target\":true,\"what_it_is\":\"caridean shrimp\"},{\"tile\":\"D14\",\"is_target\":true,\"what_it_is\":\"unclear\"}]", "usage": {"completion_tokens": 740, "prompt_tokens": 516, "total_tokens": 1256, "completion_tokens_details": {"reasoning_tokens": 693}, "prompt_tokens_details": {"cached_tokens": 0}}}

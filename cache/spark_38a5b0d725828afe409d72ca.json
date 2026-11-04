@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T78\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.9,\"reason\":\"Clear fish body eye spot moves\"}]", "usage": {"completion_tokens": 329, "prompt_tokens": 539, "total_tokens": 868, "completion_tokens_details": {"reasoning_tokens": 289}, "prompt_tokens_details": {"cached_tokens": 227}}}

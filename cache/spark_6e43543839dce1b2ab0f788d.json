@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.4,\"reason\":\"No clear crab shape, static blurry patch\"}]", "usage": {"completion_tokens": 799, "prompt_tokens": 527, "total_tokens": 1326, "completion_tokens_details": {"reasoning_tokens": 756}, "prompt_tokens_details": {"cached_tokens": 0}}}

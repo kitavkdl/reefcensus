@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"fish\"},{\"tile\":\"D2\",\"is_target\":true,\"what_it_is\":\"unclear\"}]", "usage": {"completion_tokens": 523, "prompt_tokens": 510, "total_tokens": 1033, "completion_tokens_details": {"reasoning_tokens": 479}, "prompt_tokens_details": {"cached_tokens": 99}}}

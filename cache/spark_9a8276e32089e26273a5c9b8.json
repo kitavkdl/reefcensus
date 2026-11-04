@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T182\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.9,\"reason\":\"No fish body, uniform green background\"}]", "usage": {"completion_tokens": 453, "prompt_tokens": 526, "total_tokens": 979, "completion_tokens_details": {"reasoning_tokens": 412}, "prompt_tokens_details": {"cached_tokens": 99}}}

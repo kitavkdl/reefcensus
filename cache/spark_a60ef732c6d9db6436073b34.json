@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"dark lump lacks crab shape\"}]", "usage": {"completion_tokens": 576, "prompt_tokens": 533, "total_tokens": 1109, "completion_tokens_details": {"reasoning_tokens": 537}, "prompt_tokens_details": {"cached_tokens": 0}}}

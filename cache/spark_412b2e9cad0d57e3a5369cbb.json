@@ -1,0 +1,1 @@
+{"text": "[{\"box\":[555,313,602,374],\"name\":\"fish\",\"what\":\"faint pale fish in seagrass\",\"confidence\":0.5}]", "usage": {"completion_tokens": 416, "prompt_tokens": 791, "total_tokens": 1207, "completion_tokens_details": {"reasoning_tokens": 375}, "prompt_tokens_details": {"cached_tokens": 99}}}

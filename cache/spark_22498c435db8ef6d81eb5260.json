@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T279\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"Too blurry no clear snail shape\"}]", "usage": {"completion_tokens": 615, "prompt_tokens": 527, "total_tokens": 1142, "completion_tokens_details": {"reasoning_tokens": 574}, "prompt_tokens_details": {"cached_tokens": 0}}}

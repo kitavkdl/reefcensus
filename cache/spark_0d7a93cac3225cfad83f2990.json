@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"S1\",\"is_animal\":true,\"what\":\"fish\",\"confidence\":0.6,\"reason\":\"dark body in water, grows, fish-like outline\"}]", "usage": {"completion_tokens": 605, "prompt_tokens": 544, "total_tokens": 1149, "completion_tokens_details": {"reasoning_tokens": 560}, "prompt_tokens_details": {"cached_tokens": 227}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"box\":[185,420,250,490],\"name\":\"fish\",\"what\":\"pale fish hidden in seagrass\",\"confidence\":0.65}]", "usage": {"completion_tokens": 473, "prompt_tokens": 791, "total_tokens": 1264, "completion_tokens_details": {"reasoning_tokens": 432}, "prompt_tokens_details": {"cached_tokens": 99}}}

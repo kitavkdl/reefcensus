@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"S1\",\"is_animal\":true,\"what\":\"fish\",\"confidence\":0.9,\"reason\":\"Fish body and tail among seagrass\"}]", "usage": {"completion_tokens": 514, "prompt_tokens": 863, "total_tokens": 1377, "completion_tokens_details": {"reasoning_tokens": 471}, "prompt_tokens_details": {"cached_tokens": 227}}}

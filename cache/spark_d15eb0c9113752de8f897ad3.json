@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"S1\",\"is_animal\":true,\"what\":\"fish\",\"confidence\":0.8,\"reason\":\"clear fish silhouette mid frame\"}]", "usage": {"completion_tokens": 383, "prompt_tokens": 544, "total_tokens": 927, "completion_tokens_details": {"reasoning_tokens": 343}, "prompt_tokens_details": {"cached_tokens": 227}}}

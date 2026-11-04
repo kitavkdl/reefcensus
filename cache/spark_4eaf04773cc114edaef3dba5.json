@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"S1\",\"is_animal\":true,\"what\":\"fish\",\"confidence\":0.6,\"reason\":\"Fish outline visible in last frame\"}]", "usage": {"completion_tokens": 993, "prompt_tokens": 544, "total_tokens": 1537, "completion_tokens_details": {"reasoning_tokens": 952}, "prompt_tokens_details": {"cached_tokens": 227}}}
