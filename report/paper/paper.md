@@ -921,8 +921,9 @@ development of the final code (low light, long videos, fixes) 153 calls ($1.82),
 DH6–DH11 87 calls ($0.86) and its fixed-vocabulary baseline 83 SAM calls ($1.00), and the re-runs of previously seen
 data on the frozen code 42 calls ($0.11), empty-cache live rehearsals of DH11 and s003 (two takes each) 48 and 40 calls ($0.51, $0.41), site-memory demo runs 3
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
-101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41) and the 53-min deployment below 82 calls
-($17.27 over three attempts), for a ledger total of $34.68 over 2,399 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
+($17.27 over three attempts), and, on the final code, development after the freeze with the re-runs of every frozen
+evaluation 601 calls ($4.33) and the re-runs of the 53-min video 269 calls ($5.67), for a ledger total of $44.68 over 3,269 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate

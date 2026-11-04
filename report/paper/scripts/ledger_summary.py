@@ -25,6 +25,10 @@ T_CONC = 1793684200              # LONG1 attempt 3 started (reef-long1c unit, 05
                                  # report/paper/data/sam_agent/<clip>.json usd (both metered per thread by fishcount/api.py)
 T_REHEARSAL2 = 1793697188           # s003 empty-cache rehearsal, 2 takes (rehearsal/cache_1103-0913*, -0915*), after LONG1 finished
                                  # (1793696747) and nothing else paid; takes 1-2 started 1793697190 / 1793697355
+T_REHEARSAL2_END = 1793697520    # last call of take 2 (09:18:39 UTC); the next paid call is 10 h later (19:29 UTC)
+                                 # after it: final-code development (crowd, refill, clean, shadow, camo, miss look), the
+                                 # re-runs of every frozen evaluation (cr, cr2, cr3), gapfind and LONG1 re-runs; the LONG1
+                                 # re-runs overlapped the rest, so they are split by runs/LONG1_cr*__S*/status.json billed_usd
 
 
 def main():
@@ -48,7 +52,8 @@ def main():
     long1_early = [r for r in rows if T_LONG1_EARLY <= r["t"] < T_FIXED_BRIGHT]
     fixed_bright = [r for r in rows if T_FIXED_BRIGHT <= r["t"] < T_CONC]
     conc = [r for r in rows if T_CONC <= r["t"] < T_REHEARSAL2]
-    rehearsal2 = [r for r in rows if r["t"] >= T_REHEARSAL2]
+    rehearsal2 = [r for r in rows if T_REHEARSAL2 <= r["t"] < T_REHEARSAL2_END]
+    final = [r for r in rows if r["t"] >= T_REHEARSAL2_END]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
            and r not in probe and r not in dheld and r not in rerun
            and r not in later and r not in dh2 and r not in dh2f and r not in frz
@@ -82,6 +87,10 @@ def main():
     rest = sum(r["usd"] for r in conc) - sum(r["usd"] for r in wonder) - l_usd - a_usd
     print(f"{'concurrent window, not attributed':34s} {len(conc) - len(wonder) - l_n - a_n:4d} calls  ${rest:.3f}")
     show("live rehearsal s003, empty cache (2 takes)", rehearsal2)
+    seg2 = [json.load(open(f)) for f in sorted(glob.glob(os.path.join(ROOT, "runs/LONG1_cr*__S*/status.json")))]
+    l2_usd, l2_n = sum(d["billed_usd"] for d in seg2), sum(d["live_calls"] for d in seg2)
+    print(f"{'LONG1 re-runs on final code':34s} {l2_n:4d} calls (from {len(seg2)} segment status files)  ${l2_usd:.3f}")
+    print(f"{'final-code development + re-runs':34s} {len(final) - l2_n:4d} calls  ${sum(r['usd'] for r in final) - l2_usd:.3f}")
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
     tin = [int(r["note"].split("in=")[1].split()[0]) for r in sp if "in=" in r.get("note", "")]

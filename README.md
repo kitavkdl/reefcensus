@@ -49,7 +49,7 @@ http://127.0.0.1:8793. Four finished nautilus runs (`demo/runs`, copied into `ru
 their evidence frames, motion sheets and human queue. Nothing is called.
 
 **To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
-is a hard cap on total spend; a 12 s discovery run cost $0.02–0.40 on our 15 clips.
+is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30 calls, an estimated $0.22–0.27 (paper §7.4).
 
 ```
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
