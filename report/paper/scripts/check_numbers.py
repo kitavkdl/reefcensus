@@ -18,7 +18,7 @@ FACTS = [
     ("held-out luderick recall, queue accepted", r"(\d+\.\d)% of the boxed fish|recall (\d+\.\d)%, MaxN exact on \d+ of 24", ("98.9",)),
     ("held-out MaxN exact (of 24)", r"MaxN (?:is )?exact on (\d+) of 24", ("20",)),
     ("held-out recall, queue rejected", r"within ±1 at (\d+\.\d)% recall|within ±1 \(recall (\d+\.\d)%\)", ("89.3",)),
-    ("development luderick queue (of 27)", r"\b(\d+) of 27\b(?! luderick tracks\))", ("9",)),
+    ("development luderick queue (of 28)", r"\b(\d+) of 28\b", ("9",)),
     ("'animal' prompt: clips with no box (of 39)", r"(\d+) of (?:the |our )?39 clips", ("29",)),
     ("'animal' overlap with counted non-fish (of 11)", r"(\d+) of the 11 non-fish", ("3",)),
     ("ledger total", r"ledger total of \$(\d+\.\d\d)|\$(\d+\.\d\d) over [\d,]+ calls|\$(\d+\.\d\d) / [\d,]+ calls", ("47.84",)),

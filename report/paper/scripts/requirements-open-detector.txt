@@ -1,0 +1,4 @@
+# Only for report/paper/scripts/open_detector.py (the OWLv2 baseline, paper §7.8); the pipeline does not need these.
+# Versions it was run with (CPU build of torch):
+torch==2.15.0
+transformers==5.22.1

@@ -4,7 +4,8 @@ OWLv2 (google/owlv2-base-patch16-ensemble) on every frame of the 15 discovery cl
 run tracked, runs/vswap_<clip>/), queried with "animal" plus the 16 fixed words of fixed_vocab.py, all in one pass.
 Writes report/paper/data/open_detector/: detections.json (every box with score >= 0.05), summary.json, crops sheet.
 
-  PYTHONPATH=~/venvs/detlib memcap --max 3G -- python3 report/paper/scripts/open_detector.py [--clips ...] [--score]
+Needs torch and transformers on top of requirements.txt: pip install -r report/paper/scripts/requirements-open-detector.txt
+  python3 report/paper/scripts/open_detector.py [--clips ...] [--score]      (about 3 GB of RAM)
   (--score re-reads detections.json and only scores; no model load)
 """
 import argparse, json, os, sys, time

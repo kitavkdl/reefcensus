@@ -1,7 +1,9 @@
 /* SAM 3.1 "one_bit" mask decoder: a C port of meta_sam_parser._mask_codec._unpack + _decode_raster.
    The reference is pure Python and costs ~0.3 s a mask (the parser decodes, re-encodes to check, and
    decode_mask_to_raster does both again); this does one decode in ~1 ms. Built on first use by maskcodec.py.
-   Returns 0, or a negative code on a malformed payload (the caller falls back to the reference decoder). */
+   Returns 0, or a negative code on a malformed payload (the caller falls back to the reference decoder).
+   As a port of meta_sam_parser (SAM Materials), this file is distributed under the SAM License; a copy is in
+   fishcount/LICENSE-SAM. */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

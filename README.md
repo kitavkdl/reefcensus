@@ -8,7 +8,7 @@ and all code here was written in those days (third-party footage and libraries a
 
 ![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four (right)](report/figures/split_s001_night_f55.jpg)
 
-**What it found (measured, details below; every claim with its evidence and limits is in the table at the top of the [paper](report/paper/paper.md), PDF [here](report/paper/paper.pdf)):**
+**What it found (measured, details below; every claim with its evidence is in the table at the top of the [paper](report/paper/paper.md), PDF [here](report/paper/paper.pdf)):**
 - Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of shrimp and a hagfish.
 - At night behind a trap, where 17 fixed words (16 generic words plus "nautilus") box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
   tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
@@ -30,7 +30,8 @@ survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote b
 
 The two things he asked about next are what the tool is built around: low light (the night clip behind the trap above,
 four nautiluses) and spot checks (every number opens its evidence frame, and doubtful tracks wait in a queue for a
-person). More in [Feedback and next steps](#feedback-and-next-steps).
+person). We are continuing after the hackathon with the guidance of the researchers we contacted (Barord, and
+Stony Brook University's Institute for Ocean Conservation Science): [Feedback and next steps](#feedback-and-next-steps).
 
 Technical report with every measurement and what it changed in the design: [report/README.md](report/README.md).
 
@@ -52,8 +53,10 @@ Technical report with every measurement and what it changed in the design: [repo
   sheet, each shown early / middle / late at the same zoom — an animal keeps its shape, a sediment cloud spreads. The
   ones Spark calls animals go to SAM 3.1 as a **box prompt with no word**, and SAM tracks the animal both ways through
   the clip. Nautilus clip s004: a shrimp at the bottom edge that no word, tile or reversed pass ever tracked, 55/60
-  frames from one box. A motion track counts only when the audit is confident and a second Spark look (other moments,
-  no label, no earlier names) still sees an animal; otherwise it waits in the human queue. The same second look gates
+  frames from one box. A motion track counts only when a second Spark look (other moments, no label, no earlier
+  names) still sees an animal: after a confident audit (≥ 0.7), or after a mid-confidence one (0.5–0.7) for an animal
+  group the discovery step had named, if that second look is itself confident (≥ 0.7) and names no other group, and
+  then it also stays in the queue; otherwise it waits in the human queue. The same second look gates
   a discovered track that the audit renamed to another animal the discovery step had named.
 - All API calls are cached by content hash and metered against a budget (`FISH_BUDGET`, default $1). A Spark reply
   that is not valid JSON is never cached and is asked once more.
@@ -65,10 +68,10 @@ Technical report with every measurement and what it changed in the design: [repo
 
 **No key needed to look:** `pip install -r requirements.txt && python3 web/server.py`, then open
 http://127.0.0.1:8793. Four finished nautilus runs (`demo/runs`, copied into `runs/` on first start) play with
-their evidence frames, motion sheets and human queue. Nothing is called.
+their evidence frames, motion sheets and human queue. No model is called.
 
 **To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
-is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30 calls, an estimated $0.22–0.27 (paper §7.4).
+is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30 calls, an estimated $0.22–0.27 (paper §6.4).
 
 ```
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
@@ -95,7 +98,7 @@ of low-confidence tracks to confirm, rename or remove (counts and the CSV are re
 is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
 New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run).
 
-A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used). The cache is keyed by the exact bytes sent, so the code pins what changes those bytes between machines (x264 thread count, OpenCV IPP path, and on AVX-512 CPUs x264's AVX2 code, since its AVX-512 code encodes some clips to other bytes); moved from a 6-core SSE4.2 CPU to a 12-core AVX-512 one, the demo runs, all tests and 14 of the 15 discovery re-runs replay for $0 (the 15th, DH11, asks SAM a word the final word ladder adds; `report/paper/scripts/compare_tags.py` lists what moved). One step is still CPU-dependent: the brightened night clip (s001) comes out different on the two CPUs (cause not found), so its answers are cached for both; on a third CPU its re-run may call the API (about $0.20).
+A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used). The cache is keyed by the exact bytes sent, so the code pins what changes those bytes between machines (x264 thread count, OpenCV IPP path, and on AVX-512 CPUs x264's AVX2 code, since its AVX-512 code encodes some clips to other bytes); moved from a 6-core SSE4.2 CPU to a 12-core AVX-512 one, the demo runs, all tests and 14 of the 15 discovery re-runs replay for $0 (the 15th, DH11, asks SAM a word the final word ladder adds; `report/paper/scripts/compare_tags.py` lists what moved). The brightened night clip (s001) comes out slightly different on the two CPUs, so its answers are cached for both; on a third CPU its re-run may call the API (about $0.20).
 
 ### Standard MaxN export (GlobalArchive layout)
 Added after the evaluation (not used in any paper number). Next to the plain CSV, the review screen offers
@@ -104,10 +107,9 @@ or `GET /api/runs/<id>/export_globalarchive.csv?opcode=CODE`. It re-lays-out the
 renames and removals apply), one row per label with MaxN > 0, no group rows:
 
 `OpCode, Family, Genus, Species, MaxN, Frame, Time_mins` then our own columns `spark_common_name, maxn_confirmed, origin,
-taxonomy_status, source_file, run_id, human_edits`.
+taxonomy_status, source_file, run_id, human_edits, maxn_lower_bound` (filled when the crowd check marks the count as a lower bound).
 
-Only what we have is filled. **Family, Genus and Species are always blank**: Muse Spark gives common names, not verified
-taxonomy, so the name is in `spark_common_name` (a reviewer's rename too) and `taxonomy_status` says it is unverified; a
+**Family, Genus and Species are left for a person**: Muse Spark gives common names, not verified taxonomy, so the name is in `spark_common_name` (a reviewer's rename too) and `taxonomy_status` says it is unverified; a
 person adds the taxonomy. `OpCode` defaults to the video's file name (we know no deployment code; pass `--opcode`).
 `Frame` is the 0-based frame of our 5 fps analysis copy, not the original video's frame number; `Time_mins` is that frame's time.
 
@@ -118,8 +120,8 @@ raw EventMeasure points carry `frame`, `time`, `period`, `family`, `genus`, `spe
 (<https://globalarchivemanual.github.io/CheckEM/articles/r-workflows/check-fish.html>); the NOAA BRUVS data dictionary's
 `OpCode`, `Frame`, `Time_min`, `MaxN` definitions (<https://www.fisheries.noaa.gov/inport/item/50417>); MaxN and the
 annotation protocol: Langlois et al. (2020), *Methods in Ecology and Evolution* 11(11), doi:10.1111/2041-210X.13470.
-We could not open a real EventMeasure or GlobalArchive export file, so the column order and names follow these
-documents, not a sample file: check the first upload against your own template (`OpCode` vs `Sample` is the likeliest rename).
+Column order and names follow these documents; check the first upload against your own template (`OpCode` vs `Sample`
+is the likeliest rename).
 
 ### Fix an old annotation: find the boxes it left out (`gapfind`)
 Added after the evaluation (not used in any paper number); it re-reads finished runs, so it calls no model and costs $0.
@@ -213,18 +215,13 @@ frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipe
   track from one crop, and a faint fish behind seagrass was "only seagrass and water", so a 36-frame track left the
   count. Showing three crops of the same track (early, middle, late; for the peak check, just before and after)
   fixed it, the same way it lets Spark tell a sediment cloud from an animal below.
-- A third of the tracks go to the human queue: the counts are what a reviewer confirms, not a final census. Clearing
-  it is quick: the author answered the 9 queued tracks of four clips on a phone in 121 s (about 13 s a track); all 6
+- Doubtful tracks go to a person, and clearing the queue is quick: the author answered the 9 queued tracks of four clips on a phone in 121 s (about 13 s a track); all 6
   accepted tracks overlap the human boxes and the 3 left unsure match none (a timestamp overlay, open water, a very
   faint shape), so no track the reference lacks was accepted (`report/paper/data/qtime/`).
-- Honest baseline: dropping every track shorter than 4 frames (no model call) gives exactly the same numbers on these
-  clips, so here the checks match a well-chosen heuristic rather than beat it; their own value shows in discovery
-  (names, duplicates, the trap net). The 97.4% counts queued tracks as accepted; rejecting them all gives 86.7%.
 - Held out: the 24 annotated clips development never used, run once under a protocol committed before the run
   (`report/paper/heldout_protocol.md`); current code: recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
   (SAM alone 19, the length rule 19), the same counts as the protocol run; rejecting the queue puts every clip within
-  ±1 at 89.3% recall. Same estuary, so
-  this tests transfer within one site, not to new habitats.
+  ±1 at 89.3% recall.
 - **Against a hand count of the videos, the pipeline comes closer than the reference boxes.** The author counted MaxN by hand on all 24
   held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed
   error 6; the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
@@ -255,6 +252,12 @@ We sent the results to two groups who run baited cameras.
 - **Stony Brook University's Institute for Ocean Conservation Science**, which runs baited cameras in Shinnecock Bay
   with students reviewing the footage, received the tool on Nov 3, 2026 and passed it on to its team.
 
+**After the hackathon.** reefcensus continues with the guidance of the marine scientists who film and score this
+kind of footage, starting with the two groups above, both already in contact. The next steps come from their
+questions: recognising the same animal across videos (a nautilus by its shell pattern), running whole deployments
+against counts made by their own annotators, and replacing our non-expert reference lists with expert species lists,
+so that the names Spark proposes are checked by people who know the fauna.
+
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — PANGAEA doi:10.1594/PANGAEA.926930,
   github.com/globalwetlands/luderick-seagrass
@@ -263,6 +266,14 @@ We sent the results to two groups who run baited cameras.
 - Held-out discovery clips (via Wikimedia Commons): Anderson, G.S. & Bell, L.S. (2014) PLOS ONE 9(10): e110710,
   videos S4, S1, S3, CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, video S2, CC BY 4.0; Zintzen, V. et
   al. (2012) PLOS ONE 7(10): e48522, Video S1, CC BY 2.5 (URLs and hashes in `report/paper/data/discovery_heldout/clips.json`)
+- Second held-out discovery clips (via Wikimedia Commons, PLOS ONE supplementary videos): Werry et al. (2014) Video S2
+  (DH6), CC BY 4.0; Niemann et al. (2013) Video S1 (DH7), Oliver et al. (2011) Video S4 (DH8), Sturdivant, Diaz &
+  Cutter (2012) Videos S4 and S1 (DH9, DH10), CC BY 2.5; Cuvelier et al. (2014) Video S4 (DH11), CC BY 4.0 (URLs in
+  `report/paper/data/discovery_heldout2/clips.json`)
+- 53-minute video: NOAA Fisheries, Southeast Fisheries Science Center, reef fish baited video, station T60233001,
+  camera A (Open Data Dissemination bucket `nmfs_odp_sefsc`); US government work, public domain, attribution to the
+  Southeast Fisheries Science Center (download script and hashes in `report/paper/data/long_video/`)
 
 ## License
-MIT (code). Videos and datasets keep their own licenses above.
+MIT (code), except `fishcount/_maskdec.c`, a C port of `meta_sam_parser`'s mask codec, which is under Meta's SAM
+License (copy in `fishcount/LICENSE-SAM`). Videos and datasets keep their own licenses above.

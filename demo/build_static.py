@@ -125,6 +125,10 @@ def main():
                 "async function review(track, label) {\n  const n = document.getElementById(\"staticNote\");\n"
                 "  if (n) n.textContent = \"Static demo: reviews are not saved. Run the server from the repository to review and export.\";\n}\n",
                 js, count=1, flags=re.S)
+    # no upload form in the static copy (it needs the server); without it there is nothing to wire
+    if "\nwireForm();\n" not in js:
+        raise SystemExit("app.js changed, update build_static.py: wireForm() call not found")
+    js = js.replace("\nwireForm();\n", "\n", 1)
     open(os.path.join(OUT, "static", "app.js"), "w").write(js)
     shutil.copy(os.path.join(ROOT, "web", "style.css"), os.path.join(OUT, "static", "style.css"))
     html = open(os.path.join(ROOT, "web", "index.html")).read()
@@ -139,6 +143,14 @@ def main():
                   'SAM 3.1 and Muse Spark by Meta, through the Meta Model API.</footer>', html, count=1, flags=re.S)
     html = html.replace('<main class="grid" id="main">', '<main class="grid" id="main" tabindex="-1">', 1)
     html = html.replace('<button class="btn ghost" id="newBtn"', '<button class="btn ghost" id="newBtn" hidden style="display:none"', 1)
+    # a reader without JavaScript sees the raw HTML: drop the server-only form and point the export links at a real file
+    html, k = re.subn(r'<section class="drawer" id="newRun" hidden>.*?</section>\n?', '', html, count=1, flags=re.S)
+    if not k:
+        raise SystemExit("index.html changed, update build_static.py: newRun drawer not found")
+    if runs:
+        first = runs[0]["id"]
+        html = html.replace('id="exportBtn" href="#"', f'id="exportBtn" href="api/runs/{first}/export.csv"', 1)
+        html = html.replace('id="exportGaBtn" href="#"', f'id="exportGaBtn" href="api/runs/{first}/export_globalarchive.csv"', 1)
     if 'id="staticNote"' not in html or "newBtn\" hidden" not in html:
         raise SystemExit("index.html changed, update build_static.py")
     open(os.path.join(OUT, "index.html"), "w").write(html)
