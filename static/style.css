@@ -1,3 +1,4 @@
+[hidden] { display: none !important; }   /* a display: rule on a class must not un-hide [hidden] (rename forms were always open) */
 /* reefcensus review screen. Slate survey board; blue = what you asked for (bait-pipe blue), orange = what the
    pipeline found without being asked (survey-float orange). One family, Archivo; its narrow widths carry numbers. */
 :root {
