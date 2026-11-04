@@ -1,6 +1,6 @@
 # Empty-cache rehearsals through the web screen (§7.5)
 
-Four live takes of the screen a viewer uses (`web/server.py`, `POST /api/run` with `{"prompts": ["fish"],
+Five live takes (four rehearsals and the take filmed for the video) of the screen a viewer uses (`web/server.py`, `POST /api/run` with `{"prompts": ["fish"],
 "discover": true, "allow_api": true, "max_usd": 0.6}`; the screen runs with audits on). Before every
 take the server was restarted with a new, empty `FISH_CACHE_DIR`, so every model call is fresh (`cached_calls: 0`
 in each `status.json`). Each folder holds that take's `status.json` (log lines, calls, cost) and `result.json`.
@@ -13,6 +13,7 @@ evaluation; no code change between takes.
 | `DH11_1103-040128` | DH11 | 121 s | 23 / 0 | $0.249 | none | the amphipod track queued (second look: "Static against seabed") |
 | `nautilus_s003_0_12_1103-091310` | s003 (development, Barord et al. 2014) | 156 s | 21 / 0 | $0.212 | chambered nautilus 1 | Spark proposed "cephalopod", "shell", "snail" for "chambered nautilus cephalopod"; "nautilus" never tried; zoom-centre "cephalopod" 40 frames counted |
 | `nautilus_s003_0_12_1103-091555` | s003 | 166 s | 19 / 0 | $0.196 | nautilus 3 | "nautilus" 38 frames, reversed 60; same as the demo run `mg2_s003` (3) |
+| `nautilus_s002_0_12_1104-165941` | s002 (development, Barord et al. 2014) | 227 s | 34 / 1 | $0.345 | chambered nautilus 1, fish (unidentified) 2, shrimp (unidentified) 1 | the take filmed for the video's live scene (11/4, code `6284911`, the screen driven by a headless browser); the 1 cached call is a repeat of a request made earlier in the same take |
 
 - No take counted a non-animal. The motion box M3 near the trap in s003 ("small dark shrimp" / "small dark fish",
   tracked 60 of 60 frames) went to the queue or was dropped in both takes; a person judged that spot not an animal

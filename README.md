@@ -229,6 +229,11 @@ frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipe
   the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3). This does not assume the queue is
   accepted unseen: answering the 17 queued tracks from judgements a person had already recorded gives the same MaxN
   on all 24 clips, while rejecting them all falls back to the boxes' summed error of 16.
+- **A second, independent counter gives the same order.** A person who had never seen the project's output counted the
+  same 24 videos blind (shuffled, neutral names, key fixed first): the two counters agree within one fish on all 24.
+  Against that count the pipeline is exact on 22 clips and within ±1 on all 24, summed error 2; the reference boxes exact
+  on 18, summed error 14
+  (paper Table 1e, `report/paper/scripts/recount2_score.py`).
 - Of the two MaxN misses left, 20190618_9 (9→10) is two real fish the annotators did not box in that frame (one cut
   by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds.
 - **Most "false positives" are unboxed fish.** On the held-out set, 40 of the 153 boxes scored as false were drawn at

@@ -16,8 +16,8 @@ to a person instead of the count. Discovery is scored as presence of taxa. On fo
 pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one of four nautiluses, it
 counts all four. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
 the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
-request "fish" (a group count; luderick and bream are scored together), on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos (by the first author, 21 of 24 counted blind) than
-the reference boxes are (summed error 6 against 16, within one fish on all 24), and none of 40 randomly drawn boxes
+request "fish" (a group count; luderick and bream are scored together), on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos than
+the reference boxes are, under each of two independent counters (summed error 6 against 16 for the first author, 21 of 24 counted blind; 2 against 14 for a second person who never saw the project's output; within one fish on all 24), and none of 40 randomly drawn boxes
 scored as false positives was judged not a fish: corrected precision is 93.7% (95% interval 89.6–97.0%, resampling tracks), against 77.2% on the boxes. The
 audits are built around how a VLM fails: every object is judged at three moments, and the second look of a weakly
 supported track sees no label and no earlier names. Doubtful tracks are asked in the order that settles the counts: on a
@@ -34,6 +34,7 @@ hackathon.
 | SAM 3.1 answers narrow words: "animal" gives no box on 29 of 39 clips; "luderick" gives nothing on all six clips of that species | §7.4, Table 6 | 39; 6 | our clips |
 | On luderick the audits keep the segmenter's box recall (97.4% development, 98.9% held-out) and reach the MaxN of a tuned minimum-track-length rule | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary; request "fish", luderick and bream scored as one group, not per species |
 | Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | counted by the first author, 21 of 24 blind and shuffled; the same with the queue answered from recorded human judgements instead of accepted |
+| Against a second, independent hand count (a person who never saw the project's output) the pipeline is exact on 22, within ±1 on 24, summed error 2; the reference boxes 18, 21 and 14 | §6.2 Table 1e | 24 held-out | blind, shuffled, key fixed before counting; the two counters agree within one fish on all 24 (exact on 20) |
 | One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | the pipeline is not re-scored against boxes it added; re-judged, 11 of 11 earlier "fish" tracks were fish again |
 | Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7%, 95% interval 89.6–97.0% by track, vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | labels hidden; 10/10 matched controls called fish |
 | The person queue (17 of 50 tracks) holds most of the tracks behind the largest over-counts | §6.1 Table 1b; §6.2 | 24 held-out | |
@@ -461,7 +462,7 @@ to the point where the audits would start. Without audits there are no species l
 under SAM's word ("eel", "shrimp"). Further ablations of discovery components come from the development history
 (§7.3).
 
-**Protocol.** Tables 1, 1c, 1d, 2, 3b, 3c and 3e report the **final code** (the repository's code; re-run tag `cr7`,
+**Protocol.** Tables 1, 1c, 1d, 1e, 2, 3b, 3c and 3e report the **final code** (the repository's code; re-run tag `cr7`,
 which reproduces every count of the previous re-run `cr6` exactly; §11 gives the commands). The audit variants of §7.1
 (V1–V6) are earlier runs of the same code, kept as a variant study. V6 differs from v16 in two
 places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6); it reproduces
@@ -673,6 +674,28 @@ judged on in Table 1c, the same output scores 20/24 and Σ|err| 12; against an i
 closer than the boxes are. The counter is Jiyul Ahn, the first author: the three outlier clips were counted after being
 flagged, the other 21 blind to clip identity and to every count (some of their pipeline boxes had appeared as
 unlabelled crops in the precision sheet above).
+
+*A second, independent counter.* A second person who had never seen the project's output (a friend of the first
+author) then counted the same 24 videos the same way: full videos re-encoded to 1280×720, no boxes, shuffled with
+`random.Random(1105)` under neutral names v01–v24, key fixed before the sheet was sent
+(`report/paper/data/heldout/recount2/`, scored by `report/paper/scripts/recount2_score.py`). The two counters agree
+exactly on 20 of 24 clips and within one fish on all 24 (Σ|diff| 4: 20190710_1 and 20190618_6, 2 against 1;
+20190709_17, 8 against 7; 20190709_11, 3 against 4). Against the second count (sure fish; one clip had a +1):
+
+<div class="tablecap">**Table 1e.** Held-out MaxN against the second person's hand count (24 clips), annotated frames,
+final code (`cr7`). Error = system − hand count.</div>
+
+| system | MaxN exact | within ±1 | Σ\|err\| | MAE | RMSE | bias |
+|---|--:|--:|--:|--:|--:|--:|
+| human reference boxes (luderick annotation) | 18/24 | 21/24 | 14 | 0.58 | 1.41 | −0.58 |
+| pipeline, queue accepted | 22/24 | 24/24 | 2 | 0.08 | 0.29 | −0.08 |
+| pipeline, queue answered from recorded human judgements | 22/24 | 24/24 | 2 | 0.08 | 0.29 | −0.08 |
+| pipeline, queue rejected | 16/24 | 22/24 | 14 | 0.58 | 1.26 | −0.58 |
+
+The ordering of Table 1d holds under an independent counter, so it does not rest on the first author's count. Both
+clips where the two counters split by one around the pipeline's number (20190709_17 and _11) go the pipeline's way
+under the second count (7 and 4), and the pipeline's two remaining errors (20190710_3 and _8, one fish under) are
+clips where the reference boxes miss the same second fish.
 
 *Correcting the reference in ten minutes.* After the evaluation we turned this check into a tool (`fishcount/gapfind.py`,
 README): it collects every counted track whose boxes match no reference box on annotated frames and asks one question
