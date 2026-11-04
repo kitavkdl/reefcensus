@@ -6,9 +6,9 @@ uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct
 
 ![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four (right)](report/figures/split_s001_night_f55.jpg)
 
-**What it found (measured, details below):**
+**What it found (measured, details below; every claim with its evidence and limits is in the table at the top of the [paper](report/paper/paper.md), PDF [here](report/paper/paper.pdf)):**
 - Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of shrimp and a hagfish.
-- At night behind a trap, where 17 fixed words box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
+- At night behind a trap, where 17 fixed words (16 generic words plus "nautilus") box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
   tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, run with frozen code under protocols committed before any run, it named all
   five animals on the reference lists written beforehand.
@@ -75,7 +75,9 @@ The review screen plays the annotated clip (blue = asked for, orange = found wit
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
 of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits). Until the queue
 is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
-New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used). The cache is keyed by the exact bytes sent, so the code pins what changes those bytes between machines (x264 thread count, OpenCV IPP path); moved from a 6-core SSE4.2 CPU to a 12-core AVX-512 one, the demo runs and all tests still replay for $0. One step is still CPU-dependent: the brightened night clip (s001) comes out different on the two CPUs (cause not found), so its answers are cached for both; on a third CPU its re-run may call the API (about $0.20).
+New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run).
+
+A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used). The cache is keyed by the exact bytes sent, so the code pins what changes those bytes between machines (x264 thread count, OpenCV IPP path); moved from a 6-core SSE4.2 CPU to a 12-core AVX-512 one, the demo runs and all tests still replay for $0. One step is still CPU-dependent: the brightened night clip (s001) comes out different on the two CPUs (cause not found), so its answers are cached for both; on a third CPU its re-run may call the API (about $0.20).
 
 ### Standard MaxN export (GlobalArchive layout)
 Added after the evaluation (not used in any paper number). Next to the plain CSV, the review screen offers
@@ -108,7 +110,7 @@ being right: on our 24 held-out luderick clips, 40 "false positive" boxes drawn 
 and **none was "not a fish"** (paper §6.2). `gapfind` turns that check into a workflow:
 
 ```
-python3 -m fishcount.gapfind sheet --manifest clips/manifest.json --runs runs --prefix <tag>_ --out sheet_dir [--controls 3]
+python3 -m fishcount.gapfind sheet --manifest <your clips manifest.json> --runs runs --prefix <tag>_ --out sheet_dir [--controls 3]
 python3 -m fishcount.gapfind apply --key sheet_dir/key.json --answers answers.json --out fixed_annotations/
 ```
 
