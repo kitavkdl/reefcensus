@@ -37,7 +37,7 @@ queue of 1,017. The result is an annotation accelerator whose output a person co
 | The person queue holds most tracks behind the largest over-counts, and also real fish | §6.1 Table 1b; §6.2 | 24 held-out | queue is 17 of 50 tracks; rejecting it costs 9.6 points of recall |
 | Clearing the queue is quick: 9 queued tracks of four clips took one person 121 s on a phone; all 6 accepted tracks overlap the human boxes, the 3 left unsure match none | §6.1 | 4 development; 9 tracks | one judge, one sitting; development clips |
 | A person need not clear the whole queue: asking first only the tracks that can still change a count settles every MaxN and first arrival of a 53-min video after 22–56 answers instead of 1,017, with exactly the numbers of answering everything | §4.7, §6.4 | 46 runs | stand-in answer rules (accept all, reject all, follow the auditor), not a person's answers; one long video |
-| What the auditor accepts, a person does not reject: of 75 judged items on accepted tracks, 64 fish, 11 unsure, 0 not a fish | §7.9 | 79 items | from sheets that sample counted tracks, so agreement on rejections is not measured by them; a blind stratified sheet does that |
+| Blind against a person, the auditor's accepts hold (19 of 20 at confidence ≥ 0.7, 15 of 17 below) and its rejections do not (the person called 12 of 17 the animal); kappa 0.25, pool-weighted agreement 84%. Unconfident rejections are counted anyway (9 of 12 were the animal); confident ones are removed but stay in the queue (3 of 6 were the animal) | §7.9 | 60 tracks, 3 strata | one non-expert judge; 6 of the overturned rejections are faint DH5 streaks the two counters also disagreed on |
 | Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of 24 held-out clips | §6.2, Table 1c | 24; 6 | no locations, so a count cannot be checked; some "excess" may be unboxed fish |
 | On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | development data; taxa scored as present, not counts; the reference is a non-expert's list from four frames |
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips chosen by a rule that favours non-fish animals; presence only; "not an animal" judged by the author with labels hidden |
@@ -1427,6 +1427,22 @@ confidence, note or whether the track counted. The person answers "yes, a ⟨wor
 "not an animal" or "can't tell". The scoring was fixed in the key before any answer: A1's accept = yes, A1's reject =
 either of the next two; Cohen's kappa over answered cards, also with "can't tell" scored as disagreement, per-stratum
 agreement, and an agreement estimate for all 219 verdicts that weights each stratum by its pool.
+
+Jiyul Ahn answered all 60 cards in 145 s. On accepted tracks the auditor and the person agree: 19 of 20 answered cards
+at confidence ≥ 0.7 (the one exception is a shark, answered "an animal, but not a fish", which our protocol counts as a
+fish) and 15 of 17 below 0.7 (3 unsure). On rejected tracks they do not: the person called 12 of the 17 answered cards
+the animal asked about, 2 another animal and 3 not an animal (3 unsure). Overall agreement is 39 of 54 answered cards,
+Cohen's kappa 0.25 (0.11 with "can't tell" as disagreement); weighted by the pools, the auditor agrees with the person
+on an estimated 84% of its verdicts, because most verdicts are confident accepts. The rejections split by confidence,
+and the design already treats the two parts differently (§4.7). An unconfident rejection (below 0.7) still counts and
+is queued: 9 of the 12 answered such cards were the animal, so counting them was right. A confident rejection removes
+the track from the count but keeps it in the queue: of 6 such cards, the person called 3 the animal (two "empty blue
+water" verdicts on DH8 and 20190618_6, one "black edge" on DH8), 2 not an animal, 1 unsure. Six of the rejected cards
+the person called fish are faint streaks in DH5 that Spark called "likely shrimp"; the two counters of Table 3e
+disagreed on the same video (3 and 37), so these may be the hardest cards rather than auditor errors. The reading for
+a user: a confident accept can be taken as it is, and a rejection is a question for a person, not an answer. The
+review order of §4.7 already asks a removed track first whenever restoring it could raise a MaxN. One judge, the
+first author, who is not a marine biologist; 60 cards.
 
 # Scope
 
