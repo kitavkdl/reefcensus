@@ -1,8 +1,15 @@
-# reefcensus; Count what you asked for & Find what you did not
+# reefcensus — count what you asked for, find what you didn't
 
-Say what to count; get MaxN for each animal you name (the most animals of a kind on screen at once, the standard count of
+Marine ecologists film the seafloor with baited cameras (BRUVs), then a person watches every frame to count what came.
+At MBARI, "these 90 hours of video can take anywhere from 180 to 400 hours to annotate" ([source](report/README.md)).
+reefcensus does that count. Say what to count; get MaxN for each animal you name (the most animals of a kind on screen at once, the standard count of
 baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
-uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
+uncertain tracks for a human to confirm.
+
+**Live demo, no key or install:** https://kitavkdl.github.io/reefcensus/ (finished nautilus runs with their evidence
+frames, count strip and review queue).
+
+Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
 experiments ran on Oct 31 in a scratch folder (kept in `spikes/`), this repository starts on Nov 1 (first commit `85b825d`),
 and all code here was written in those days (third-party footage and libraries are credited where used).
 
@@ -14,6 +21,10 @@ and all code here was written in those days (third-party footage and libraries a
   tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
+- On 24 held-out fish videos, hand-counted separately by the author and by a second counter
+  who had never seen the project's output, its summed MaxN error is 6 and 2; the human reference boxes' is 16 and 14 ([details](#how-well-it-counts-measured)).
+- On a NOAA reef-fish set from the Gulf of Mexico, hand-counted before the run, the four clips without fish come back 0,
+  with no false fish.
 - On a 53-minute reef-fish deployment the review queue holds 1,048 uncertain tracks, but asking first only the ones
   that can still change a number settles every MaxN and first arrival after 20–54 answers (about 4–12 minutes on a
   phone), with exactly the numbers of answering all 1,048.
@@ -35,9 +46,14 @@ Stony Brook University's Institute for Ocean Conservation Science): [Feedback an
 
 Technical report with every measurement and what it changed in the design: [report/README.md](report/README.md).
 
+**How it works: two Meta models through the Meta Model API, Spark → SAM → Spark.**
+
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
 - **Muse Spark** looks at a contact sheet and proposes what to track and where faint animals hide (zoom tiles),
   then audits every track crop (species, is-it-really-a-fish, confidence). Low-confidence tracks go to a human.
+  Why Spark and not Meta's largest model: on the same 101 questions Muse Wonder named 12 things no reference list
+  supports (4 of them not animals) against Spark's 5, rejected crops of animals a person was certain of, and cost about
+  4.3× per call (paper Table 7).
 - **Discovery** (`--discover`): SAM only sees what you name: asked for "animal", it found nothing on 29 of the 39 clips we tested, including a seagrass clip where "fish" finds 10.
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
   names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
