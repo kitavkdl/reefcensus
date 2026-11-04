@@ -614,6 +614,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     if do_motion:
         try:
             moved = motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found])
+            # second look (11/4 s001: the first sheet's 8 spots were all pieces of the 4 nautiluses it then tracked,
+            # so a 5th that moved only in frames 35-40 ranked 20th and was never shown; with those tracks known it
+            # ranks 7th). Only when the first look added a track: otherwise the candidates would be the same.
+            if any(e.get("source") for e in moved):
+                moved += motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found], rnd=2)
         except MOTION_ERRORS as e:
             run.stage("motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}")
         recovered += moved
@@ -1175,7 +1180,7 @@ def _named(v, names):
     return norm_label(v.get("name") if isinstance(v.get("name"), str) else "")
 
 
-def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=()):
+def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=(), rnd=1):
     """Look where pixels moved but nothing was boxed (fishcount/motion.py): up to `k` spots go to Spark on one
     sheet; up to `max_boxes` it calls animals go to SAM as box prompts, no word. Appends ("m<i>", label, dets,
     text, None) to `results`; returns log entries for the UI. Spark's verdict and the chosen boxes are cached per
@@ -1189,9 +1194,11 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     # keyed by what decides the spots (clip, boxes already found, prompt), so a free replay of the same run finds
     # it and a run with other prompts does not reuse it
     kb = json.dumps(sorted((f, sorted([round(v) for v in b] for b in bs)) for f, bs in known.items()))
-    key = hashlib.sha256((api.file_sha(clip) + kb + MOTION_PROMPT + MOTION_VERSION).encode()).hexdigest()[:24]
+    # rnd 2 = the look again after the first look's boxes (the first look's key is unchanged, so its cache still hits)
+    key = hashlib.sha256((api.file_sha(clip) + kb + MOTION_PROMPT + MOTION_VERSION + ("" if rnd == 1 else f"r{rnd}")).encode()).hexdigest()[:24]
     cpath = os.path.join(api.CACHE, f"motion_{key}.json")
-    sheet_jpg = run.path("motion_sheet.jpg")
+    sheet_jpg = run.path("motion_sheet.jpg" if rnd == 1 else f"motion_sheet{rnd}.jpg")
+    scan = "Movement outside every box" + ("" if rnd == 1 else " (second look, after the first boxes)")
     est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
         run.stage("motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
@@ -1203,7 +1210,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
         run.stage("motion", f"motion look (saved): {mc['n_candidates']} moving spots outside every box, Spark saw {len(mc['said'])}")
     elif offline:
         run.stage("motion", "motion look not cached for this clip: skipped in the free replay")
-        return [dict(kind="motion-scan", what="Movement outside every box", tried=[], word=None, note="not cached")]
+        return [] if rnd > 1 else [dict(kind="motion-scan", what=scan, tried=[], word=None, note="not cached")]
     else:
         run.stage("motion", "looking for movement outside every box (pixels only, no model)")
         cands, _ = motion.candidates(clip, known)
@@ -1246,9 +1253,11 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
         chosen.append(dict(v, label=lab))
         if len(chosen) >= max_boxes + 2:    # spare ones in case an earlier box already followed the animal
             break
-    log = [dict(kind="motion-scan", what="Movement outside every box", tried=[], word=None, candidates=mc["n_candidates"],
+    log = [dict(kind="motion-scan", what=scan, tried=[], word=None, candidates=mc["n_candidates"],
                 shown=len(mc["said"]), animals=sum(1 for v in mc["said"] if v.get("is_animal") is True),
                 said=[dict(tile=v["tile"], is_animal=v.get("is_animal"), what=v.get("what"), confidence=v.get("confidence")) for v in mc["said"]])]
+    if rnd > 1:
+        log[0]["round"] = rnd
     if not chosen:
         run.stage("motion", "Spark: none of the moving spots is an animal")
         return log
@@ -1263,7 +1272,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     prior, mine, calls = list(results), [], 0
     for i, c in enumerate(chosen):
         entry = dict(kind="motion", tile=c["tile"], what=c.get("what") or c["label"], cell=None, frame=c["frame"], box=c["box"],
-                     tried=[dict(word="box", frames=None)], word=None)
+                     tried=[dict(word="box", frames=None)], word=None, **({"round": rnd} if rnd > 1 else {}))
         if calls >= max_boxes:      # failed calls count too: the estimate above covers max_boxes
             break
         same = next((t for t, d in mine if any(tracks.overlap(c["box"], k["box"]) >= 0.3 for k in d.get(c["frame"], []))), None)
@@ -1289,8 +1298,9 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
         entry["tried"] = [dict(word="box", frames=k_frames)]
         mine.append((c["tile"], d0))
         if k_frames:
-            results.append((f"m{i}", label, d, txt, None))
-            entry["source"] = f"m{i}"
+            src = f"m{i}" if rnd == 1 else f"m{(rnd - 1) * 8 + i}"     # round 1 uses m0..m6 (max_boxes + 2)
+            results.append((src, label, d, txt, None))
+            entry["source"] = src
         log.append(entry)
         run.stage("motion", f"{c['tile']} box -> '{label}' tracked in {k_frames} of {n} frames"
                   + (f" ({clash} frames already tracked removed" + (f", joined '{took}')" if took else ")") if clash else ""))

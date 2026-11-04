@@ -8,7 +8,7 @@ annotated.mp4 (~2 MB a run). web/server.py seeds runs/ from demo/runs/ on start.
 import os, shutil, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-KEEP = ("result.json", "status.json", "review.json", "annotated.mp4", "motion_sheet.jpg")
+KEEP = ("result.json", "status.json", "review.json", "annotated.mp4", "motion_sheet.jpg", "motion_sheet2.jpg")
 
 for rid in sys.argv[1:]:
     src, dst = os.path.join(ROOT, "runs", rid), os.path.join(ROOT, "demo", "runs", rid)
