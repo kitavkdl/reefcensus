@@ -1032,7 +1032,7 @@ data on the code of the second protocol commit 42 calls ($0.11), empty-cache liv
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the held-out runs with the re-runs of every
-evaluation, the crowd check and the demo runs 922 calls ($7.49), the re-runs of the 53-min video 287 calls ($6.37) and the empty-cache live take filmed for the demo video 34 calls ($0.35) and the NOAA held-out set (§6.2, run and re-run) 140 calls ($1.29), for a ledger total of $50.17 over 3,782 calls (the items sum to $50.19 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+evaluation, the crowd check and the demo runs 922 calls ($7.49), the re-runs of the 53-min video 287 calls ($6.37) and the live take filmed for the demo video (development clip s002, run fresh with an empty cache) 34 calls ($0.35) and the NOAA held-out set (§6.2, run and re-run) 140 calls ($1.29), for a ledger total of $50.17 over 3,782 calls (the items sum to $50.19 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
