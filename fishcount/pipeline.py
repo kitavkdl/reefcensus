@@ -239,6 +239,15 @@ def _three_idx(L, i, span):
     return [lo, i, hi]
 
 
+def _steady(p, j, k=2, ratio=2.0):
+    """False when box j of path p [(frame, box)] has over `ratio` x the median area of its k neighbours each side: a
+    mask that bled into the water for a frame or two (11/4 s001 m8:1: the audit crop and queue thumbnail showed open
+    water beside the nautilus; 32 of 230 cr9 tracks were shown to Spark at such a moment). Steady growth is kept."""
+    area = lambda b: (b[2] - b[0]) * (b[3] - b[1])
+    nb = sorted(area(p[i][1]) for i in range(max(0, j - k), min(len(p), j + k + 1)) if i != j)
+    return len(nb) < 2 or area(p[j][1]) <= ratio * nb[len(nb) // 2]
+
+
 def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None, frame_wh=None):
     """Show Spark three crops per track (early, largest box, late) in sheets of 12; returns {track: verdict}.
     frame_wh=(W, H) (opt-in, clean tracks): the "largest box" moment skips boxes touching the frame edge when the
@@ -247,7 +256,7 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     sees what Spark saw."""
     # camo tracks (--camo) are left out: still crops cannot show a camouflaged animal; camo_look decided them
     paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label and not trk[t]["source"].startswith("camo")}
-    best, trios = {}, {}
+    best, trios, thumb = {}, {}, {}
     for t, p in paths.items():
         area = lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1])
         if frame_wh:
@@ -257,6 +266,10 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
         else:
             i = max(range(len(p)), key=area)
         best[t] = (None, p[i][0], p[i][1])
+        # the queue thumbnail a person sees skips a bled box; Spark's sheet keeps its moment (11/4 cr10: moving it
+        # re-drew 32 tracks' sheets and Spark's answers on the other tracks of those sheets shifted, s003 3 -> 2)
+        ti = i if _steady(p, i) else max([j for j in range(len(p)) if _steady(p, j)] or [i], key=area)
+        thumb[t] = (p[ti][0], p[ti][1])
         trios[t] = [(p[j][0], _ibox(p[j][1])) for j in _three_idx(len(p), i, max(1, len(p) // 3))]
     ids = sorted(best, key=lambda t: best[t][1])
     names = {t: f"T{start + i + 1}" for i, t in enumerate(ids)}
@@ -264,10 +277,10 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     out = {}
     for i in range(0, len(ids), per_sheet):
         chunk = ids[i:i + per_sheet]
-        imgs = video.frames(clip, {f for t in chunk for f, _ in trios[t]})   # one sheet's frames at a time
+        imgs = video.frames(clip, {f for t in chunk for f, _ in trios[t]} | {thumb[t][0] for t in chunk})   # one sheet's frames at a time
         groups = []
         for t in chunk:
-            _, f, b = best[t]
+            f, b = thumb[t]
             crop = render.crop(imgs[f], b, pad=0.25, min_side=96)
             open(run.path("thumbs", f"{names[t]}.jpg"), "wb").write(video.jpg(crop, max_w=320))
             groups.append(motion.trio(imgs, trios[t], names[t], half=_half(trios[t])))
