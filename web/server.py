@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, maxn_export, pipeline, settle, sitememory, tracks, video
+from fishcount import api, maxn_export, pipeline, render, settle, sitememory, tracks, video
 
 ROOT, WEB = api.ROOT, os.path.dirname(os.path.abspath(__file__))
 RUNS, UPLOADS = pipeline.RUNS, os.path.join(api.ROOT, "clips")
@@ -84,6 +84,18 @@ def origins(res, labels):
     return out
 
 
+def reviewed_evidence(d, res, labels, name, f):
+    """A review moved `name`'s MaxN or its frame: redraw the evidence frame from the reviewed labels, so the image
+    shows the count printed beside it (boxes only: a run keeps no SAM masks). None if the run folder has no clip."""
+    clip, ev = os.path.join(d, "clip.mp4"), f"evidence_{pipeline.api_safe(name)}_reviewed.jpg"
+    if f is None or not os.path.exists(clip):
+        return None
+    out = os.path.join(d, ev)
+    if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(os.path.join(d, "review.json")):
+        render.evidence(clip, {}, dict(res, auto_labels=labels), f, out, name)
+    return ev
+
+
 def effective(rid):
     """result.json joined with the human review: metrics recomputed from the stored (post-peak-check) frames."""
     d = os.path.join(RUNS, rid)
@@ -106,6 +118,11 @@ def effective(rid):
             mm["curve_confirmed"] = lo[name]["curve"] if name in lo else [0] * len(mm["curve"])
         mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
         ev = f"evidence_{pipeline.api_safe(name)}.jpg"
+        run_m = res["metrics"].get(name, {})
+        if review and (run_m.get("maxn"), run_m.get("maxn_frame")) != (mm["maxn"], mm["maxn_frame"]):
+            new = reviewed_evidence(d, res, labels, name, mm["maxn_frame"])   # the run's image shows the old count
+            mm["evidence_stale"] = new is None      # no clip to redraw from (packed demo runs): the caption says so
+            ev = new or ev
         mm["evidence"] = ev if os.path.exists(os.path.join(d, ev)) else None
     # same-frame totals per animal group; the low end of the range drops the unreviewed queue as for labels
     gm = pipeline.group_metrics(m, v["fps"])

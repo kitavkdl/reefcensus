@@ -171,7 +171,7 @@ function drawEvidence() {
   const run = state.run;
   fill($("evidence"), ...order(run).filter(([, m]) => m.evidence).map(([name, m]) => {
     const src = `/runs/${encodeURIComponent(run.id)}/${m.evidence}`;
-    const cap = `${name}: ${m.maxn} at ${secs(m.maxn_time)}${m.peak_checked ? ", every box checked by Spark" : ""}`;
+    const cap = `${name}: ${m.maxn} at ${secs(m.maxn_time)}${m.peak_checked ? ", every box checked by Spark" : ""}${m.evidence_stale ? " (image from before the review)" : ""}`;
     return el("figure", { class: run.origin[name], tabindex: 0, onclick: () => zoom(src, cap), onkeydown: (e) => e.key === "Enter" && zoom(src, cap) },
       el("img", { src, alt: `Peak frame for ${name}`, loading: "lazy" }), el("figcaption", {}, cap));
   }));

@@ -137,7 +137,8 @@
       if (openQ.length && JSON.stringify(has(lo, name) ? lo[name].curve : null) !== JSON.stringify(mm.curve))
         mm.curve_confirmed = has(lo, name) ? lo[name].curve : new Array(mm.curve.length).fill(0);
       mm.peak_checked = checked.has(`${name}\u0000${mm.maxn_frame}`);
-      const ev = `evidence_${apiSafe(name)}.jpg`;
+      const ev = `evidence_${apiSafe(name)}.jpg`, runM = S.base_metrics[name] || {};
+      if (nRev && (runM.maxn !== mm.maxn || runM.maxn_frame !== mm.maxn_frame)) mm.evidence_stale = true;  // no clip here to redraw from
       mm.evidence = S.evidence.includes(ev) ? ev : null;
     }
     const gm = groupMetrics(S, m, 2), glo = openQ.length ? groupMetrics(S, lo, 1) : {};
