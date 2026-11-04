@@ -1415,8 +1415,9 @@ MaxN can be wrong for reasons that are invisible in a table (a wrongly rejected 
 and survey counts feed management decisions. We mitigate this by reporting the queue as part of the output and by
 publishing failure cases alongside successes. The footage contains no people except the first two minutes of the
 NOAA recording, where crew on the boat deck are visible (mostly torsos and legs); the pipeline counts them as
-"human"; we do not show those frames in the paper, figures or demo, though the reply cache in the repository keeps the
-crops Spark was shown. We used only openly published research
+"human"; we do not show those frames in the paper, figures or demo. The reply cache in the repository keeps Spark's text
+answers and SAM's masks, not the crops Spark was shown; its only images are motion-candidate sheets, and the one sheet
+from the deck section (stored three times) shows crew only as out-of-focus shapes behind trap mesh, with no face. We used only openly published research
 footage, under CC BY licences or, for the NOAA recording, as US federal government work (Data statement). Expert reference lists are a next step (§9).
 
 # Reproducibility
