@@ -10,7 +10,7 @@ The registry is the paper's numbers (report/paper/paper.md) as of the submission
 import os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-DOCS = ["report/paper/paper.md", "README.md", "report/README.md", "web/index.html"]
+DOCS = ["report/paper/paper.md", "README.md", "report/README.md", "report/details.md", "web/index.html"]
 
 # (name, regex with groups, expected values) — expected is a tuple, or a list of tuples when the same wording is used
 # for two different measured quantities (each alternative names one of them); None in a slot = not checked

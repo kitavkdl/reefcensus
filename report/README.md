@@ -18,7 +18,7 @@ whether it is an animal, and SAM tracks it from a box with no word at all.
 Results (details in **Evaluation**):
 - **Counting, luderick (6 clips, 319 frames boxed by people):** recall 97.4% (the same as SAM alone: the checks throw away no real fish), precision 79.2% (a lower bound, see 4.1), MaxN within ±1 of the human count on all 6 clips and exact on 4 (SAM alone: 2); 9 of 28 tracks sent to a person.
 - **Held out (24 luderick clips never used in development, one run under a protocol committed first):** the protocol run gives recall 98.9%, MaxN exact on 20 of 24 with the queue accepted (SAM alone and the length rule: 19), and with the queue rejected recall 95.6%, exact on 21 and every clip within one fish. The current code, re-run on these clips after they were scored (run `cr7`), gives the same counts with the queue accepted; with the queue rejected every clip is within ±1 (recall 89.3%). The review screen shows MaxN as the range between those two cases until the queue is checked; it contains the human MaxN on 22 of 24 held-out clips (5 of 6 in development), a summary added after the run.
-- **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 non-fish taxa a person could see and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net. On the original night clip s001 they cost one nautilus (queued, v16); the final code brightens that clip first and counts all four, none queued. The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
+- **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 taxa beyond the fish asked for that a person could see (one of them a hagfish) and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net. On the original night clip s001 they cost one nautilus (queued, v16); the final code brightens that clip first and counts all four, none queued. The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
 - **Finding what was not asked for, held out (5 new videos from other studies, one run under a protocol committed first; the current code scores the same):** Spark named all 4 non-fish animals the author and an AI assistant had marked before the run; 3 were counted and the 4th (a squat lobster that no word tracked, followed by a motion box in all 60 frames) was sent to a person to confirm. 0 false discoveries: every counted crop was judged an animal with its label hidden, and nothing non-fish was counted on the two clips without one. $1.06 for all five.
 - **Second held-out set (6 more videos, one run under a protocol committed first; the current code scores the same):** counted the one non-fish animal two people marked beforehand (an amphipod at a 2186 m vent), 0 false discoveries, nothing non-fish on two shark-only clips; also counted 3 crabs in a cold-seep time-lapse that neither person listed from four frames (none of the crabs is on those frames; judged crabs with labels hidden). $0.86 for six.
 - **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.40 (discovery; $0.22–0.27 on the development clips) in API calls; all answers are cached by content, so a rerun is free.
@@ -30,7 +30,8 @@ all 107 frames). Middle: asked for "fish", 10. Right: reefcensus, with Spark's n
 ## 1. Problem
 A BRUV drops a camera next to a bait bag on the seabed. The standard abundance measure is MaxN: per species, the
 largest number of individuals visible in any single frame, a conservative count that never double-counts an animal
-that leaves and returns. Getting it means watching the footage. At MBARI, "these 90 hours of video can take anywhere
+that leaves and returns. Getting it means watching the footage: manual BRUV analysis "typically tak[es] several hours per hour of video"
+(Francour et al., 1999, as cited by Marrable et al., 2022). On MBARI's deep-sea ROV dives, where every animal is annotated, "these 90 hours of video can take anywhere
 from 180 to 400 hours to annotate" ([MBARI expedition log, Gulf of California 2015, Leg 2, Log 8, 3 March 2015](https://www.mbari.org/news/gulf-of-california-2015-leg-2-midwater-ecology-log-8/)).
 
 Two things make automation hard. First, the species list is open: a survey aimed at fish also films shrimp,
@@ -119,7 +120,8 @@ is taken over the annotated frames only, for both columns.
 
 ### 4.2 Finding what was not asked for (nautilus)
 Four nautilus BRUV clips (Barord et al. 2014), 12 s each, request = "fish" only. Before looking at any pipeline
-output, every non-fish animal in four frames per clip (frames 0, 20, 40, 59) was listed by eye at taxon level. This is
+output, every animal the request did not name in four frames per clip (frames 0, 20, 40, 59) was listed by eye at
+taxon level. This is
 a non-expert list: 7 taxa over the four clips.
 
 | clip | animals a person listed (not fish) | reefcensus final count (MaxN) | how it was found |
@@ -213,7 +215,7 @@ queued 8 tracks; its counts differ on DH6 (shark 1, leopard shark 1), DH7 (crab 
   person (`report/paper/scripts/calibration.py`).
 - **Next, with experts.** Development continues after the hackathon with the researchers already contacted: G. J.
   Barord, whose nautilus footage we used and who answered on Nov 2, 2026, and Stony Brook University's Institute for
-  Ocean Conservation Science, which received the tool on Nov 3, 2026 (main README, *Feedback and next steps*).
+  Ocean Conservation Science, with whom we shared the tool on Nov 3, 2026 (main README, *Feedback and next steps*).
 
 ## 6. Reproduce
 ```

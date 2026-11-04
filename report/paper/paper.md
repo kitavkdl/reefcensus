@@ -404,7 +404,8 @@ count: on its own it counts high (Table 1c).
 # Experimental setup
 
 **Counting data (luderick).** Six clips from the luderick seagrass dataset (Ditria et al., 2021; PANGAEA
-doi:10.1594/PANGAEA.926930, CC BY 4.0; seagrass in south-east Queensland estuaries, 1920×1080), 665 frames at 5 fps, of which 319 carry human
+doi:10.1594/PANGAEA.926930, CC BY 4.0; remote underwater video in seagrass in south-east Queensland estuaries, 1920×1080; the data report describes the cameras as
+remote underwater video and does not mention bait, so these clips are not baited-camera footage), 665 frames at 5 fps, of which 319 carry human
 boxes (543 boxes: 527 luderick, 16 bream; we score both as "fish"). The annotations are on frames extracted at
 5 fps; we re-encode each video at 5 fps so that clip frame *i* is annotation frame *i* + 1, and score only annotated
 frames. The annotations were made for training detectors on luderick, so other fish and partially visible fish are
@@ -415,8 +416,8 @@ zoom, so it measures the effect of the audits on a single-category count.
 videos S1–S4 of Barord et al. (2014) (CC BY), recorded overnight by BRUVs at 300–400 m with bait, some next to a trap.
 Barord et al. counted nautiluses by photo-identification, not MaxN; MaxN is our metric applied to their footage.
 The request is "fish" only. Before looking at any pipeline output, one of us (not a marine biologist) listed every
-non-fish animal visible in frames 0, 20, 40 and 59 of each clip at taxon level: 7 taxa over the four clips (nautilus
-in all four; a red crustacean in s002; shrimp and a hagfish in s004). Discovery is scored as presence of taxa.
+animal the request did not name visible in frames 0, 20, 40 and 59 of each clip at taxon level: 7 taxa over the four clips (nautilus
+in all four; a red crustacean in s002; shrimp and a hagfish, a jawless fish that SAM's "fish" does not find, in s004). Discovery is scored as presence of taxa.
 
 **Held-out discovery data.** Five videos from other studies, never used in development and chosen by a rule written
 before any run (`report/paper/discovery_heldout_protocol.md`, committed first): three baited-camera clips from a
@@ -719,7 +720,8 @@ called fish again as tracks, and no answer turned into "not a fish".
 
 ![**Figure 3.** The last frame of held-out clip 20190709_17. Cyan: pipeline boxes (7). Orange: the human reference boxes (2). The
 pipeline's five "false positives" here are fish; the fish in the seagrass at left is boxed by neither. A hand count
-of the clip gives MaxN 8.](figures/annotation_gap.jpg)
+of the clip gives MaxN 8. Script
+`report/paper/scripts/fig_annotation_gap.py`.](figures/annotation_gap.jpg)
 
 On luderick the audited pipeline's box metrics equal those of the segmenter and a length rule (Table 1c). Its output
 on this task is the queue, which contains most of the tracks behind the clip-level over-counts, and also real fish
@@ -831,7 +833,7 @@ has no word), under the one-word name Spark gave the moving spot.</div>
 | s001 nautilus (person: 4 or more) | 0 | 0 | 3 | 4 (clip brightened; v16 on the original clip: 2 + 1 queued) |
 | s003 nautilus (person: 3–4) | 0 | 3 | 4 | 3 |
 | s004 shrimp (person: 10 or more) | 0 | 15 | 18 | 15 (crustacean group, one frame; caridean 14 at frame 29, unidentified 2) |
-| "fish" counted (the person listed non-fish animals only) | s002: 2 | s002: 2 | s002: 2; s004: 1 (motion, "small fish swimming away") | s002: 2, both queued; s004: 0 |
+| "fish" counted (the person listed only animals the request did not name) | s002: 2 | s002: 2 | s002: 2; s004: 1 (motion, "small fish swimming away") | s002: 2, both queued; s004: 0 |
 
 **The naming step finds the taxa; the audits fix names and counts.** Spark proposed nine items over the four clips.
 Eight correspond to animals in the person's list; one, s003's "large striped shrimp", corresponds to nothing the
@@ -1455,7 +1457,7 @@ queue for a person (§4.7).
 expert guidance, starting with two groups we have already contacted. G. J. Barord replied on Nov 2, 2026 (quoted
 above); his questions set the first two steps below and included continued development after the hackathon with
 researchers who film these surveys. Stony Brook University's Institute for Ocean Conservation Science,
-which runs baited cameras in Shinnecock Bay, received the tool on Nov 3, 2026 and passed it on to its team. The next
+which runs baited cameras in Shinnecock Bay: we shared the tool with them on Nov 3, 2026. The next
 steps, to be taken with them:
 
 1. recognising the same individual across videos (for nautiluses, by shell pattern), as Barord asked; within a clip,
