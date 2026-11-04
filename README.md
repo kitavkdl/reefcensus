@@ -87,7 +87,7 @@ python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full p
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 100 tests, including an exact
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 103 tests, including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
