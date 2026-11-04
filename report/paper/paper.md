@@ -1462,7 +1462,7 @@ queue for a person (§4.7).
 expert guidance, starting with two groups we have already contacted. G. J. Barord replied on Nov 2, 2026 (quoted
 above); his questions set the first two steps below and included continued development after the hackathon with
 researchers who film these surveys. Stony Brook University's Institute for Ocean Conservation Science,
-which runs baited cameras in Shinnecock Bay: we shared the tool with them on Nov 3, 2026. The next
+which runs baited cameras in Shinnecock Bay: we shared the tool with them on Nov 2, 2026. The next
 steps, to be taken with them:
 
 1. recognising the same individual across videos (for nautiluses, by shell pattern), as Barord asked; within a clip,

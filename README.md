@@ -1,39 +1,37 @@
 # reefcensus — count what you asked for, find what you didn't
 
-Marine ecologists film the seafloor with baited cameras (BRUVs), then a person watches every frame to count what came:
-manual BRUV analysis "typically tak[es] several hours per hour of video" (Francour et al., 1999, as cited by Marrable
-et al., 2022). On MBARI's deep-sea ROV dives, where every animal is annotated, "these 90 hours of video can take anywhere
-from 180 to 400 hours to annotate" ([MBARI expedition log, 3 March 2015](https://www.mbari.org/news/gulf-of-california-2015-leg-2-midwater-ecology-log-8/)).
-reefcensus does that count. Say what to count; get MaxN for each animal you name (the most animals of a kind on screen at once, the standard count of
-baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
-uncertain tracks for a human to confirm. Two Meta models do the work: Muse Spark decides what to look for and checks
-every track, and SAM 3.1 boxes and follows each animal through the video.
+reefcensus counts animals in underwater survey video. Say what to count; get MaxN for each animal (the most animals
+of a kind on screen at once, the standard count of baited-camera surveys) and time of first arrival **with an evidence
+frame behind every number**, and a short queue of uncertain tracks for a person to confirm.
+Built on Meta's SAM 3.1 and Muse Spark via the Meta Model API.
 
-**Live demo, no key or install:** https://kitavkdl.github.io/reefcensus/ (finished nautilus runs with their evidence
-frames, count strip and review queue).
-
-Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
-experiments ran on Oct 31 in a scratch folder (kept in `spikes/`; its folders A–G are the early look at what SAM can
-do on sound, the sun, sea ice, sonar, thermal video, AI-made video and a kitchen, before the project settled on baited
-cameras), this repository starts on Nov 1 (first commit `85b825d`),
-and all code here was written in those days (third-party footage and libraries are credited where used).
+**Demo, no key or install:** https://kitavkdl.github.io/reefcensus/ (4 finished runs with their evidence frames and
+count strip; answer the review queue in your browser).
 
 ![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes nothing in this frame (one nautilus in 9 of 60 frames; left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four counted, a fainter fifth sent to a person (right)](report/figures/split_s001_night_f38.jpg)
 
+**The problem.** Marine ecologists film the seafloor with baited cameras (BRUVs), then a person watches every frame to
+count what came: manual BRUV analysis "typically tak[es] several hours per hour of video" (Francour et al., 1999, as
+cited by Marrable et al., 2022). On MBARI's deep-sea ROV dives, where every animal is annotated, "these 90 hours of
+video can take anywhere from 180 to 400 hours to annotate" ([MBARI expedition log, 3 March 2015](https://www.mbari.org/news/gulf-of-california-2015-leg-2-midwater-ecology-log-8/)).
+reefcensus does that count with two Meta models: Muse Spark decides what to look for and checks every track, and
+SAM 3.1 boxes and follows each animal through the video.
+
 **What it found (measured, details in [report/details.md](report/details.md); every claim with its evidence is in the table at the top of the [paper](report/paper/paper.md), PDF [here](report/paper/paper.pdf)):**
-- Asked for "fish" on a nautilus survey clip, it also found and counted animals the request did not name: a nautilus,
-  a swarm of shrimp and a hagfish.
+- Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of
+  shrimp and a hagfish (a jawless fish that SAM's "fish" did not find).
 - At night behind a trap, where 17 fixed words (16 generic words plus "nautilus") box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
   tracks four nautiluses from boxes with no word and sends a fainter fifth to the review queue (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
-- On 24 held-out fish videos, hand-counted separately by the author (not a marine biologist) and by a friend
+- On 24 held-out seagrass videos of 1–12 s (remote underwater video, not baited-camera footage), hand-counted separately by the author (not a marine biologist) and by a friend
   who had never seen the project's output, its summed MaxN error is 6 and 2; the human reference boxes' (drawn to train a luderick detector, not to count MaxN) is 16 and 14 ([details](report/details.md#how-well-it-counts-measured)).
 - On a NOAA reef-fish set from the Gulf of Mexico, hand-counted before the run, the four clips without fish come back 0,
   with no false fish.
 - On a 53-minute reef-fish deployment the review queue holds 1,048 uncertain tracks, but asking first only the ones
   that can still change a number settles every MaxN and first arrival after 20–54 answers (about 4–12 minutes on a
-  phone), with exactly the numbers of answering all 1,048 (checked with three stand-in answer rules: accept all, reject all, follow the auditor).
+  phone, estimated from the 13 s a track measured on 9 queued tracks), with exactly the numbers of answering all 1,048 (checked with three simulated answer rules: accept all, reject all, follow the auditor).
+- Reviewed counts download as a CSV and in GlobalArchive column order ([details](report/details.md#standard-maxn-export-globalarchive-layout)).
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord, first author of the 2014 nautilus
 survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote back the same afternoon he saw the results:
@@ -45,14 +43,14 @@ survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote b
 >
 > — Gregory J. Barord, Ph.D., email of Nov 2, 2026
 
-The two things he asked about next are what the tool is built around: low light (the night clip behind the trap above,
+The two concerns he raised are what the tool is built around: low light (the night clip behind the trap above,
 four nautiluses counted and a fifth queued for a person) and spot checks (every number opens its evidence frame, and doubtful tracks wait in a queue for a
 person). We are continuing after the hackathon with the guidance of the researchers we contacted (Barord, and
 Stony Brook University's Institute for Ocean Conservation Science): [Feedback and next steps](#feedback-and-next-steps).
 
 Technical report with every measurement and what it changed in the design: [report/README.md](report/README.md).
 
-**How it works: two Meta models through the Meta Model API, Spark → SAM → Spark.**
+**How it works: two Meta models through the Meta Model API (`muse-spark-1.3` and `sam-3.1`), Spark → SAM → Spark.**
 
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
 - **Muse Spark** looks at a contact sheet (frames of the clip tiled into one image) and proposes what to track and where faint animals hide (zoom tiles),
@@ -72,7 +70,7 @@ screen, the GlobalArchive export, `gapfind`, site memory and the full measured t
 
 ## Try it
 
-**No key needed to look:** the [live demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install: answering the queue recomputes the counts, ranges and CSV in your browser (kept until you reload; `demo/static_review.js`, checked against the server by `tests/test_static_review.py`). Locally (Python 3.12+): `pip install -r requirements.txt && python3 web/server.py`, then open
+**No key needed to look:** the [demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install: answering the queue recomputes the counts, ranges and CSV in your browser (kept until you reload; `demo/static_review.js`, checked against the server by `tests/test_static_review.py`). Locally (Python 3.12+): `pip install -r requirements.txt && python3 web/server.py`, then open
 http://127.0.0.1:8793. Four finished nautilus runs (`demo/runs`, copied into `runs/` on first start) play with
 their evidence frames, motion sheets and human queue. No model is called. The web screen takes clips up to 2 minutes; longer videos run from the command line (below).
 
@@ -93,8 +91,7 @@ offline replay of the s004 demo run and the long-video merge.
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
 ([details](report/details.md#long-videos)).
 
-**Fresh runs.** Spark's answers are not fixed, so a run with an empty cache can differ from the cached one by about
-one track: in four empty-cache rehearsals DH11's amphipod was counted once and queued once, and s003 counted 3
+**Fresh runs.** Spark's answers are not fixed, so a run with an empty cache can differ from the cached one: in four empty-cache rehearsals DH11's amphipod was counted once and queued once, and s003 counted 3
 nautiluses in one take and 1 in the other (with the final word ladder that take's own answers count 3; paper,
 *Failure modes of the VLM auditor*).
 
@@ -115,7 +112,7 @@ We sent the results to two groups who run baited cameras.
   5. *Why these videos?* Openly licensed, deep, dim and full of animals that are not fish: a hard test for a tool
      asked only for "fish".
 - **Stony Brook University's Institute for Ocean Conservation Science**, which runs baited cameras in Shinnecock Bay
-  with students reviewing the footage: we shared the tool with them on Nov 3, 2026.
+  with students reviewing the footage: we shared the tool with them on Nov 2, 2026.
 
 **After the hackathon.** reefcensus continues with the guidance of the marine scientists who film and score this
 kind of footage, starting with the two groups above, both already in contact. The next steps come from their
@@ -141,6 +138,13 @@ so that the names Spark proposes are checked by people who know the fauna.
   Southeast Fisheries Science Center (download script and hashes in `report/paper/data/long_video/`)
 - NOAA held-out set (N1–N8): the same NOAA bucket, eight stations chosen by rule (`report/paper/noaa_heldout_protocol.md`;
   stations, URLs and hashes in `report/paper/data/noaa_heldout/clips.json`); US government work, attribution as above
+
+## Built during the hackathon
+Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
+experiments ran on Oct 31 in a scratch folder (kept in `spikes/`; its folders A–G are the early look at what SAM can
+do on sound, the sun, sea ice, sonar, thermal video, AI-made video and a kitchen, before the project settled on baited
+cameras), this repository starts on Nov 1 (first commit `85b825d`),
+and all code here was written in those days (third-party footage and libraries are credited where used).
 
 ## License
 MIT (code), except `fishcount/_maskdec.c`, a C port of `meta_sam_parser`'s mask codec, which is under Meta's SAM
