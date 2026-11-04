@@ -791,7 +791,7 @@ counted, and was judged unsure (`data/noaa_heldout/crops_answers.txt`). No count
 
 ## Finding what was not asked for
 
-<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr8_s001`, `cr8_s003`, `cr8_s004`; s002 has no motion track, so the second motion look does not run and `cr7_s002` is the current result). Person = non-expert,
+<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr9_s001`, `cr8_s003`, `cr8_s004`; s002 has no motion track, so the second motion look does not run and `cr7_s002` is the current result). Person = non-expert,
 taxon-level list from four frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
@@ -807,7 +807,7 @@ frame, two blocks and two 3× cells of this night clip; the motion residual find
 (A1 0.55) is queued (v16). The final code first brightens this clip (median Lab L 5, mean 26.5; the thresholds,
 median < 15 and mean < 35, were set from the development clips' brightness;
 `report/paper/lowlight_s001.md`): "shell" then tracks one nautilus for 9 frames, four motion box prompts track 50–60 of
-60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4; the second motion look (run `cr8_s001`) adds a paler fifth nautilus at A1 0.4, which waits in the queue. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
+60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4; the second motion look (run `cr9_s001`) adds a paler fifth nautilus at A1 0.4, which waits in the queue. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
 "crab" tracks 5 frames and "shrimp" 12, and A1 calls the "shrimp" track "small red crab, not shrimp" (0.7), which
 matches Spark's discovery name, so the track is relabelled; A2 agrees. **s003**: "nautilus" tracks 33 frames forward,
 60 reversed and 45 and 44 in two zoom blocks. Spark also proposed a "large striped shrimp" that no word tracked; a
@@ -844,7 +844,7 @@ different frames, so the peak falls by three. A1 also splits those 15 into "cari
 "shrimp (unidentified)" 2; a per-label output shows only the larger name, so the result, CSV and review screen also
 give an animal-group row ("crustacean 15", the same-frame total). On the original, dark s001 clip the third motion
 nautilus waited in the queue at A1 confidence 0.55; the final code brightens the clip first, and all four motion
-nautiluses pass the audits (4; in `cr8_s001` a paler fifth waits in the queue).
+nautiluses pass the audits (4; in `cr9_s001` a paler fifth waits in the queue).
 
 **A fixed noun list instead of the VLM's names.** We prompted SAM 3.1 on the full frame of each clip with 16 basic-level
 nouns for animals seen on baited cameras (fish, shark, ray, eel, crab, shrimp, lobster, octopus, squid, snail, shell,
@@ -858,7 +858,7 @@ right word. On the brightened s001 clip that the final code tracks, the 16 words
 counted nautiluses, as "shell", in 9 of 60 frames, and the other 16 words return nothing ($0.17,
 `report/paper/data/fixed_vocab_brightened/`); the final run counts all four, each also tracked from a box with no word
 on a moving spot Spark picked (50, 60, 59 and 60 of 60 frames; side-by-side video `report/scripts/split_s001_night.py`); a fifth, paler
-nautilus tracked from motion waits in the queue (A1 0.4, run `cr8_s001`).
+nautilus tracked from motion waits in the queue (A1 0.4, run `cr9_s001`).
 A fixed list thus recovers most taxa on these clips if it happens to contain the target, but it names them by whichever
 word fired; what the VLM adds is the name, and a list it did not need to be given.
 
@@ -1189,7 +1189,7 @@ neither help nor hurt localisation, as expected since they only keep or remove w
 
 ## Where the counts come from
 
-Across the four discovery clips the final runs (`cr8_s001`, `cr7_s002`, `cr8_s003`, `cr8_s004`) produced 50 tracks after merging: 33 from discovered words and
+Across the four discovery clips the final runs (`cr9_s001`, `cr7_s002`, `cr8_s003`, `cr8_s004`) produced 50 tracks after merging: 33 from discovered words and
 their zoom or reversed passes, 15 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
 queued). Ten tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
 A3 judged 10 nested pairs (9 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
