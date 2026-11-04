@@ -39,7 +39,10 @@ It also records any non-fish row counted on these fish-survey clips (false disco
   HEAD`) into `clips.json`, and no file under `fishcount/` changes between that commit and the run. Pipeline changes
   made after this file was added (`54acfb0`) and before any clip of this set was cut or seen, all on 11/4: the
   word-ladder change `a912bc8` reverted (`e4be9d6`) and restored (`3d2667c`); x264 capped to its AVX2 code on AVX-512
-  CPUs (`ab1638c`, replay across machines; no count logic). Only the prep and scoring scripts may be added before the
+  CPUs (`ab1638c`, replay across machines; no count logic). Amendment (11/4, before any clip was cut or seen): the
+  full list of pipeline changes between this file and the cut is `git log 54acfb0..<code_head> -- fishcount/`, with
+  `code_head` recorded in `clips.json` by the prep script (later additions before the cut include the crowd check,
+  the review-queue order and cut links for long videos). Only the prep and scoring scripts may be added before the
   run; neither changes the pipeline.
 - **When**: after the demo video is recorded (owner's decision, 11/4).
 - **Settings**: the discovery settings of Table 2 and the 53-min run, on the final defaults:
