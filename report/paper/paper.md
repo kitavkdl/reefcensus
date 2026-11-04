@@ -21,7 +21,7 @@ the reference boxes are, under each of two independent counters (summed error 6 
 scored as false positives was judged not a fish: corrected precision is 93.7% (95% interval 89.6–97.0%, resampling tracks), against 77.2% on the boxes. The
 audits are built around how a VLM fails: every object is judged at three moments, and the second look of a weakly
 supported track sees no label and no earlier names. Doubtful tracks are asked in the order that settles the counts: on a
-53-min deployment, 20–54 answers instead of a queue of 1,048. The result is an annotation accelerator whose output a
+53-min deployment, 24–84 answers instead of a queue of 1,082. The result is an annotation accelerator whose output a
 person confirms. Marine scientists have already been contacted, and development continues with them after the
 hackathon.
 
@@ -40,7 +40,7 @@ hackathon.
 | Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7%, 95% interval 89.6–97.0% by track, vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | labels hidden; 10/10 matched controls called fish |
 | The person queue (17 of 50 tracks) holds most of the tracks behind the largest over-counts | §6.1 Table 1b; §6.2 | 24 held-out | |
 | Clearing the queue is quick: 9 queued tracks of four clips took one person 121 s on a phone; all 6 accepted tracks overlap the human boxes, the 3 left unsure match none | §6.1 | 4 development; 9 tracks | |
-| A person need not clear the whole queue: asking first only the tracks that can still change a count settles every MaxN and first arrival of a 53-min video after 20–54 answers instead of 1,048, with exactly the numbers of answering everything | §4.7, §6.4 | 46 runs | stand-in answer rules (accept all, reject all, follow the auditor), not a person's answers |
+| A person need not clear the whole queue: asking first only the tracks that can still change a count settles every MaxN and first arrival of a 53-min video after 24–84 answers instead of 1,082, with exactly the numbers of answering everything | §4.7, §6.4 | 46 runs | stand-in answer rules (accept all, reject all, follow the auditor), not a person's answers |
 | Blind against a person, the auditor's accepts hold (19 of 20 at confidence ≥ 0.7, 11 of 14 below) and rejections are the part to ask a person about (the person was sure 8 of 13 answered rejected cards were the animal), which is how the queue is built; pool-weighted agreement 82.5%, and 6 of 9 unconfident rejections, which are counted anyway, were surely the animal | §7.9 | 60 tracks, 3 strata, asked twice | |
 | On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | taxa scored as present; reference list from four frames |
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips selected for non-fish animals; presence only; marked from four frames per clip |
@@ -1032,7 +1032,7 @@ data on the code of the second protocol commit 42 calls ($0.11), empty-cache liv
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the held-out runs with the re-runs of every
-evaluation, the crowd check and the demo runs 922 calls ($7.49), the re-runs of the 53-min video 287 calls ($6.37) and the live take filmed for the demo video (development clip s002, run fresh with an empty cache) 34 calls ($0.35) and the NOAA held-out set (§6.2, run and re-run) 140 calls ($1.29), for a ledger total of $50.17 over 3,782 calls (the items sum to $50.19 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+evaluation, the crowd check and the demo runs 1,004 calls ($8.06), the re-runs of the 53-min video 423 calls ($12.02) and the live take filmed for the demo video (development clip s002, run fresh with an empty cache) 34 calls ($0.35) and the NOAA held-out set (§6.2, run and re-run) 140 calls ($1.29), for a ledger total of $56.39 over 4,000 calls (the items sum to $56.41 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -1061,45 +1061,48 @@ auditor rejected 35 of the 116 tracks. With clean and refill (§11), the same
 six segment clips were run again with every cached answer reused (run `LONG1_cr2`, log
 `report/paper/data/long_video/run_cr2c.log`; $5.67 including an earlier partial re-run of segments 1–2, `LONG1_cr`, hence eight segment records). Refill sends each
 segment again after a SAM call has used its 16 object IDs, so much more of the hour is tracked. On the final code
-(run `LONG1_cr7`, log `report/paper/data/long_video/run_cr7.log`, $0.70 more over two attempts, the first stopped by its
-memory cap; every other answer from the cache) there
-are 1,377 tracks after cutting reused IDs, 173 rejected by the auditor. The merged run reports fish (unidentified)
-MaxN 14 at 418 s, grunt 2, flatfish 1, needlefish 1 and sand lance 1 (names are proposals, §7.5), the same MaxN and
-first arrivals as `LONG1_cr2`; the deck crew is unchanged (human 3, person (unidentified) 1) and "jack" no longer
-appears. A track that
+(run `LONG1_cr9`, log `report/paper/data/long_video/run_cr9.log`, $5.80 more over two attempts, the first ended by an
+out-of-memory kill while other jobs held the machine's memory; the second motion look and the whole-animal seed box ask
+for new crops, every other answer from the cache) there
+are 1,420 tracks after cutting reused IDs, 218 rejected by the auditor. The merged run reports fish (unidentified)
+MaxN 14 at 418 s, saddled seabream 2, grunt 1 and flatfish 1 (names are proposals, §7.5); the fish row is a lower
+bound, since two segment crowd checks counted 22 and 28 fish (§4.7). The fish MaxN, its time and its first arrival
+are those of `LONG1_cr2` and `LONG1_cr7`, and the deck crew is unchanged (human 3, person (unidentified) 1). The names
+on single late tracks follow the audit sheet a track lands on: the new motion tracks renumbered the sheets, and the
+same tracks with the same boxes that `LONG1_cr7` named needlefish, sand lance and grunt were answered "unknown" this
+time, while two tracks were named saddled seabream; each is a queued track a person confirms. A track that
 crosses a cut is two tracks, one per segment; the merge links them (a box in the last frame before the cut and one in
 the first frame after it at IoU ≥ 0.3) and lists the pair for the reviewer if the two sides named it differently
-(`longvideo.boundary_links`, test in `tests/test_longvideo.py`). On this run the five cuts give 6 links: 1 between
-counted tracks, under the same name, and 5 between uncounted motion tracks; no name conflict, and MaxN is unchanged
+(`longvideo.boundary_links`, test in `tests/test_longvideo.py`). On this run the five cuts give 12 links: 1 between
+counted tracks, under the same name, 1 from a counted track to an uncounted one and 10 between uncounted motion tracks; no name conflict, and MaxN is unchanged
 by construction, since no frame belongs to two segments.
 
 *What a person must answer.* The queue lists every track the auditor was unsure of, but only some answers can change
 a count (§4.7). With three stand-in answer rules (accept every queued track, reject every one, follow the auditor),
 `report/paper/scripts/settle_sim.py` asks the rank-1 track, records the answer and recomputes until no queued track
 can change a MaxN or a first arrival, then checks that the numbers equal those of answering the whole queue by the same
-rule; they do on every run under every rule (`report/paper/data/settle/cr7.json`). On the 30 luderick clips the 26
-queued tracks settle after 19–22 answers, and on the 15 discovery clips the 66 queued tracks after 38–48. On the
-53-min deployment (`LONG1_cr7`) the queue holds 1,048 of 1,377 tracks, and every MaxN and first arrival is settled
-after 20 answers (accept all), 28 (follow the auditor) or 54 (reject all). At the 13 s per track measured in §6.1,
-that is 4–12 min of answers for the hour, against 3.8 h for the whole queue.
+rule; they do on every run under every rule (`report/paper/data/settle/cr9.json`). On the 30 luderick clips the 26
+queued tracks settle after 19–22 answers, and on the 15 discovery clips the 70 queued tracks after 44–54. On the
+53-min deployment (`LONG1_cr9`) the queue holds 1,082 of 1,420 tracks, and every MaxN and first arrival is settled
+after 24 answers (accept all), 32 (follow the auditor) or 84 (reject all). At the 13 s per track measured in §6.1,
+that is 5–18 min of answers for the hour, against 3.9 h for the whole queue.
 
 *Per hour of video*, from that one deployment: $15.08 of API calls and 3.5 h of sequential processing (in parallel,
-the longest segment, 57 min; not implemented), plus 4–12 min of a person's answers to settle the counts, plus counting
+the longest segment, 57 min; not implemented), plus 5–18 min of a person's answers to settle the counts, plus counting
 by eye any frame the crowd check marks. Manual BRUV analysis "typically tak[es] several hours per hour of video" (§1).
 This is an estimate of the workload from one video, with answers from stand-in rules.
 
-<div class="tablecap">**Table 3d.** The 53-min deployment as a survey sheet (run `LONG1_cr7`, no ground truth). Times are
+<div class="tablecap">**Table 3d.** The 53-min deployment as a survey sheet (run `LONG1_cr9`, no ground truth). Times are
 video seconds. First arrival is the first frame with a counted track of the label, the other per-species quantity of
 baited-camera work besides MaxN (in the deep-sea studies Ellis and DeMartini, 1995, discuss, it tracked density where
-MAXNO did not); the boat-deck section (0–117.8 s, the crew and one fish lying in a trap) is left out.</div>
+MAXNO did not); the boat-deck section (0–117.8 s, the crew and one fish lying in a trap) is left out; ≥ marks a lower bound from the crowd check (§4.7).</div>
 
 | label (proposal) | MaxN | time of MaxN (s) | first arrival (s) |
 |---|--:|--:|--:|
-| fish (unidentified) | 14 | 417.8 | 207.6 |
+| fish (unidentified) | ≥ 14 | 417.8 | 207.6 |
 | flatfish | 1 | 307.6 | 307.6 |
-| needlefish | 1 | 2,161.8 | 2,161.8 |
-| grunt | 2 | 2,487.6 | 2,455.8 |
-| sand lance | 1 | 2,622.2 | 2,622.2 |
+| grunt | 1 | 1,663.0 | 1,663.0 |
+| saddled seabream | 2 | 2,255.0 | 2,253.8 |
 
 First arrival costs no further call: every run already reports it per label next to MaxN (§4.7), read from the same
 counted tracks.

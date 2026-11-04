@@ -38,10 +38,11 @@ boxes and follows each animal through the video.
   with no false fish.
 - In a crowd one SAM pass follows at most 16 animals, so Spark also counts the peak frame with no boxes. On both
   crowded test frames (crustaceans 4 against hand counts of 15 and 15; fish 16 against 44 and 45) it marks the MaxN
-  "≥" for a person to count. It marks none of the 24 held-out seagrass peak frames.
-- On a 53-minute reef-fish deployment the review queue holds 1,048 uncertain tracks. Asking first only the ones that
-  can still change a number settles every MaxN and first arrival after 20–54 answers (about 4–12 minutes on a phone
-  estimated from the 13 s a track measured on 9 queued tracks) with exactly the numbers of answering all 1,048
+  "≥" for a person to count. It marks none of the 24 held-out seagrass peak frames. On the 53-minute deployment
+  it marks the fish MaxN "≥ 14" (Spark counted 22 and 28 fish on two segment peak frames).
+- On a 53-minute reef-fish deployment the review queue holds 1,082 uncertain tracks. Asking first only the ones that
+  can still change a number settles every MaxN and first arrival after 24–84 answers (about 5–18 minutes on a phone
+  estimated from the 13 s a track measured on 9 queued tracks) with exactly the numbers of answering all 1,082
   (checked with three simulated answer rules: accept all / reject all / follow the auditor).
 - Reviewed counts download as a CSV & in GlobalArchive column order ([details](report/details.md#standard-maxn-export-globalarchive-layout)).
 
