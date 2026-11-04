@@ -1,11 +1,13 @@
 """Cost section of the paper from the spend ledger (every paid call is appended by fishcount/api.py).
-  python3 report/paper/scripts/ledger_summary.py      (reads cache/ledger.jsonl, else the copy in report/paper/data)
+  python3 report/paper/scripts/ledger_summary.py      (reads the development ledger report/paper/data/ledger.jsonl;
+  FISH_LEDGER=<path> reads another one, e.g. the local cache/ledger.jsonl a fresh clone starts empty)
 Windows are fixed by time stamps recorded when each experiment started (UTC epoch seconds)."""
 import glob, json, os, statistics
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-LIVE = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache/ledger.jsonl")
 COPY = os.path.join(ROOT, "report/paper/data/ledger.jsonl")
+LOCAL = os.path.join(ROOT, "cache/ledger.jsonl")
+LEDGER = os.environ.get("FISH_LEDGER") or COPY
 T_HELDOUT = 1793610643      # held-out protocol commit 06f1f01 (git log -1 --format=%ct); held-out runs start after it
 T_FIXED = 1793611190              # fixed-vocabulary baseline launched (date +%s just before the run)
 T_SPARKCOUNT = 1793612367         # Spark-alone counting protocol commit a814c9d; probe and runs after it
@@ -46,10 +48,14 @@ def _status(pattern):
 
 
 def main():
-    rows = [json.loads(l) for l in open(LIVE if os.path.exists(LIVE) else COPY)]
+    rows = [json.loads(l) for l in open(LEDGER)]
+    print(f"ledger: {os.path.relpath(LEDGER, ROOT)} ({len(rows)} rows)")
+    if LEDGER == COPY and os.path.exists(LOCAL) and sum(1 for _ in open(LOCAL)) > len(rows):
+        print(f"WARNING: {os.path.relpath(LOCAL, ROOT)} is longer; copy it over {os.path.relpath(COPY, ROOT)} or set FISH_LEDGER")
     def show(name, rs):
         sam = [r for r in rs if r["kind"] == "sam"]; sp = [r for r in rs if r["kind"] == "spark"]
-        print(f"{name:34s} {len(rs):4d} calls (SAM {len(sam)}, Spark {len(sp)})  ${sum(r['usd'] for r in rs):.3f}")
+        other = len(rs) - len(sam) - len(sp)   # Muse Wonder (§7.6)
+        print(f"{name:34s} {len(rs):4d} calls (SAM {len(sam)}, Spark {len(sp)}{f', Muse Wonder {other}' if other else ''})  ${sum(r['usd'] for r in rs):.3f}")
     rep = [r for r in rows if r.get("note", "").startswith("paper repeat_peak")]
     held = [r for r in rows if r["t"] >= T_HELDOUT and (T_FIXED is None or r["t"] < T_FIXED) and r not in rep]
     fixed = [r for r in rows if T_FIXED <= r["t"] < T_SPARKCOUNT]
