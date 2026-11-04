@@ -219,13 +219,16 @@ frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipe
   accepted tracks overlap the human boxes and the 3 left unsure match none (a timestamp overlay, open water, a very
   faint shape), so no track the reference lacks was accepted (`report/paper/data/qtime/`).
 - Held out: the 24 annotated clips development never used, run once under a protocol committed before the run
-  (`report/paper/heldout_protocol.md`); current code: recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
-  (SAM alone 19, the length rule 19), the same counts as the protocol run; rejecting the queue puts every clip within
-  ±1 at 89.3% recall.
+  (`report/paper/heldout_protocol.md`). The protocol run: recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
+  (SAM alone 19, the length rule 19); with the queue rejected, recall 95.6% and exact on 21. The current code, re-run
+  after these clips were scored, gives the same counts with the queue accepted; rejecting the queue puts every clip
+  within ±1 at 89.3% recall.
 - **Against a hand count of the videos, the pipeline comes closer than the reference boxes.** The author counted MaxN by hand on all 24
   held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed
   error 6; the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
-  the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3).
+  the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3). This does not assume the queue is
+  accepted unseen: answering the 17 queued tracks from judgements a person had already recorded gives the same MaxN
+  on all 24 clips, while rejecting them all falls back to the boxes' summed error of 16.
 - Of the two MaxN misses left, 20190618_9 (9→10) is two real fish the annotators did not box in that frame (one cut
   by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds.
 - **Most "false positives" are unboxed fish.** On the held-out set, 40 of the 153 boxes scored as false were drawn at
