@@ -1,6 +1,7 @@
 /runs/
 __pycache__/
 *.mp4
+!tests/data/*.mp4
 *.mov
 spikes/*/data/
 spikes/*/clips/*.frames/

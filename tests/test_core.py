@@ -261,7 +261,7 @@ class ExportCsv(unittest.TestCase):
 
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
-    CLIP = os.path.join(ROOT, "spikes", "L1", "clips", "nautilus_s004_0_12.mp4")
+    CLIP = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")   # CC BY 4.0, see tests/data/README.md
     SAVED = os.path.join(ROOT, "demo", "runs", "mg2_s004", "result.json")
 
     def test_s004_offline_replay_matches_saved_run(self):
