@@ -482,8 +482,10 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
-                 misslook=False):
-    """misslook: opt-in miss_look (Spark points at animals without a box on a few frames -> SAM box prompts).
+                 misslook=False, crowd_look=True):
+    """crowd_look: crowd_check (on by default, needs audits): marks a MaxN a lower bound when Muse Spark, unprimed,
+    counts clearly more animals in the peak frame. Changes no count.
+    misslook: opt-in miss_look (Spark points at animals without a box on a few frames -> SAM box prompts).
     camo: opt-in camo_look (needs audits): movers no still frame shows, tracked from a SAM box when SAM follows the
     moving spot; their verdict comes from that look, not the audit. Off by default, so frozen evaluations are unchanged.
     refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
@@ -791,11 +793,17 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     m = tracks.metrics(frames, trk, inf["n_frames"], inf["fps"], labels)
     for name, mm in m.items():
         mm["peak_checked"] = any(c["label"] == name and c["frame"] == mm["maxn_frame"] for c in checks)
+    crowd = []
+    if do_audit and crowd_look:
+        try:
+            crowd = crowd_check(run, clip, m, inf["fps"], offline)
+        except FileNotFoundError as e:      # an offline replay of a run made before the crowd check
+            run.stage("verify", f"crowd check skipped: {str(e)[:120]}")
     result = dict(id=rid, source=os.path.basename(src), video=inf, prompts=plist, jobs=[dict(name=j[0], label=j[1], prompt=j[2], tile=j[4]) for j in jobs], scout=sc,
                   tracks={t: dict(v, n=len(v["frames"]), first=min(v["frames"]), last=max(v["frames"]), frames=None) for t, v in trk.items()},
                   verdicts=verdicts, auto_labels=labels, metrics=m, group_metrics=group_metrics(m, inf["fps"]),
                   discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks, duplicates=dups,
-                  frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
+                  crowd_checks=crowd, frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
     if site:
         result["site"] = dict(name=site, entries=site_entries)
     run.save("result.json", result)
@@ -1008,6 +1016,79 @@ def same_group_answer(said, group):
     legs" was kept under "crab")."""
     ws = {norm_label(w) for w in re.sub(r"[^a-z ]", " ", (said or "").lower()).split()}
     return not (ws & _NOT_ANOTHER) and name_group(said) == group
+
+
+CROWD_WORDS = {"fish": "fish (any kind, including sharks and eels)", "crustacean": "crabs, shrimp or other crustaceans",
+               "cnidarian": "corals or sea anemones", "cephalopod": "nautiluses, octopuses or squid",
+               "gastropod": "snails or slugs", "echinoderm": "sea stars, urchins or sea cucumbers", "worm": "worms"}
+CROWD_PROMPT = """The first image is one frame of underwater survey video. The next four images are its four quarters (top-left, top-right, bottom-left, bottom-right), enlarged, so that small animals are easier to see; they show the same animals again, so count each animal once.
+
+Count the {what} in this frame. Count only what you would bet is a separate animal; include animals that are partly hidden, at the edge, small or far away. If they are packed so tightly that you cannot count each one, give your best estimate.
+
+Reply with JSON only: {{"total": <integer>, "estimated": <true if you estimated instead of counting each one>, "reason": "<one short sentence>"}}"""
+CROWD_MIN_EXTRA, CROWD_RATIO = 3, 1.5     # fixed 11/4 before any crowd_check reply was seen
+
+
+def _crowd_reply(text):
+    j = api.parse_json(text)
+    if not isinstance(j, dict) or not isinstance(j.get("total"), int) or j["total"] < 0:
+        raise ValueError("expected {total: int}")
+    return j
+
+
+def crowd_count(img, what, offline, run=None):
+    """Muse Spark's unprimed count of `what` in one frame (BGR), shown whole and as four 2x quarters."""
+    h, w = img.shape[:2]
+    quarters = [img[y:y + h // 2, x:x + w // 2] for y in (0, h // 2) for x in (0, w // 2)]
+    pics = [video.jpg(img, max_w=1280)] + [video.jpg(cv2.resize(q, (w // 2 * 2, h // 2 * 2)), max_w=1280) for q in quarters]
+    args = (api.spark, CROWD_PROMPT.format(what=what), pics)
+    kw = dict(offline=offline, check=_crowd_reply)
+    return _crowd_reply(_counted(run, *args, **kw) if run else args[0](*args[1:], **kw))
+
+
+def crowd_rows(m, fps):
+    """One row per counted animal group (any number of labels) plus each counted label outside the groups:
+    (row name, labels, maxn, peak frame, words for the question)."""
+    out = []
+    for g, gg in group_metrics(m, fps, min_labels=1).items():
+        if gg["maxn"]:
+            out.append((g, gg["labels"], gg["maxn"], gg["maxn_frame"], CROWD_WORDS.get(g, g)))
+    for name, mm in m.items():
+        if not name_group(name) and mm["maxn"]:
+            out.append((name, [name], mm["maxn"], mm["maxn_frame"], short_name(name) or name))
+    return out
+
+
+def crowd_check(run, clip, m, fps, offline):
+    """GPT review 11/4, Table 3e: in crowded peak frames MaxN is a lower bound (DH3 crustaceans 4 against two
+    counters' 15, DH8 fish 16 against 44, s004 hagfish 1 against 20), and nothing in the output said so. SAM 3.1 gives
+    one call 16 object ids and answers only some words, so the tracks cannot be made to see every animal; instead the
+    count is checked. Muse Spark, unprimed (no boxes, no number), counts the row's animals in its peak frame, given
+    the frame and its four enlarged quarters, with the instruction the two human counters had. A row is marked a
+    lower bound when Spark's total is at least CROWD_MIN_EXTRA more than MaxN and at least CROWD_RATIO times it; the
+    review screen then shows MaxN as ">= n" with a "count this frame" card, and the export carries the flag. Spark's
+    number is never used as the count: Table 1c shows its own counts run high."""
+    rows = crowd_rows(m, fps)
+    if not rows:
+        return []
+    imgs = video.frames(clip, {r[3] for r in rows})
+    out = []
+    for name, labels, maxn, f, what in rows:
+        img = imgs.get(f)
+        if img is None:
+            continue
+        try:
+            j = crowd_count(img, what, offline, run)
+        except (ValueError, FileNotFoundError) as e:
+            out.append(dict(row=name, labels=labels, frame=f, maxn=maxn, total=None, lower_bound=False, error=str(e)[:120]))
+            continue
+        tot = j["total"]
+        lb = tot >= maxn + CROWD_MIN_EXTRA and tot >= CROWD_RATIO * maxn
+        out.append(dict(row=name, labels=labels, frame=f, maxn=maxn, total=tot, estimated=bool(j.get("estimated")),
+                        reason=j.get("reason", ""), lower_bound=lb))
+    run.stage("verify", "crowd check (Muse Spark counts each row's peak frame, unprimed): " + ", ".join(
+        f"{c['row']} MaxN {c['maxn']} / Spark {c['total']}{' -> lower bound' if c['lower_bound'] else ''}" for c in out))
+    return out
 
 
 def group_metrics(m, fps, min_labels=2):
@@ -1741,6 +1822,7 @@ if __name__ == "__main__":
     ap.add_argument("--camo", action="store_true", help="also look for movers no still frame shows (frame-to-frame change -> "
                     "Spark sees still and 'what moved' crops -> SAM box; kept when SAM follows the moving spot)")
     ap.add_argument("--misslook", action="store_true", help="Spark points at animals with no box on a few frames -> SAM box prompts")
+    ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
@@ -1758,9 +1840,9 @@ if __name__ == "__main__":
                                offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
-                               misslook=a.misslook)
+                               misslook=a.misslook, crowd_look=not a.no_crowd_look)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
-                         camo=a.camo, misslook=a.misslook)
+                         camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
