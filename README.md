@@ -93,6 +93,11 @@ offline replay of the s004 demo run and the long-video merge.
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
 ([details](report/details.md#long-videos)).
 
+**Fresh runs.** Spark's answers are not fixed, so a run with an empty cache can differ from the cached one by about
+one track: in four empty-cache rehearsals DH11's amphipod was counted once and queued once, and s003 counted 3
+nautiluses in one take and 1 in the other (with the final word ladder that take's own answers count 3; paper,
+*Failure modes of the VLM auditor*).
+
 ## Feedback and next steps
 
 We sent the results to two groups who run baited cameras.

@@ -45,7 +45,7 @@ hackathon.
 | On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | taxa scored as present; reference list from four frames |
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips selected for non-fish animals; presence only; marked from four frames per clip |
 | On six more held-out videos it counts the one animal marked beforehand and no non-animal | §6.3, Table 3c | 6; 1 animal | marked from four frames per clip; four of the six selected for a named non-fish animal; the fixed 16-word baseline finds the same animals |
-| Counts of animals found without being asked match two counters' counts of the peak frame in sparse scenes (exact on 8 of the 12 frames with at most four animals), and the crowd check marks two of the three crowded frames "≥" (4 vs. 15 crustaceans, 16 vs. 44 fish); no mark on 24 held-out luderick peak frames | §4.7, §6.3, Table 3e | 17 + 24 frames | two counters |
+| Counts of animals found without being asked match two counters' counts of the peak frame in sparse scenes (exact on 8 of the 12 frames with at most four animals), and the crowd check marks both crowded frames "≥" (4 vs. 15 crustaceans, 16 vs. 44 fish); no mark on 24 held-out luderick peak frames | §4.7, §6.3, Table 3e | 17 + 24 frames | two counters |
 | The audit design follows measured VLM behaviour: with the judged frame at the strip's edge a faint fish is missed in 11 of 25 calls, in the middle in 0 of 25; a second look with no label and no earlier names removes the false taxon an anchored audit passed | §7.1, §7.5 | 25 calls per layout; 6 development | |
 | Muse Wonder, Meta's larger VLM, given Spark's 101 questions, rejects tiles of a crab a person was certain of, gives 12 unsupported names against Spark's 5, and costs about 4.3× per call | §7.6, Table 7 | 15; 101 questions | same questions, not Wonder's own run |
 | A plain propose–segment–look–revise loop (the SAM 3 Agent pattern) with the same models reaches 3 of 5 held-out marked animals and 5 of 7 development taxa, against 4 of 5 and 7 of 7 | §7.7, Table 8 | 15 | text prompts, full frame, forward only |
@@ -975,20 +975,25 @@ is the final code's count in the same frame) was counted by Jiyul Ahn and by a s
 who had not seen the project's output, each alone, told to count only what they would bet is a separate animal. The
 two counters agree exactly on 13 of the 17 frames and within one on 15. The pipeline's number equals the first person's
 on 8 and is within one on 11 (second person: 7 and 11). All 8 exact matches are on the 12 frames where both people
-counted at most four animals. On the five crowded frames the pipeline's MaxN is a lower bound: DH3's crustaceans 4
+counted at most four animals. On the two crowded frames the pipeline's MaxN is a lower bound: DH3's crustaceans 4
 against 15 and 15, DH8's fish 16 against 44 and 45 in frame 29 (the "fish" pass used all 16 of its object IDs; refilled, the final code's
-MaxN for the clip is 18, reached in frame 30, the next frame), s004's hagfish 1 against 20 and 24; it is above both people only on s004's
+MaxN for the clip is 18, reached in frame 30, the next frame); it is above both people only on s004's
 shrimp (14 against 13 and 13), and on DH5 it lies between them (9; the people counted 3 and 37, the second "every small
 dot as a fish"). The other two misses are small groups: s002's fish 2 against 4 and 4, and s001's nautiluses 4
-against 0 and 0, where the second person noted 4 inside the trap's net.
+against 0 and 0, where the second person noted 4 inside the trap's net. Frame 2 is the first frame with four tracks, and
+three of them are distant shapes on the floor (31×64 to 87×65 px); the same four tracks stay at 4 in all but two of
+frames 2–59, and by frame 57, closer and larger, all four are plain (one inside the trap, three on the floor).
+s004's fish row (1 against 20 and 24) is not a miss: the question asked for fish, the frame's only fish is the
+hagfish, and both people counted the shrimp around it (the second noted "not counting the nautilus").
 
 *The crowd check on these frames* (§4.7; `report/paper/scripts/crowd_check_eval.py --tag cr7`, $0.38 when first run).
 Calling a frame crowded when both people's counts pass the check's own rule (at least MaxN + 3 and 1.5 × MaxN), three
-of the 17 are crowded. The check marks two of them, DH3 (Spark counts 9) and DH8 (35), and misses s004's hagfish ball,
-where Spark, too, sees one animal. It also marks DH5 (21), where the two counters disagree (3 and 37), and no other frame.
+of the 17 pass, but s004's fish frame passes only because the people counted the shrimp (above; the script scores
+from their numbers and still lists it, Spark sees one fish). The check marks both crowded frames, DH3 (Spark counts 9)
+and DH8 (35). It also marks DH5 (21), where the two counters disagree (3 and 37), and no other frame.
 On the 24 held-out luderick clips, where no hand count of the whole video passes the rule, it marks none of the peak
-frames. A reviewer is therefore told to count two of the three frames where the pipeline's number is far too low,
-and is not sent to any frame where it is right; the third (s004's hagfish ball) stays a lower bound.
+frames. A reviewer is therefore told to count both frames where the pipeline's number is far too low,
+and is not sent to any frame where it is right.
 
 <div class="tablecap">**Table 3e.** Peak-frame counts: pipeline (final code, run `cr7`, the count in the frame the
 people counted, frame index of the 60-frame clip), two counters, each alone, and the crowd check (Spark's unprimed count; ≥ = MaxN marked a lower bound).</div>
