@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":false,\"name\":\"none\",\"confidence\":0.8,\"reason\":\"No clear animal, only blurry light spot\"}]", "usage": {"completion_tokens": 690, "prompt_tokens": 543, "total_tokens": 1233, "completion_tokens_details": {"reasoning_tokens": 646}, "prompt_tokens_details": {"cached_tokens": 0}}}
