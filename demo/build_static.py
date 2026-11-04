@@ -31,6 +31,7 @@ HERO_CSS = """
 .hero .sub { margin: 0 0 18px; max-width: 70ch; color: #B9C4CC; font-size: 15px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .card { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; text-align: left; background: #2E363C; border: 1px solid #47525B; border-radius: 6px; padding: 0; color: inherit; cursor: pointer; overflow: hidden; }
+.hero .proof { margin: 16px 0 0; max-width: 90ch; color: #D7DEE3; font-size: 14px; border-left: 3px solid #8FB5EE; padding-left: 10px; }
 .card:hover, .card:focus-visible { border-color: #FF8A5C; }
 .card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #111; }
 .card .body { padding: 10px 12px 12px; }
@@ -85,6 +86,10 @@ def hero(runs):
             f'SAM can act on, and checks SAM’s work frame by frame. Four 12-second clips of deep-sea baited-camera video, '
             f'every model answer computed beforehand. Click a clip to see the counts, the evidence and the review queue.</p>'
             f'<div class="cards">{"".join(cards)}</div>'
+            f'<p class="proof"><b>Measured on 24 held-out fish videos</b> (luderick, not used in development): the pipeline’s '
+            f'MaxN is closer to an independent hand count than the human reference boxes are (summed error 6 against 16, '
+            f'within one fish on all 24). Of 40 randomly drawn boxes the reference called false, none was judged not a fish. '
+            f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
             f'<p class="more">Code, paper and how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
 
 
