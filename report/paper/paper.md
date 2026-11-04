@@ -1684,6 +1684,9 @@ time. Comments in the source record the case that motivated each sentence.
 |------|--------------|--------------|
 | ingest | frame rate; max width; segment length (longer videos split, final) | 5 fps; 1920 px; ≤ 600 s |
 | low light (final) | dark if Lab L median and mean below; then | 15 and 35 (set from the development clips, post hoc); gamma 0.5 + CLAHE clip 2.0 |
+| clean (default after the freeze; `--no-clean`) | ID swap undone when an ID jumps by more than / the handed-over box sits on the other ID's predicted spot within; a track is cut when gone more than and back away from its last box; the audit's largest-box moment skips boxes touching the frame edge | 2.0 box sides / 0.6 side; 10 frames |
+| shadow look (with clean) | counted track darker than the ring around it and without a highlight: box median L − ring median, box 95th-percentile L − ring median; rigid companion above: offset spread, mean distance, height above, size ratio | < −10, ≤ 10; 0.12, ≤ 2.0, ≥ 0.2 sizes, 0.6–1.6 |
+| refill (default after the freeze; `--no-refill`) | a SAM pass that used all 16 IDs is sent again from that frame: window, overlap, calls per window of frames; inside the per-video cap | 100 frames, 2 frames, 4 |
 | zoom | block (2/3 of frame) upscale; cell (1/3) upscale | 1.5×; 3× |
 | discovery | items per clip; words per item; zoom tiles | ≤3; ≤3; ≤3 |
 | motion | analysis scale; threshold; temporal check; blob area; min path length; spots shown; boxes prompted; Spark confidence | 0.5; median + 6·MAD (≥ 8, CIELAB); frame t±2 differ by > 0.8 × threshold; 12–2,500 px (analysis scale); 6 frames; ≤8; ≤5; ≥0.6 |
