@@ -13,6 +13,20 @@ uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct
 - On eleven videos from other studies, run with frozen code under protocols committed before any run, it named all
   five animals on the reference lists written beforehand.
 
+**What the scientist who filmed the nautilus footage said.** Gregory J. Barord, first author of the 2014 nautilus
+survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote back the same afternoon he saw the results:
+
+> Wow, this is so cool to see our nautilus BRUVS being used!!! I think that this would be an incredibly helpful tool
+> for the BRUVS footage to identify nautiluses as well as the other species. Even if it cannot identify them to
+> species, having something like this that could survey what is on the video and collate them, that would streamline
+> the video analyses that we do.
+>
+> — Gregory J. Barord, Ph.D., email of Nov 2, 2026
+
+The two things he asked about next are what the tool is built around: low light (the night clip behind the trap above,
+four nautiluses) and spot checks (every number opens its evidence frame, and doubtful tracks wait in a queue for a
+person). More in [Feedback and next steps](#feedback-and-next-steps).
+
 Technical report with every measurement and what it changed in the design: [report/README.md](report/README.md).
 
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
@@ -216,6 +230,25 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   random and judged with labels hidden, mixed with 10 matched controls (all 10 called fish): 29 fish, 2 part of a fish,
   9 unsure, **0 not a fish**. Corrected precision is 93.7% (clear fish only) to 100% (unsure counted as the fish they
   were drawn on), against 77.2% scored on the boxes. `gapfind` (above) does this check for a whole annotation set.
+
+## Feedback and next steps
+
+We sent the results to two groups who run baited cameras.
+
+- **Gregory J. Barord** (first author of the nautilus survey whose footage we used; quoted above) answered on Nov 2,
+  2026 and asked five questions, which set the next steps:
+  1. *Can it tell individual nautiluses apart, not only that something is a nautilus?* Within a clip, yes: each
+     animal is its own track, and MaxN never counts one animal twice at the same moment. Across videos (the same
+     animal recognised by its shell pattern) is the next thing to build.
+  2. *What size clips does it work with?* Files up to 10 minutes are read at 5 frames per second; longer recordings
+     are split and merged, and one 53-minute deployment has run end to end.
+  3. *How does it curate the data?* Per species MaxN and time of first arrival, each with its frame, a CSV and the
+     GlobalArchive layout, and a short review queue.
+  4. *Will it be developed further?* Yes. We are continuing after the hackathon, starting with his questions.
+  5. *Why these videos?* Openly licensed, deep, dim and full of animals that are not fish: a hard test for a tool
+     asked only for "fish".
+- **Stony Brook University's Institute for Ocean Conservation Science**, which runs baited cameras in Shinnecock Bay
+  with students reviewing the footage, received the tool on Nov 3, 2026 and passed it on to its team.
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0 — PANGAEA doi:10.1594/PANGAEA.926930,

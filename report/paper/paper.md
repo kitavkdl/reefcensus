@@ -254,7 +254,7 @@ the request did not ask about", with three plain-noun search words per item, an 
 it appears, and indirect signs (sediment puffs, moving shadows). The prompt states the segmenter's vocabulary
 constraint explicitly: plain everyday nouns work; species names, colours and words like "animal" return nothing.
 For each proposed item (the prompt allows four; the pipeline keeps the first three), a **word ladder** tries Spark's own short name first (in the final code, every known animal noun of the name, head
-noun first; §10) and then its search words on the full clip, stopping at the first word that tracks; the track keeps Spark's name ("hagfish") while
+noun first; §11) and then its search words on the full clip, stopping at the first word that tracks; the track keeps Spark's name ("hagfish") while
 the word ("eel") is only SAM's handle. If the word tracks fewer animals than Spark expected, the zoom passes above
 run in the cells Spark named; if an indirect sign names a suspected animal, its cell is searched with that word.
 
@@ -446,7 +446,7 @@ every luderick number (Table 4) and every discovery count except s001, which it 
 4, none queued); s004's queue grows from 8 to 10 tracks with the same counts. Lower-case v-numbers (v13–v16) name code
 releases; V1–V6 name the audit variants of §7.1, of which V5 is the v16 audit. All luderick variants in §7.1 are
 saved runs of earlier versions of the same code, re-scored with one scorer. Every number in this paper is produced by
-a script in the repository from saved runs and cached model replies (§10 says which of them a fresh clone can
+a script in the repository from saved runs and cached model replies (§11 says which of them a fresh clone can
 reproduce), except where a sentence says it is a development
 observation. **The six luderick and four nautilus clips are development data.** The design was iterated on them:
 the faint fish in frame 35 of 20190618_9 and the s004 peak frame were used as regression checks for every change,
@@ -1332,6 +1332,26 @@ development clips, 5 and then 6 held-out clips); every number above is for these
 frames, and species names are the VLM's proposals (§7.5). Videos over 10 minutes are split into
 segments and merged (§6.4); one 53-min deployment has been run end to end ($15.08 and 3.5 h in its completed
 attempt), without ground truth, so counts on long videos are measured for cost and robustness only.
+
+# Response from the footage's author and next steps
+
+We sent the nautilus results to G. J. Barord, first author of the survey whose videos S1–S4 are our development clips
+(Barord et al., 2014). His reply, the same afternoon (email, Nov 2, 2026), quoted with its wording unchanged:
+
+> Wow, this is so cool to see our nautilus BRUVS being used!!! I think that this would be an incredibly helpful tool
+> for the BRUVS footage to identify nautiluses as well as the other species. Even if it cannot identify them to
+> species, having something like this that could survey what is on the video and collate them, that would streamline
+> the video analyses that we do.
+
+He named two conditions for using it: low light, and that he would "still need to spot check it here and there". The
+first is the night clip behind the trap (s001), where words fail and motion boxes count four nautiluses (§4.4, §6.3);
+the second is the design itself, which shows the evidence frame behind every number and holds doubtful tracks in a
+queue for a person (§4.7). His questions set the next steps: recognising the same nautilus across videos (by shell
+pattern), which the pipeline does not do (within a clip, MaxN never counts one animal twice at the same moment);
+running full deployments rather than 12-s clips, so far done once, for cost and robustness only (§8); and continued
+development after the hackathon with researchers who film these surveys. Stony Brook University's Institute for
+Ocean Conservation Science, which runs baited cameras in Shinnecock Bay, received the tool on Nov 3, 2026 and passed
+it on to its team.
 
 # Ethics and broader impact
 
