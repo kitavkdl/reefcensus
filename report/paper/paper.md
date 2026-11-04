@@ -279,7 +279,10 @@ mostly outside every box any word pass produced (boxes dilated by ±3 frames). U
 and largest first, are shown to Spark as one sheet: each spot at three moments (early, at its median-size frame, late)
 at the same zoom. Spark answers per spot whether it is an animal, with a one-word name and a confidence; it is told
 that a sediment cloud changes shape across crops while an animal keeps its shape. Up to five spots it calls animals
-(confidence ≥ 0.6) become **box prompts** for SAM 3.1, with no word at all; the box is grown by 40%, snapped to an
+(confidence ≥ 0.6) become **box prompts** for SAM 3.1, with no word at all. The frame difference splits a large, slow animal
+into front and back edges, so a spot's box can sit on half the animal and open water; before the prompt the box is widened
+to the one piece that differs from a local background (the median of frames 4–10 away) and overlaps it most, when the box
+covers less than half of that piece and the piece is at most 2.5 times the box (the **whole-animal seed box**). The box is grown by 40%, snapped to an
 8-pixel grid and kept two pixels inside the frame (a box touching the frame edge is rejected by the API). Motion
 alone never counts anything: it only says where to look.
 
@@ -465,7 +468,7 @@ under SAM's word ("eel", "shrimp"). Further ablations of discovery components co
 
 **Protocol.** Tables 1, 1c, 1d, 1e, 3b, 3c and 3e report the **final code** (the repository's code; re-run tag `cr7`,
 which reproduces every count of the previous re-run `cr6` exactly; §11 gives the commands). Table 2 and §7.3 use the nautilus
-clips re-run after the second motion look was added (`cr8_*`; every MaxN the same as `cr7`). The audit variants of §7.1
+clips re-run after the second motion look and the whole-animal seed box were added (`cr9_*`; every MaxN the same as `cr7`). The audit variants of §7.1
 (V1–V6) are earlier runs of the same code, kept as a variant study. V6 differs from v16 in two
 places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6); it reproduces
 every v16 count exactly. Luderick run eval7 was made after the first change and before the second, which cannot act on
@@ -791,7 +794,7 @@ counted, and was judged unsure (`data/noaa_heldout/crops_answers.txt`). No count
 
 ## Finding what was not asked for
 
-<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr9_s001`, `cr8_s003`, `cr8_s004`; s002 has no motion track, so the second motion look does not run and `cr7_s002` is the current result). Person = non-expert,
+<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr9_s001` to `cr9_s004`). Person = non-expert,
 taxon-level list from four frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
@@ -1189,7 +1192,7 @@ neither help nor hurt localisation, as expected since they only keep or remove w
 
 ## Where the counts come from
 
-Across the four discovery clips the final runs (`cr9_s001`, `cr7_s002`, `cr8_s003`, `cr8_s004`) produced 50 tracks after merging: 33 from discovered words and
+Across the four discovery clips the final runs (`cr9_s001` to `cr9_s004`) produced 50 tracks after merging: 33 from discovered words and
 their zoom or reversed passes, 15 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
 queued). Ten tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
 A3 judged 10 nested pairs (9 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
@@ -1525,7 +1528,7 @@ shadow" look; refill re-runs a SAM pass that used all 16 of its object ids from 
 head noun first; x264 is capped to its AVX2 code on CPUs with AVX-512, whose AVX-512 code encodes some clips to other
 bytes so that the cache, keyed by those bytes, missed; a mid-confidence discovered track is renamed to the animal the
 discovery step named when an unprimed second look confirms it; the crowd check; the review-queue order; cut links for
-long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr8`; `cr8`, after the second motion look, moved no
+long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr9`; `cr8`, after the second motion look, and `cr9`, after the whole-animal seed box, moved no
 row, group MaxN or discovery on the 15 nautilus and discovery runs, nor any luderick score; logs
 `report/paper/data/run_cr*.log`, row-by-row comparison `report/paper/scripts/compare_tags.py`). From the protocol runs
 to the final code, the counts that moved are these, each reported beside its protocol-run number:
