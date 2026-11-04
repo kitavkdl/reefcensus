@@ -17,10 +17,10 @@ REPO = "https://github.com/kitavkdl/reefcensus"
 # Captions are the measured facts from README "Discovery" (development clips, Barord et al. 2014).
 ORDER = ["cr11_s004", "cr11_s003", "cr11_s002", "cr11_s001"]
 CAPTION = {
-    "cr11_s004": "A shrimp swarm, a hagfish and a nautilus at the bait. SAM found nothing for “hagfish”; Spark tried “eel” and it locked on.",
-    "cr11_s003": "Three nautiluses, one partly behind another, counted as three.",
+    "cr11_s004": "A shrimp swarm & a hagfish & a nautilus at the bait. SAM found nothing for “hagfish”; Spark tried “eel” and it locked on.",
+    "cr11_s003": "Three nautiluses (one partly behind another) counted as three.",
     "cr11_s002": "A nautilus and a small red crab nobody asked for.",
-    "cr11_s001": "Night, behind a wire trap. No word found them; moving pixels did. 4 counted; a paler 5th Spark was not sure of goes to a person. Its evidence frame is the first with 4, where three are distant shapes on the floor; near the end of the clip all four are plain.",
+    "cr11_s001": "Night behind a wire trap. No word found them; moving pixels did. 4 counted; a paler 5th Spark was not sure of goes to a person. Its evidence frame is the first with 4 where three are distant shapes on the floor; near the end of the clip all four are plain.",
 }
 SHOW = {"cr11_s004": "caridean shrimp", "cr11_s003": "chambered nautilus",
         "cr11_s002": "small red crab", "cr11_s001": "chambered nautilus"}
@@ -82,16 +82,16 @@ def hero(runs):
     return (f'<style>{HERO_CSS}</style><section class="hero" aria-labelledby="heroTitle">'
             f'<h2 id="heroTitle">Asked to count <span class="a">fish</span>. '
             f'It also found the <span class="f">animals nobody asked for</span>.</h2>'
-            f'<p class="sub">SAM 3.1 only sees what it is told to look for. Muse Spark looks first, names what is there in words '
-            f'SAM can act on, and checks SAM’s work frame by frame. Four 12-second clips of deep-sea baited-camera video, '
-            f'every model answer computed beforehand. Click a clip to see the counts, the evidence and the review queue.</p>'
+            f'<p class="sub">SAM 3.1 only sees what it is told to look for. Muse Spark looks first & names what is there in words '
+            f'SAM can act on, then checks SAM’s work frame by frame. Four 12-second clips of deep-sea baited-camera video '
+            f'with every model answer computed beforehand. Click a clip to see the counts & the evidence & the review queue.</p>'
             f'<div class="cards">{"".join(cards)}</div>'
-            f'<p class="proof"><b>On another dataset (24 held-out luderick fish videos, not used in development)</b>, hand-counted '
-            f'separately by two people: the pipeline’s MaxN is closer to the hand count than the human reference boxes are, '
+            f'<p class="proof"><b>On another dataset (24 held-out luderick fish videos not used in development)</b> hand-counted '
+            f'separately by two people, the pipeline’s MaxN is closer to the hand count than the human reference boxes are: '
             f'summed error 6 against 16 for the first count (21 of 24 counted blind) and 2 against 14 for a second person who '
-            f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false, none was judged not a fish. '
+            f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false none was judged not a fish. '
             f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
-            f'<p class="more">Code, paper and how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
+            f'<p class="more">Code & paper & how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
 
 
 def static_data(rid, eff):
@@ -164,7 +164,7 @@ def main():
         raise SystemExit("index.html changed, update build_static.py: app.js script tag not found")
     html = html.replace('<script src="static/app.js"></script>', '<script src="static/review.js"></script>\n<script src="static/app.js"></script>', 1)
     note = (f'<p id="staticNote" style="margin:0;padding:6px 16px;font-size:13px;background:#fff6e5;color:#5a4300">'
-            f'Interactive replay of four real runs — click a clip. Every model answer is saved, so nothing here calls a model. '
+            f'Interactive replay of four real runs — click a clip. Every model answer is saved so nothing here calls a model. '
             f'Answer the review queue and the counts, ranges and CSV downloads are recomputed in your browser (kept until you reload). '
             f'To run your own video: <a href="{REPO}">{REPO}</a></p>')
     html = html.replace("<body>", "<body>\n" + note + "\n" + hero(runs), 1)
