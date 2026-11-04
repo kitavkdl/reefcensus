@@ -729,7 +729,7 @@ frames per clip, made before looking at outputs.</div>
 | s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | nautilus 4, none queued (final code, clip brightened); v16 on the original clip: 2 (+1 queued) | motion residual; on the original clip every word 0 frames |
 | s002 | nautilus 1; red crustaceans 2 | nautilus 1; small red crab 1 (+2 "fish (unidentified)" queued) | "nautilus"; crab via "shrimp" in a 3× cell, renamed by A1 |
 | s003 | nautilus 3–4 | nautilus 3 | "nautilus" forward, reversed and zoomed |
-| s004 | nautilus 1; shrimp 10+; hagfish 1 | nautilus 1; shrimp 15 (A1: "caridean shrimp" 12, "unidentified" 3); hagfish 1 | hagfish via "eel", renamed; "shrimp"; 2 shrimp via motion |
+| s004 | nautilus 1; shrimp 10+; hagfish 1 | nautilus 1; shrimp 15 (A1: "caridean shrimp" 14, "unidentified" 2; frozen run 12 + 3); hagfish 1 | hagfish via "eel", renamed; "shrimp"; 2 shrimp via motion |
 
 How each taxon was reached, from the run logs. **s001**: "nautilus", "shell" and "snail" track 0 frames on the full
 frame, two blocks and two 3× cells of this night clip; the motion residual finds moving spots that Spark calls
@@ -756,7 +756,7 @@ has no word), under the one-word name Spark gave the moving spot.</div>
 | non-fish labels counted that match nothing on the person's list | 0 | 0 | 1 (s003 "shrimp" 2) | **0** |
 | s001 nautilus (person: 4 or more) | 0 | 0 | 3 | 2 (+1 queued); final code, brightened: 4 |
 | s003 nautilus (person: 3–4) | 0 | 3 | 4 | 3 |
-| s004 shrimp (person: 10 or more) | 0 | 15 | 18 | 15 (12 + 3 unidentified, one frame) |
+| s004 shrimp (person: 10 or more) | 0 | 15 | 18 | 15 (caridean 14 at frame 29 + unidentified 2; frozen run 12 + 3 in one frame) |
 | "fish" counted (the person listed non-fish animals only) | s002: 2 | s002: 2 | s002: 2; s004: 1 (motion, "small fish swimming away") | s002: 2, both queued; s004: 0 |
 
 **The naming step finds the taxa; the audits fix names and counts.** Spark proposed nine items over the four clips.
@@ -769,8 +769,9 @@ other rows. Without them the hagfish is counted as "eel" and the crab as "shrimp
 label; with them both carry the animal Spark named. With the motion residual but no audits, the s003 trap mesh is counted as two "shrimp" (a
 false taxon), and A2 removes it. In s004 the shrimp MaxN, counted over both shrimp labels
 in the same frame, drops from 18 to 15: A3 found six nested pairs that were one shrimp counted twice, and A4 removed a
-box on the trap's pipe; these act in different frames, so the peak falls by three, not seven. A1 also splits those 15 into "caridean shrimp" (MaxN 12) and "shrimp (unidentified)" (3),
-which peak together in frame 54; a per-label output shows 12 (the final code adds an animal-group row,
+box on the trap's pipe; these act in different frames, so the peak falls by three, not seven. A1 also splits those 15 into "caridean shrimp" and "shrimp (unidentified)": 12 and 3 peaking together in frame 54 in
+the frozen run, 14 and 2 on the current code (§Reproducibility, *Defaults added after the freeze*); a per-label output
+shows only the larger name (the final code adds an animal-group row,
 "crustacean 15", to the result, CSV and review screen), but that drop is the label
 fragmentation of §7.5, not a correction. The person's "10 or more" from four frames cannot say whether 15 is right, so
 we report the change without scoring it. The audits also cost one animal: in s001, the third motion nautilus has A1
@@ -923,7 +924,7 @@ data on the frozen code 42 calls ($0.11), empty-cache live rehearsals of DH11 an
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the freeze with the re-runs of every frozen
-evaluation 601 calls ($4.33) and the re-runs of the 53-min video 269 calls ($5.67), for a ledger total of $44.68 over 3,269 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+evaluation and the demo runs 620 calls ($4.53) and the re-runs of the 53-min video 269 calls ($5.67), for a ledger total of $44.88 over 3,288 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate

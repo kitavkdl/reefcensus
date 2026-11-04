@@ -3267,3 +3267,22 @@
 {"t": 1793753017.3982193, "kind": "spark", "usd": 0.0055969999999999995, "note": "in=1897 out=759"}
 {"t": 1793753050.9050725, "kind": "spark", "usd": 0.01390225, "note": "in=4281 out=2012"}
 {"t": 1793753063.8760374, "kind": "spark", "usd": 0.00666925, "note": "in=1881 out=1016"}
+{"t": 1793770324.6665936, "kind": "spark", "usd": 0.00717225, "note": "in=2127 out=1062"}
+{"t": 1793770331.8824868, "kind": "sam", "usd": 0.012, "note": "clip.mp4:nautilus"}
+{"t": 1793770333.933439, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793770342.6672223, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shell"}
+{"t": 1793770349.569592, "kind": "sam", "usd": 0.012, "note": "clip.mp4:squid"}
+{"t": 1793770358.4916713, "kind": "sam", "usd": 0.012, "note": "tile_d0z-right.mp4:nautilus"}
+{"t": 1793770360.4056082, "kind": "sam", "usd": 0.012, "note": "tile_s1-bottom.mp4:shell"}
+{"t": 1793770366.1551757, "kind": "sam", "usd": 0.012, "note": "tile_d0z-right.mp4:shell"}
+{"t": 1793770374.2123423, "kind": "sam", "usd": 0.012, "note": "tile_d0c-right.mp4:nautilus"}
+{"t": 1793770385.1808734, "kind": "sam", "usd": 0.012, "note": "tile_d0c-right.mp4:shell"}
+{"t": 1793770393.2095664, "kind": "sam", "usd": 0.012, "note": "tile_d0c-right.mp4:squid"}
+{"t": 1793770405.320401, "kind": "spark", "usd": 0.00683175, "note": "in=1569 out=1146"}
+{"t": 1793770419.1340017, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<31f>1<|box;x1=1480;y1=512;x2=1624;y2=656;w=1920;h=1080|>"}
+{"t": 1793770431.220897, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<45f>1<|box;x1=1144;y1=584;x2=1360;y2=712;w=1920;h=1080|>"}
+{"t": 1793770442.0061424, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<30f>1<|box;x1=664;y1=496;x2=760;y2=616;w=1920;h=1080|>"}
+{"t": 1793770453.7016218, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<9f>1<|box;x1=1168;y1=632;x2=1304;y2=736;w=1920;h=1080|>"}
+{"t": 1793770461.5830545, "kind": "spark", "usd": 0.0051945, "note": "in=895 out=959"}
+{"t": 1793770468.147983, "kind": "spark", "usd": 0.0041535, "note": "in=902 out=712"}
+{"t": 1793770475.1173775, "kind": "spark", "usd": 0.004758500000000001, "note": "in=876 out=862"}
