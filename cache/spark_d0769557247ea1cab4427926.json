@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T191\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"Blurry white blob, no shrimp shape\"}]", "usage": {"completion_tokens": 593, "prompt_tokens": 527, "total_tokens": 1120, "completion_tokens_details": {"reasoning_tokens": 551}, "prompt_tokens_details": {"cached_tokens": 0}}}

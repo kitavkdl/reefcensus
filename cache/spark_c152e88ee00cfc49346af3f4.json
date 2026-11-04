@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T281\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.3,\"reason\":\"No clear snail morphology visible\"}]", "usage": {"completion_tokens": 1246, "prompt_tokens": 527, "total_tokens": 1773, "completion_tokens_details": {"reasoning_tokens": 1207}, "prompt_tokens_details": {"cached_tokens": 0}}}

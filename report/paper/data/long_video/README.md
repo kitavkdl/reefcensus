@@ -121,7 +121,24 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
   the paper, figures or demo.
 
 
-## Final run (`LONG1_cr7`, 11/4 08:10-08:36 UTC)
+## Final run (`LONG1_cr9`, 11/4 15:57-18:48 ET)
+- Same six segment clips, final code (the paper's `cr9` code plus the whole-video crowd-check merge, 6e47a24), every
+  cached answer reused (`ONE_SEG=1 report/paper/scripts/rerun_long1_cr.py LONG1_cr9`, one process per segment; log
+  `run_cr9.log`, merged result `result_cr9.json`). Live cost $5.65 in the segment status files (S2 $0.72, S3 $1.74,
+  S4 $1.75, S5 $1.25, S6 $0.19): the second motion look and the whole-animal seed box ask for new crops.
+- Merged MaxN: fish (unidentified) 14 @ 418 s, human 3 @ 23 s, person (unidentified) 1 @ 69 s, flatfish 1 @ 308 s,
+  saddled seabream 2 @ 2255 s, grunt 1 @ 1663 s. 1,420 tracks; 12 links across the five cuts, no name conflict. The
+  fish row is a lower bound: two segment crowd checks counted 22 and 28 fish against the whole video's 14.
+- Names on single late tracks follow the audit sheet a track lands on: the new motion tracks re-numbered the sheets,
+  and the same tracks with the same boxes that `LONG1_cr7` named needlefish, sand lance and grunt (S5) were answered
+  "unknown" this time, while two S5 tracks were named saddled seabream. Each is a queued track a person confirms.
+  The merge is deterministic (same result under PYTHONHASHSEED 1 and 2).
+- Queue: 1,082 of 1,420 tracks; `settle_sim.py cr9` settles every MaxN and first arrival after 24 answers (accept
+  all), 32 (follow the auditor) or 84 (reject all), the same numbers as answering the whole queue.
+- Memory: peak 8.3 GB per segment process. The first attempt died in a global out-of-memory kill while other jobs held
+  the machine's memory (not bundled).
+
+## Earlier final run (`LONG1_cr7`, 11/4 08:10-08:36 UTC)
 - Same six segment clips, final code (the code of the paper's `cr7` runs), every cached answer reused
   (`report/paper/scripts/rerun_long1_cr.py LONG1_cr7`; log `run_cr7.log`, merged result `result_cr7.json`). Live cost
   $0.70: $0.16 in the segment status files of the completed attempt, plus $0.54 (a SAM refill call and one Spark call)

@@ -1,0 +1,8 @@
+# LONG1_cr9, 11/4 ET. One process per segment (ONE_SEG=1). Attempts: 15:30 global OOM in S2; 15:57 restart from S1, S1-S5 done, S6 stopped by a DNS failure (18:28); 18:29 resume with S1 re-run on 6e47a24; merge failed on a None label (longvideo.py, fixed) and was re-run 18:48 (same result under PYTHONHASHSEED 1 and 2).
+S1 start 0 n 2658 billed $0.000
+S2 start 2658 n 2658 billed $0.723
+S3 start 5316 n 2658 billed $1.736
+S4 start 7974 n 2658 billed $1.750
+S5 start 10632 n 2658 billed $1.248
+S6 start 13290 n 2655 billed $0.191
+merged: {'fish (unidentified)': 14, 'flatfish': 1, 'grunt': 1, 'human': 3, 'person (unidentified)': 1, 'saddled seabream': 2}

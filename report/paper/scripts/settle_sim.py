@@ -44,18 +44,19 @@ def run_one(res):
 def main(paths):
     rows = {}
     for p in paths:
-        rows["LONG1_cr7" if p.endswith("result_cr7.json") else os.path.basename(os.path.dirname(p))] = run_one(json.load(open(p)))
+        b = os.path.basename(p)
+        rows["LONG1_" + b[7:-5] if b.startswith("result_cr") else os.path.basename(os.path.dirname(p))] = run_one(json.load(open(p)))
     return rows
 
 
 if __name__ == "__main__":
     tags = sys.argv[1:] or ["cr7"]
     od = os.path.join(ROOT, "report", "paper", "data", "settle"); os.makedirs(od, exist_ok=True)
-    L1 = f"{ROOT}/runs/LONG1_cr7/result.json"
-    L1B = f"{ROOT}/report/paper/data/long_video/result_cr7.json"   # bundled copy for a clone without runs/
     for tag in tags:
+        L1 = f"{ROOT}/runs/LONG1_{tag}/result.json"     # the 53-min run of this tag (cr7, cr9), if there is one
+        L1B = f"{ROOT}/report/paper/data/long_video/result_{tag}.json"   # bundled copy for a clone without runs/
         paths = sorted(glob.glob(f"{ROOT}/runs/{tag}_*/result.json") + glob.glob(f"{ROOT}/runs/DH*_{tag}/result.json")
-                       + ([L1 if os.path.exists(L1) else L1B] if tag == "cr7" else []))
+                       + ([L1 if os.path.exists(L1) else L1B] if os.path.exists(L1) or os.path.exists(L1B) else []))
         paths = [p for p in paths if "__S" not in p]
         rows = main(paths)
         out = f"{tag}.json"

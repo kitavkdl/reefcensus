@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T284\",\"is_target\":false,\"species\":\"unknown\",\"confidence\":0.35,\"reason\":\"Dark lump on seabed, not seabed\"}]", "usage": {"completion_tokens": 1392, "prompt_tokens": 537, "total_tokens": 1929, "completion_tokens_details": {"reasoning_tokens": 1349}, "prompt_tokens_details": {"cached_tokens": 0}}}

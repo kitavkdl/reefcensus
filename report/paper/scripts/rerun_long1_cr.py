@@ -18,6 +18,8 @@ for k in range(1, 7):
     if not os.path.exists(os.path.join(pipeline.RUNS, srid, "result.json")):
         pipeline.run_pipeline(sp, srid, do_scout=False, prompts=["fish"], do_discover=True, do_zoom=True, max_usd=8,
                               lowlight="off")
+        if os.environ.get("ONE_SEG"):   # 11/4: one segment per process keeps the peak to one segment's (global OOM at 6.6G)
+            sys.exit(3)
     # 11/3: the disk filled during LONG1_cr2. A finished segment's SAM chunks (seg_*.mp4, cut again from the clip on
     # any re-run) go, and its clip.mp4, a byte copy of the source segment, becomes a hard link to it.
     sd = os.path.join(pipeline.RUNS, srid)

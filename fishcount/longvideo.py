@@ -157,8 +157,10 @@ def merge(rid, src_name, segs, fps, out_dir=None):
             heads.setdefault(h, []).append(name)
     R["name_variants"] = [sorted(v) for v in heads.values() if len(v) > 1]
     for b in R["boundary_links"]:       # one animal across a cut, named differently on each side: a person picks
+        if not b["name_conflict"]:      # an uncounted side has label None (11/4 LONG1_cr9: sorted() failed on it)
+            continue
         pair = sorted({b["before_label"], b["after_label"]})
-        if b["name_conflict"] and pair not in R["name_variants"]:
+        if pair not in R["name_variants"]:
             R["name_variants"].append(pair)
     R["frames"] = {str(f): ks for f, ks in sorted(frames.items())}
     with open(os.path.join(d, "result.json"), "w") as f:

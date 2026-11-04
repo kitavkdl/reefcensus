@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":true,\"name\":\"fish\",\"confidence\":0.6,\"reason\":\"Faint elongated shape persists across frames\"}]", "usage": {"completion_tokens": 695, "prompt_tokens": 543, "total_tokens": 1238, "completion_tokens_details": {"reasoning_tokens": 653}, "prompt_tokens_details": {"cached_tokens": 0}}}

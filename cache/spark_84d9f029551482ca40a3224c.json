@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T1\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.9,\"reason\":\"Clear fish face with eyes mouth\"}]", "usage": {"completion_tokens": 360, "prompt_tokens": 526, "total_tokens": 886, "completion_tokens_details": {"reasoning_tokens": 320}, "prompt_tokens_details": {"cached_tokens": 0}}}

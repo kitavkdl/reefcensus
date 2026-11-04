@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":false,\"name\":\"none\",\"confidence\":0.8,\"reason\":\"No clear animal visible in crops\"}]", "usage": {"completion_tokens": 549, "prompt_tokens": 543, "total_tokens": 1092, "completion_tokens_details": {"reasoning_tokens": 508}, "prompt_tokens_details": {"cached_tokens": 0}}}
