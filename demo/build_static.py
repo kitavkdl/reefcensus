@@ -106,10 +106,14 @@ def main():
         json.dump(server.effective(rid), open(os.path.join(OUT, "api", "runs", f"{rid}.json"), "w"))
         os.makedirs(os.path.join(OUT, "api", "runs", rid))
         open(os.path.join(OUT, "api", "runs", rid, "export.csv"), "w").write(server.export_csv(rid))
+        open(os.path.join(OUT, "api", "runs", rid, "export_globalarchive.csv"), "w").write(
+            server.maxn_export.to_csv(server.effective(rid), None))
         shutil.copytree(os.path.join(SRC, rid), os.path.join(OUT, "runs", rid))
     js = open(os.path.join(ROOT, "web", "app.js")).read()
     subs = [('api("/api/runs")', 'api("api/runs.json")'),
             ("`/api/runs/${encodeURIComponent(id)}/export.csv`", "`api/runs/${encodeURIComponent(id)}/export.csv`"),
+            ("`/api/runs/${encodeURIComponent(id)}/export_globalarchive.csv`",
+             "`api/runs/${encodeURIComponent(id)}/export_globalarchive.csv`"),
             ("api(`/api/runs/${encodeURIComponent(id)}`)", "api(`api/runs/${encodeURIComponent(id)}.json`)"),
             ("`/runs/", "`runs/")]
     for a, b in subs:
