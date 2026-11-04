@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T12\",\"is_target\":true,\"species\":\"worm\",\"confidence\":0.4,\"reason\":\"Persistent reddish elongated shape suggests worm\"}]", "usage": {"completion_tokens": 1021, "prompt_tokens": 542, "total_tokens": 1563, "completion_tokens_details": {"reasoning_tokens": 980}, "prompt_tokens_details": {"cached_tokens": 0}}}
