@@ -1,8 +1,8 @@
 # reefcensus — count what you asked for, find what you didn't
 
 reefcensus counts animals in underwater survey video. Say what to count; get MaxN for each animal (the most animals
-of a kind on screen at once, the standard count of baited-camera surveys) and time of first arrival **with an evidence
-frame behind every number**, and a short queue of uncertain tracks for a person to confirm.
+of a kind on screen at once, the standard count of baited-camera surveys) and time of first arrival (when the first one shows up) **with an evidence
+frame behind every number** (the frame where that count is seen, boxes drawn), and a short queue of uncertain tracks for a person to confirm.
 Built on Meta's SAM 3.1 and Muse Spark via the Meta Model API.
 
 **Demo, no key or install:** https://kitavkdl.github.io/reefcensus/ (4 finished runs with their evidence frames and
@@ -25,10 +25,13 @@ SAM 3.1 boxes and follows each animal through the video.
   are still distant shapes; near the end of the clip all four are plain) (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
-- On 24 held-out seagrass videos of 1–12 s (remote underwater video, not baited-camera footage), hand-counted separately by the author (not a marine biologist) and by a friend
+- On 24 held-out (never used while building) seagrass videos of 1–12 s (remote underwater video, not baited-camera footage), hand-counted separately by the author (not a marine biologist) and by a friend
   who had never seen the project's output, its summed MaxN error is 6 and 2; the human reference boxes' (drawn to train a luderick detector, not to count MaxN) is 16 and 14 ([details](report/details.md#how-well-it-counts-measured)).
 - On a NOAA reef-fish set from the Gulf of Mexico, hand-counted before the run, the four clips without fish come back 0,
   with no false fish.
+- In a crowd one SAM pass follows at most 16 animals, so Spark also counts the peak frame with no boxes: on both
+  crowded test frames (crustaceans 4 against hand counts of 15 and 15, fish 16 against 44 and 45) it marks the MaxN
+  "≥" for a person to count, and it marks none of the 24 held-out seagrass peak frames.
 - On a 53-minute reef-fish deployment the review queue holds 1,048 uncertain tracks, but asking first only the ones
   that can still change a number settles every MaxN and first arrival after 20–54 answers (about 4–12 minutes on a
   phone, estimated from the 13 s a track measured on 9 queued tracks), with exactly the numbers of answering all 1,048 (checked with three simulated answer rules: accept all, reject all, follow the auditor).
