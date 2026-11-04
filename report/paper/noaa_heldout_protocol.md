@@ -35,9 +35,8 @@ It also records any non-fish row counted on these fish-survey clips (false disco
   before the run beyond checking that each file decodes (frame count and duration).
 
 ## Run (one each, reported whatever it shows)
-- **Code**: frozen at the commit that reverts `a912bc8` (the word-ladder change was dropped on 11/4, before any run of
-  this set). Only the prep and scoring scripts may be added before the run; neither changes the pipeline.
-- **When**: after the demo video is recorded (owner's decision, 11/4).
+- **Code**: frozen at the commit that adds this file. Only the prep and scoring scripts may be added before the run;
+  neither changes the pipeline.
 - **Settings**: the discovery settings of Table 2 and the 53-min run, on the final defaults:
   `python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom --id N<k>_eval`.
 - **Budget**: `FISH_BUDGET` = ledger total at start + $4 (expected about $2: 8 clips × $0.22–0.27).
