@@ -366,18 +366,27 @@ function drawQueue() {
       const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); review(it.track, input.value); } },
         input, el("button", { class: "btn small" }, "Save name"));
       body.push(el("div", { class: "acts" },
-        el("button", { class: "btn small", onclick: () => review(it.track, guess) }, `Yes, ${guess}`),
+        el("button", { class: "btn small", onclick: () => review(it.track, it.yes_label || guess) }, `Yes, ${guess}`),
         el("button", { class: "btn ghost small", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); } }, "Rename"),
         el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")), form);
     }
-    return el("div", { class: `qitem${it.reviewed ? " done" : ""}` },
+    if (it.rank) body.unshift(el("div", { class: "decides" }, "Your answer can change a count"));
+    return el("div", { class: `qitem${it.reviewed ? " done" : ""}`, "data-rest": it.reviewed || it.rank ? null : "1" },
       el("img", { src: thumb, alt: `Crop of track ${it.name}`, loading: "lazy", onclick: () => zoom(trio, `${it.name}: ${it.reason || ""}${it.has_trio ? " (the three crops Spark saw: early, middle, late)" : ""}`) }),
       el("div", {}, ...body));
   });
+  // settle.py: only tracks whose answer can still move a MaxN or a first arrival come first; the server recomputes after
+  // every answer, so accepting one can drop others. The rest cannot change any count as things stand.
+  const rest = items.filter((x) => x.dataset.rest), head = items.filter((x) => !x.dataset.rest);
+  const left = run.n_decisive || 0;
   $("queuePanel").replaceChildren(
     el("h2", {}, "Needs a person",
       el("small", {}, total ? `${run.n_flagged} of ${total} tracks: Spark was unsure, or said it is not the animal.` : "Spark did not audit this run.")),
-    ...(items.length ? items : [el("p", { class: "empty" }, total ? `Nothing to check. Spark was confident on all ${total} tracks.` : "")]));
+    run.n_flagged ? el("p", { class: "settle" }, left
+      ? [el("b", { class: "num" }, left), ` of them can still change a MaxN or a first arrival; they are first, from the frame with the highest possible count. Each answer can make others irrelevant.`]
+      : "Every MaxN and first arrival is settled; the tracks left cannot change a count.") : null,
+    ...(items.length ? head : [el("p", { class: "empty" }, total ? `Nothing to check. Spark was confident on all ${total} tracks.` : "")]),
+    rest.length ? el("details", { class: "rest" }, el("summary", {}, `${rest.length} more that cannot change a count now (names, or a second opinion)`), ...rest) : null);
 }
 
 async function review(track, label) {

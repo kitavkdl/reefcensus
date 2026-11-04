@@ -135,6 +135,9 @@ button, input, select { font: inherit; color: inherit; }
 .qitem .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .qitem.done { opacity: .75; }
 .qitem .set { font-size: 14px; font-weight: 600; }
+.qitem .decides { font-size: 12px; font-weight: 700; color: var(--found); text-transform: uppercase; letter-spacing: .03em; }
+.settle { font-size: 14px; margin: 0 0 var(--s3); }
+details.rest summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: var(--s3) 0; }
 .qitem .rename { display: flex; gap: 4px; margin-top: 6px; }
 .qitem .rename input { flex: 1; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 3px; min-width: 0; }
 .export { align-self: flex-start; color: var(--graphite); }

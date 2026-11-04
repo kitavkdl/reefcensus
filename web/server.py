@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, maxn_export, pipeline, sitememory, tracks, video
+from fishcount import api, maxn_export, pipeline, settle, sitememory, tracks, video
 
 ROOT, WEB = api.ROOT, os.path.dirname(os.path.abspath(__file__))
 RUNS, UPLOADS = pipeline.RUNS, os.path.join(api.ROOT, "clips")
@@ -119,6 +119,8 @@ def effective(rid):
         row = gm.get(c["row"]) or (m.get(c["labels"][0]) if len(c["labels"]) == 1 else None)
         if row is not None and row.get("maxn") == c["maxn"]:      # a person's edit since the run changes the count: drop the mark
             row.update(lower_bound=True, crowd_total=c["total"], crowd_frame=c["frame"])
+    # tracks whose answer can still change a MaxN or a first arrival (fishcount/settle.py), ranked; asked first
+    rank = settle.decisive(res, review)
     queue = []
     for t, vd in res.get("verdicts", {}).items():
         if pipeline.needs_review(vd) or t in review:
@@ -127,7 +129,8 @@ def effective(rid):
                               confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=(f"Name in doubt: audit and the unprimed second look disagree ({vd['name_disagrees']}). " if vd.get("name_disagrees") else "")
                               + (f"Peak check saw another animal ({vd['peak_doubt']}). " if vd.get("peak_doubt") else "") + (vd.get("reason") or ""),
                               category=res["tracks"][t]["label"], auto=res["auto_labels"].get(t),
-                              reviewed=t in review, label=labels.get(t)))
+                              reviewed=t in review, label=labels.get(t), rank=rank.get(t), yes_label=settle.accept_label(res, t)))
+    queue.sort(key=lambda q: (q["reviewed"], q["rank"] is None, q["rank"] or 0))
     site = res.get("site")
     site_src = {e["source"]: e for e in (site or {}).get("entries", []) if e.get("source") and e.get("word")}
     site_rows = {}
@@ -144,7 +147,7 @@ def effective(rid):
     out = {k: v for k, v in res.items() if k != "frames"}
     out.update(site_rows=site_rows, metrics=m, group_metrics=gm, origin=origins(res, labels), queue=queue, review=review,
                annotated=os.path.exists(os.path.join(d, "annotated.mp4")),
-               n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]))
+               n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]), n_decisive=len(rank))
     return out
 
 
