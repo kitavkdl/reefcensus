@@ -53,6 +53,8 @@ is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30
 
 ```
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
+                                         # clean + refill are on by default (added after the freeze); the frozen
+                                         # evaluations replay with --no-clean --no-refill
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
 python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval3_<clip>)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793

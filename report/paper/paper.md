@@ -1314,7 +1314,7 @@ free, exact replay, or an API key and a spend cap for a live run, which can diff
 
 ```
 python3 fishcount/evaluate.py                                  # SAM "fish" alone vs. luderick boxes
-python3 fishcount/evaluate_pipeline.py --tag eval6             # final pipeline vs. the same boxes
+python3 fishcount/evaluate_pipeline.py --tag eval6             # final pipeline vs. the same boxes (add --run --no-clean --no-refill to re-make the runs)
 python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom --no-clean --no-refill   # discovery run (Table 2)
 python3 report/paper/scripts/discovery_noaudit.py              # Table 3: no-audit discovery replays (needs cache)
 python3 report/paper/scripts/repeat_peak.py --check            # Table 4b: saved sheets hit the original cache

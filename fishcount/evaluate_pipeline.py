@@ -1,7 +1,7 @@
 """Score full pipeline runs (merge, stitch, Spark audit, same-animal check, peak check) against the luderick
 ground truth (Ditria et al. 2021, CC BY 4.0), next to raw SAM 'fish' on the same clips.
 MaxN is taken over the human-annotated frames only, for both, so the two are comparable.
-  python3 fishcount/evaluate_pipeline.py [--run] [--tag eval3] [--manifest manifest_heldout.json]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
+  python3 fishcount/evaluate_pipeline.py [--run] [--tag eval3] [--no-clean --no-refill] [--manifest manifest_heldout.json]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks, pipeline
@@ -39,6 +39,8 @@ def main():
     ap.add_argument("--tag", default="eval3")   # eval3 = three-crop audit and peak check (11/2)
     ap.add_argument("--manifest", default="manifest_fish.json", help="manifest_heldout.json = the held-out clips (paper)")
     ap.add_argument("--misslook", action="store_true", help="opt-in missed-animal look (pipeline.miss_look)")
+    ap.add_argument("--no-clean", action="store_true", help="as the frozen runs (eval6): before clean was the default")
+    ap.add_argument("--no-refill", action="store_true", help="as the frozen runs (eval6): before refill was the default")
     a = ap.parse_args()
     man = json.load(open(f"{SMOKE}/clips/{a.manifest}"))
     rows, tot = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}
@@ -50,7 +52,7 @@ def main():
         rp = os.path.join(RUNS, f"{a.tag}_{cid}", "result.json")
         if a.run and not os.path.exists(rp):
             pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.5 if a.misslook else 0.2,
-                                  misslook=a.misslook)   # miss look: 4 SAM box prompts on a 260-frame clip ~$0.2
+                                  misslook=a.misslook, clean=not a.no_clean, refill=not a.no_refill)   # miss look: 4 SAM box prompts on a 260-frame clip ~$0.2
         res = json.load(open(rp)) if os.path.exists(rp) else None
         r = dict(clip=cid, frames=len(gt), sam=score(sam, gt))
         if res:
