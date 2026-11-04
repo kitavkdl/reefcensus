@@ -34,6 +34,7 @@ is an annotation accelerator whose output a person confirms.
 | One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | added boxes come from the pipeline, so the pipeline is not re-scored against them; the judge had seen 40 of the boxes before; re-judged, 11 of 11 earlier "fish" tracks were fish again |
 | Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7–100% vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | one judge, labels hidden; 10/10 matched controls called fish |
 | The person queue holds most tracks behind the largest over-counts, and also real fish | §6.1 Table 1b; §6.2 | 24 held-out | queue is 15 of 49 tracks; rejecting it costs 3.3 points of recall |
+| Clearing the queue is quick: 9 queued tracks of four clips took one person 121 s on a phone; all 6 accepted tracks overlap the human boxes, the 3 left unsure match none | §6.1 | 4 development; 9 tracks | one judge, one sitting; development clips |
 | Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of 24 held-out clips | §6.2, Table 1c | 24; 6 | no locations, so a count cannot be checked; some "excess" may be unboxed fish |
 | On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | development data; taxa scored as present, not counts; the reference is a non-expert's list from four frames |
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips chosen by a rule that favours non-fish animals; presence only; "not an animal" judged by the author with labels hidden |
@@ -527,6 +528,15 @@ the A1 verdict.</div>
 The two MaxN errors that remain are of different kinds. On 20190618_9 (9→10), the frame that sets the count holds two
 real fish without a human box, one cut by the left edge; the "error" is likely in the reference. On 20190710_4 (2→1), a dark
 fish in murky seagrass is never detected by SAM, so no audit can add it; audits can only remove.
+
+*How long the queue takes.* After the evaluation, Jiyul Ahn cleared the queue of four development clips (20190618_3,
+_9, 20190709_4, _14; 9 queued tracks) on a phone page that shows what the review screen shows: three crops of each track
+with our box and the auditor's note (`report/paper/scripts/qtime_sheet.py`, `report/paper/data/qtime/`). It took
+**121 s from Start to the last answer**, about 13 s per track. Six tracks were accepted and three left unsure (an unsure
+track stays out of the count). Against the human boxes, every accepted track overlaps the reference on annotated
+frames (2 of 7, 7 of 43, 7 of 11, 44 of 44, 10 of 11 and 2 of 4 of its boxes match), and all three unsure tracks match
+none (one is the video's timestamp overlay, one open water, one a very faint shape). No track the reference lacks was
+accepted. One judge, one sitting, development clips; the judge had not seen these tracks before.
 
 Precision is a lower bound. Unmatched boxes are not necessarily false: the annotations target luderick and omit some
 real fish (as in the 9→10 frame above). During development we inspected by eye 6 of 12 tracks scored as false

@@ -191,7 +191,10 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   track from one crop, and a faint fish behind seagrass was "only seagrass and water", so a 36-frame track left the
   count. Showing three crops of the same track (early, middle, late; for the peak check, just before and after)
   fixed it, the same way it lets Spark tell a sediment cloud from an animal below.
-- A third of the tracks go to the human queue: the counts are what a reviewer confirms, not a final census.
+- A third of the tracks go to the human queue: the counts are what a reviewer confirms, not a final census. Clearing
+  it is quick: the author answered the 9 queued tracks of four clips on a phone in 121 s (about 13 s a track); all 6
+  accepted tracks overlap the human boxes and the 3 left unsure match none (a timestamp overlay, open water, a very
+  faint shape), so no track the reference lacks was accepted (`report/paper/data/qtime/`).
 - Honest baseline: dropping every track shorter than 4 frames (no model call) gives exactly the same numbers on these
   clips, so here the checks match a well-chosen heuristic rather than beat it; their own value shows in discovery
   (names, duplicates, the trap net). The 97.4% counts queued tracks as accepted; rejecting them all gives 84.2%.
