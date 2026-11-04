@@ -8,7 +8,7 @@ Built on Meta's SAM 3.1 and Muse Spark via the Meta Model API.
 **Demo, no key or install:** https://kitavkdl.github.io/reefcensus/ (4 finished runs with their evidence frames and
 count strip; answer the review queue in your browser).
 
-![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes nothing in this frame (one nautilus in 9 of 60 frames; left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four counted, a fainter fifth sent to a person (right)](report/figures/split_s001_night_f38.jpg)
+![Night, behind a trap, frame 42 of 60 on the same brightened frames: SAM with 17 fixed words boxes nothing in this frame (one nautilus, as 'shell', in 9 of 60 frames; left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four counted, a fainter fifth sent to a person (right)](report/figures/split_s001_night_f42.jpg)
 
 **The problem.** Marine ecologists film the seafloor with baited cameras (BRUVs), then a person watches every frame to
 count what came: manual BRUV analysis "typically tak[es] several hours per hour of video" (Francour et al., 1999, as
@@ -21,7 +21,8 @@ SAM 3.1 boxes and follows each animal through the video.
 - Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of
   shrimp and a hagfish (a jawless fish that SAM's "fish" did not find).
 - At night behind a trap, where 17 fixed words (16 generic words plus "nautilus") box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
-  tracks four nautiluses from boxes with no word and sends a fainter fifth to the review queue (above; `report/scripts/split_s001_night.py` makes the video).
+  tracks four nautiluses from boxes with no word and sends a fainter fifth to the review queue (the run's evidence frame is the first with four, where three
+  are still distant shapes; near the end of the clip all four are plain) (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
 - On 24 held-out seagrass videos of 1–12 s (remote underwater video, not baited-camera footage), hand-counted separately by the author (not a marine biologist) and by a friend
@@ -78,8 +79,10 @@ their evidence frames, motion sheets and human queue. No model is called. The we
 is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30 calls, an estimated $0.22–0.27 (paper §6.4).
 
 ```
-python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
+python3 fishcount/pipeline.py <video> [--prompts WORD ...] [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
+                                         # what to count: --prompts words (default fish); quote two-word names
                                          # clean + refill are on by default (--no-clean --no-refill turns them off)
+python3 fishcount/pipeline.py clip.mp4 --prompts fish shark "sea turtle" --discover   # also finds what you did not name
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
 python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full pipeline (runs cr7_<clip>; later code, cr8–cr11, moved no score)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793

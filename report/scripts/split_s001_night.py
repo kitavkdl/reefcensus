@@ -6,7 +6,8 @@ counts are drawn on each side. All numbers come from those files; nothing is cal
 
   FISH_PYLIB=... memcap --max 2G -- python3 report/scripts/split_s001_night.py
   -> report/figures/split_s001_night.mp4 (5 fps, the analysis rate; slow it down in the editor if needed)
-     report/figures/split_s001_night_f38.jpg (frame 38, all five nautiluses in view: the README image)
+     report/figures/split_s001_night_f42.jpg (frame 42 of 60, counted from 1: all five nautiluses in view, the four counted
+     ones plain and the queued fifth still faint; the README image)
 """
 import glob, json, os, subprocess, sys, tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,7 +24,7 @@ CLIP = f"{RUN}/clip.mp4"
 # and bait bag, so they are not drawn.
 QUEUED = {"m8:1"}
 QUEUE_C = (255, 225, 60)               # RGB: yellow = waiting for a person
-STILL = 37                             # 0-based frame of the README image
+STILL = 41                             # 0-based frame of the README image (frame 42 of 60 on the video)
 OUT = "report/figures/split_s001_night.mp4"
 W, H = 1920, 1080
 PW, PH = 944, 531                      # panel size (16:9), two panels with a 32 px gap
@@ -90,7 +91,7 @@ def main():
                font=small, fill=(170, 170, 170), anchor="mm")
         img.save(os.path.join(tmp, f"{f:04d}.png"))
         if f == STILL:
-            img.save("report/figures/split_s001_night_f38.jpg", quality=88)
+            img.save("report/figures/split_s001_night_f42.jpg", quality=88)
     ff = imageio_ffmpeg.get_ffmpeg_exe()
     subprocess.run([ff, "-loglevel", "error", "-y", "-framerate", "5", "-i", os.path.join(tmp, "%04d.png"),
                     "-c:v", "libx264", "-threads", "9",  # = fishcount.video.X264_THREADS (cache keys)

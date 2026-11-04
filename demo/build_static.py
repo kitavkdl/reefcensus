@@ -20,7 +20,7 @@ CAPTION = {
     "cr11_s004": "A shrimp swarm, a hagfish and a nautilus at the bait. SAM found nothing for “hagfish”; Spark tried “eel” and it locked on.",
     "cr11_s003": "Three nautiluses, one partly behind another, counted as three.",
     "cr11_s002": "A nautilus and a small red crab nobody asked for.",
-    "cr11_s001": "Night, behind a wire trap. No word found them; moving pixels did. 4 counted; a paler 5th Spark was not sure of goes to a person.",
+    "cr11_s001": "Night, behind a wire trap. No word found them; moving pixels did. 4 counted; a paler 5th Spark was not sure of goes to a person. Its evidence frame is the first with 4, where three are distant shapes on the floor; near the end of the clip all four are plain.",
 }
 SHOW = {"cr11_s004": "caridean shrimp", "cr11_s003": "chambered nautilus",
         "cr11_s002": "small red crab", "cr11_s001": "chambered nautilus"}

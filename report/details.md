@@ -65,6 +65,8 @@ taxonomy_status, source_file, run_id, human_edits, maxn_lower_bound` (filled whe
 **Family, Genus and Species are left for a person**: Muse Spark gives common names, not verified taxonomy, so the name is in `spark_common_name` (a reviewer's rename too) and `taxonomy_status` says it is unverified; a
 person adds the taxonomy. `OpCode` defaults to the video's file name (we know no deployment code; pass `--opcode`).
 `Frame` is the 0-based frame of our 5 fps analysis copy, not the original video's frame number; `Time_mins` is that frame's time.
+Times are on the 5 fps analysis copy (0.2 s steps), and the peak check's ±1 s removal window can move a first arrival
+later when it rejects an early box (s002's nautilus: 0 s → 1.2 s; paper, *Wrong rejections in the peak check*).
 
 Sources for the columns (checked 11/3): the GlobalArchive generic-data manual, count file = required `Sample, Family,
 Genus, Species, Count` plus any user columns (<https://globalarchivemanual.github.io/generic-datatables>); the CheckEM
@@ -179,7 +181,7 @@ frames only, for both columns. Final code, run `cr7` (`fishcount/evaluate_pipeli
   within ±1 at 89.3% recall.
 - **Against a hand count of the videos, the pipeline comes closer than the reference boxes.** The author (not a marine biologist) counted MaxN by hand on all 24
   held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed
-  error 6; the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
+  error 6 (over every frame of the clip, the hand count's own scope: exact 17, summed error 7); the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
   the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3). This does not assume the queue is
   accepted unseen: answering the 17 queued tracks from judgements a person had already recorded gives the same MaxN
   on all 24 clips, while rejecting them all falls back to the boxes' summed error of 16.
