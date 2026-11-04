@@ -1,7 +1,7 @@
 # reefcensus — count what you asked for, find what you didn't
 
 Marine ecologists film the seafloor with baited cameras (BRUVs), then a person watches every frame to count what came.
-At MBARI, "these 90 hours of video can take anywhere from 180 to 400 hours to annotate" ([source](report/README.md)).
+For deep-sea survey video at MBARI, "these 90 hours of video can take anywhere from 180 to 400 hours to annotate" ([source](report/README.md)).
 reefcensus does that count. Say what to count; get MaxN for each animal you name (the most animals of a kind on screen at once, the standard count of
 baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
 uncertain tracks for a human to confirm.
