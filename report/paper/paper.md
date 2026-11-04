@@ -1335,6 +1335,10 @@ fish (unidentified) from a one-frame track Spark judged at 0.35; DH7 crab 3 plus
 (two short tracks Spark called crab at 0.6; the crab group's MaxN stays 3); DH8 fish 15 → 17 (fish group 16 → 18).
 Between the first and the last re-run with the new defaults, the id repair alone moved DH8 from 18 to 17: the
 one-frame pieces it splits off are rejected by the audit, which takes one box out of the peak frame.
+One scoring change was made after a re-run: in the first one (`DH5_cr`) the audit named DH5's cusk-eel "new zealand
+ling", the species the frozen run had called pink cusk-eel, and since no word group knew "ling" the scorer counted a
+fish as a non-fish discovery; `score_discovery_heldout.py` now treats "ling" as a fish name. No frozen run and no `cr3`
+run contains the word, so no reported score depends on it.
 
 The repeated calls of Table 4b are live calls; their replies are stored in `report/paper/data/repeat_peak_f35.json`. All
 calls used the model IDs fixed in `fishcount/api.py` (`sam-3.1`, `muse-spark-1.3`), and the ledger records the time
