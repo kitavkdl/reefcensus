@@ -121,6 +121,22 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
   the paper, figures or demo.
 
 
+## Final run (`LONG1_cr7`, 11/4 08:10-08:36 UTC)
+- Same six segment clips, final code (the code of the paper's `cr7` runs), every cached answer reused
+  (`report/paper/scripts/rerun_long1_cr.py LONG1_cr7`; log `run_cr7.log`, merged result `result_cr7.json`). Live cost
+  $0.70: $0.16 in the segment status files of the completed attempt, plus $0.54 (a SAM refill call and one Spark call)
+  of a first attempt stopped by its memory cap in segment 2, whose answers the restart took from the cache
+  (`ledger_summary.py` takes those from the ledger window). Merged MaxN and first arrivals identical to `LONG1_cr2`; 1,377 tracks, 173 judged not a
+  target; 6 links across the five cuts (1 between counted tracks under the same name, 5 between uncounted motion tracks),
+  no name conflict.
+- Queue: 1,048 of 1,377 tracks; `settle_sim.py` settles every MaxN and first arrival after 20 answers (accept all), 28
+  (follow the auditor) or 54 (reject all), the same numbers as answering the whole queue. Ties in the asking order are
+  now broken by first appearance and track id (`fishcount/settle.py`); before, the order of tied tracks followed
+  Python's string hashing and the LONG1 counts moved by a few answers between processes (52-55 reject all, 28-38
+  follow the auditor on the same file).
+- Memory: peak 8.7 GB. An earlier attempt was stopped by its memory cap (log `runs/LONG1_cr7.oom1.log`, not bundled);
+  this one ran under a cap raised to 9.5 GB during the run.
+
 ## Re-run on the final code (`LONG1_cr2`, 11/3 evening UTC)
 - Same six segment clips (`runs/LONG1__S*/clip.mp4`), every cached answer reused, final code with clean and refill on
   (`report/paper/scripts/rerun_long1_cr.py LONG1_cr2`; log `run_cr2c.log`). Live cost of the re-runs

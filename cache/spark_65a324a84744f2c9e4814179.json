@@ -1,0 +1,1 @@
+{"text": "{\"total\": 10, \"estimated\": false, \"reason\": \"Counted one shark-like plus one small fish left, one mid-water right, one lower-left, and six lower-right.\"}", "usage": {"completion_tokens": 1092, "prompt_tokens": 6150, "total_tokens": 7242, "completion_tokens_details": {"reasoning_tokens": 1042}, "prompt_tokens_details": {"cached_tokens": 0}}}

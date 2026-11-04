@@ -24,6 +24,17 @@ def toy():
     return res
 
 
+def wide():
+    """Twelve queued fish together in frame 1 and nothing sure: every track ties on (upper count, frame)."""
+    ids = ["q%02d" % i for i in range(12)]
+    tracks = {t: dict(label="fish", source="p0", first=1, last=1, n=1) for t in ids}
+    verdicts = {t: dict(is_target=True, confidence=0.5, species="unknown", name="T", reason="") for t in ids}
+    res = dict(tracks=tracks, verdicts=verdicts, frames={"1": [dict(track=t, box=B) for t in ids]},
+               video=dict(n_frames=2, fps=5.0, width=10, height=10))
+    res["auto_labels"] = pipeline.auto_labels(tracks, verdicts)
+    return res
+
+
 class Decisive(unittest.TestCase):
     def test_only_tracks_that_can_move_maxn_or_first_arrival_are_asked(self):
         res = toy()
@@ -32,6 +43,19 @@ class Decisive(unittest.TestCase):
         self.assertEqual(set(d), {"B", "D", "G"})                          # C can change nothing
         self.assertEqual(sorted(d[t] for t in "BD"), [1, 2])               # frame 3 can reach 3: asked first
         self.assertEqual(d["G"], 3)                                        # first arrival only: after the MaxN ones
+
+    def test_ties_have_a_fixed_order(self):
+        """Tracks with the same score are asked earliest first appearance first, then by track id, so the order does
+        not depend on Python's per-process string hashing (it did: set iteration order, LONG1 asked 52-55 answers)."""
+        self.assertEqual(settle.decisive(toy())["B"], 1)                   # B and D tie in frame 3: id order
+        code = ("import sys; sys.path.insert(0, %r); sys.path.insert(0, %r); from fishcount import _pylib; "
+                "import test_settle; from fishcount import settle; print(settle.decisive(test_settle.wide()))"
+                % (ROOT, os.path.join(ROOT, "tests")))
+        import subprocess
+        outs = {subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                               env=dict(os.environ, PYTHONHASHSEED=str(s))).stdout for s in range(4)}
+        self.assertEqual(len(outs), 1, outs)
+        self.assertTrue(next(iter(outs)).startswith("{"))
 
     def test_answers_close_the_range(self):
         res = toy()

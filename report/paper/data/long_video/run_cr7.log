@@ -1,0 +1,7 @@
+S1 start 0 n 2658 billed $0.033
+S2 start 2658 n 2658 billed $0.012
+S3 start 5316 n 2658 billed $0.011
+S4 start 7974 n 2658 billed $0.012
+S5 start 10632 n 2658 billed $0.044
+S6 start 13290 n 2655 billed $0.048
+merged: {'fish (unidentified)': 14, 'flatfish': 1, 'grunt': 2, 'human': 3, 'needlefish': 1, 'person (unidentified)': 1, 'sand lance': 1}

@@ -4,7 +4,7 @@ stand in for the person: accept every track, reject every track, and follow the 
 For each run and rule: ask the rank-1 track, record the answer, recompute, until nothing can change a count; then
 compare MaxN and first arrival per label with those after answering every queued track by the same rule. No API calls.
 
-  python3 report/paper/scripts/settle_sim.py [tag ...]      (default: cr7 runs + LONG1_cr2; writes data/settle/<tag>.json)"""
+  python3 report/paper/scripts/settle_sim.py [tag ...]      (default: cr7 runs + LONG1_cr7; writes data/settle/<tag>.json)"""
 import glob, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -44,16 +44,18 @@ def run_one(res):
 def main(paths):
     rows = {}
     for p in paths:
-        rows[os.path.basename(os.path.dirname(p))] = run_one(json.load(open(p)))
+        rows["LONG1_cr7" if p.endswith("result_cr7.json") else os.path.basename(os.path.dirname(p))] = run_one(json.load(open(p)))
     return rows
 
 
 if __name__ == "__main__":
     tags = sys.argv[1:] or ["cr7"]
     od = os.path.join(ROOT, "report", "paper", "data", "settle"); os.makedirs(od, exist_ok=True)
+    L1 = f"{ROOT}/runs/LONG1_cr7/result.json"
+    L1B = f"{ROOT}/report/paper/data/long_video/result_cr7.json"   # bundled copy for a clone without runs/
     for tag in tags:
         paths = sorted(glob.glob(f"{ROOT}/runs/{tag}_*/result.json") + glob.glob(f"{ROOT}/runs/DH*_{tag}/result.json")
-                       + ([f"{ROOT}/runs/LONG1_cr2/result.json"] if tag == "cr7" else []))
+                       + ([L1 if os.path.exists(L1) else L1B] if tag == "cr7" else []))
         paths = [p for p in paths if "__S" not in p]
         rows = main(paths)
         json.dump(rows, open(os.path.join(od, f"{tag}.json"), "w"), indent=1)

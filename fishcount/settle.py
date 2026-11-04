@@ -1,5 +1,5 @@
 """Which queued tracks can still change a count. The human queue holds every track the auditor was unsure of; on a long
-video that is most tracks (the 53-min NOAA run queues 1,017 of 1,373). A person does not need to look at all of them to
+video that is most tracks (the 53-min NOAA run queues 1,048 of 1,377). A person does not need to look at all of them to
 settle the survey numbers. For each label, MaxN after review lies between the count of the frame with the most sure
 boxes (counted and not queued, or already reviewed) and the count with every open queued track in it accepted. A queued
 track can move MaxN only if it appears in a frame whose upper count is above the current lower end; it can move first
@@ -57,5 +57,7 @@ def decisive(res, review=None):
             for t in ts:
                 if t not in score and first_track[t] < first_sure.get(L, float("inf")):
                     score[t] = (0, -first_track[t])     # first arrival only: after every MaxN question, earliest first
-    ranked = sorted(score, key=lambda t: (score[t][0], score[t][1]), reverse=True)
+    # highest possible count first, then the earliest such frame; ties by first appearance, then track id (a fixed
+    # order: the tracks come out of sets, whose order changes with Python's per-process string hashing)
+    ranked = sorted(score, key=lambda t: (-score[t][0], -score[t][1], first_track[t], t))
     return {t: i + 1 for i, t in enumerate(ranked)}

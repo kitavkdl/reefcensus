@@ -1,0 +1,1 @@
+{"text": "{\"total\": 28, \"estimated\": true, \"reason\": \"Many small distant fish are faint in murky green water.\"}", "usage": {"completion_tokens": 853, "prompt_tokens": 6150, "total_tokens": 7003, "completion_tokens_details": {"reasoning_tokens": 816}, "prompt_tokens_details": {"cached_tokens": 0}}}

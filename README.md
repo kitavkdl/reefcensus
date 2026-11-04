@@ -14,9 +14,9 @@ and all code here was written in those days (third-party footage and libraries a
   tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
-- On a 53-minute reef-fish deployment the review queue holds 1,017 uncertain tracks, but asking first only the ones
-  that can still change a number settles every MaxN and first arrival after 22–56 answers (about 5–12 minutes on a
-  phone), with exactly the numbers of answering all 1,017.
+- On a 53-minute reef-fish deployment the review queue holds 1,048 uncertain tracks, but asking first only the ones
+  that can still change a number settles every MaxN and first arrival after 20–54 answers (about 4–12 minutes on a
+  phone), with exactly the numbers of answering all 1,048.
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord, first author of the 2014 nautilus
 survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote back the same afternoon he saw the results:

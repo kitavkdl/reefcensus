@@ -164,18 +164,18 @@
    "same": true
   }
  },
- "LONG1_cr2": {
-  "queue": 1017,
+ "LONG1_cr7": {
+  "queue": 1048,
   "accept_all": {
-   "asked": 22,
+   "asked": 20,
    "same": true
   },
   "reject_all": {
-   "asked": 56,
+   "asked": 54,
    "same": true
   },
   "auditor": {
-   "asked": 30,
+   "asked": 28,
    "same": true
   }
  },

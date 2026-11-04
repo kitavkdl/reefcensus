@@ -1,0 +1,1 @@
+{"text": "{\"total\": 3, \"estimated\": false, \"reason\": \"Three distinct fish visible in bottom-right area.\"}", "usage": {"completion_tokens": 462, "prompt_tokens": 6140, "total_tokens": 6602, "completion_tokens_details": {"reasoning_tokens": 428}, "prompt_tokens_details": {"cached_tokens": 0}}}

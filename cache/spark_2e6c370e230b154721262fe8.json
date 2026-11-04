@@ -1,0 +1,1 @@
+{"text": "{\"total\": 3, \"estimated\": false, \"reason\": \"Two distinct fish bottom-left and one at top edge.\"}", "usage": {"completion_tokens": 584, "prompt_tokens": 6141, "total_tokens": 6725, "completion_tokens_details": {"reasoning_tokens": 548}, "prompt_tokens_details": {"cached_tokens": 0}}}

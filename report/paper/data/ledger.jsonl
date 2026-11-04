@@ -3359,3 +3359,250 @@
 {"t": 1793773432.9432085, "kind": "spark", "usd": 0.0036119999999999998, "note": "in=547 out=689"}
 {"t": 1793773441.1058073, "kind": "spark", "usd": 0.0035422500000000003, "note": "in=481 out=692"}
 {"t": 1793773445.3441796, "kind": "spark", "usd": 0.00296075, "note": "in=876 out=439"}
+{"t": 1793775158.876773, "kind": "spark", "usd": 0.0082815, "note": "in=2127 out=1323"}
+{"t": 1793775168.0746322, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793775169.078655, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793775169.3389933, "kind": "sam", "usd": 0.012, "note": "clip.mp4:nautilus"}
+{"t": 1793775170.9869652, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793775174.0166094, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793775180.591387, "kind": "sam", "usd": 0.012, "note": "clip.mp4:prawn"}
+{"t": 1793775182.527962, "kind": "sam", "usd": 0.012, "note": "clip.mp4:lobster"}
+{"t": 1793775194.653868, "kind": "sam", "usd": 0.012, "note": "tile_d1z-center.mp4:crab"}
+{"t": 1793775195.0270019, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:crab"}
+{"t": 1793775198.201642, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:nautilus"}
+{"t": 1793775203.0745168, "kind": "sam", "usd": 0.012, "note": "tile_d1z-center.mp4:shrimp"}
+{"t": 1793775205.516166, "kind": "sam", "usd": 0.012, "note": "tile_d2z-top.mp4:shrimp"}
+{"t": 1793775206.5280735, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:shrimp"}
+{"t": 1793775214.564415, "kind": "sam", "usd": 0.012, "note": "tile_d2z-top.mp4:prawn"}
+{"t": 1793775226.2389388, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:crab"}
+{"t": 1793775226.4198587, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:crab"}
+{"t": 1793775233.4256806, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:shrimp"}
+{"t": 1793775235.0718524, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:shrimp"}
+{"t": 1793775240.3218968, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:lobster"}
+{"t": 1793775241.9714186, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:lobster"}
+{"t": 1793775250.5496736, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom_rev.mp4:shrimp"}
+{"t": 1793775266.0312643, "kind": "spark", "usd": 0.007312, "note": "in=1569 out=1259"}
+{"t": 1793775273.1218288, "kind": "spark", "usd": 0.00453575, "note": "in=555 out=904"}
+{"t": 1793775277.1105986, "kind": "spark", "usd": 0.0024807500000000003, "note": "in=577 out=414"}
+{"t": 1793775281.686652, "kind": "spark", "usd": 0.0028200000000000005, "note": "in=556 out=500"}
+{"t": 1793775284.2679746, "kind": "spark", "usd": 0.0021667500000000003, "note": "in=863 out=256"}
+{"t": 1793775290.304493, "kind": "spark", "usd": 0.003502, "note": "in=510 out=674"}
+{"t": 1793775294.8985932, "kind": "spark", "usd": 0.00321975, "note": "in=512 out=607"}
+{"t": 1793775297.8963768, "kind": "spark", "usd": 0.001833, "note": "in=511 out=281"}
+{"t": 1793775299.8248072, "kind": "spark", "usd": 0.00153675, "note": "in=512 out=211"}
+{"t": 1793775315.9219198, "kind": "spark", "usd": 0.00859175, "note": "in=2127 out=1396"}
+{"t": 1793775324.7162843, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793775325.1107037, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793775327.2231445, "kind": "sam", "usd": 0.012, "note": "clip.mp4:nautilus"}
+{"t": 1793775332.1783733, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793775341.6299932, "kind": "sam", "usd": 0.012, "note": "clip.mp4:lobster"}
+{"t": 1793775353.8945878, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:nautilus"}
+{"t": 1793775354.0086696, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:crab"}
+{"t": 1793775356.218304, "kind": "sam", "usd": 0.012, "note": "tile_d1z-center.mp4:crab"}
+{"t": 1793775361.913043, "kind": "sam", "usd": 0.012, "note": "tile_s0-center.mp4:nautilus"}
+{"t": 1793775364.521927, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:shrimp"}
+{"t": 1793775365.4804318, "kind": "sam", "usd": 0.012, "note": "tile_d1z-center.mp4:shrimp"}
+{"t": 1793775373.9358525, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:crab"}
+{"t": 1793775374.6882517, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:crab"}
+{"t": 1793775381.5287807, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:shrimp"}
+{"t": 1793775381.7779582, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:shrimp"}
+{"t": 1793775388.4208, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:lobster"}
+{"t": 1793775391.4971228, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:lobster"}
+{"t": 1793775398.779187, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom_rev.mp4:shrimp"}
+{"t": 1793775413.8088086, "kind": "spark", "usd": 0.0071845, "note": "in=1569 out=1229"}
+{"t": 1793775424.7826357, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<20f>1<|box;x1=1120;y1=880;x2=1176;y2=928;w=1920;h=1080|>"}
+{"t": 1793775434.3869689, "kind": "spark", "usd": 0.005714250000000001, "note": "in=896 out=1081"}
+{"t": 1793775438.0380478, "kind": "spark", "usd": 0.0023625, "note": "in=547 out=395"}
+{"t": 1793775441.8152254, "kind": "spark", "usd": 0.00257225, "note": "in=538 out=447"}
+{"t": 1793775445.30205, "kind": "spark", "usd": 0.002562, "note": "in=863 out=349"}
+{"t": 1793775451.8346305, "kind": "spark", "usd": 0.00361275, "note": "in=517 out=698"}
+{"t": 1793775457.0226588, "kind": "spark", "usd": 0.0030600000000000002, "note": "in=510 out=570"}
+{"t": 1793775460.8060684, "kind": "spark", "usd": 0.00214325, "note": "in=511 out=354"}
+{"t": 1793775592.276195, "kind": "spark", "usd": 0.00339025, "note": "in=543 out=638"}
+{"t": 1793775596.2676077, "kind": "spark", "usd": 0.00210875, "note": "in=514 out=345"}
+{"t": 1793776016.290259, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0.mp4:coral"}
+{"t": 1793776016.3517735, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19.mp4:crab"}
+{"t": 1793776016.8569958, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41.mp4:crab"}
+{"t": 1793776018.076251, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0.mp4:crab"}
+{"t": 1793776020.0631542, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0_3x2_r0c0.mp4:coral"}
+{"t": 1793776022.002139, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19_3x2_r0c0.mp4:crab"}
+{"t": 1793776022.311546, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0_3x2_r0c0.mp4:crab"}
+{"t": 1793776022.623622, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41_3x2_r0c0.mp4:crab"}
+{"t": 1793776024.3365593, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0_3x2_r0c1.mp4:coral"}
+{"t": 1793776025.725925, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0_3x2_r0c1.mp4:crab"}
+{"t": 1793776027.3063197, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19_3x2_r0c1.mp4:crab"}
+{"t": 1793776027.6112874, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41_3x2_r0c1.mp4:crab"}
+{"t": 1793776028.0234768, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0_3x2_r0c2.mp4:coral"}
+{"t": 1793776029.261659, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0_3x2_r0c2.mp4:crab"}
+{"t": 1793776031.9059684, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41_3x2_r0c2.mp4:crab"}
+{"t": 1793776032.176766, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19_3x2_r0c2.mp4:crab"}
+{"t": 1793776032.560827, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0_3x2_r1c0.mp4:crab"}
+{"t": 1793776033.8942275, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0_3x2_r1c0.mp4:coral"}
+{"t": 1793776035.3364604, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19_3x2_r1c0.mp4:crab"}
+{"t": 1793776035.9653726, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41_3x2_r1c0.mp4:crab"}
+{"t": 1793776037.7229037, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0_3x2_r1c1.mp4:coral"}
+{"t": 1793776038.990518, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0_3x2_r1c1.mp4:crab"}
+{"t": 1793776039.2203958, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19_3x2_r1c1.mp4:crab"}
+{"t": 1793776039.3474312, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41_3x2_r1c1.mp4:crab"}
+{"t": 1793776041.9964945, "kind": "sam", "usd": 0.01, "note": "DH1_crustacean_f0_3x2_r1c2.mp4:crab"}
+{"t": 1793776042.245039, "kind": "sam", "usd": 0.01, "note": "DH2_cnidarian_f0_3x2_r1c2.mp4:coral"}
+{"t": 1793776042.6534376, "kind": "sam", "usd": 0.01, "note": "DH3_crustacean_f41_3x2_r1c2.mp4:crab"}
+{"t": 1793776043.0556624, "kind": "sam", "usd": 0.01, "note": "DH2_crustacean_f19_3x2_r1c2.mp4:crab"}
+{"t": 1793776045.6730995, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46.mp4:fish"}
+{"t": 1793776045.8711202, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4.mp4:fish"}
+{"t": 1793776047.2285209, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29.mp4:fish"}
+{"t": 1793776049.048441, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4_3x2_r0c0.mp4:fish"}
+{"t": 1793776049.4179163, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46_3x2_r0c0.mp4:fish"}
+{"t": 1793776049.440193, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34.mp4:crab"}
+{"t": 1793776052.516747, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29_3x2_r0c0.mp4:fish"}
+{"t": 1793776053.0006065, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4_3x2_r0c1.mp4:fish"}
+{"t": 1793776053.6620042, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34_3x2_r0c0.mp4:crab"}
+{"t": 1793776054.6539698, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46_3x2_r0c1.mp4:fish"}
+{"t": 1793776055.840104, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29_3x2_r0c1.mp4:fish"}
+{"t": 1793776056.9210937, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4_3x2_r0c2.mp4:fish"}
+{"t": 1793776057.698068, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34_3x2_r0c1.mp4:crab"}
+{"t": 1793776058.6117294, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46_3x2_r0c2.mp4:fish"}
+{"t": 1793776060.3167512, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4_3x2_r1c0.mp4:fish"}
+{"t": 1793776061.9626203, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34_3x2_r0c2.mp4:crab"}
+{"t": 1793776062.9498243, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29_3x2_r0c2.mp4:fish"}
+{"t": 1793776063.0270631, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46_3x2_r1c0.mp4:fish"}
+{"t": 1793776064.6097517, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4_3x2_r1c1.mp4:fish"}
+{"t": 1793776066.529315, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34_3x2_r1c0.mp4:crab"}
+{"t": 1793776066.9550862, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29_3x2_r1c0.mp4:fish"}
+{"t": 1793776067.2139654, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46_3x2_r1c1.mp4:fish"}
+{"t": 1793776067.890673, "kind": "sam", "usd": 0.01, "note": "DH6_fish_f4_3x2_r1c2.mp4:fish"}
+{"t": 1793776071.0081275, "kind": "sam", "usd": 0.01, "note": "DH5_fish_f46_3x2_r1c2.mp4:fish"}
+{"t": 1793776071.1359863, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34_3x2_r1c1.mp4:crab"}
+{"t": 1793776071.3428137, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29_3x2_r1c1.mp4:fish"}
+{"t": 1793776072.1318066, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0.mp4:worm"}
+{"t": 1793776074.7895296, "kind": "sam", "usd": 0.01, "note": "DH8_fish_f29_3x2_r1c2.mp4:fish"}
+{"t": 1793776075.2799895, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2.mp4:fish"}
+{"t": 1793776075.2898135, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0_3x2_r0c0.mp4:worm"}
+{"t": 1793776077.1270738, "kind": "sam", "usd": 0.01, "note": "DH7_crustacean_f34_3x2_r1c2.mp4:crab"}
+{"t": 1793776078.373379, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0_3x2_r0c1.mp4:worm"}
+{"t": 1793776079.8149467, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6.mp4:nautilus"}
+{"t": 1793776080.0654976, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2_3x2_r0c0.mp4:fish"}
+{"t": 1793776081.7872424, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11.mp4:fish"}
+{"t": 1793776084.1952887, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2_3x2_r0c1.mp4:fish"}
+{"t": 1793776084.2638645, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6_3x2_r0c0.mp4:nautilus"}
+{"t": 1793776084.435064, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0_3x2_r0c2.mp4:worm"}
+{"t": 1793776085.9133086, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11_3x2_r0c0.mp4:fish"}
+{"t": 1793776088.3407342, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0_3x2_r1c0.mp4:worm"}
+{"t": 1793776088.7646022, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2_3x2_r0c2.mp4:fish"}
+{"t": 1793776090.1356008, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11_3x2_r0c1.mp4:fish"}
+{"t": 1793776091.5357847, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6_3x2_r0c1.mp4:nautilus"}
+{"t": 1793776092.3088436, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2_3x2_r1c0.mp4:fish"}
+{"t": 1793776093.6244144, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0_3x2_r1c1.mp4:worm"}
+{"t": 1793776096.220905, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11_3x2_r0c2.mp4:fish"}
+{"t": 1793776097.0776193, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6_3x2_r0c2.mp4:nautilus"}
+{"t": 1793776097.0964813, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2_3x2_r1c1.mp4:fish"}
+{"t": 1793776098.8083, "kind": "sam", "usd": 0.01, "note": "DH11_crustacean_f0_3x2_r1c2.mp4:worm"}
+{"t": 1793776101.945223, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11_3x2_r1c0.mp4:fish"}
+{"t": 1793776102.0686514, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6_3x2_r1c0.mp4:nautilus"}
+{"t": 1793776102.1263852, "kind": "sam", "usd": 0.01, "note": "s001_cephalopod_f2_3x2_r1c2.mp4:fish"}
+{"t": 1793776103.159049, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0.mp4:shrimp"}
+{"t": 1793776107.0389676, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11_3x2_r1c1.mp4:fish"}
+{"t": 1793776107.6421971, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6_3x2_r1c1.mp4:nautilus"}
+{"t": 1793776107.836871, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0_3x2_r0c0.mp4:shrimp"}
+{"t": 1793776109.3404155, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22.mp4:nautilus"}
+{"t": 1793776111.250941, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0_3x2_r0c1.mp4:shrimp"}
+{"t": 1793776111.3838155, "kind": "sam", "usd": 0.01, "note": "s002_cephalopod_f6_3x2_r1c2.mp4:nautilus"}
+{"t": 1793776111.9012933, "kind": "sam", "usd": 0.01, "note": "s002_fish_f11_3x2_r1c2.mp4:fish"}
+{"t": 1793776115.1135423, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22_3x2_r0c0.mp4:nautilus"}
+{"t": 1793776116.267266, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54.mp4:shrimp"}
+{"t": 1793776116.8144526, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0.mp4:nautilus"}
+{"t": 1793776117.6136754, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0_3x2_r0c2.mp4:shrimp"}
+{"t": 1793776119.582701, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22_3x2_r0c1.mp4:nautilus"}
+{"t": 1793776120.3893735, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0_3x2_r0c0.mp4:nautilus"}
+{"t": 1793776120.5270076, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54_3x2_r0c0.mp4:shrimp"}
+{"t": 1793776121.8468282, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0_3x2_r1c0.mp4:shrimp"}
+{"t": 1793776123.8426929, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22_3x2_r0c2.mp4:nautilus"}
+{"t": 1793776124.2770257, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0_3x2_r0c1.mp4:nautilus"}
+{"t": 1793776126.3692706, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0_3x2_r1c1.mp4:shrimp"}
+{"t": 1793776127.5852294, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54_3x2_r0c1.mp4:shrimp"}
+{"t": 1793776128.7411776, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0_3x2_r0c2.mp4:nautilus"}
+{"t": 1793776129.2231584, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22_3x2_r1c0.mp4:nautilus"}
+{"t": 1793776130.8735466, "kind": "sam", "usd": 0.01, "note": "s002_crustacean_f0_3x2_r1c2.mp4:shrimp"}
+{"t": 1793776133.4880993, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54_3x2_r0c2.mp4:shrimp"}
+{"t": 1793776133.6869848, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0_3x2_r1c0.mp4:nautilus"}
+{"t": 1793776134.0044167, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22_3x2_r1c1.mp4:nautilus"}
+{"t": 1793776136.1556797, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0.mp4:eel"}
+{"t": 1793776137.9578044, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54_3x2_r1c0.mp4:shrimp"}
+{"t": 1793776138.1766694, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0_3x2_r1c1.mp4:nautilus"}
+{"t": 1793776139.6227226, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0_3x2_r0c0.mp4:eel"}
+{"t": 1793776141.4189982, "kind": "sam", "usd": 0.01, "note": "s003_cephalopod_f22_3x2_r1c2.mp4:nautilus"}
+{"t": 1793776143.012251, "kind": "sam", "usd": 0.01, "note": "s004_cephalopod_f0_3x2_r1c2.mp4:nautilus"}
+{"t": 1793776145.4686189, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54_3x2_r1c1.mp4:shrimp"}
+{"t": 1793776146.5854192, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0_3x2_r0c1.mp4:eel"}
+{"t": 1793776149.2034488, "kind": "sam", "usd": 0.01, "note": "s004_crustacean_f54_3x2_r1c2.mp4:shrimp"}
+{"t": 1793776150.8926501, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0_3x2_r0c2.mp4:eel"}
+{"t": 1793776156.0259943, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0_3x2_r1c0.mp4:eel"}
+{"t": 1793776160.7268012, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0_3x2_r1c1.mp4:eel"}
+{"t": 1793776164.601638, "kind": "sam", "usd": 0.01, "note": "s004_fish_f0_3x2_r1c2.mp4:eel"}
+{"t": 1793776624.9931061, "kind": "spark", "usd": 0.00622375, "note": "in=2378 out=765"}
+{"t": 1793776633.779016, "kind": "spark", "usd": 0.0061605, "note": "in=2375 out=751"}
+{"t": 1793776645.6240191, "kind": "spark", "usd": 0.00708225, "note": "in=2378 out=967"}
+{"t": 1793776655.671022, "kind": "spark", "usd": 0.00630875, "note": "in=2123 out=860"}
+{"t": 1793776671.2241354, "kind": "spark", "usd": 0.009982000000000001, "note": "in=1920 out=1784"}
+{"t": 1793776678.2928562, "kind": "spark", "usd": 0.005763000000000001, "note": "in=2125 out=731"}
+{"t": 1793776683.8870068, "kind": "spark", "usd": 0.00944875, "note": "in=6148 out=415"}
+{"t": 1793776697.4194927, "kind": "spark", "usd": 0.00898875, "note": "in=2125 out=1490"}
+{"t": 1793776702.8855667, "kind": "spark", "usd": 0.003881, "note": "in=888 out=652"}
+{"t": 1793776706.6735542, "kind": "spark", "usd": 0.009266, "note": "in=6148 out=372"}
+{"t": 1793776711.2633128, "kind": "spark", "usd": 0.009049250000000002, "note": "in=6148 out=321"}
+{"t": 1793776721.97272, "kind": "spark", "usd": 0.012796000000000002, "note": "in=6150 out=1202"}
+{"t": 1793776727.9967191, "kind": "spark", "usd": 0.01056225, "note": "in=6148 out=677"}
+{"t": 1793776732.501214, "kind": "spark", "usd": 0.009716500000000001, "note": "in=6148 out=478"}
+{"t": 1793776740.3228507, "kind": "spark", "usd": 0.011123250000000001, "note": "in=6148 out=809"}
+{"t": 1793776744.0617456, "kind": "spark", "usd": 0.009317, "note": "in=6148 out=384"}
+{"t": 1793776752.0233457, "kind": "spark", "usd": 0.0110535, "note": "in=6150 out=792"}
+{"t": 1793776755.0226183, "kind": "spark", "usd": 0.008979500000000001, "note": "in=6150 out=304"}
+{"t": 1793776761.0250905, "kind": "spark", "usd": 0.01036925, "note": "in=6150 out=631"}
+{"t": 1793776765.7367609, "kind": "spark", "usd": 0.009430000000000001, "note": "in=6150 out=410"}
+{"t": 1793776769.198581, "kind": "spark", "usd": 0.008962500000000002, "note": "in=6150 out=300"}
+{"t": 1793776776.280614, "kind": "spark", "usd": 0.010904750000000001, "note": "in=6150 out=757"}
+{"t": 1793776784.1835341, "kind": "spark", "usd": 0.011300000000000001, "note": "in=6150 out=850"}
+{"t": 1793776790.1051435, "kind": "spark", "usd": 0.009969750000000001, "note": "in=6150 out=537"}
+{"t": 1793776793.3356369, "kind": "spark", "usd": 0.009213250000000001, "note": "in=6150 out=359"}
+{"t": 1793776796.554824, "kind": "spark", "usd": 0.0091325, "note": "in=6150 out=340"}
+{"t": 1793776800.1697886, "kind": "spark", "usd": 0.00930675, "note": "in=6150 out=381"}
+{"t": 1793776802.8918104, "kind": "spark", "usd": 0.008779750000000001, "note": "in=6150 out=257"}
+{"t": 1793776807.2664995, "kind": "spark", "usd": 0.0095575, "note": "in=6150 out=440"}
+{"t": 1793776810.2557926, "kind": "spark", "usd": 0.008949750000000001, "note": "in=6150 out=297"}
+{"t": 1793776814.2907326, "kind": "spark", "usd": 0.009311, "note": "in=6150 out=382"}
+{"t": 1793776818.7942238, "kind": "spark", "usd": 0.0097955, "note": "in=6150 out=496"}
+{"t": 1793776822.935609, "kind": "spark", "usd": 0.00934075, "note": "in=6150 out=389"}
+{"t": 1793776827.9566984, "kind": "spark", "usd": 0.0097105, "note": "in=6150 out=476"}
+{"t": 1793776832.05518, "kind": "spark", "usd": 0.00974875, "note": "in=6150 out=485"}
+{"t": 1793776834.7219014, "kind": "spark", "usd": 0.00862675, "note": "in=6150 out=221"}
+{"t": 1793776843.7812698, "kind": "spark", "usd": 0.011903500000000001, "note": "in=6150 out=992"}
+{"t": 1793776849.4112124, "kind": "spark", "usd": 0.010271500000000001, "note": "in=6150 out=608"}
+{"t": 1793776856.0305066, "kind": "spark", "usd": 0.010454250000000002, "note": "in=6150 out=651"}
+{"t": 1793776859.9717174, "kind": "spark", "usd": 0.00932375, "note": "in=6150 out=385"}
+{"t": 1793776864.9372723, "kind": "spark", "usd": 0.009583000000000001, "note": "in=6150 out=446"}
+{"t": 1793777659.1546485, "kind": "spark", "usd": 0.012388, "note": "in=6150 out=1106"}
+{"t": 1793777670.950544, "kind": "spark", "usd": 0.010148250000000001, "note": "in=6150 out=579"}
+{"t": 1793777684.8885198, "kind": "spark", "usd": 0.009158000000000001, "note": "in=6150 out=346"}
+{"t": 1793777690.2205386, "kind": "spark", "usd": 0.009209, "note": "in=6150 out=358"}
+{"t": 1793777698.7546492, "kind": "spark", "usd": 0.00993575, "note": "in=6150 out=529"}
+{"t": 1793777705.616971, "kind": "spark", "usd": 0.00900925, "note": "in=6150 out=311"}
+{"t": 1793777772.4567542, "kind": "spark", "usd": 0.012054, "note": "in=6148 out=1028"}
+{"t": 1793777818.6190763, "kind": "spark", "usd": 0.0100385, "note": "in=2125 out=1737"}
+{"t": 1793778812.7844815, "kind": "spark", "usd": 0.01281725, "note": "in=6150 out=1207"}
+{"t": 1793778818.524991, "kind": "spark", "usd": 0.00957475, "note": "in=6140 out=447"}
+{"t": 1793778828.068779, "kind": "spark", "usd": 0.0108795, "note": "in=6140 out=754"}
+{"t": 1793779516.2978966, "kind": "sam", "usd": 0.5316000000000001, "note": "clip.mp4:<808f>1<|box;x1=832;y1=1008;x2=928;y2=1078;w=1920;h=1080|>"}
+{"t": 1793779603.380024, "kind": "spark", "usd": 0.0067912499999999995, "note": "in=537 out=1440"}
+{"t": 1793780177.7218707, "kind": "spark", "usd": 0.01221375, "note": "in=6150 out=1065"}
+{"t": 1793780434.270877, "kind": "spark", "usd": 0.011057750000000002, "note": "in=6150 out=793"}
+{"t": 1793780689.8538065, "kind": "spark", "usd": 0.011810000000000001, "note": "in=6150 out=970"}
+{"t": 1793780991.271651, "kind": "spark", "usd": 0.012328500000000001, "note": "in=6150 out=1092"}
+{"t": 1793780999.8261924, "kind": "spark", "usd": 0.0121205, "note": "in=6140 out=1046"}
+{"t": 1793781004.7376037, "kind": "spark", "usd": 0.01015825, "note": "in=6141 out=584"}
+{"t": 1793781008.8900383, "kind": "spark", "usd": 0.009638500000000001, "note": "in=6140 out=462"}
+{"t": 1793781302.6315596, "kind": "spark", "usd": 0.01505975, "note": "in=4357 out=2262"}
+{"t": 1793781319.602131, "kind": "spark", "usd": 0.0088495, "note": "in=1881 out=1529"}
+{"t": 1793781324.1869488, "kind": "spark", "usd": 0.002737, "note": "in=510 out=494"}
+{"t": 1793781331.7369108, "kind": "spark", "usd": 0.004926750000000001, "note": "in=1881 out=606"}
+{"t": 1793781340.8435042, "kind": "spark", "usd": 0.005414, "note": "in=1499 out=833"}
+{"t": 1793781350.3689482, "kind": "spark", "usd": 0.01131275, "note": "in=6150 out=853"}
