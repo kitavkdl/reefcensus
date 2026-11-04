@@ -83,7 +83,7 @@ Technical report with every measurement and what it changed in the design: [repo
 
 ## Try it
 
-**No key needed to look:** the [live demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install. Locally: `pip install -r requirements.txt && python3 web/server.py`, then open
+**No key needed to look:** the [live demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install: answering the queue recomputes the counts, ranges and CSV in your browser (kept until you reload; `demo/static_review.js`, checked against the server by `tests/test_static_review.py`). Locally: `pip install -r requirements.txt && python3 web/server.py`, then open
 http://127.0.0.1:8793. Four finished nautilus runs (`demo/runs`, copied into `runs/` on first start) play with
 their evidence frames, motion sheets and human queue. No model is called.
 
@@ -98,7 +98,7 @@ python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full p
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 99 tests, including an exact
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 100 tests, including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos.** One SAM 3.1 call takes a file of up to 10 minutes. A longer video is cut automatically into equal,

@@ -94,6 +94,25 @@ def hero(runs):
             f'<p class="more">Code, paper and how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
 
 
+def static_data(rid, eff):
+    """What demo/static_review.js needs to recompute server.effective() and both CSVs in the browser after an edit."""
+    res = server._json(os.path.join(server.RUNS, rid, "result.json"))
+    if res.get("site"):
+        raise SystemExit(f"{rid}: static review does not handle site memory")
+    v = res["video"]
+    times = [round(i / v["fps"], 2) for i in range(v["n_frames"])]       # as tracks.metrics rounds them
+    queued = [t for t, vd in res.get("verdicts", {}).items() if server.pipeline.needs_review(vd)]
+    card = ("track", "name", "thumb", "trio", "has_trio", "species", "confidence", "is_target", "reason", "category", "auto",
+            "yes_label", "from_site")
+    return dict(frames=res["frames"], base_metrics=res["metrics"], n_frames=v["n_frames"], times=times,
+                times_str=[str(t) for t in times], mins_str=[str(round(t / 60, 3)) for t in times],   # Python's float text
+                queued=queued, verdict_order=list(res.get("verdicts", {})),
+                accept={t: server.settle.accept_label(res, t) for t in queued},
+                cards={q["track"]: {k: q[k] for k in card} for q in eff["queue"]},
+                group_of=server.pipeline._GROUP_OF, opcode=server.maxn_export.default_opcode(eff), ga_columns=server.maxn_export.COLUMNS,
+                evidence=sorted(f for f in os.listdir(os.path.join(server.RUNS, rid)) if f.startswith("evidence_")))
+
+
 def main():
     server.RUNS = SRC
     if os.path.isdir(OUT):
@@ -104,7 +123,8 @@ def main():
     json.dump(dict(runs=runs, running=None), open(os.path.join(OUT, "api", "runs.json"), "w"))
     for r in runs:
         rid = r["id"]
-        json.dump(server.effective(rid), open(os.path.join(OUT, "api", "runs", f"{rid}.json"), "w"))
+        eff = server.effective(rid)
+        json.dump(dict(eff, _static=static_data(rid, eff)), open(os.path.join(OUT, "api", "runs", f"{rid}.json"), "w"))
         os.makedirs(os.path.join(OUT, "api", "runs", rid))
         open(os.path.join(OUT, "api", "runs", rid, "export.csv"), "w").write(server.export_csv(rid))
         open(os.path.join(OUT, "api", "runs", rid, "export_globalarchive.csv"), "w").write(
@@ -115,27 +135,37 @@ def main():
             ("`/api/runs/${encodeURIComponent(id)}/export.csv`", "`api/runs/${encodeURIComponent(id)}/export.csv`"),
             ("`/api/runs/${encodeURIComponent(id)}/export_globalarchive.csv`",
              "`api/runs/${encodeURIComponent(id)}/export_globalarchive.csv`"),
-            ("api(`/api/runs/${encodeURIComponent(id)}`)", "api(`api/runs/${encodeURIComponent(id)}.json`)"),
+            ("await api(`/api/runs/${encodeURIComponent(id)}`)", "StaticReview.open(await api(`api/runs/${encodeURIComponent(id)}.json`))"),
             ("`/runs/", "`runs/")]
     for a, b in subs:
         if a not in js:
             raise SystemExit(f"app.js changed, update build_static.py: {a!r} not found")
         js = js.replace(a, b)
-    # saving a review needs the server: keep the change on screen only and say so
-    js = re.sub(r"async function review\(track, label\) \{.*?\n\}\n",
-                "async function review(track, label) {\n  const n = document.getElementById(\"staticNote\");\n"
-                "  if (n) n.textContent = \"Static demo: reviews are not saved. Run the server from the repository to review and export.\";\n}\n",
-                js, count=1, flags=re.S)
+    # no server to save to: static/review.js recomputes the counts, the queue order and both CSVs in the page (memory only)
+    js, k = re.subn(r"async function review\(track, label\) \{.*?\n\}\n",
+                    "async function review(track, label) {\n  state.run = StaticReview.review(state.run, track, label);\n  drawRun(false);\n}\n",
+                    js, count=1, flags=re.S)
+    if not k:
+        raise SystemExit("app.js changed, update build_static.py: review() not found")
+    js += ('for (const [b, f, n] of [["exportBtn", StaticReview.exportCsv, "_maxn.csv"], '
+           '["exportGaBtn", StaticReview.globalArchiveCsv, "_globalarchive_maxn.csv"]])\n'
+           '  $(b).addEventListener("click", (e) => { if (!state.run) return; e.preventDefault(); '
+           'StaticReview.download(state.id + n, f(state.run)); });\n')
     # no upload form in the static copy (it needs the server); without it there is nothing to wire
     if "\nwireForm();\n" not in js:
         raise SystemExit("app.js changed, update build_static.py: wireForm() call not found")
     js = js.replace("\nwireForm();\n", "\n", 1)
     open(os.path.join(OUT, "static", "app.js"), "w").write(js)
     shutil.copy(os.path.join(ROOT, "web", "style.css"), os.path.join(OUT, "static", "style.css"))
+    shutil.copy(os.path.join(ROOT, "demo", "static_review.js"), os.path.join(OUT, "static", "review.js"))
     html = open(os.path.join(ROOT, "web", "index.html")).read()
     html = html.replace('href="/static/', 'href="static/').replace('src="/static/', 'src="static/')
+    if '<script src="static/app.js"></script>' not in html:
+        raise SystemExit("index.html changed, update build_static.py: app.js script tag not found")
+    html = html.replace('<script src="static/app.js"></script>', '<script src="static/review.js"></script>\n<script src="static/app.js"></script>', 1)
     note = (f'<p id="staticNote" style="margin:0;padding:6px 16px;font-size:13px;background:#fff6e5;color:#5a4300">'
             f'Interactive replay of four real runs — click a clip. Every model answer is saved, so nothing here calls a model. '
+            f'Answer the review queue and the counts, ranges and CSV downloads are recomputed in your browser (kept until you reload). '
             f'To run your own video: <a href="{REPO}">{REPO}</a></p>')
     html = html.replace("<body>", "<body>\n" + note + "\n" + hero(runs), 1)
     # IMAS footage is no longer used anywhere (licence not specified at the source); credit only what is shown
@@ -163,4 +193,5 @@ def main():
     print(f"{OUT}: {len(runs)} runs, {n} files, {size / 1e6:.1f} MB")
 
 
-main()
+if __name__ == "__main__":
+    main()
