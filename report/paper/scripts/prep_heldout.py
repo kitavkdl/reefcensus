@@ -36,7 +36,8 @@ def main():
     for v in pick:
         cid = f"fish_{v}"; dst = f"{SMOKE}/clips/{cid}.mp4"
         subprocess.run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-i", vids[v], "-vf", "fps=5", "-an",
-                        "-c:v", "libx264", "-crf", "20", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", dst], check=True)
+                        "-c:v", "libx264", "-threads", "9",  # = fishcount.video.X264_THREADS (cache keys)
+                        "-crf", "20", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", dst], check=True)
         n = nframes(dst)
         gt = {i: b for i, b in ann[v].items() if i < n}
         g = f"{SMOKE}/clips/gt/{cid}.json"

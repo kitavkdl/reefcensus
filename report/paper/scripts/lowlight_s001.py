@@ -55,7 +55,8 @@ def make():
         dst = os.path.join(OUT, f"s001_{v}.mp4")
         procs[v] = subprocess.Popen(
             [imageio_ffmpeg.get_ffmpeg_exe(), "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo",
-             "-pix_fmt", "bgr24", "-s", f"{w}x{h}", "-r", f"{fps}", "-i", "-", "-an", "-c:v", "libx264",
+             "-pix_fmt", "bgr24", "-s", f"{w}x{h}", "-r", f"{fps}", "-i", "-", "-an", "-c:v", "libx264", "-threads", "9",  # = fishcount.video.X264_THREADS (cache keys)
+                       
              "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], stdin=subprocess.PIPE)
     n = 0
     while True:

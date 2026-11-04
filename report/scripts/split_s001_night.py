@@ -74,7 +74,8 @@ def main():
         img.save(os.path.join(tmp, f"{f:04d}.png"))
     ff = imageio_ffmpeg.get_ffmpeg_exe()
     subprocess.run([ff, "-loglevel", "error", "-y", "-framerate", "5", "-i", os.path.join(tmp, "%04d.png"),
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", OUT], check=True)
+                    "-c:v", "libx264", "-threads", "9",  # = fishcount.video.X264_THREADS (cache keys)
+                        "-pix_fmt", "yuv420p", "-crf", "18", OUT], check=True)
     for p in glob.glob(os.path.join(tmp, "*.png")):
         os.remove(p)
     os.rmdir(tmp)

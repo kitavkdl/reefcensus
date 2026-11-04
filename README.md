@@ -73,7 +73,7 @@ The review screen plays the annotated clip (blue = asked for, orange = found wit
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
 of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits). Until the queue
 is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
-New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used, so all saved runs replay for $0).
+New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run). A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used). The cache is keyed by the exact bytes sent, so the code pins what changes those bytes between machines (x264 thread count, OpenCV IPP path); moved from a 6-core SSE4.2 CPU to a 12-core AVX-512 one, the s002–s004 demo runs and all tests still replay for $0. The brightened night clip (s001) does not come out byte-identical on the new CPU, so its re-run calls the API (cause not found yet).
 
 ### Standard MaxN export (GlobalArchive layout)
 Added after the evaluation (not used in any paper number). Next to the plain CSV, the review screen offers

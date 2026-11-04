@@ -39,7 +39,7 @@ def cut(clip, dst, start, n):
     """Frames start..start+n-1 of a 5 fps clip, by frame number (exact), re-encoded like video.ingest."""
     subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", clip,
                     "-vf", f"select=between(n\\,{start}\\,{start + n - 1}),setpts=N/5/TB", "-r", "5", "-fps_mode", "cfr",
-                    "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
+                    "-an", "-c:v", "libx264", "-threads", video.X264_THREADS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
     got = video.info(dst)["n_frames"]
     if got != n:
         raise RuntimeError(f"segment {os.path.basename(dst)}: wanted {n} frames, got {got}")

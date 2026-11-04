@@ -46,7 +46,8 @@ def main():
         start = max(0.0, d / 2 - 6) if d > 12 else 0.0
         dst = os.path.join(OUT, f"{cid}.mp4")
         subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-ss", f"{start:.2f}", "-i", src, "-t", "12",
-                        "-vf", "fps=5,scale='min(1920,iw)':-2", "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                        "-vf", "fps=5,scale='min(1920,iw)':-2", "-an", "-c:v", "libx264", "-threads", "9",  # = fishcount.video.X264_THREADS (cache keys)
+                        "-preset", "veryfast", "-crf", "20",
                         "-pix_fmt", "yuv420p", dst], check=True)
         inf = video.info(dst)
         idx = [i for i in (0, 20, 40, 59) if i < inf["n_frames"]]

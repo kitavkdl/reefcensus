@@ -9,13 +9,19 @@ import numpy as np
 
 import imageio_ffmpeg
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
+# x264's output bytes depend on its thread count, which defaults to 1.5 x CPU cores. The SAM cache is keyed by the
+# clip's content hash, so the same video re-encoded on a machine with another core count missed every cached
+# reply (11/3: the VM went from 6 to 12 cores and two replay tests failed). Pinned to 9, the old 6-core default,
+# so every existing cache entry still matches; x264's assembly is bit-exact with its C code, so the CPU type
+# does not matter (checked: 9 threads on the 12-core AVX2 machine reproduces the old hashes).
+X264_THREADS = "9"
 
 
 def ingest(src, dst, fps=5, max_w=1920, max_seconds=600):
     """Re-encode `src` to H.264 at `fps`, width <= max_w, no audio. Returns dict(n_frames, fps, width, height)."""
     vf = f"fps={fps},scale='min({max_w},iw)':-2"
     subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-t", str(max_seconds),
-                    "-vf", vf, "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst],
+                    "-vf", vf, "-an", "-c:v", "libx264", "-threads", X264_THREADS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst],
                    check=True)
     return info(dst)
 
@@ -69,7 +75,7 @@ def brighten(src, dst):
     fps = cap.get(cv2.CAP_PROP_FPS)
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     p = subprocess.Popen([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24",
-                          "-s", f"{w}x{h}", "-r", f"{fps}", "-i", "-", "-an", "-c:v", "libx264", "-preset", "veryfast",
+                          "-s", f"{w}x{h}", "-r", f"{fps}", "-i", "-", "-an", "-c:v", "libx264", "-threads", X264_THREADS, "-preset", "veryfast",
                           "-crf", "18", "-pix_fmt", "yuv420p", dst], stdin=subprocess.PIPE)
     while True:
         ok, f = cap.read()
@@ -140,7 +146,7 @@ def crop_tile(src, dst, box, scale=2, fps=5):
     x, y, w, h = box
     vf = f"crop={w}:{h}:{x}:{y},scale={int(w * scale) // 2 * 2}:{int(h * scale) // 2 * 2}:flags=lanczos"
     subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", vf, "-an",
-                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
+                    "-c:v", "libx264", "-threads", X264_THREADS, "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
     return info(dst)
 
 
@@ -152,7 +158,7 @@ def segment(src, dst, start, fps=5, length=None):
     sel = f"gte(n,{start})" if end == n else f"between(n,{start},{end - 1})"
     subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
                     f"select='{sel}',setpts=N/FRAME_RATE/TB", "-an", "-fps_mode", "cfr", "-r", str(fps),
-                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
+                    "-c:v", "libx264", "-threads", X264_THREADS, "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
     out = info(dst)
     if out["n_frames"] != end - start:
         raise RuntimeError(f"segment {start}-{end}: wanted {end - start} frames, got {out['n_frames']}")
@@ -171,7 +177,7 @@ def reverse(src, dst, chunk=REVERSE_CHUNK):
     n = info(src)["n_frames"]
     if n <= chunk * 1.5:
         subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", "reverse", "-an",
-                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
+                        "-c:v", "libx264", "-threads", X264_THREADS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
         return info(dst)
     import tempfile
     fps = info(src)["fps"]
@@ -182,7 +188,7 @@ def reverse(src, dst, chunk=REVERSE_CHUNK):
         part = os.path.join(tmp, f"part{k:03d}.mp4")
         subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
                         f"select='between(n,{s},{e})',setpts=N/FRAME_RATE/TB,reverse", "-an", "-fps_mode", "cfr", "-r", str(fps),
-                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", part], check=True)
+                        "-c:v", "libx264", "-threads", X264_THREADS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", part], check=True)
         got = info(part)["n_frames"]
         if got != e - s + 1:
             raise RuntimeError(f"reverse chunk {k}: wanted {e - s + 1} frames, got {got}")

@@ -226,6 +226,11 @@ OpenAI-compatible chat endpoint with images. SAM 3.1 is billed per processed fra
 50 frames per call); Spark per token, called with `reasoning_effort="low"` and `max_tokens=6000` (2,000 for the count-only baseline of §6.2). Neither model
 was fine-tuned. Every call is cached by a hash of its exact input (clip bytes and prompt for SAM; images and text for
 Spark), so that any run can be replayed offline at zero cost and a replay reproduces the stored decisions exactly.
+Because the key is the exact bytes, the clips and sheets the code builds must come out byte-identical on any machine:
+the x264 thread count (its output depends on it, and it defaults to the core count) and OpenCV's Intel IPP code path
+are pinned. Both were found when the build machine went from 6 cores without AVX to 12 with AVX-512 and two replay
+tests failed; after pinning, the s002–s004 demo runs and all 80 tests replay exactly on the new CPU. The brightened
+night clip of s001 (low light, Appendix B) still comes out different there, so a re-run of it calls the API again.
 Spending is capped twice: an environment variable caps the cumulative total of the project's spend ledger, and a
 per-run option caps the estimated cost of one run. Spark is the cheaper of the two image-reading models the API offers (Muse Wonder costs about 3 to 5 times as
 much per token; no Llama vision model is offered); §7.6 puts Wonder on the same questions.
