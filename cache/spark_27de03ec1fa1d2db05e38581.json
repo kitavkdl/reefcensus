@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T41\",\"is_target\":true,\"species\":\"unknown\",\"confidence\":0.4,\"reason\":\"Faint dark stationary mass behind moving fish\"}]", "usage": {"completion_tokens": 655, "prompt_tokens": 545, "total_tokens": 1200, "completion_tokens_details": {"reasoning_tokens": 613}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "{\"total\": 10, \"estimated\": false, \"reason\": \"Distinct shapes in full frame and enlarged quarters correspond to ten fish.\"}", "usage": {"completion_tokens": 1327, "prompt_tokens": 6150, "total_tokens": 7477, "completion_tokens_details": {"reasoning_tokens": 1289}, "prompt_tokens_details": {"cached_tokens": 0}}}

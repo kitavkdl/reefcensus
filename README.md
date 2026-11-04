@@ -234,6 +234,11 @@ frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipe
   Against that count the pipeline is exact on 22 clips and within ±1 on all 24, summed error 2; the reference boxes exact
   on 18, summed error 14
   (paper Table 1e, `report/paper/scripts/recount2_score.py`).
+- **A third held-out set from another ocean.** Eight 12-s windows cut by rule from NOAA Gulf of Mexico reef-fish survey
+  videos, hand-counted and committed before the run: the four clips without fish are 0 with no false fish (two of them
+  the hand count first entered as 2 and 4 fish, then judged drifting particles); N1 is exact. Small faint fish over a
+  hazy floor are where it counts low (N3 10 of 12); on N7 the tiled re-run (`--crowd`) finds 3 of 9 and the crowd check
+  marks that MaxN a lower bound, so the clip goes to a person (paper Table 1f, `report/paper/scripts/score_noaa_heldout.py`).
 - Of the two MaxN misses left, 20190618_9 (9→10) is two real fish the annotators did not box in that frame (one cut
   by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds.
 - **Most "false positives" are unboxed fish.** On the held-out set, 40 of the 153 boxes scored as false were drawn at
@@ -281,6 +286,8 @@ so that the names Spark proposes are checked by people who know the fauna.
 - 53-minute video: NOAA Fisheries, Southeast Fisheries Science Center, reef fish baited video, station T60233001,
   camera A (Open Data Dissemination bucket `nmfs_odp_sefsc`); US government work, public domain, attribution to the
   Southeast Fisheries Science Center (download script and hashes in `report/paper/data/long_video/`)
+- NOAA held-out set (N1–N8): the same NOAA bucket, eight stations chosen by rule (`report/paper/noaa_heldout_protocol.md`;
+  stations, URLs and hashes in `report/paper/data/noaa_heldout/clips.json`); US government work, attribution as above
 
 ## License
 MIT (code), except `fishcount/_maskdec.c`, a C port of `meta_sam_parser`'s mask codec, which is under Meta's SAM

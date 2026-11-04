@@ -35,6 +35,7 @@ hackathon.
 | On luderick the audits keep the segmenter's box recall (97.4% development, 98.9% held-out) and reach the MaxN of a tuned minimum-track-length rule | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary; request "fish", luderick and bream scored as one group, not per species |
 | Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | counted by the first author, 21 of 24 blind and shuffled; the same with the queue answered from recorded human judgements instead of accepted |
 | Against a second, independent hand count (a person who never saw the project's output) the pipeline is exact on 22, within ±1 on 24, summed error 2; the reference boxes 18, 21 and 14 | §6.2 Table 1e | 24 held-out | blind, shuffled, key fixed before counting; the two counters agree within one fish on all 24 (exact on 20) |
+| On eight NOAA Gulf of Mexico survey clips cut by rule, the four without fish are counted 0 with no false fish (two of them first hand-counted as 2 and 4); the clip of nine faint far fish is flagged as a lower bound once the frame is tiled | §6.2 Table 1f | 8 held-out (another ocean) | one hand count; exact 5 of 8, summed error 14, the errors on small faint fish over a hazy floor; the tiled run was chosen after seeing |
 | One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | the pipeline is not re-scored against boxes it added; re-judged, 11 of 11 earlier "fish" tracks were fish again |
 | Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7%, 95% interval 89.6–97.0% by track, vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | labels hidden; 10/10 matched controls called fish |
 | The person queue (17 of 50 tracks) holds most of the tracks behind the largest over-counts | §6.1 Table 1b; §6.2 | 24 held-out | |
@@ -757,6 +758,36 @@ confidence: 0 of 7 below 0.5, 5 of 11 (45%) at 0.5–0.7, 20 of 26 (77%) at 0.7�
 above (Brier score 0.13). The 0.7 threshold therefore sends the band where real and spurious tracks mix to a person:
 the queue holds 22 tracks, of which 6 match, against 45 of 52 outside it. Script: `report/paper/scripts/calibration.py`.
 
+**A third held-out set from another ocean.** To test beyond the estuary, eight 12-s windows were cut by a fixed rule
+from NOAA Gulf of Mexico reef-fish survey videos (the 600–612 s window of the first stations that pass; protocol
+`report/paper/noaa_heldout_protocol.md`, committed before any clip was cut). The code was frozen at the cut, Jiyul Ahn
+hand-counted the shuffled clips under neutral names and the counts were committed (`e1500d7`) before the one run
+with the settings of Table 2. Table 1f gives that run, then an after-seeing re-run on all eight clips with an opt-in
+setting that already existed at the cut (`--crowd`: SAM "fish" on every overlapping 3×2 tile, upscaled 2×).
+
+<div class="tablecap">**Table 1f.** NOAA held-out clips (8): fish MaxN against the hand count (sure fish; faint fish
+in brackets). Range = queue rejected–accepted (§4.7). `report/paper/scripts/score_noaa_heldout.py` (`--tag crowd` for
+the re-run).</div>
+
+| clip | hand | protocol run | `--crowd` re-run (after seeing) |
+|---|--:|--:|--:|
+| N1 | 1 | 1 | 1 |
+| N2 | 10 (+5) | 12–13 | 12–16 |
+| N3 | 12 (+2) | 10 | 7–10 |
+| N4, N5, N6, N8 | 0 each | 0 each | 0 each |
+| N7 | 9 (+2) | 0 | 0–3, marked lower bound (Spark, unprimed: 9) |
+| exact / Σ\|err\| vs sure | | 5/8 / 14 | 5/8 / 14 |
+| cost, time (8 clips) | | $0.54, 11 min | $0.75, 8 min |
+
+The four clips without fish are 0 with no false fish. On two of them (N5, N6) the hand count first entered 2 and 4
+fish and changed them to drifting particles on a second look; the pipeline gave 0 on its first pass. The errors are
+on the two clips of small, faint fish over a hazy sea floor: N3 (10 against 12) and N7, where the full-frame pass found
+no fish and the one fish-shaped mover Spark saw it judged debris. `--zoom` did not act here because it takes its cells
+from the scout, which `--no-scout` turns off. The crowd tiles cover the frame without the scout and find 3 of N7's 9,
+and the crowd check (§4.7), counting the peak frame unprimed, gives 9 and marks that MaxN as a lower bound, which sends
+the clip to a person. One non-fish name was counted, N2's "barracuda", a fish name our word groups lack; shown label-free, the crop was judged a fish, partly outside its box. The "seaweed" row was queued, not
+counted, and was judged unsure (`data/noaa_heldout/crops_answers.txt`). No counted row is a false discovery.
+
 ## Finding what was not asked for
 
 <div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (run `cr7`). Person = non-expert,
@@ -989,7 +1020,7 @@ data on the code of the second protocol commit 42 calls ($0.11), empty-cache liv
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the held-out runs with the re-runs of every
-evaluation, the crowd check and the demo runs 922 calls ($7.49), the re-runs of the 53-min video 287 calls ($6.37) and the empty-cache live take filmed for the demo video 34 calls ($0.35), for a ledger total of $48.88 over 3,642 calls (the items sum to $48.90 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+evaluation, the crowd check and the demo runs 922 calls ($7.49), the re-runs of the 53-min video 287 calls ($6.37) and the empty-cache live take filmed for the demo video 34 calls ($0.35) and the NOAA held-out set (§6.2, run and re-run) 140 calls ($1.29), for a ledger total of $50.17 over 3,782 calls (the items sum to $50.19 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -1525,6 +1556,9 @@ Hyperparameters are listed in Appendix B.
   videos). US federal government work (public domain, 17 U.S.C. § 105); the files carry no per-file licence text,
   and NOAA asks for attribution to the Southeast Fisheries Science Center. Position, depth and date are not stated in
   the folder. Download script and SHA-256 hashes: `report/paper/data/long_video/`.
+* **NOAA held-out set (§6.2, Table 1f):** the same bucket and terms; eight stations and the 600–612 s window chosen by
+  rule (`report/paper/noaa_heldout_protocol.md`); stations, URLs and SHA-256 of the cut clips in
+  `report/paper/data/noaa_heldout/clips.json`.
 
 # References
 

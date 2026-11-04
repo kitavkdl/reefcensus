@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T64\",\"is_target\":true,\"species\":\"seaweed\",\"confidence\":0.5,\"reason\":\"Hazy dark mass persists in place\"}]", "usage": {"completion_tokens": 681, "prompt_tokens": 545, "total_tokens": 1226, "completion_tokens_details": {"reasoning_tokens": 639}, "prompt_tokens_details": {"cached_tokens": 0}}}

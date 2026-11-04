@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"S1\",\"is_animal\":true,\"what\":\"fish\",\"confidence\":0.9,\"reason\":\"Clear fish body tail in last crop\"}]", "usage": {"completion_tokens": 379, "prompt_tokens": 863, "total_tokens": 1242, "completion_tokens_details": {"reasoning_tokens": 337}, "prompt_tokens_details": {"cached_tokens": 227}}}

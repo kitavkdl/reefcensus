@@ -110,7 +110,12 @@ def main():
     l2_usd, l2_n = l2_usd + sum(r["usd"] for r in a1), l2_n + len(a1)
     print(f"{'LONG1 re-runs on final code':34s} {l2_n:4d} calls (from {len(seg2)} segment status files)  ${l2_usd:.3f}")
     show("live take for the video (s002, empty cache)", take)
-    print(f"{'final-code development + re-runs':34s} {len(final) - l2_n:4d} calls  ${sum(r['usd'] for r in final) - l2_usd:.3f}")
+    # NOAA held-out set (protocol run N*_eval + after-seeing --crowd re-run N*_crowd), from their status files
+    nq = [json.load(open(f)) for f in sorted(glob.glob(os.path.join(ROOT, "runs/N[1-8]_eval/status.json")) + glob.glob(os.path.join(ROOT, "runs/N[1-8]_crowd/status.json")))] or \
+         [json.load(open(f)) for f in sorted(glob.glob(os.path.join(ROOT, "report/paper/data/noaa_heldout/runs/N*/status.json")))]
+    n_usd, n_n = sum(d["billed_usd"] for d in nq), sum(d["live_calls"] for d in nq)
+    print(f"{'NOAA held-out (run + crowd re-run)':34s} {n_n:4d} calls (from {len(nq)} status files)  ${n_usd:.3f}")
+    print(f"{'final-code development + re-runs':34s} {len(final) - l2_n - n_n:4d} calls  ${sum(r['usd'] for r in final) - l2_usd - n_usd:.3f}")
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
     tin = [int(r["note"].split("in=")[1].split()[0]) for r in sp if "in=" in r.get("note", "")]

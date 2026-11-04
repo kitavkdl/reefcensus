@@ -1,0 +1,7 @@
+Label-free crop sheet (crops_sheet.jpg, protocol Scoring 3), question "is this an animal?" per crop.
+Asked 11/4 ~13:40 ET; reply from Jiyul Ahn, verbatim (Korean), then the reading used:
+"#1 물고기는 맞지만 흰 박스 안에 다 들어와있지 않음 #2 모르겠음"
+#1 = "it is a fish, but it is not all inside the white box" -> animal (not a false discovery)
+#2 = "don't know" -> unsure
+Key (not shown to the judge): #1 = N2 'barracuda' (counted, MaxN 1); #2 = N2 'seaweed (unidentified)' (in the
+upper end only: queued, confirmed MaxN 0).

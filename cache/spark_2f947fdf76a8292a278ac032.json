@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"P1\",\"same_animal\":true,\"what\":\"fish\"},{\"tile\":\"P2\",\"same_animal\":true,\"what\":\"fish tail part\"}]", "usage": {"completion_tokens": 507, "prompt_tokens": 481, "total_tokens": 988, "completion_tokens_details": {"reasoning_tokens": 464}, "prompt_tokens_details": {"cached_tokens": 99}}}

@@ -1,0 +1,187 @@
+[
+ {
+  "clip": "N1",
+  "hand_sure": 1,
+  "hand_faint": 0,
+  "fish_maxn": 1,
+  "fish_maxn_low": 1,
+  "fishlike_maxn": 1,
+  "fishlike_maxn_low": 1,
+  "rows": [
+   {
+    "label": "fish (unidentified)",
+    "maxn": 1,
+    "maxn_confirmed": 1,
+    "in_fish_group": true,
+    "non_fish": false
+   }
+  ],
+  "discovered": [],
+  "queued_tracks": 2,
+  "lower_bound": [],
+  "cost_usd": 0.0657,
+  "live_calls": 9,
+  "seconds": 96.6
+ },
+ {
+  "clip": "N2",
+  "hand_sure": 10,
+  "hand_faint": 5,
+  "fish_maxn": 13,
+  "fish_maxn_low": 12,
+  "fishlike_maxn": 13,
+  "fishlike_maxn_low": 12,
+  "rows": [
+   {
+    "label": "barracuda",
+    "maxn": 1,
+    "maxn_confirmed": 1,
+    "in_fish_group": false,
+    "non_fish": true,
+    "crop": 1
+   },
+   {
+    "label": "fish (unidentified)",
+    "maxn": 13,
+    "maxn_confirmed": 12,
+    "in_fish_group": true,
+    "non_fish": false
+   },
+   {
+    "label": "seaweed (unidentified)",
+    "maxn": 1,
+    "maxn_confirmed": 0,
+    "in_fish_group": false,
+    "non_fish": true,
+    "crop": 2
+   }
+  ],
+  "discovered": [
+   "dark seaweed clump"
+  ],
+  "queued_tracks": 16,
+  "lower_bound": [
+   {
+    "row": "barracuda",
+    "labels": [
+     "barracuda"
+    ],
+    "frame": 58,
+    "maxn": 1,
+    "total": 9,
+    "estimated": false,
+    "reason": "Nine distinct slender barracuda visible in upper and lower right.",
+    "lower_bound": true
+   }
+  ],
+  "cost_usd": 0.2036,
+  "live_calls": 26,
+  "seconds": 256.9
+ },
+ {
+  "clip": "N3",
+  "hand_sure": 12,
+  "hand_faint": 2,
+  "fish_maxn": 10,
+  "fish_maxn_low": 10,
+  "fishlike_maxn": 10,
+  "fishlike_maxn_low": 10,
+  "rows": [
+   {
+    "label": "fish (unidentified)",
+    "maxn": 10,
+    "maxn_confirmed": 10,
+    "in_fish_group": true,
+    "non_fish": false
+   }
+  ],
+  "discovered": [
+   "seafloor seaweed tufts"
+  ],
+  "queued_tracks": 4,
+  "lower_bound": [],
+  "cost_usd": 0.1597,
+  "live_calls": 16,
+  "seconds": 146.4
+ },
+ {
+  "clip": "N4",
+  "hand_sure": 0,
+  "hand_faint": 0,
+  "fish_maxn": 0,
+  "fish_maxn_low": 0,
+  "fishlike_maxn": 0,
+  "fishlike_maxn_low": 0,
+  "rows": [],
+  "discovered": [],
+  "queued_tracks": 0,
+  "lower_bound": [],
+  "cost_usd": 0.023,
+  "live_calls": 3,
+  "seconds": 32.5
+ },
+ {
+  "clip": "N5",
+  "hand_sure": 0,
+  "hand_faint": 0,
+  "fish_maxn": 0,
+  "fish_maxn_low": 0,
+  "fishlike_maxn": 0,
+  "fishlike_maxn_low": 0,
+  "rows": [],
+  "discovered": [],
+  "queued_tracks": 0,
+  "lower_bound": [],
+  "cost_usd": 0.0158,
+  "live_calls": 2,
+  "seconds": 19.4
+ },
+ {
+  "clip": "N6",
+  "hand_sure": 0,
+  "hand_faint": 0,
+  "fish_maxn": 0,
+  "fish_maxn_low": 0,
+  "fishlike_maxn": 0,
+  "fishlike_maxn_low": 0,
+  "rows": [],
+  "discovered": [],
+  "queued_tracks": 0,
+  "lower_bound": [],
+  "cost_usd": 0.0168,
+  "live_calls": 2,
+  "seconds": 23.2
+ },
+ {
+  "clip": "N7",
+  "hand_sure": 9,
+  "hand_faint": 2,
+  "fish_maxn": 0,
+  "fish_maxn_low": 0,
+  "fishlike_maxn": 0,
+  "fishlike_maxn_low": 0,
+  "rows": [],
+  "discovered": [],
+  "queued_tracks": 1,
+  "lower_bound": [],
+  "cost_usd": 0.0372,
+  "live_calls": 5,
+  "seconds": 47.1
+ },
+ {
+  "clip": "N8",
+  "hand_sure": 0,
+  "hand_faint": 0,
+  "fish_maxn": 0,
+  "fish_maxn_low": 0,
+  "fishlike_maxn": 0,
+  "fishlike_maxn_low": 0,
+  "rows": [],
+  "discovered": [],
+  "queued_tracks": 0,
+  "lower_bound": [],
+  "cost_usd": 0.0163,
+  "live_calls": 2,
+  "seconds": 20.8
+ }
+]

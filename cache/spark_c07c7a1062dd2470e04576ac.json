@@ -1,0 +1,1 @@
+{"text": "{\"total\": 12, \"estimated\": false, \"reason\": \"Counted distinct tails, bodies and distant silhouettes across the frame.\"}", "usage": {"completion_tokens": 1329, "prompt_tokens": 6150, "total_tokens": 7479, "completion_tokens_details": {"reasoning_tokens": 1289}, "prompt_tokens_details": {"cached_tokens": 0}}}
