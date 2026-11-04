@@ -1,0 +1,9 @@
+S1 start 0 n 2658 billed $0.335
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0xaec9dc0] Error during demuxing: Immediate exit requested
+[vost#0:0/libx264 @ 0xaee4e40] Error submitting a packet to the muxer: Immediate exit requested
+    Last message repeated 1 times
+[out#0/mp4 @ 0xaefb8c0] Error muxing a packet
+[out#0/mp4 @ 0xaefb8c0] Task finished with error code: -1414092869 (Immediate exit requested)
+[out#0/mp4 @ 0xaefb8c0] Terminating thread with return code -1414092869 (Immediate exit requested)
+[out#0/mp4 @ 0xaefb8c0] Error writing trailer: Immediate exit requested
+[out#0/mp4 @ 0xaefb8c0] Error closing file: Immediate exit requested

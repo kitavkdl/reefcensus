@@ -16,7 +16,7 @@ to a person instead of the count. Discovery is scored as presence of taxa. On fo
 pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one of four nautiluses, it
 counts all four. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
 the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
-requested species, on 24 held-out clips, the pipeline's MaxN is closer to an independent hand count of the videos than
+requested species, on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos (by the first author, 21 of 24 counted blind) than
 the reference boxes are (summed error 6 against 16, within one fish on all 24), and none of 40 randomly drawn boxes
 scored as false positives was judged not a fish: corrected precision is 93.7–100%, against 77.2% on the boxes. The
 audits keep the segmenter's recall and match a tuned track-length rule. As an auditor the VLM adopts names placed in its prompt. The result

@@ -87,7 +87,7 @@ def hero(runs):
             f'every model answer computed beforehand. Click a clip to see the counts, the evidence and the review queue.</p>'
             f'<div class="cards">{"".join(cards)}</div>'
             f'<p class="proof"><b>Measured on 24 held-out fish videos</b> (luderick, not used in development): the pipeline’s '
-            f'MaxN is closer to an independent hand count than the human reference boxes are (summed error 6 against 16, '
+            f'MaxN is closer to a hand count of the videos (21 of 24 counted blind) than the human reference boxes are (summed error 6 against 16, '
             f'within one fish on all 24). Of 40 randomly drawn boxes the reference called false, none was judged not a fish. '
             f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
             f'<p class="more">Code, paper and how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')

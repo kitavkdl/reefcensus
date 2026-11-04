@@ -58,7 +58,7 @@ python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (r
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 50 tests, including an exact
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 80 tests, including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos.** One SAM 3.1 call takes a file of up to 10 minutes. A longer video is cut automatically into equal,
@@ -119,7 +119,7 @@ lists P and ? tracks for a person, and reports MaxN before and after. On the hel
 from 20 tracks, so 153 per-box judgements become 20 taps; in the 40-box sample no track mixed "fish" with "not a fish".
 **Measured once (11/3):** the author answered the 20 tracks plus 3 controls on a phone in 9 min 39 s; all 3 controls
 "already boxed", 15 tracks unboxed fish (145 boxes added), 1 already boxed, 1 part, 3 unsure, 0 not a fish. The
-corrected annotation's MaxN is within ±1 of an independent hand count on all 24 clips (summed error 6, against 16
+corrected annotation's MaxN is within ±1 of the author's hand count (21 of 24 blind) on all 24 clips (summed error 6, against 16
 for the original boxes). The judge is consistent: 15 tracks were judged twice (first as single boxes in the precision
 sheet, then as tracks), and all 11 called fish the first time were called fish again, with no answer turning into "not
 a fish"; two of the four first-time "unsure" tracks became fish when seen as a track. Sheet, key, answers and
@@ -202,7 +202,7 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   before the run, `report/paper/heldout_protocol.md`): recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
   (SAM alone 19, the length rule 19); rejecting the queue puts every clip within ±1 at 95.6% recall. Same estuary, so
   this tests transfer within one site, not to new habitats.
-- **Against an independent count, the pipeline beats the reference boxes.** The author counted MaxN by hand on all 24
+- **Against a hand count of the videos, the pipeline beats the reference boxes.** The author counted MaxN by hand on all 24
   held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed
   error 6; the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
   the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3).
