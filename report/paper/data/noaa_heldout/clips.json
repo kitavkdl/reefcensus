@@ -1,0 +1,119 @@
+{
+ "protocol": "report/paper/noaa_heldout_protocol.md",
+ "code_head": "62849110fc0e5bed2b66994981d22450abbec514",
+ "seed": 1105,
+ "clips": [
+  {
+   "station": "T60233051_A",
+   "file": "GOPR1316.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233051_A/GOPR1316.MP4",
+   "size": 4001924309,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N1",
+   "sha256_pipeline": "e3c55218bc773116a01b9b8ba3607c7b4c3dfceb3f4a1c95eb6e88e2651dd0e7",
+   "sha256_handcount": "fbd9fc3b7c45d9dbaf6f29cb3514525776f8764978a8a45c60377c2733a59a16"
+  },
+  {
+   "station": "T60233194_A",
+   "file": "GOPR3657.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233194_A/GOPR3657.MP4",
+   "size": 4001985557,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N2",
+   "sha256_pipeline": "45ba3a6da4532795572fbcb58e3a0950f2a3b37d9d920bc62ffde2d1bb52fbb0",
+   "sha256_handcount": "89f327741f95be5610e08b510d11d737813401243af8432e44e5218b15016015"
+  },
+  {
+   "station": "T60233082_A",
+   "file": "GOPR0189.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233082_A/GOPR0189.MP4",
+   "size": 4001777050,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N3",
+   "sha256_pipeline": "025558607bf2ff0f9dffd1abd46f867c2134d82a40ef06f51f8be5e051c619e1",
+   "sha256_handcount": "1a62b728bec712cad61caa02794d7226aa95c06c7d455b6ff0257ddc04de7016"
+  },
+  {
+   "station": "T60233087_A",
+   "file": "GOPR1320.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233087_A/GOPR1320.MP4",
+   "size": 4001929257,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N4",
+   "sha256_pipeline": "188de1bc4f9667462a8e87f5f4240b5391ba073851076ba450b375370c595e9e",
+   "sha256_handcount": "c644fe891b496df8ea74776897c4a1fee1495211a69f1f462f130466009e3275"
+  },
+  {
+   "station": "T60233032_A",
+   "file": "GOPR1218.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233032_A/GOPR1218.MP4",
+   "size": 4000706865,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N5",
+   "sha256_pipeline": "669d881f7362528f9900838803f58b074122d884d0bb81d07a5c78f90eedc820",
+   "sha256_handcount": "f02fa0d8c000912923bd43726d32ee3642e13a13fbe76422ce2cc3e26957527f"
+  },
+  {
+   "station": "T60233046_A",
+   "file": "GOPR0181.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233046_A/GOPR0181.MP4",
+   "size": 4001971441,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N6",
+   "sha256_pipeline": "e536a694b4aefc36fe82cd82cd3b222807c64112e28b334b594cd327a24daaf8",
+   "sha256_handcount": "fd6dfd99d56484c1708e0b0787f8d519199f895972cef858f0bf98098ec9a309"
+  },
+  {
+   "station": "T60233076_A",
+   "file": "GOPR0003.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233076_A/GOPR0003.MP4",
+   "size": 4001696453,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N7",
+   "sha256_pipeline": "480c5568ca28716e9a8ffd089459afd2b6b37a9f4c18d98e29d220001e8b6456",
+   "sha256_handcount": "face62f95ce01d0a9906cccc586d5b198f0381c475eb7f0de023f693bf57121e"
+  },
+  {
+   "station": "T60233039_A",
+   "file": "GOPR3634.MP4",
+   "url": "https://storage.googleapis.com/nmfs_odp_sefsc/PEMD/VIDEO_DATA/GOM_REEF_FISH/Jack_Videos/sefis%20video/T60233039_A/GOPR3634.MP4",
+   "size": 4000931758,
+   "window": [
+    600.0,
+    612.0
+   ],
+   "chapter_seconds": 1063.08,
+   "id": "N8",
+   "sha256_pipeline": "8a4a1eef7746daeec8c573e3d367ee3eeec85dbcd04d92bd8e89348be60ca2d6",
+   "sha256_handcount": "0cd1d6b66bfdc864b09ee122a19cfc765061f04c59922056ab2d8e894e3063be"
+  }
+ ]
+}

@@ -26,6 +26,9 @@ It also records any non-fish row counted on these fish-survey clips (false disco
 - IDs N1–N8 in selection order. Two copies per clip: the pipeline input (12 s, H.264, width ≤ 1920, no audio, the
   pipeline re-encodes to 5 fps as for every other clip) and the hand-count copy (the same 12 s at the original frame
   rate). Clips are not committed (size); `clips.json` makes them reproducible.
+- Sheet delivery (11/4, after the cut, before counting): the one-file sheet is ~257 MB, too large to send to a phone,
+  so `scripts/noaa_sheet_split.py` re-encodes the `clip_*` copies at the same resolution and frame rate with a
+  ~3 Mb/s cap and writes two sheets of four (`clip_a`–`d`, `clip_e`–`h`); the counts are made from these.
 
 ## Reference (before any model call on these clips)
 - **Hand count**, as Table 1d: Jiyul Ahn counts fish MaxN (the most fish visible at once) from the full-rate 12-s

@@ -1,0 +1,13 @@
+{
+ "protocol": "NOAA held-out hand count: full-rate 12-s clips, no boxes, shuffled with random.Random(1106), neutral names; fixed before counting",
+ "key": {
+  "clip_a": "N2",
+  "clip_b": "N6",
+  "clip_c": "N5",
+  "clip_d": "N7",
+  "clip_e": "N1",
+  "clip_f": "N3",
+  "clip_g": "N4",
+  "clip_h": "N8"
+ }
+}
