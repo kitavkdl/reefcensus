@@ -86,9 +86,10 @@ def hero(runs):
             f'SAM can act on, and checks SAM’s work frame by frame. Four 12-second clips of deep-sea baited-camera video, '
             f'every model answer computed beforehand. Click a clip to see the counts, the evidence and the review queue.</p>'
             f'<div class="cards">{"".join(cards)}</div>'
-            f'<p class="proof"><b>Measured on 24 held-out fish videos</b> (luderick, not used in development): the pipeline’s '
-            f'MaxN is closer to a hand count of the videos (21 of 24 counted blind) than the human reference boxes are (summed error 6 against 16, '
-            f'within one fish on all 24). Of 40 randomly drawn boxes the reference called false, none was judged not a fish. '
+            f'<p class="proof"><b>On another dataset (24 held-out luderick fish videos, not used in development)</b>, hand-counted '
+            f'separately by two people: the pipeline’s MaxN is closer to the hand count than the human reference boxes are, '
+            f'summed error 6 against 16 for the first count (21 of 24 counted blind) and 2 against 14 for a second person who '
+            f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false, none was judged not a fish. '
             f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
             f'<p class="more">Code, paper and how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
 
@@ -134,8 +135,8 @@ def main():
     html = open(os.path.join(ROOT, "web", "index.html")).read()
     html = html.replace('href="/static/', 'href="static/').replace('src="/static/', 'src="static/')
     note = (f'<p id="staticNote" style="margin:0;padding:6px 16px;font-size:13px;background:#fff6e5;color:#5a4300">'
-            f'Static demo of four precomputed runs (every model answer was computed beforehand). '
-            f'Live runs and reviews need the local server: <a href="{REPO}">{REPO}</a></p>')
+            f'Interactive replay of four real runs — click a clip. Every model answer is saved, so nothing here calls a model. '
+            f'To run your own video: <a href="{REPO}">{REPO}</a></p>')
     html = html.replace("<body>", "<body>\n" + note + "\n" + hero(runs), 1)
     # IMAS footage is no longer used anywhere (licence not specified at the source); credit only what is shown
     html = re.sub(r'<footer class="credits">.*?</footer>',
