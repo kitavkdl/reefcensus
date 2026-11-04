@@ -1,0 +1,338 @@
+{
+ "protocol": "11/4: every queued track (pipeline.needs_review) of runs/qtime_* (4 development luderick clips), shuffled with random.Random(1104); three crops (spread over the track) with our box and the auditor's reason, as the review screen shows them; answers A accept / R reject / ? unsure; seconds from Start (or first tap) to Copy.",
+ "cards": [
+  {
+   "run": "qtime_fish_20190618_9",
+   "track": "p0:11",
+   "label": "fish",
+   "reason": "very faint but shape persists",
+   "is_target": true,
+   "confidence": 0.4,
+   "show": [
+    [
+     49,
+     [
+      1231.0,
+      265.0,
+      1353.0,
+      324.0
+     ]
+    ],
+    [
+     55,
+     [
+      1073.0,
+      203.0,
+      1155.0,
+      269.0
+     ]
+    ],
+    [
+     60,
+     [
+      1233.0,
+      229.0,
+      1324.0,
+      274.0
+     ]
+    ]
+   ],
+   "n": 1
+  },
+  {
+   "run": "qtime_fish_20190618_9",
+   "track": "p0:2",
+   "label": "fish",
+   "reason": "faint hazy shape holds fish outline",
+   "is_target": true,
+   "confidence": 0.5,
+   "show": [
+    [
+     0,
+     [
+      1317.0,
+      234.0,
+      1457.0,
+      289.0
+     ]
+    ],
+    [
+     18,
+     [
+      529.0,
+      218.0,
+      678.0,
+      283.0
+     ]
+    ],
+    [
+     35,
+     [
+      0.0,
+      277.0,
+      57.0,
+      341.0
+     ]
+    ]
+   ],
+   "n": 2
+  },
+  {
+   "run": "qtime_fish_20190709_14",
+   "track": "p0:1",
+   "label": "fish",
+   "reason": "Middle shows fish body with fins",
+   "is_target": true,
+   "confidence": 0.6,
+   "show": [
+    [
+     128,
+     [
+      1838.0,
+      697.0,
+      1920.0,
+      810.0
+     ]
+    ],
+    [
+     156,
+     [
+      1394.0,
+      513.0,
+      1550.0,
+      585.0
+     ]
+    ],
+    [
+     192,
+     [
+      1452.0,
+      495.0,
+      1504.0,
+      551.0
+     ]
+    ]
+   ],
+   "n": 3
+  },
+  {
+   "run": "qtime_fish_20190709_4",
+   "track": "p0:2",
+   "label": "fish",
+   "reason": "video timestamp overlay not animal",
+   "is_target": false,
+   "confidence": 0.9,
+   "show": [
+    [
+     27,
+     [
+      532.0,
+      18.0,
+      593.0,
+      32.0
+     ]
+    ],
+    [
+     28,
+     [
+      520.0,
+      0.0,
+      584.0,
+      24.0
+     ]
+    ],
+    [
+     29,
+     [
+      510.0,
+      0.0,
+      533.0,
+      5.0
+     ]
+    ]
+   ],
+   "n": 4
+  },
+  {
+   "run": "qtime_fish_20190709_4",
+   "track": "p0:1",
+   "label": "fish",
+   "reason": "faint consistent fish shape in green water",
+   "is_target": true,
+   "confidence": 0.6,
+   "show": [
+    [
+     25,
+     [
+      1755.0,
+      560.0,
+      1912.0,
+      664.0
+     ]
+    ],
+    [
+     45,
+     [
+      1638.0,
+      583.0,
+      1689.0,
+      681.0
+     ]
+    ],
+    [
+     66,
+     [
+      1726.0,
+      504.0,
+      1798.0,
+      573.0
+     ]
+    ]
+   ],
+   "n": 5
+  },
+  {
+   "run": "qtime_fish_20190618_3",
+   "track": "p0:2",
+   "label": "fish",
+   "reason": "No fish visible only water",
+   "is_target": false,
+   "confidence": 0.95,
+   "show": [
+    [
+     56,
+     [
+      0.0,
+      95.0,
+      58.0,
+      159.0
+     ]
+    ],
+    [
+     57,
+     [
+      0.0,
+      82.0,
+      69.0,
+      161.0
+     ]
+    ]
+   ],
+   "n": 6
+  },
+  {
+   "run": "qtime_fish_20190618_9",
+   "track": "p0:9",
+   "label": "fish",
+   "reason": "pale elongated body persists moving",
+   "is_target": true,
+   "confidence": 0.55,
+   "show": [
+    [
+     26,
+     [
+      1884.0,
+      205.0,
+      1920.0,
+      266.0
+     ]
+    ],
+    [
+     56,
+     [
+      1024.0,
+      147.0,
+      1212.0,
+      211.0
+     ]
+    ],
+    [
+     85,
+     [
+      0.0,
+      104.0,
+      11.0,
+      165.0
+     ]
+    ]
+   ],
+   "n": 7
+  },
+  {
+   "run": "qtime_fish_20190709_4",
+   "track": "p0:0",
+   "label": "fish",
+   "reason": "elongated body with tail moving through",
+   "is_target": true,
+   "confidence": 0.65,
+   "show": [
+    [
+     7,
+     [
+      269.0,
+      821.0,
+      472.0,
+      910.0
+     ]
+    ],
+    [
+     36,
+     [
+      994.0,
+      811.0,
+      1325.0,
+      932.0
+     ]
+    ],
+    [
+     65,
+     [
+      1822.0,
+      786.0,
+      1920.0,
+      985.0
+     ]
+    ]
+   ],
+   "n": 8
+  },
+  {
+   "run": "qtime_fish_20190618_9",
+   "track": "p0:14",
+   "label": "fish",
+   "reason": "faint oval body persists across frames",
+   "is_target": true,
+   "confidence": 0.5,
+   "show": [
+    [
+     66,
+     [
+      175.0,
+      137.0,
+      345.0,
+      221.0
+     ]
+    ],
+    [
+     68,
+     [
+      0.0,
+      87.0,
+      127.0,
+      168.0
+     ]
+    ],
+    [
+     69,
+     [
+      0.0,
+      99.0,
+      20.0,
+      151.0
+     ]
+    ]
+   ],
+   "n": 9
+  }
+ ]
+}
