@@ -7,7 +7,7 @@ sys.path.insert(0, ROOT)
 from fishcount import _pylib  # noqa: F401
 from fishcount import longvideo
 
-DEMO = sorted(glob.glob(os.path.join(ROOT, "demo", "runs", "mg2_s00?")))
+DEMO = sorted(glob.glob(os.path.join(ROOT, "demo", "runs", "cr11_s00?")))
 KEYS = ("maxn", "maxn_frame", "maxn_time", "first_frame", "first_time", "tracks", "curve", "peak_checked")
 
 
@@ -120,3 +120,26 @@ class Merge(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CrowdAndEmptyTracks(unittest.TestCase):
+    def _seg(self, d, maxn_boxes, crowd_total):
+        trk = {f"t{i}": dict(label="fish", source="j", first=0, last=0, n=1) for i in range(maxn_boxes)}
+        trk["gone"] = dict(label="fish", source="j", first=None, last=None, n=0)   # every box removed by verify_peaks
+        res = dict(source="v.mp4", video=dict(n_frames=2, fps=5, width=10, height=10), tracks=trk,
+                   metrics={"fish": dict(maxn=maxn_boxes)}, auto_labels={},
+                   frames={"0": [dict(track=t, box=[0, 0, 1, 1]) for t in trk if t != "gone"]},
+                   crowd_checks=[dict(row="fish", labels=["fish"], frame=0, maxn=maxn_boxes, total=crowd_total, lower_bound=True)])
+        os.makedirs(d)
+        json.dump(res, open(os.path.join(d, "result.json"), "w"))
+
+    def test_crowd_check_survives_the_merge_and_is_judged_on_the_whole_video(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a, b = os.path.join(tmp, "a"), os.path.join(tmp, "b")
+            self._seg(a, 4, 12)        # 12 >= 4+3 and >= 1.5*4: lower bound for MaxN 4
+            self._seg(b, 9, 12)        # segment 2 lifts MaxN to 9: 12 < 9+3, no longer a lower bound
+            R = longvideo.merge("t", "v.mp4", [(a, 0, 2), (b, 2, 2)], 5, out_dir=os.path.join(tmp, "o"))
+        self.assertEqual(R["metrics"]["fish"]["maxn"], 9)
+        self.assertEqual(R["metrics"]["fish"]["tracks"], 13)      # the two emptied tracks are not counted
+        self.assertEqual([(c["frame"], c["maxn"], c["lower_bound"]) for c in R["crowd_checks"]], [(0, 9, False), (2, 9, False)])
+        self.assertIsNone(R["tracks"]["S1:gone"]["first"])

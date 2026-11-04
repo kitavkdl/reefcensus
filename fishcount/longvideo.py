@@ -97,7 +97,7 @@ def merge(rid, src_name, segs, fps, out_dir=None):
     d = out_dir or os.path.join(pipeline.RUNS, rid)
     os.makedirs(os.path.join(d, "thumbs"), exist_ok=True)
     R = dict(id=rid, source=src_name, prompts=[], jobs=[], scout=[], tracks={}, verdicts={}, auto_labels={},
-             discovered=[], signs=[], recovered=[], peak_checks=[], duplicates=[], frames={}, segments=[])
+             discovered=[], signs=[], recovered=[], peak_checks=[], duplicates=[], crowd_checks=[], frames={}, segments=[])
     frames, total, W, H = {}, 0, None, None
     for k, (sd, start, n) in enumerate(segs):
         res = json.load(open(os.path.join(sd, "result.json")))
@@ -117,7 +117,8 @@ def merge(rid, src_name, segs, fps, out_dir=None):
                 dict(e, source=p + e["source"], segment=tag) for e in res["site"].get("entries", []) if e.get("source")]
         R["scout"].append(dict(segment=tag, **(res.get("scout") or {})))
         for t, v in res["tracks"].items():
-            R["tracks"][p + t] = dict(v, source=p + v["source"], first=v["first"] + start, last=v["last"] + start, segment=tag)
+            R["tracks"][p + t] = dict(v, source=p + v["source"], first=v["first"] + start if v["first"] is not None else None,
+                                    last=v["last"] + start if v["last"] is not None else None, segment=tag)
         for t, v in res.get("verdicts", {}).items():
             nm = f"{tag}-{v.get('name')}"
             R["verdicts"][p + t] = dict(v, name=nm, frame=(v["frame"] + start) if isinstance(v.get("frame"), int) else v.get("frame"))
@@ -131,6 +132,7 @@ def merge(rid, src_name, segs, fps, out_dir=None):
         R["peak_checks"] += [dict(c, frame=c["frame"] + start, segment=tag) for c in res.get("peak_checks", [])]
         R["duplicates"] += [dict(x, outer=p + x["outer"], inner=p + x["inner"], frame=x["frame"] + start, segment=tag)
                             for x in res.get("duplicates", [])]
+        R["crowd_checks"] += [dict(c, frame=c["frame"] + start, segment=tag) for c in res.get("crowd_checks", [])]
         for f, ks in res["frames"].items():
             frames[int(f) + start] = [dict(kk, track=p + kk["track"]) for kk in ks]
     R["video"] = dict(n_frames=total, fps=fps, width=W, height=H)
@@ -140,6 +142,14 @@ def merge(rid, src_name, segs, fps, out_dir=None):
     for name, mm in m.items():
         mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
     R["metrics"] = m
+    # a segment's crowd check counted its own peak; judged again against the whole video's row (labels, MaxN)
+    rows = {r[0]: r for r in pipeline.crowd_rows(m, fps)}
+    for c in R["crowd_checks"]:
+        r = rows.get(c["row"])
+        if r is None or c.get("total") is None:
+            c["lower_bound"] = False
+            continue
+        c.update(labels=r[1], maxn=r[2], lower_bound=c["total"] >= r[2] + pipeline.CROWD_MIN_EXTRA and c["total"] >= pipeline.CROWD_RATIO * r[2])
     heads = {}
     for name in m:
         h = pipeline._head(name)

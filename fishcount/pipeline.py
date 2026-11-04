@@ -817,8 +817,12 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             crowd = crowd_check(run, clip, m, inf["fps"], offline)
         except FileNotFoundError as e:      # an offline replay of a run made before the crowd check
             run.stage("verify", f"crowd check skipped: {str(e)[:120]}")
+    live = {}       # frames a track still holds after verify_peaks/drop_nested removed boxes (trk keeps the pre-removal list)
+    for f, ks in frames.items():
+        for k in ks:
+            live.setdefault(k["track"], []).append(f)
     result = dict(id=rid, source=os.path.basename(src), video=inf, prompts=plist, jobs=[dict(name=j[0], label=j[1], prompt=j[2], tile=j[4]) for j in jobs], scout=sc,
-                  tracks={t: dict(v, n=len(v["frames"]), first=min(v["frames"]), last=max(v["frames"]), frames=None) for t, v in trk.items()},
+                  tracks={t: dict(v, n=len(fs), first=min(fs, default=None), last=max(fs, default=None), frames=None) for t, v in trk.items() for fs in [live.get(t, [])]},
                   verdicts=verdicts, auto_labels=labels, metrics=m, group_metrics=group_metrics(m, inf["fps"]),
                   discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks, duplicates=dups,
                   crowd_checks=crowd, frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})

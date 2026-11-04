@@ -141,6 +141,7 @@ def metrics(frames, tracks, n_frames, fps, labels=None):
     lab = lambda tid: labels.get(tid, tracks[tid]["label"]) if tid in tracks else None
     names = sorted({l for tid in tracks if (l := lab(tid))})
     curve = {n: [0] * n_frames for n in names}
+    alive = {k["track"] for ks in frames.values() for k in ks}      # a track whose every box was removed is not counted
     for f, ks in frames.items():
         if f >= n_frames:
             continue
@@ -155,7 +156,7 @@ def metrics(frames, tracks, n_frames, fps, labels=None):
         first = next((i for i, v in enumerate(c) if v), None)
         out[n] = dict(maxn=m, maxn_frame=c.index(m) if m else None, maxn_time=round(c.index(m) / fps, 2) if m else None,
                       first_frame=first, first_time=round(first / fps, 2) if first is not None else None,
-                      tracks=sum(1 for tid in tracks if lab(tid) == n), curve=c)
+                      tracks=sum(1 for tid in tracks if lab(tid) == n and tid in alive), curve=c)
     return out
 
 
