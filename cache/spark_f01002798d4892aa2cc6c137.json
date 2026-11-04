@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":false,\"name\":\"none\",\"confidence\":0.85,\"reason\":\"No distinct animal visible, likely shadow\"}]", "usage": {"completion_tokens": 727, "prompt_tokens": 543, "total_tokens": 1270, "completion_tokens_details": {"reasoning_tokens": 685}, "prompt_tokens_details": {"cached_tokens": 227}}}

@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"C1\",\"is_animal\":true,\"name\":\"fish\",\"confidence\":0.8,\"reason\":\"Blurry fish changes orientation across frames\"}]", "usage": {"completion_tokens": 656, "prompt_tokens": 543, "total_tokens": 1199, "completion_tokens_details": {"reasoning_tokens": 614}, "prompt_tokens_details": {"cached_tokens": 227}}}

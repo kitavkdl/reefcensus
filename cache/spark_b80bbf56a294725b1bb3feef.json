@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T5\",\"is_target\":true,\"species\":\"eel\",\"confidence\":0.55,\"reason\":\"Dark elongated curved body persists across frames\"}]", "usage": {"completion_tokens": 713, "prompt_tokens": 537, "total_tokens": 1250, "completion_tokens_details": {"reasoning_tokens": 672}, "prompt_tokens_details": {"cached_tokens": 0}}}
