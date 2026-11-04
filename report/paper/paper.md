@@ -1525,7 +1525,8 @@ shadow" look; refill re-runs a SAM pass that used all 16 of its object ids from 
 head noun first; x264 is capped to its AVX2 code on CPUs with AVX-512, whose AVX-512 code encodes some clips to other
 bytes so that the cache, keyed by those bytes, missed; a mid-confidence discovered track is renamed to the animal the
 discovery step named when an unprimed second look confirms it; the crowd check; the review-queue order; cut links for
-long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr7`, logs
+long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr8`; `cr8`, after the second motion look, moved no
+row, group MaxN or discovery on the 15 nautilus and discovery runs, nor any luderick score; logs
 `report/paper/data/run_cr*.log`, row-by-row comparison `report/paper/scripts/compare_tags.py`). From the protocol runs
 to the final code, the counts that moved are these, each reported beside its protocol-run number:
 the held-out queue-rejected row (§6.2), DH2/DH3/DH5 (§6.3), DH6/DH7/DH8 (§6.3), s001 brightened and s004's shrimp
