@@ -1864,6 +1864,7 @@ if __name__ == "__main__":
     ap.add_argument("--segment", type=float, help="split into segments of at most this many seconds and merge "
                     "(automatic at 600 s, the SAM 3.1 per-file limit, for longer videos)")
     a = ap.parse_args()
+    a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
     from fishcount import longvideo
     inf0 = video.info(a.video)
     secs = inf0["n_frames"] / inf0["fps"] if inf0["fps"] else 0
@@ -1878,3 +1879,4 @@ if __name__ == "__main__":
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                          camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
+    print(f"run folder: {os.path.relpath(os.path.join(RUNS, a.id))}/", file=sys.stderr)
