@@ -22,14 +22,14 @@ def kappa(pairs):
     return None if pe == 1 else (po - pe) / (1 - pe)
 
 
-def part1():
+def part1(fname="answers.json", remap=None, title="blind sheet"):
     key = json.load(open(f"{D}/audit_agree/key.json"))
-    ap = f"{D}/audit_agree/answers.json"
-    print(f"== blind sheet: pool {key['pool_sizes']}, {len(key['cards'])} cards ({key['per_stratum']} per stratum)")
+    ap = f"{D}/audit_agree/{fname}"
+    print(f"== {title}: pool {key['pool_sizes']}, {len(key['cards'])} cards ({key['per_stratum']} per stratum)")
     if not os.path.exists(ap):
-        print("   no answers.json yet")
+        print(f"   no {fname} yet")
         return
-    ans = json.load(open(ap))["answers"]
+    ans = {k: (remap or {}).get(v, v) for k, v in json.load(open(ap))["answers"].items()}
     rows = collections.defaultdict(collections.Counter)
     pairs, pairs_unsure_wrong = [], []
     for c in key["cards"]:
@@ -86,5 +86,21 @@ def part2():
     print("   queue (A1 answer, person A accept / R reject / ?):", dict(sorted(c.items())))
 
 
+# Second pass (audit_agree_recheck.py, rule fixed there): only S "sure yes" counts as yes; A "unsure" is scored as ?.
+RECHECK = {"S": "Y", "A": "?"}
+
+
+def retest():
+    p1, p2 = f"{D}/audit_agree/answers.json", f"{D}/audit_agree/recheck_answers.json"
+    if not (os.path.exists(p1) and os.path.exists(p2)):
+        return
+    key = {str(c["n"]): c["stratum"] for c in json.load(open(f"{D}/audit_agree/key.json"))["cards"]}
+    a1, a2 = json.load(open(p1))["answers"], json.load(open(p2))["answers"]
+    c = collections.Counter((key[n], a1.get(n), a2.get(n)) for n in key)
+    print("== first pass -> second pass (stratum, first, second):")
+    for k, v in sorted(c.items(), key=lambda x: (STRATA.index(x[0][0]), str(x[0][1]), str(x[0][2]))):
+        print(f"   {k}: {v}")
+
+
 if __name__ == "__main__":
-    part1(); part2()
+    part1(); part1("recheck_answers.json", RECHECK, "second pass, only 'sure' counts as yes"); retest(); part2()

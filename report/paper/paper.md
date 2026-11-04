@@ -253,6 +253,8 @@ coordinates and marked "cut" when they touch the crop border.
 
 ## Discovery: naming what was not asked for
 
+This is VLM-guided open-vocabulary discovery, not open-set recognition. Spark names at most three kinds per clip from six frames, and each is found only through a word the segmenter answers; the motion path (next section) adds at most five moving spots outside the word boxes. An animal Spark does not name and that does not move apart from the word boxes is not found.
+
 Six frames of the clip are tiled into a contact sheet and Spark is asked for "every OTHER kind of living thing that
 the request did not ask about", with three plain-noun search words per item, an expected count, the grid cells where
 it appears, and indirect signs (sediment puffs, moving shadows). The prompt states the segmenter's vocabulary
@@ -1448,7 +1450,7 @@ first author, who is not a marine biologist; 60 cards.
 
 Counting was measured on 30 luderick clips from one estuary, discovery on 15 12-s clips from nine studies (4 nautilus
 development clips, 5 and then 6 held-out clips); every number above is for these clips. Counts are what a reviewer confirms from the queue and the evidence
-frames, and species names are the VLM's proposals (§7.5). Videos over 10 minutes are split into
+frames, and species names are the VLM's proposals (§7.5). Discovery is bounded by what the VLM names and what moves (§4), so it is not open-set recognition. Videos over 10 minutes are split into
 segments and merged (§6.4); one 53-min deployment has been run end to end ($15.08 and 3.5 h in its completed
 attempt), without ground truth, so counts on long videos are measured for cost and robustness only.
 
