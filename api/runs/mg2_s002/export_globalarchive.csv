@@ -1,0 +1,4 @@
+OpCode,Family,Genus,Species,MaxN,Frame,Time_mins,spark_common_name,maxn_confirmed,origin,taxonomy_status,source_file,run_id,human_edits
+nautilus_0_12,,,,2,11,0.037,fish (unidentified),0,asked,not verified: common name from Muse Spark or a reviewer,nautilus_0_12.mp4,mg2_s002,0
+nautilus_0_12,,,,1,6,0.02,chambered nautilus,1,found,not verified: common name from Muse Spark or a reviewer,nautilus_0_12.mp4,mg2_s002,0
+nautilus_0_12,,,,1,0,0.0,small red crab,1,found,not verified: common name from Muse Spark or a reviewer,nautilus_0_12.mp4,mg2_s002,0
