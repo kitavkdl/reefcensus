@@ -949,7 +949,14 @@ the completed attempt and $19.5 counting all three, below our earlier extrapolat
 and 7.5 h). The merged run reports fish (unidentified) MaxN 8 at 546 s and jack 1 at 2,133 s; in the first two
 minutes, while the camera is still on the boat deck, it also counts the crew (human 3, and one figure behind a
 trap named "person (unidentified)", a name split of the same kind as §7.5) and a fish lying in a trap on deck. The
-auditor rejected 35 of the 116 tracks. Segments run one after another; running them in parallel is not implemented.
+auditor rejected 35 of the 116 tracks. On the final code (clean and refill, on by default after the freeze), the same
+six segment clips were run again with every cached answer reused (run `LONG1_cr2`, log
+`report/paper/data/long_video/run_cr2c.log`; $5.67 together with an earlier partial re-run). Refill sends each
+segment again after a SAM call has used its 16 object IDs, so much more of the hour is tracked: 1,373 tracks after
+cutting reused IDs, 185 rejected by the auditor. The merged run reports fish (unidentified) MaxN 14 at 418 s, grunt 2,
+flatfish 1, needlefish 1 and sand lance 1 (names are proposals, §7.5); the deck crew is unchanged (human 3, person
+(unidentified) 1) and "jack" no longer appears. Without ground truth this shows what refill adds on a long video, not
+that 14 is the right count. Segments run one after another; running them in parallel is not implemented.
 
 # Analysis
 

@@ -120,3 +120,14 @@ FISH_BUDGET=<ledger total + 40> setsid nohup python3 fishcount/pipeline.py data_
 - Not done: no ground truth exists for this video, so none of these counts is scored. Deck frames are not shown in
   the paper, figures or demo.
 
+
+## Re-run on the final code (`LONG1_cr2`, 11/3 evening UTC)
+- Same six segment clips (`runs/LONG1__S*/clip.mp4`), every cached answer reused, final code with clean and refill on
+  (`report/paper/scripts/rerun_long1_cr.py LONG1_cr2`; log `run_cr2c.log`). Live cost of the re-runs
+  (`LONG1_cr` partial + `LONG1_cr2`): $5.67, 269 calls (`ledger_summary.py`, from the segment status files).
+- Merged MaxN: fish (unidentified) 14 @ 418 s, grunt 2 @ 2488 s, flatfish 1 @ 308 s, needlefish 1 @ 2162 s, sand lance 1
+  @ 2622 s, human 3 @ 23 s, person (unidentified) 1 @ 69 s. 1,373 tracks after cutting reused IDs, 185 judged not a
+  target. Refill (re-sending a segment after a SAM call used all 16 IDs) is what tracks the extra fish.
+- Replay note: the cache key is the exact clip bytes. Segment 6 ran after the VM moved to a 12-core AVX-512 CPU before
+  x264 threads were pinned (commit 6d52f15), and one refill window of segment 1 (`seg_p0+2538`) does not re-encode to
+  the bytes that were sent; so `LONG1_cr2` does not replay fully offline (cause of the second not found).
