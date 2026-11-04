@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(ROOT, "web"))
 from fishcount import _pylib  # noqa: F401
 from fishcount import api, pipeline, sitememory
 
-SAVED = os.path.join(ROOT, "demo", "runs", "mg2_s004", "result.json")
+SAVED = os.path.join(ROOT, "demo", "runs", "cr11_s004", "result.json")
 BOX = "<{f}f>0<|box;x1=10;y1=20;x2=29;y2=39;c=0.9|>\n"
 
 

@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(ROOT, "web"))
 from fishcount import _pylib  # noqa: F401
 from fishcount import maxn_export
 
-SAVED = os.path.join(ROOT, "demo", "runs", "mg2_s004", "result.json")
+SAVED = os.path.join(ROOT, "demo", "runs", "cr11_s004", "result.json")
 
 
 class GlobalArchiveExport(unittest.TestCase):

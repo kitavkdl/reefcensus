@@ -68,7 +68,7 @@ class Decisive(unittest.TestCase):
 
     def test_stopping_early_gives_the_numbers_of_answering_everything(self):
         import settle_sim
-        runs = sorted(glob.glob(os.path.join(ROOT, "demo", "runs", "mg2_s00?", "result.json")))
+        runs = sorted(glob.glob(os.path.join(ROOT, "demo", "runs", "cr11_s00?", "result.json")))
         self.assertTrue(runs)
         for p in runs:
             out = settle_sim.run_one(json.load(open(p)))

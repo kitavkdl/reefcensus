@@ -284,7 +284,7 @@ def replay_or_skip(test, fn):
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")   # CC BY 4.0, see tests/data/README.md
-    SAVED = os.path.join(ROOT, "demo", "runs", "mg2_s004", "result.json")
+    SAVED = os.path.join(ROOT, "demo", "runs", "cr11_s004", "result.json")
 
     def setUp(self):    # runs go to a temp folder, not the repo's runs/ (they would show up in the review screen)
         import tempfile
