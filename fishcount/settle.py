@@ -1,5 +1,5 @@
 """Which queued tracks can still change a count. The human queue holds every track the auditor was unsure of; on a long
-video that is most tracks (the 53-min NOAA run queues 1,048 of 1,377). A person does not need to look at all of them to
+video that is most tracks (the 53-min NOAA run queues 1,082 of 1,420). A person does not need to look at all of them to
 settle the survey numbers. For each label, MaxN after review lies between the count of the frame with the most sure
 boxes (counted and not queued, or already reviewed) and the count with every open queued track in it accepted. A queued
 track can move MaxN only if it appears in a frame whose upper count is above the current lower end; it can move first
