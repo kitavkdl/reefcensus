@@ -1,6 +1,6 @@
 """Meta Model API clients (SAM 3.1 video, Muse Spark chat) with a disk cache and a spend ledger.
-Every paid call goes through `_guard()`, which refuses to exceed BUDGET_USD (env FISH_BUDGET, default $1)
-for the lifetime of the ledger file. The API key comes from META_API_KEY (environment or a .env file in the repo root,
+Every paid call runs inside `reserve(est)`, which refuses to exceed FISH_BUDGET (default $1) for the lifetime of the
+ledger file; the check and the hold are atomic across threads and processes, so parallel calls cannot overshoot it. The API key comes from META_API_KEY (environment or a .env file in the repo root,
 see .env.example) or else ~/.config/meta-api/key, and is never printed."""
 import base64, hashlib, json, os, sys, threading, time
 
@@ -55,10 +55,75 @@ def spent():
     return sum(json.loads(l)["usd"] for l in open(LEDGER) if l.strip())
 
 
+_resv_lock = threading.Lock()
+
+
+def _resv_path():
+    return LEDGER + ".resv"
+
+
+def _live_reservations(lines):
+    """Reservations whose process is still alive (a crashed run must not hold budget forever)."""
+    out = []
+    for l in lines:
+        try:
+            d = json.loads(l)
+            os.kill(d["pid"], 0)
+            out.append(d)
+        except (ValueError, KeyError, ProcessLookupError):
+            continue
+        except PermissionError:
+            out.append(d)
+    return out
+
+
+class _Reservation:
+    """Hard spend cap. Check-and-reserve happens under one lock (threads: a mutex; processes sharing the ledger: an
+    flock on ledger.jsonl.resv), so parallel calls cannot all pass the same check: each one's estimate is held until
+    the call has been written to the ledger (or failed). Estimates are upper bounds of one call (SAM: billed frames
+    are the clip's; Spark: $0.02 against a largest logged call of $0.015)."""
+
+    def __init__(self, est):
+        self.est, self.id = est, f"{os.getpid()}-{threading.get_ident()}-{time.time_ns()}"
+
+    def _edit(self, fn):
+        import fcntl
+        os.makedirs(os.path.dirname(LEDGER), exist_ok=True)
+        with _resv_lock, open(_resv_path(), "a+") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            fh.seek(0)
+            res = _live_reservations(fh.read().splitlines())
+            res = fn(res)
+            fh.seek(0)
+            fh.truncate()
+            fh.write("".join(json.dumps(r) + "\n" for r in res))
+
+    def __enter__(self):
+        budget = float(os.environ.get("FISH_BUDGET", "1.0"))
+
+        def take(res):
+            held = sum(r["usd"] for r in res)
+            if spent() + held + self.est > budget:
+                raise BudgetExceeded(f"would spend ${spent() + held + self.est:.3f} > budget ${budget:.2f}"
+                                     f"{f' (${held:.3f} held by calls in flight)' if held else ''} (set FISH_BUDGET)")
+            return res + [dict(id=self.id, pid=os.getpid(), usd=self.est)]
+        self._edit(take)
+        return self
+
+    def __exit__(self, *exc):
+        self._edit(lambda res: [r for r in res if r["id"] != self.id])
+        return False
+
+
+def reserve(est):
+    """`with reserve(est): <paid call, then _log>` holds `est` against FISH_BUDGET until the call is logged."""
+    return _Reservation(est)
+
+
 def _guard(est):
-    budget = float(os.environ.get("FISH_BUDGET", "1.0"))
-    if spent() + est > budget:
-        raise BudgetExceeded(f"would spend ${spent() + est:.3f} > budget ${budget:.2f} (set FISH_BUDGET)")
+    """Check only (kept for the paper's repeat scripts, which call it before a single serial call)."""
+    with _Reservation(est):
+        pass
 
 
 _tl = threading.local()     # per-thread spend, so parallel calls don't bill each other
@@ -105,7 +170,11 @@ def sam_video(clip_path, prompt, n_frames, offline=False):
     if offline:
         raise FileNotFoundError(f"not cached: SAM {prompt!r} on {clip_path}")
     est = max(SAM_MIN_FRAMES, n_frames) * SAM_PER_FRAME
-    _guard(est)
+    with reserve(est):
+        return _sam_live(clip_path, prompt, n_frames, payload, cp)
+
+
+def _sam_live(clip_path, prompt, n_frames, payload, cp):
     key = _key()
     with open(clip_path, "rb") as fh:
         r = requests.post(f"{BASE}/files", headers={"Authorization": f"Bearer {key}"},
@@ -181,18 +250,8 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
     if offline:
         raise FileNotFoundError("not cached: spark call")
     for attempt in range(2 if check else 1):
-        _guard(0.02)
-        r = requests.post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
-        if r.status_code >= 300:
-            raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
-        j = r.json()
-        u = j.get("usage") or {}
-        p_in, p_out = PRICES.get(model, (SPARK_IN, SPARK_OUT))
-        usd = u.get("prompt_tokens", 0) * p_in + u.get("completion_tokens", 0) * p_out
-        _log("spark" if model == SPARK_MODEL else model, usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
-        text = j["choices"][0]["message"]["content"] or ""
-        if not text.strip():
-            raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
+        with reserve(0.02 if model == SPARK_MODEL else 0.15):     # largest logged: Spark $0.015, Wonder $0.096
+            text, u = _spark_live(payload, model)
         if check is None or _valid(check, text):
             tmp = f"{cp}.{os.getpid()}.{threading.get_ident()}.tmp"     # CLI and web server may share cache/
             with open(tmp, "w") as fh:
@@ -201,6 +260,21 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
             _tl.last_usage = u
             return text
     raise ValueError(f"Spark sent an unreadable reply twice: {text[:120]!r}")
+
+
+def _spark_live(payload, model):
+    r = requests.post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
+    if r.status_code >= 300:
+        raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
+    j = r.json()
+    u = j.get("usage") or {}
+    p_in, p_out = PRICES.get(model, (SPARK_IN, SPARK_OUT))
+    usd = u.get("prompt_tokens", 0) * p_in + u.get("completion_tokens", 0) * p_out
+    _log("spark" if model == SPARK_MODEL else model, usd, f"in={u.get('prompt_tokens')} out={u.get('completion_tokens')}")
+    text = j["choices"][0]["message"]["content"] or ""
+    if not text.strip():
+        raise RuntimeError(f"Spark returned empty text (usage {u}); raise max_tokens or lower effort")
+    return text, u
 
 
 def parse_json_list(text):
