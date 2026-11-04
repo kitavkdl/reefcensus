@@ -1,5 +1,8 @@
-requests
-numpy
-opencv-python-headless
-imageio-ffmpeg
-meta-sam-parser
+# Pinned to the versions the cached runs were made with: the model-reply cache is keyed by the exact bytes sent
+# (clips re-encoded by imageio-ffmpeg's ffmpeg, sheets drawn and JPEG-encoded by OpenCV), so other versions can
+# produce other bytes and turn a free replay into live calls.
+requests==2.34.2
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+imageio-ffmpeg==0.7.0
+meta-sam-parser==0.1.0

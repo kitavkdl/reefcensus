@@ -201,7 +201,8 @@ class OffByDefault(Isolated):
         super().tearDown()
 
     def replay(self, rid, **kw):
-        return pipeline.run_pipeline(self.CLIP, rid, True, False, True, True, ["fish"], 0.0, True, **kw)   # current defaults (clean, refill), as the saved demo run
+        from test_core import replay_or_skip
+        return replay_or_skip(self, lambda: pipeline.run_pipeline(self.CLIP, rid, True, False, True, True, ["fish"], 0.0, True, **kw))   # current defaults, as the saved demo run
 
     def test_site_run_with_nothing_usable_gives_the_saved_counts(self):
         if not os.path.exists(self.CLIP):

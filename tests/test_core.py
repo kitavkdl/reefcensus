@@ -259,6 +259,20 @@ class ExportCsv(unittest.TestCase):
         self.assertEqual(sorted(rows), ["crab (unidentified)", "fish", "nautilus"])
 
 
+
+def replay_or_skip(test, fn):
+    """Run an offline replay. A cache miss on a build other than the pinned one (requirements.txt) skips with the
+    reason instead of failing: the cache is keyed by the exact bytes that build makes. On the pinned build it fails."""
+    import cv2, imageio_ffmpeg
+    try:
+        return fn()
+    except FileNotFoundError as e:
+        pinned = cv2.__version__.startswith("5.0.0") and imageio_ffmpeg.__version__ == "0.7.0"
+        if "not cached" in str(e) and not pinned:
+            test.skipTest(f"cache keyed to the pinned build (opencv 5.0.0, imageio-ffmpeg 0.7.0); this is "
+                          f"opencv {cv2.__version__}, imageio-ffmpeg {imageio_ffmpeg.__version__}: {e}")
+        raise
+
 class Replay(unittest.TestCase):
     """The saved demo run must replay from cache/ with no API call and give the same counts."""
     CLIP = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")   # CC BY 4.0, see tests/data/README.md
@@ -280,7 +294,7 @@ class Replay(unittest.TestCase):
         if not os.path.exists(self.CLIP):
             self.skipTest("clip not present (videos are not in git; see README Data)")
         from fishcount import pipeline
-        r = pipeline.run_pipeline(self.CLIP, "test_replay_s004", True, False, True, True, ["fish"], 0.0, True)   # current defaults (clean, refill), as the saved demo run
+        r = replay_or_skip(self, lambda: pipeline.run_pipeline(self.CLIP, "test_replay_s004", True, False, True, True, ["fish"], 0.0, True))   # current defaults (clean, refill), as the saved demo run
         saved = json.load(open(self.SAVED))["metrics"]
         got = {k: (v["maxn"], v["maxn_frame"], v["first_frame"]) for k, v in r["metrics"].items()}
         want = {k: (v["maxn"], v["maxn_frame"], v["first_frame"]) for k, v in saved.items()}
