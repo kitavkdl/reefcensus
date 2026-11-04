@@ -2,7 +2,9 @@
 
 Say what to count; get per-species MaxN (the most animals of a species on screen at once, the standard count of
 baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
-uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026).
+uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
+experiments ran on Oct 31 in a scratch folder (kept in `spikes/`), this repository starts on Nov 1 (first commit `85b825d`),
+and all code here was written in those days (third-party footage and libraries are credited where used).
 
 ![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four (right)](report/figures/split_s001_night_f55.jpg)
 
@@ -223,7 +225,7 @@ frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipe
   (SAM alone 19, the length rule 19), the same counts as the protocol run; rejecting the queue puts every clip within
   ±1 at 89.3% recall. Same estuary, so
   this tests transfer within one site, not to new habitats.
-- **Against a hand count of the videos, the pipeline beats the reference boxes.** The author counted MaxN by hand on all 24
+- **Against a hand count of the videos, the pipeline comes closer than the reference boxes.** The author counted MaxN by hand on all 24
   held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed
   error 6; the human reference boxes are exact on 16, within ±1 on 22, summed error 16. On the worst clip (20190709_17)
   the hand count is 8, the pipeline 7 and the boxes 2 (paper Table 1d, Figure 3).
