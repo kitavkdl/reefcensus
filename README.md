@@ -1,4 +1,4 @@
-# reefcensus — Count what you asked for & Find what you did not
+# reefcensus; Count what you asked for & Find what you did not
 
 Say what to count; get per-species MaxN (the most animals of a species on screen at once, the standard count of
 baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
