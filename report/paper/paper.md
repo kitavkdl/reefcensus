@@ -16,7 +16,7 @@ to a person instead of the count. Discovery is scored as presence of taxa. On fo
 pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one of four nautiluses, it
 counts all four. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
 the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
-requested species, on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos (by the first author, 21 of 24 counted blind) than
+request "fish" (a group count; luderick and bream are scored together), on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos (by the first author, 21 of 24 counted blind) than
 the reference boxes are (summed error 6 against 16, within one fish on all 24), and none of 40 randomly drawn boxes
 scored as false positives was judged not a fish: corrected precision is 93.7% (95% interval 89.6–97.0%, resampling tracks), against 77.2% on the boxes. The
 audits are built around how a VLM fails: every object is judged at three moments, and the second look of a weakly
@@ -32,8 +32,8 @@ hackathon.
 | claim | evidence | n | scope |
 |---|---|--:|---|
 | SAM 3.1 answers narrow words: "animal" gives no box on 29 of 39 clips; "luderick" gives nothing on all six clips of that species | §7.4, Table 6 | 39; 6 | our clips |
-| On luderick the audits keep the segmenter's box recall (97.4% development, 98.9% held-out) and reach the MaxN of a tuned minimum-track-length rule | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary |
-| Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | counted by the first author, 21 of 24 blind and shuffled |
+| On luderick the audits keep the segmenter's box recall (97.4% development, 98.9% held-out) and reach the MaxN of a tuned minimum-track-length rule | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary; request "fish", luderick and bream scored as one group, not per species |
+| Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | counted by the first author, 21 of 24 blind and shuffled; the same with the queue answered from recorded human judgements instead of accepted |
 | One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | the pipeline is not re-scored against boxes it added; re-judged, 11 of 11 earlier "fish" tracks were fish again |
 | Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7%, 95% interval 89.6–97.0% by track, vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | labels hidden; 10/10 matched controls called fish |
 | The person queue (17 of 50 tracks) holds most of the tracks behind the largest over-counts | §6.1 Table 1b; §6.2 | 24 held-out | |
@@ -582,16 +582,20 @@ MaxN 1 on 17 clips and 2 on 7. The protocol (clips by rule, methods, metrics, on
 (`report/paper/heldout_protocol.md`); the length rule keeps the k = 4 chosen on the development clips. One change
 followed the protocol commit, 26 s later and before any held-out call: the evaluator was made to fetch SAM's "fish"
 reply when it was not cached (these clips had none; commit 9100f9e); the pipeline code was not touched. Table 1c gives
-the final code on these clips (run `cr7`); the protocol run, on the code of the protocol commit, is compared below. These clips
+the protocol run first, which is the held-out test (code of the protocol commit, one run), then the final code (run
+`cr7`), which was written after these clips had been scored and re-run on them. These clips
 come from the same estuary and cameras as the development clips and are shorter and sparser.
 
-<div class="tablecap">**Table 1c.** Held-out luderick clips (24), IoU ≥ 0.3, final code (run `cr7`). Script:
-`report/paper/scripts/rescore_heldout.py --tag cr7 --abl cr7abl`; Spark rows `spark_count_rescore.py`. Spark returns a count without
+<div class="tablecap">**Table 1c.** Held-out luderick clips (24), IoU ≥ 0.3. Top two rows: the protocol run, the
+confirmatory test (`report/paper/scripts/rescore_heldout.py` without options). Other rows: final code (run `cr7`),
+re-run after scoring (`rescore_heldout.py --tag cr7 --abl cr7abl`); Spark rows `spark_count_rescore.py`. Spark returns a count without
 boxes, so it has no recall or precision; asking it for boxes would make it a detector, which the protocol did not test. † Exploratory, not in the protocol: MaxN over the low
 median of five consecutive annotated frames (§6.2).</div>
 
 | system | recall | precision | MaxN exact | within ±1 | Σ\|err\| |
 |---|--:|--:|--:|--:|--:|
+| **protocol run**, audited, queue accepted | 98.9% | 77.6% | 20/24 | 21/24 | 12 |
+| **protocol run**, audited, queue rejected | 95.6% | 88.5% | 21/24 | 24/24 | 3 |
 | SAM "fish" alone | 98.9% | 76.1% | 19/24 | 21/24 | 14 |
 | merge + min length 4 | 98.9% | 76.6% | 19/24 | 21/24 | 13 |
 | audited, queue accepted | 98.9% | 77.2% | 20/24 | 21/24 | 12 |
@@ -651,6 +655,16 @@ count per clip; bias is its mean. Script: `report/paper/scripts/handcount_table.
 | human reference boxes (luderick annotation) | 16/24 | 22/24 | 16 | 0.67 | 1.55 | −0.67 |
 | pipeline, queue accepted, annotated frames (as Table 1c) | 18/24 | 24/24 | 6 | 0.25 | 0.50 | −0.17 |
 | pipeline, queue accepted, every frame of the clip | 17/24 | 24/24 | 7 | 0.29 | 0.54 | −0.12 |
+| pipeline, queue answered from recorded human judgements, annotated frames | 18/24 | 24/24 | 6 | 0.25 | 0.50 | −0.17 |
+| pipeline, queue rejected, annotated frames | 15/24 | 22/24 | 16 | 0.67 | 1.41 | −0.67 |
+
+The headline row does not rest on accepting the queue unseen. Answering each of the 17 queued tracks from
+judgements a person had already recorded, with no new judging (accepted when a track's box lies on a reference box,
+since the annotator drew that fish, otherwise by the person's answer on the gapfind card of the same boxes below;
+the 3 tracks with no recorded judgement are rejected), gives the same MaxN as accepting it on all 24 clips: exact 18/24,
+Σ|err| 6. Rejecting the whole queue instead gives 15/24 and Σ|err| 16, no better than the boxes: the queued tracks
+are mostly the fish the boxes miss, which is why they go to a person rather than being dropped. The protocol run
+gives the same rows (queue rejected: 16/24, Σ|err| 15; `handcount_table.py --tag held1`).
 
 With the faint fish added to the hand count, the pipeline (annotated frames) is exact on 17/24 with Σ|err| 9 and the
 boxes on 15/24 with 19. The pipeline's remaining errors are four under-counts by one (20190618_6, 20190710_1, _3, _8),
@@ -1456,7 +1470,7 @@ bytes so that the cache, keyed by those bytes, missed; a mid-confidence discover
 discovery step named when an unprimed second look confirms it; the crowd check; the review-queue order; cut links for
 long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr7`, logs
 `report/paper/data/run_cr*.log`, row-by-row comparison `report/paper/scripts/compare_tags.py`). From the protocol runs
-to the final code, no held-out or development score changed; the counts that moved are given where they are reported:
+to the final code, the counts that moved are these, each reported beside its protocol-run number:
 the held-out queue-rejected row (§6.2), DH2/DH3/DH5 (§6.3), DH6/DH7/DH8 (§6.3), s001 brightened and s004's shrimp
 split 14 + 2 instead of 12 + 3 (Table 2). `cr7` reproduces `cr6` on every row of all 15 discovery runs and every
 luderick number. Two replay facts are worth knowing for anyone re-running: s001 is the brightened night clip, whose

@@ -1,6 +1,6 @@
 # reefcensus; Count what you asked for & Find what you did not
 
-Say what to count; get per-species MaxN (the most animals of a species on screen at once, the standard count of
+Say what to count; get MaxN for each animal you name (the most animals of a kind on screen at once, the standard count of
 baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
 uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
 experiments ran on Oct 31 in a scratch folder (kept in `spikes/`), this repository starts on Nov 1 (first commit `85b825d`),
