@@ -8,6 +8,7 @@ from fishcount import api, tracks, pipeline
 
 SMOKE = os.path.expanduser("~/meta-smoke")
 RUNS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runs")
+BUNDLE = os.path.join(os.path.dirname(RUNS), "report", "paper", "data", "luderick")   # human boxes, SAM reply, scored runs
 
 
 def score(pred, gt, thr_iou=0.3):
@@ -42,18 +43,30 @@ def main():
     ap.add_argument("--no-clean", action="store_true", help="as the v16 runs (eval6): before clean was the default")
     ap.add_argument("--no-refill", action="store_true", help="as the v16 runs (eval6): before refill was the default")
     a = ap.parse_args()
-    man = json.load(open(f"{SMOKE}/clips/{a.manifest}"))
-    rows, tot = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}
+    live = os.path.exists(f"{SMOKE}/clips/{a.manifest}")
+    if not live:
+        if a.manifest != "manifest_fish.json" or a.run:
+            sys.exit(f"needs the clips in {SMOKE}; without them, report/paper/scripts/rescore.py and rescore_heldout.py "
+                     "score the bundled runs")
+        print("source: bundle report/paper/data/luderick (clips and runs/ not needed)")
+    man = json.load(open(f"{SMOKE}/clips/{a.manifest}" if live else f"{BUNDLE}/manifest.json"))
+    rows, tot, missing = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}, []
     for cid, c in man["clips"].items():
         gt = {int(k): [(x, y, x + w, y + h) for x, y, w, h, *_ in v]
-              for k, v in json.load(open(f"{SMOKE}/{c['gt']}"))["frames"].items()}
-        clip = f"{SMOKE}/{c['path']}"
-        sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(api.sam_video(clip, "fish", c["n_frames"], offline=not a.run)).items()}
+              for k, v in json.load(open(f"{SMOKE}/{c['gt']}" if live else f"{BUNDLE}/gt/{cid}.json"))["frames"].items()}
+        clip = f"{SMOKE}/{c.get('path', '')}"
+        txt = (api.sam_video(clip, "fish", c["n_frames"], offline=not a.run) if live
+               else open(f"{BUNDLE}/sam_fish/{cid}.txt").read())
+        sam = {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(txt).items()}
         rp = os.path.join(RUNS, f"{a.tag}_{cid}", "result.json")
+        if not os.path.exists(rp) and os.path.exists(os.path.join(BUNDLE, "runs", f"{a.tag}_{cid}", "result.json")):
+            rp = os.path.join(BUNDLE, "runs", f"{a.tag}_{cid}", "result.json")
         if a.run and not os.path.exists(rp):
             pipeline.run_pipeline(clip, f"{a.tag}_{cid}", do_scout=False, prompts=["fish"], max_usd=0.5 if a.misslook else 0.2,
                                   misslook=a.misslook, clean=not a.no_clean, refill=not a.no_refill)   # miss look: 4 SAM box prompts on a 260-frame clip ~$0.2
         res = json.load(open(rp)) if os.path.exists(rp) else None
+        if res is None:
+            missing.append(f"{a.tag}_{cid}")
         r = dict(clip=cid, frames=len(gt), sam=score(sam, gt))
         if res:
             r["pipe"] = score(pipeline_boxes(res), gt)
@@ -75,7 +88,11 @@ def main():
             line += f"         |  {pct(tp, tp + fn):>5} {pct(tp, tp + fp):>8}   {mg}/{mp}   {r['queue']}/{r['tracks']} tracks"
         print(line)
     for k, (tp, fn, fp, e) in tot.items():
-        print(f"{k:5s} total: recall {tp / max(1, tp + fn):.1%}, precision {tp / max(1, tp + fp):.1%}, sum |MaxN error| {e}")
+        if k == "pipe" and len(missing) == len(rows):
+            print(f"pipe  total: no {a.tag}_<clip> run found (runs/ is not in the repository; --run makes them)")
+            continue
+        print(f"{k:5s} total: recall {tp / max(1, tp + fn):.1%}, precision {tp / max(1, tp + fp):.1%}, sum |MaxN error| {e}"
+              + (f"  ({len(rows) - len(missing)} of {len(rows)} clips; no run: {', '.join(missing)})" if k == "pipe" and missing else ""))
 
 
 main()

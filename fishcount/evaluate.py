@@ -1,11 +1,13 @@
 """Score cached SAM runs against the luderick ground truth (Ditria et al. 2021, CC BY 4.0).
 Reports recall/precision on annotated frames and the MaxN absolute error, for several confidence cut-offs.
-  python3 fishcount/evaluate.py [--prompt fish]"""
+  python3 fishcount/evaluate.py [--prompt fish]
+Without the clips in ~/meta-smoke it reads the bundle in report/paper/data/luderick (human boxes, SAM's cached reply)."""
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks
 
 SMOKE = os.path.expanduser("~/meta-smoke")
+BUNDLE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "report", "paper", "data", "luderick")
 
 
 def score(pred, gt, thr_iou=0.3):
@@ -31,13 +33,18 @@ def main():
     ap.add_argument("--prompt", default="fish")
     ap.add_argument("--conf", nargs="*", type=float, default=[0, 0.3, 0.5, 0.6, 0.7, 0.8])
     a = ap.parse_args()
-    man = json.load(open(f"{SMOKE}/clips/manifest_fish.json"))
+    live = os.path.exists(f"{SMOKE}/clips/manifest_fish.json")
+    if not live and a.prompt != "fish":
+        sys.exit(f"without the clips ({SMOKE}) only the bundled SAM 'fish' replies can be scored")
+    man = json.load(open(f"{SMOKE}/clips/manifest_fish.json" if live else f"{BUNDLE}/manifest.json"))
+    print("source:", "live files" if live else "bundle report/paper/data/luderick (clips not needed)")
     rows = {c: [0, 0, 0, 0] for c in a.conf}   # tp fn fp |maxn err| sum
     per = []
     for cid, c in man["clips"].items():
-        gt = {int(k): v for k, v in json.load(open(f"{SMOKE}/{c['gt']}"))["frames"].items()}
+        gt = {int(k): v for k, v in json.load(open(f"{SMOKE}/{c['gt']}" if live else f"{BUNDLE}/gt/{cid}.json"))["frames"].items()}
         try:
-            txt = api.sam_video(f"{SMOKE}/{c['path']}", a.prompt, c["n_frames"], offline=True)
+            txt = (api.sam_video(f"{SMOKE}/{c['path']}", a.prompt, c["n_frames"], offline=True) if live
+                   else open(f"{BUNDLE}/sam_fish/{cid}.txt").read())
         except FileNotFoundError:
             continue
         det = tracks.parse_boxes(txt)
