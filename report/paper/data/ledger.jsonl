@@ -3606,3 +3606,37 @@
 {"t": 1793781331.7369108, "kind": "spark", "usd": 0.004926750000000001, "note": "in=1881 out=606"}
 {"t": 1793781340.8435042, "kind": "spark", "usd": 0.005414, "note": "in=1499 out=833"}
 {"t": 1793781350.3689482, "kind": "spark", "usd": 0.01131275, "note": "in=6150 out=853"}
+{"t": 1793811598.7996213, "kind": "spark", "usd": 0.01050425, "note": "in=2127 out=1846"}
+{"t": 1793811608.1235728, "kind": "sam", "usd": 0.012, "note": "clip.mp4:shrimp"}
+{"t": 1793811609.524487, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793811609.5918608, "kind": "sam", "usd": 0.012, "note": "clip.mp4:fish"}
+{"t": 1793811610.2830663, "kind": "sam", "usd": 0.012, "note": "clip.mp4:nautilus"}
+{"t": 1793811618.682802, "kind": "sam", "usd": 0.012, "note": "clip.mp4:crab"}
+{"t": 1793811619.3746915, "kind": "sam", "usd": 0.012, "note": "clip.mp4:lobster"}
+{"t": 1793811627.9157808, "kind": "sam", "usd": 0.012, "note": "clip.mp4:lobster"}
+{"t": 1793811641.8195434, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:crab"}
+{"t": 1793811642.5118396, "kind": "sam", "usd": 0.012, "note": "clip_rev.mp4:nautilus"}
+{"t": 1793811646.263643, "kind": "sam", "usd": 0.012, "note": "tile_d1z-center.mp4:crab"}
+{"t": 1793811650.9284718, "kind": "sam", "usd": 0.012, "note": "tile_d2z-top.mp4:shrimp"}
+{"t": 1793811658.670105, "kind": "sam", "usd": 0.012, "note": "tile_d2z-top.mp4:crab"}
+{"t": 1793811659.2237124, "kind": "sam", "usd": 0.012, "note": "tile_d1z-center.mp4:shrimp"}
+{"t": 1793811659.8628798, "kind": "sam", "usd": 0.012, "note": "tile_d1z-bottom.mp4:shrimp"}
+{"t": 1793811668.1330192, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:crab"}
+{"t": 1793811672.3481915, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:crab"}
+{"t": 1793811677.211099, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:shrimp"}
+{"t": 1793811684.5786438, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:shrimp"}
+{"t": 1793811686.7395658, "kind": "sam", "usd": 0.012, "note": "tile_d1c-center.mp4:lobster"}
+{"t": 1793811693.1020796, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom.mp4:lobster"}
+{"t": 1793811701.1000319, "kind": "sam", "usd": 0.012, "note": "tile_d1c-bottom_rev.mp4:shrimp"}
+{"t": 1793811720.9550197, "kind": "spark", "usd": 0.00950075, "note": "in=1569 out=1774"}
+{"t": 1793811734.586526, "kind": "sam", "usd": 0.012, "note": "clip.mp4:<15f>1<|box;x1=1184;y1=936;x2=1248;y2=992;w=1920;h=1080|>"}
+{"t": 1793811740.749402, "kind": "spark", "usd": 0.0040395, "note": "in=906 out=684"}
+{"t": 1793811744.6970255, "kind": "spark", "usd": 0.00243875, "note": "in=557 out=410"}
+{"t": 1793811753.5610466, "kind": "spark", "usd": 0.005275, "note": "in=548 out=1080"}
+{"t": 1793811761.7155802, "kind": "spark", "usd": 0.00486125, "note": "in=863 out=890"}
+{"t": 1793811771.367651, "kind": "spark", "usd": 0.0050025, "note": "in=517 out=1025"}
+{"t": 1793811777.5850084, "kind": "spark", "usd": 0.00348925, "note": "in=510 out=671"}
+{"t": 1793811783.396711, "kind": "spark", "usd": 0.0033885, "note": "in=511 out=647"}
+{"t": 1793811791.3644242, "kind": "spark", "usd": 0.011000000000000001, "note": "in=6148 out=780"}
+{"t": 1793811799.8145547, "kind": "spark", "usd": 0.010949, "note": "in=6148 out=768"}
+{"t": 1793811806.9087384, "kind": "spark", "usd": 0.0104925, "note": "in=6150 out=660"}

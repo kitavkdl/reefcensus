@@ -28,6 +28,7 @@ T_REHEARSAL2 = 1793697188           # s003 empty-cache rehearsal, 2 takes (rehea
 T_L7A1 = 1793779500              # LONG1_cr7 first attempt, segment 2 (first ledger row 08:05:16 UTC 11/4; nothing else paid)
 T_L7A2 = 1793779857              # LONG1_cr7 restarted (reef-long1-cr7 unit, 08:10:57 UTC); its calls are in the status files
 T_REHEARSAL2_END = 1793697520    # last call of take 2 (09:18:39 UTC); the next paid call is 10 h later (19:29 UTC)
+T_TAKE, T_TAKE_END = 1793811581, 1793811809   # live take filmed for the video (s002, empty cache; runs/nautilus_s002_0_12_1104-165941 status.json started/done)
                                  # after it: final-code development (crowd, refill, clean, shadow, camo, miss look), the
                                  # re-runs of every frozen evaluation (cr, cr2, cr3), gapfind and LONG1 re-runs; the LONG1
                                  # re-runs overlapped the rest, so they are split by runs/LONG1_cr*__S*/status.json billed_usd
@@ -66,7 +67,8 @@ def main():
     fixed_bright = [r for r in rows if T_FIXED_BRIGHT <= r["t"] < T_CONC]
     conc = [r for r in rows if T_CONC <= r["t"] < T_REHEARSAL2]
     rehearsal2 = [r for r in rows if T_REHEARSAL2 <= r["t"] < T_REHEARSAL2_END]
-    final = [r for r in rows if r["t"] >= T_REHEARSAL2_END]
+    take = [r for r in rows if T_TAKE <= r["t"] < T_TAKE_END]
+    final = [r for r in rows if r["t"] >= T_REHEARSAL2_END and r not in take]
     dev = [r for r in rows if r not in rep and r not in held and r not in fixed and r not in scount
            and r not in probe and r not in dheld and r not in rerun
            and r not in later and r not in dh2 and r not in dh2f and r not in frz
@@ -107,6 +109,7 @@ def main():
     a1 = [r for r in rows if T_L7A1 <= r["t"] < T_L7A2]
     l2_usd, l2_n = l2_usd + sum(r["usd"] for r in a1), l2_n + len(a1)
     print(f"{'LONG1 re-runs on final code':34s} {l2_n:4d} calls (from {len(seg2)} segment status files)  ${l2_usd:.3f}")
+    show("live take for the video (s002, empty cache)", take)
     print(f"{'final-code development + re-runs':34s} {len(final) - l2_n:4d} calls  ${sum(r['usd'] for r in final) - l2_usd:.3f}")
     show("total", rows)
     sp = [r for r in dev if r["kind"] == "spark"]
