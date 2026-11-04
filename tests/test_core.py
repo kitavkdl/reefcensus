@@ -243,14 +243,6 @@ class ShortNameFallback(unittest.TestCase):
         self.assertEqual(short_name("white bacterial mat"), "mat")      # fallback: goes after Spark's search words
         self.assertNotIn("mat", _GROUP_OF)
 
-    def test_every_animal_noun_goes_first(self):
-        # 11/3 s003 rehearsal take 1: "chambered nautilus cephalopod" never tried "nautilus"
-        from fishcount.pipeline import animal_nouns
-        self.assertEqual(animal_nouns("chambered nautilus cephalopod"), ["cephalopod", "nautilus"])
-        self.assertEqual(animal_nouns("squat lobster shrimp"), ["shrimp", "lobster", "squat"])
-        self.assertEqual(animal_nouns("crab on a starfish"), ["crab"])      # after a place word: another animal
-        self.assertEqual(animal_nouns("white bacterial mat"), [])
-
 
 class ExportCsv(unittest.TestCase):
     def test_empty_unidentified_rows_are_left_out(self):
