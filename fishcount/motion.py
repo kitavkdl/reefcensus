@@ -150,6 +150,43 @@ def three(c, W, H, gap=4, n=None):
     return [early, (t, b), late]
 
 
+def whole_box(clip, t, box, W, H, n, cover=0.5, max_grow=2.5):
+    """The seed box widened to the whole animal at frame t. 11/4 s001: candidates() needs pixels that changed between
+    t-2 and t+2, so a large slow animal (moving less than its length in 4 frames) breaks into a front and a back edge,
+    and the seed box sat on the back half plus open water; SAM then followed that patch, beside the nautilus. Here:
+    the pixels at t that differ from a local background (median of frames 4-10 apart, where a mover has gone), and of
+    those the one piece the box overlaps most. Returns the box unchanged when it already covers `cover` of that piece,
+    or when the piece is more than `max_grow` times its area (pieces of two animals or of the scene, not this one).
+    ponytail: one piece only, so an animal that breaks into two pieces at t keeps the bigger; tune cover/max_grow."""
+    x0, y0, x1, y1 = box
+    bw, bh = x1 - x0, y1 - y0
+    a, b = max(0, int(x0 - bw)), max(0, int(y0 - bh))
+    c, d = min(W, int(x1 + bw)), min(H, int(y1 + bh))
+    near = sorted({min(n - 1, max(0, t + s)) for s in (-10, -8, -6, -4, 4, 6, 8, 10)} - {t})
+    fr = video.frames(clip, [t] + near)
+    lab = lambda f: _lab(fr[f][b:d, a:c])
+    bg = np.median(np.stack([lab(f) for f in near]), axis=0)
+    dist = cv2.GaussianBlur(np.linalg.norm(lab(t) - bg, axis=2), (5, 5), 0)
+    med = float(np.median(dist))
+    # Otsu as well: on a night clip most of the crop is black, the MAD is 0 and med + 6 MAD alone keeps the noise
+    otsu, _ = cv2.threshold(np.clip(dist, 0, 255).astype(np.uint8), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    m = (dist > max(8.0, otsu, med + 6 * (float(np.median(np.abs(dist - med))) + 1e-6))).astype(np.uint8)
+    m = cv2.dilate(cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)), np.ones((3, 3), np.uint8))
+    k, cc = cv2.connectedComponents(m, 8)
+    ins = np.zeros_like(m)
+    ins[int(y0) - b:int(y1) - b, int(x0) - a:int(x1) - a] = 1
+    ids, cnt = np.unique(cc[(ins > 0) & (m > 0)], return_counts=True)
+    if not len(ids):
+        return list(box)
+    ys, xs = np.nonzero(cc == ids[np.argmax(cnt)])
+    u = [a + int(xs.min()), b + int(ys.min()), a + int(xs.max()) + 1, b + int(ys.max()) + 1]
+    ua = (u[2] - u[0]) * (u[3] - u[1])
+    inter = max(0, min(u[2], x1) - max(u[0], x0)) * max(0, min(u[3], y1) - max(u[1], y0))
+    if inter >= cover * ua or ua > max_grow * bw * bh:
+        return list(box)
+    return _grow(u, W, H, grow=0.2)
+
+
 def box_prompt(t, box, W, H):
     x0, y0, x1, y1 = box
     return f"<{t}f>1<|box;x1={x0};y1={y0};x2={x1};y2={y1};w={W};h={H}|>"

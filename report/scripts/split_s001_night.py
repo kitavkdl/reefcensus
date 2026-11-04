@@ -1,6 +1,6 @@
 """Side-by-side video for the night-trap scene: the same auto-brightened s001 clip the pipeline tracked, left with every
 box of the fixed 17-word SAM list (report/paper/data/fixed_vocab_brightened/, 16 words + 'nautilus'), right with the
-final run's counted nautilus tracks (runs/cr8_s001/result.json; Spark picked the moving spots, SAM tracked each from a
+final run's counted nautilus tracks (runs/cr9_s001/result.json; Spark picked the moving spots, SAM tracked each from a
 box with no word) and, in another colour, the fifth nautilus that run left in the human queue (QUEUED). Per-frame box
 counts are drawn on each side. All numbers come from those files; nothing is called.
 
@@ -16,7 +16,7 @@ import cv2, numpy as np  # noqa: E402
 import imageio_ffmpeg  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
-RUN = "runs/cr8_s001"
+RUN = "runs/cr9_s001"
 CLIP = f"{RUN}/clip.mp4"
 # m8: the fifth nautilus (second motion look; audit "pale oval shell", 0.4; the unprimed second look saw "a blurry light
 # spot"), so it is not counted and waits for a person. The run's other queued tracks (m10, m11) sit on the trap's mesh

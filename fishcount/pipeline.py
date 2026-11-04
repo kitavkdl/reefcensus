@@ -1275,6 +1275,11 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
                      tried=[dict(word="box", frames=None)], word=None, **({"round": rnd} if rnd > 1 else {}))
         if calls >= max_boxes:      # failed calls count too: the estimate above covers max_boxes
             break
+        # the sheet box can sit on half a large slow animal (11/4 s001 m8): SAM gets the whole animal's box
+        wb = motion.whole_box(clip, c["frame"], c["box"], W, H, n)
+        if wb != list(c["box"]):
+            entry.update(box=wb, sheet_box=c["box"])
+            c = dict(c, box=wb)
         same = next((t for t, d in mine if any(tracks.overlap(c["box"], k["box"]) >= 0.3 for k in d.get(c["frame"], []))), None)
         if same:
             entry.update(note=f"already followed by {same}")
