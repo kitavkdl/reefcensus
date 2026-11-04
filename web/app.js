@@ -247,7 +247,7 @@ function drawFound() {
     }
     return countRow(name, m, "found", extra);
   });
-  const missed = disc.filter((d) => !d.word);
+  const missed = disc.filter((d) => !d.word && !rows.some(([n]) => n === d.what.toLowerCase()));
   fill($("foundPanel"), 
     el("h2", {}, "Found without being asked", el("small", {}, "Muse Spark named what else was there; SAM tracked it under a plain word.")),
     ...(items.length ? items : [el("p", { class: "empty" }, disc.length ? "Spark saw other animals, but SAM could not track them." : "Spark saw nothing else living in this clip.")]),

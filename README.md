@@ -14,12 +14,12 @@ Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
 experiments ran on Oct 31 in a scratch folder (kept in `spikes/`), this repository starts on Nov 1 (first commit `85b825d`),
 and all code here was written in those days (third-party footage and libraries are credited where used).
 
-![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four (right)](report/figures/split_s001_night_f38.jpg)
+![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four counted, a fainter fifth sent to a person (right)](report/figures/split_s001_night_f38.jpg)
 
 **What it found (measured, details below; every claim with its evidence is in the table at the top of the [paper](report/paper/paper.md), PDF [here](report/paper/paper.pdf)):**
 - Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of shrimp and a hagfish.
 - At night behind a trap, where 17 fixed words (16 generic words plus "nautilus") box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
-  tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
+  tracks four nautiluses from boxes with no word and sends a fainter fifth to the review queue (above; `report/scripts/split_s001_night.py` makes the video).
 - On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
 - On 24 held-out fish videos, hand-counted separately by the author and by a second counter
@@ -41,7 +41,7 @@ survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote b
 > — Gregory J. Barord, Ph.D., email of Nov 2, 2026
 
 The two things he asked about next are what the tool is built around: low light (the night clip behind the trap above,
-four nautiluses) and spot checks (every number opens its evidence frame, and doubtful tracks wait in a queue for a
+four nautiluses counted and a fifth queued for a person) and spot checks (every number opens its evidence frame, and doubtful tracks wait in a queue for a
 person). We are continuing after the hackathon with the guidance of the researchers we contacted (Barord, and
 Stony Brook University's Institute for Ocean Conservation Science): [Feedback and next steps](#feedback-and-next-steps).
 
@@ -183,7 +183,7 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 | | result |
 |---|---|
 | Spark names it | 7 of 7 |
-| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look; the final code brightens that dark clip and counts 4 of at least 4, v16 counted 2) |
+| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look; the final code brightens that dark clip and counts 4 and queues a fainter 5th for a person, v16 counted 2) |
 | something wrong counted | 0 (Spark once proposed a shrimp that isn't there; no word found it, and the motion box that drifted onto the trap mesh was rejected by a second look) |
 | SAM "fish" alone | 0 of 7 — it only sees what it is told |
 | motion look, added | s001: the nautiluses no word found (night, wire trap; 4 once the clip is brightened, 2 before). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |

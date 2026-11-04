@@ -13,8 +13,8 @@ species. Without training, we put a vision-language model (VLM), Muse Spark, in 
 the request left out, in nouns the segmenter answers; where no word works, it picks moving spots that keep their
 shape, and the segmenter tracks each from a box with no word. The VLM then audits every track, and doubtful ones go
 to a person instead of the count. Discovery is scored as presence of taxa. On four development nautilus clips the
-pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one of four nautiluses, it
-counts all four. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
+pipeline finds all seven taxa a person listed; on a night clip where 17 fixed words box one nautilus, it
+counts four and sends a fainter fifth to a person. On five held-out videos it names all four non-fish animals marked beforehand, counts three, queues
 the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
 request "fish" (a group count; luderick and bream are scored together), on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos than
 the reference boxes are, under each of two independent counters (summed error 6 against 16 for the first author, 21 of 24 counted blind; 2 against 14 for a second person who never saw the project's output; within one fish on all 24), and none of 40 randomly drawn boxes
@@ -790,12 +790,12 @@ counted, and was judged unsure (`data/noaa_heldout/crops_answers.txt`). No count
 
 ## Finding what was not asked for
 
-<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (run `cr7`). Person = non-expert,
+<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (run `cr7`; s001 run `cr8_s001`, with the second motion look of `5d1b7d9`). Person = non-expert,
 taxon-level list from four frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
 |-----|----------|-----------|------------------------------|
-| s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | chambered nautilus 4, none queued (clip brightened; on the original clip, v16: 2 + 1 queued) | motion residual; on the original clip every word 0 frames |
+| s001 (night, wire trap) | nautilus: 1 in trap, 3+ outside | chambered nautilus 4, 3 tracks queued, one a paler fifth nautilus (clip brightened; on the original clip, v16: 2 + 1 queued) | motion residual; on the original clip every word 0 frames |
 | s002 | nautilus 1; red crustaceans 2 | chambered nautilus 1; small red crab 1 (+2 "fish (unidentified)" queued) | "nautilus"; crab via "shrimp" in a 3× cell, renamed by A1 |
 | s003 | nautilus 3–4 | chambered nautilus 3 | "nautilus" forward, reversed and zoomed |
 | s004 | nautilus 1; shrimp 10+; hagfish 1 | chambered nautilus 1; crustaceans 15 in one frame ("caridean shrimp" 14, "shrimp (unidentified)" 2); hagfish 1 | hagfish via "eel", renamed; "shrimp"; 2 shrimp via motion |
@@ -806,7 +806,7 @@ frame, two blocks and two 3× cells of this night clip; the motion residual find
 (A1 0.55) is queued (v16). The final code first brightens this clip (median Lab L 5, mean 26.5; the thresholds,
 median < 15 and mean < 35, were set from the development clips' brightness;
 `report/paper/lowlight_s001.md`): "shell" then tracks one nautilus for 9 frames, four motion box prompts track 50–60 of
-60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4, none queued. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
+60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4; the second motion look (run `cr8_s001`) adds a paler fifth nautilus at A1 0.4, which waits in the queue. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
 "crab" tracks 5 frames and "shrimp" 12, and A1 calls the "shrimp" track "small red crab, not shrimp" (0.7), which
 matches Spark's discovery name, so the track is relabelled; A2 agrees. **s003**: "nautilus" tracks 33 frames forward,
 60 reversed and 45 and 44 in two zoom blocks. Spark also proposed a "large striped shrimp" that no word tracked; a
@@ -843,7 +843,7 @@ different frames, so the peak falls by three. A1 also splits those 15 into "cari
 "shrimp (unidentified)" 2; a per-label output shows only the larger name, so the result, CSV and review screen also
 give an animal-group row ("crustacean 15", the same-frame total). On the original, dark s001 clip the third motion
 nautilus waited in the queue at A1 confidence 0.55; the final code brightens the clip first, and all four motion
-nautiluses pass the audits (4, none queued).
+nautiluses pass the audits (4; in `cr8_s001` a paler fifth waits in the queue).
 
 **A fixed noun list instead of the VLM's names.** We prompted SAM 3.1 on the full frame of each clip with 16 basic-level
 nouns for animals seen on baited cameras (fish, shark, ray, eel, crab, shrimp, lobster, octopus, squid, snail, shell,
@@ -856,7 +856,8 @@ all. Adding "nautilus" reaches 6 of 7, as many as Spark's naming without audits 
 right word. On the brightened s001 clip that the final code tracks, the 16 words plus "nautilus" box one of the four
 counted nautiluses, as "shell", in 9 of 60 frames, and the other 16 words return nothing ($0.17,
 `report/paper/data/fixed_vocab_brightened/`); the final run counts all four, each also tracked from a box with no word
-on a moving spot Spark picked (50, 60, 59 and 60 of 60 frames; side-by-side video `report/scripts/split_s001_night.py`).
+on a moving spot Spark picked (50, 60, 59 and 60 of 60 frames; side-by-side video `report/scripts/split_s001_night.py`); a fifth, paler
+nautilus tracked from motion waits in the queue (A1 0.4, run `cr8_s001`).
 A fixed list thus recovers most taxa on these clips if it happens to contain the target, but it names them by whichever
 word fired; what the VLM adds is the name, and a list it did not need to be given.
 
@@ -1442,7 +1443,7 @@ We sent the nautilus results to G. J. Barord, first author of the survey whose v
 > the video analyses that we do.
 
 He named two conditions for using it: low light, and that he would "still need to spot check it here and there". The
-first is the night clip behind the trap (s001), where words fail and motion boxes count four nautiluses (§4.4, §6.3);
+first is the night clip behind the trap (s001), where words fail and motion boxes count four nautiluses and queue a fifth for a person (§4.4, §6.3);
 the second is the design itself, which shows the evidence frame behind every number and holds doubtful tracks in a
 queue for a person (§4.7).
 
