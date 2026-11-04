@@ -230,8 +230,8 @@ frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipe
   by the left edge); 20190710_4 (2→1) is a dark fish in murky seagrass that SAM never finds.
 - **Most "false positives" are unboxed fish.** On the held-out set, 40 of the 153 boxes scored as false were drawn at
   random and judged with labels hidden, mixed with 10 matched controls (all 10 called fish): 29 fish, 2 part of a fish,
-  9 unsure, **0 not a fish**. Corrected precision is 93.7% (clear fish only) to 100% (unsure counted as the fish they
-  were drawn on), against 77.2% scored on the boxes. `gapfind` (above) does this check for a whole annotation set.
+  9 unsure, **0 not a fish**. Corrected precision is 93.7% with the unsure boxes counted as wrong (95% interval
+  89.6–97.0%, resampling the 15 tracks the boxes come from), against 77.2% scored on the boxes. `gapfind` (above) does this check for a whole annotation set.
 
 ## Feedback and next steps
 

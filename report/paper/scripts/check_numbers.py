@@ -39,6 +39,7 @@ FACTS = [
     ("hand count: pipeline exact / ±1 / summed error (of 24)", r"exact on (\d+), within ±1 on (\d+), summed error (\d+)", [("18", "24", "6"), ("16", "22", "16")]),   # pipeline / reference boxes
     ("hand count: summed error, corrected/pipeline vs boxes", r"Σ\\?\|err\\?\| (\d+) vs (\d+)|summed error (\d+), against (\d+)", ("6", "16")),
     ("held-out precision corrected (clear fish only to unsure as fish)", r"precision (?:is )?(\d+\.\d)%?(?:–| \(clear fish only\) to )(\d+)%|precision is therefore (\d+\.\d)%", [("93.7", "100"), ("93.7",)]),
+    ("held-out corrected precision, track bootstrap interval", r"(\d+\.\d)–(\d+\.\d)%,? (?:resampling|by track)|95% interval (\d+\.\d)–(\d+\.\d)% \(10,000", ("89.6", "97.0")),
     ("precision sheet: not a fish (of 40)", r"(\d+) not a fish \(precision|(\w+) of the 40 was called not a fish", [("0",), ("None",)]),
     ("gapfind: time for 23 cards", r"in (\d+) min (\d+) s", ("9", "39")),
     ("gapfind: unboxed fish tracks / boxes added", r"(\d+) (?:tracks )?unboxed fish \((\d+) boxes", ("15", "145")),
@@ -48,6 +49,7 @@ FACTS = [
 ]
 
 STALE = [
+    (r"93\.7[–-]100|90\.2[–-]96\.3", "precision range read as an interval; now 93.7% with a track-bootstrap interval 89.6–97.0%"),
     (r"\bIMAS\b", "IMAS footage was removed (licence not specified at the source)"),
     (r"never seen(?! the$)(?!.*project)", "only true for a clip not used in development; the planned live clip is from development video s002"),
     (r"nautilus_s002_24_36", "live clip cut from development video s002"),

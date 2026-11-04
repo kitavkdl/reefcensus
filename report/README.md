@@ -114,7 +114,7 @@ is taken over the annotated frames only, for both columns.
 - **Precision is a lower bound, and we measured how low.** Of 12 tracks scored as false positives in an earlier run, 6
   were checked by eye and all 6 were real luderick the annotators had not boxed. On the 24 held-out clips, 40 of the
   153 unmatched boxes drawn at random and judged with labels hidden were 29 fish, 2 part of a fish, 9 unsure and 0 not
-  a fish: corrected precision 93.7–100% against 77.2% scored. Against a hand count of all 24 videos the pipeline's
+  a fish: corrected precision 93.7% (95% interval 89.6–97.0%, resampling tracks) against 77.2% scored. Against a hand count of all 24 videos the pipeline's
   MaxN is within ±1 on all 24 with summed error 6, the reference boxes' 16 (paper Table 1d).
 
 ### 4.2 Finding what was not asked for (nautilus)

@@ -18,7 +18,7 @@ counts all four. On five held-out videos it names all four non-fish animals mark
 the fourth and counts nothing that is not an animal; on six more it counts the one animal two people marked beforehand. For the
 requested species, on 24 held-out clips, the pipeline's MaxN is closer to a hand count of the videos (by the first author, 21 of 24 counted blind) than
 the reference boxes are (summed error 6 against 16, within one fish on all 24), and none of 40 randomly drawn boxes
-scored as false positives was judged not a fish: corrected precision is 93.7–100%, against 77.2% on the boxes. The
+scored as false positives was judged not a fish: corrected precision is 93.7% (95% interval 89.6–97.0%, resampling tracks), against 77.2% on the boxes. The
 audits are built around how a VLM fails: every object is judged at three moments, and the second look of a weakly
 supported track sees no label and no earlier names. Doubtful tracks are asked in the order that settles the counts: on a
 53-min deployment, 20–54 answers instead of a queue of 1,048. The result is an annotation accelerator whose output a
@@ -35,7 +35,7 @@ hackathon.
 | On luderick the audits keep the segmenter's box recall (97.4% development, 98.9% held-out) and reach the MaxN of a tuned minimum-track-length rule | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary |
 | Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | counted by the first author, 21 of 24 blind and shuffled |
 | One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | the pipeline is not re-scored against boxes it added; re-judged, 11 of 11 earlier "fish" tracks were fish again |
-| Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7–100% vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | labels hidden; 10/10 matched controls called fish |
+| Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7%, 95% interval 89.6–97.0% by track, vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | labels hidden; 10/10 matched controls called fish |
 | The person queue (17 of 50 tracks) holds most of the tracks behind the largest over-counts | §6.1 Table 1b; §6.2 | 24 held-out | |
 | Clearing the queue is quick: 9 queued tracks of four clips took one person 121 s on a phone; all 6 accepted tracks overlap the human boxes, the 3 left unsure match none | §6.1 | 4 development; 9 tracks | |
 | A person need not clear the whole queue: asking first only the tracks that can still change a count settles every MaxN and first arrival of a 53-min video after 20–54 answers instead of 1,048, with exactly the numbers of answering everything | §4.7, §6.4 | 46 runs | stand-in answer rules (accept all, reject all, follow the auditor), not a person's answers |
@@ -632,9 +632,11 @@ scoring rule fixed before judging) and mixed with 10 matched boxes; Jiyul Ahn (t
 fish, not fish or unsure (`report/paper/data/heldout/fp_sheet/`). All 10 matched boxes were called fish. Of the 40
 unmatched boxes, 29 were fish, 2 were boxes on part of a fish, 9 were unsure (7 of them on tracks the pipeline had
 already sent to the person queue). **None of the 40 was called not a fish.** Held-out precision is therefore 93.7%
-counting only the 29 clear fish as correct (95% Wilson interval 90.2–96.3%), 94.9% with the two part-of-a-fish boxes,
-and 100% of the sample if the unsure boxes are the fish they were drawn on, against the 77.2% scored on the
-reference boxes.
+counting only the 29 clear fish as correct and the unsure boxes as wrong, against the 77.2% scored on the reference
+boxes. The 40 boxes come from 15 tracks and boxes of one track are not independent, so the interval resamples tracks:
+95% interval 89.6–97.0% (10,000 resamples of the 15 tracks; `report/paper/scripts/fp_cluster_ci.py`). With the two
+part-of-a-fish boxes counted it is 94.9% (90.9–97.8%). The nine unsure boxes (on 7 tracks) are kept apart; they bound
+the estimate from above (100% of the sample if all are fish) and are not a confidence interval.
 
 *A second reference for all 24 clips.* Prompted by the three outliers, Jiyul Ahn then counted MaxN by hand on the
 other 21 held-out clips, from the full-rate videos without boxes, in a shuffled order under neutral file names (key
@@ -899,8 +901,8 @@ who had not seen the project's output, each alone, told to count only what they 
 two counters agree exactly on 13 of the 17 frames and within one on 15. The pipeline's number equals the first person's
 on 8 and is within one on 11 (second person: 7 and 11). All 8 exact matches are on the 12 frames where both people
 counted at most four animals. On the five crowded frames the pipeline's MaxN is a lower bound: DH3's crustaceans 4
-against 15 and 15, DH8's fish 16 against 44 and 45 (the "fish" pass used all 16 of its object IDs; refilled, the final code counts
-18 at its own peak, frame 30), s004's hagfish 1 against 20 and 24; it is above both people only on s004's
+against 15 and 15, DH8's fish 16 against 44 and 45 in frame 29 (the "fish" pass used all 16 of its object IDs; refilled, the final code's
+MaxN for the clip is 18, reached in frame 30, the next frame), s004's hagfish 1 against 20 and 24; it is above both people only on s004's
 shrimp (14 against 13 and 13), and on DH5 it lies between them (9; the people counted 3 and 37, the second "every small
 dot as a fish"). The other two misses are small groups: s002's fish 2 against 4 and 4, and s001's nautiluses 4
 against 0 and 0, where the second person noted 4 inside the trap's net.
@@ -914,31 +916,31 @@ frames. A reviewer is therefore told to count two of the three frames where the 
 and is not sent to any frame where it is right; the third (s004's hagfish ball) stays a lower bound.
 
 <div class="tablecap">**Table 3e.** Peak-frame counts: pipeline (final code, run `cr7`, the count in the frame the
-people counted), two counters, each alone, and the crowd check (Spark's unprimed count; ≥ = MaxN marked a lower bound).</div>
+people counted, frame index of the 60-frame clip), two counters, each alone, and the crowd check (Spark's unprimed count; ≥ = MaxN marked a lower bound).</div>
 
-| frame (clip, group) | pipeline | first person | second person | crowd check |
-|---|--:|--:|--:|--:|
-| DH1 crustaceans | 1 | 1 | 1 | 1 |
-| DH2 corals or anemones | 2 | 1 | 1 | 4 |
-| DH2 crustaceans | 2 | 2 | 2 | 4 |
-| DH3 crustaceans | 4 | 15 | 15 | 9 ≥ |
-| DH5 fish | 9 | 3 | 37 | 21 ≥ |
-| DH6 fish | 2 | 2 | 2 | 3 |
-| DH7 crustaceans | 3 | 4 | 4 | 4 |
-| DH8 fish | 16 | 44 | 45 | 35 ≥ |
-| DH11 crustaceans | 1 | 1 | 2 | 1 |
-| s001 nautiluses | 4 | 0 | 0 | 3 |
-| s002 nautiluses | 1 | 1 | 1 | 1 |
-| s002 fish | 2 | 4 | 4 | 3 |
-| s002 crustaceans | 1 | 1 | 1 | 3 |
-| s003 nautiluses | 3 | 3 | 3 | 3 |
-| s004 crustaceans | 14 | 13 | 13 | 12 |
-| s004 nautiluses | 1 | 1 | 1 | 1 |
-| s004 fish | 1 | 20 | 24 | 1 |
+| frame (clip, group) | frame index | pipeline | first person | second person | crowd check |
+|---|--:|--:|--:|--:|--:|
+| DH1 crustaceans | 0 | 1 | 1 | 1 | 1 |
+| DH2 corals or anemones | 0 | 2 | 1 | 1 | 4 |
+| DH2 crustaceans | 19 | 2 | 2 | 2 | 4 |
+| DH3 crustaceans | 41 | 4 | 15 | 15 | 9 ≥ |
+| DH5 fish | 46 | 9 | 3 | 37 | 21 ≥ |
+| DH6 fish | 4 | 2 | 2 | 2 | 3 |
+| DH7 crustaceans | 34 | 3 | 4 | 4 | 4 |
+| DH8 fish | 29 | 16 | 44 | 45 | 35 ≥ |
+| DH11 crustaceans | 0 | 1 | 1 | 2 | 1 |
+| s001 nautiluses | 2 | 4 | 0 | 0 | 3 |
+| s002 nautiluses | 6 | 1 | 1 | 1 | 1 |
+| s002 fish | 11 | 2 | 4 | 4 | 3 |
+| s002 crustaceans | 0 | 1 | 1 | 1 | 3 |
+| s003 nautiluses | 22 | 3 | 3 | 3 | 3 |
+| s004 crustaceans | 54 | 14 | 13 | 13 | 12 |
+| s004 nautiluses | 0 | 1 | 1 | 1 | 1 |
+| s004 fish | 0 | 1 | 20 | 24 | 1 |
 
 ## Cost and time
 
-All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
+The ledger is itemised by phase. The first development and evaluation phase, up to the repeated-call experiment and including discarded experiments, cost $3.04 (450 calls: 148
 SAM, 302 Spark; mean Spark call $0.0044, median 653 input and 684 output tokens). The repeated-call experiment of
 §7.1 added 98 Spark calls ($0.54, including the 25 calls of the example test in §7.5 and one call lost to an
 interrupted script), the held-out runs 80 calls ($0.42) and the fixed-vocabulary baseline of §6.3 46
@@ -950,7 +952,7 @@ data on the code of the second protocol commit 42 calls ($0.11), empty-cache liv
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the held-out runs with the re-runs of every
-evaluation, the crowd check and the demo runs 922 calls ($7.49) and the re-runs of the 53-min video 287 calls ($6.37), for a ledger total of $48.54 over 3,608 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+evaluation, the crowd check and the demo runs 922 calls ($7.49) and the re-runs of the 53-min video 287 calls ($6.37), for a ledger total of $48.54 over 3,608 calls (the items sum to $48.55 because each is rounded to the cent); `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
