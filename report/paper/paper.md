@@ -1302,10 +1302,26 @@ free, exact replay, or an API key and a spend cap for a live run, which can diff
 ```
 python3 fishcount/evaluate.py                                  # SAM "fish" alone vs. luderick boxes
 python3 fishcount/evaluate_pipeline.py --tag eval6             # final pipeline vs. the same boxes
-python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom   # discovery run (Table 2)
+python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom --no-clean --no-refill   # discovery run (Table 2)
 python3 report/paper/scripts/discovery_noaudit.py              # Table 3: no-audit discovery replays (needs cache)
 python3 report/paper/scripts/repeat_peak.py --check            # Table 4b: saved sheets hit the original cache
 ```
+
+*Defaults added after the freeze.* Every number above is from the code frozen at `cbaf59b`. Two track-hygiene steps
+were turned on by default afterwards (11/3), for crowded shallow-water video: *clean* (SAM ids reused for another
+object are split off, ids SAM shuffled within a frame are given back, and a dark counted track with no highlight gets a
+wide-view "animal or shadow" look) and *refill* (a SAM pass that used all 16 of its object ids is re-run from the frame
+where it ran out). `--no-clean --no-refill` restores the frozen behaviour (the discovery command above carries it).
+We re-ran every frozen evaluation once with the new defaults (tag `cr3`, log `report/paper/data/run_cr3.log`). Luderick
+is unchanged: development 97.4% recall, 79.2% precision, Σ|err| 2; held-out 98.9%, 77.2%, Σ|err| 12. Of the 15
+discovery runs, 10 count exactly the same rows, the totals per animal group move only on DH8, and the discovery scores do not change (development 7/7, DH1–DH5 3 of
+4 counted, DH6–DH11 1/1). The five that move: s004 caridean shrimp 12 + 3 unidentified → 14 + 2 (one fewer duplicate
+merge puts a 44-frame shrimp track under the species name; the shrimp group's MaxN is 15 in both); DH5 fish 8 + pink cusk-eel 1 → fish (unidentified) 9 (same total; the split-off one-frame tracks enter
+the audit sheet and Spark names no species); DH6 leopard shark → tiger shark, which is what the video shows, plus one
+fish (unidentified) from a one-frame track Spark judged at 0.35; DH7 crab 3 plus a separate "crab (unidentified)" 1
+(two short tracks Spark called crab at 0.6; the crab group's MaxN stays 3); DH8 fish 15 → 17 (fish group 16 → 18).
+Between the first and the last re-run with the new defaults, the id repair alone moved DH8 from 18 to 17: the
+one-frame pieces it splits off are rejected by the audit, which takes one box out of the peak frame.
 
 The repeated calls of Table 4b are live calls; their replies are stored in `report/paper/data/repeat_peak_f35.json`. All
 calls used the model IDs fixed in `fishcount/api.py` (`sam-3.1`, `muse-spark-1.3`), and the ledger records the time
