@@ -35,6 +35,14 @@ FACTS = [
     ("box prompt with no word, s004 shrimp (pipeline)", r"(\d+) of 60 (?:frames )?in the pipeline|with no word, in (\d+) of 60 frames", ("55",)),
     ("Table 4b edge vs centre (of 25; 11 vs 4 is the track-survival comparison)", r"(\d+)/25 vs\.? (\d+)/25|(\d+) of 25 vs\.? (\d+) of 25", [("11", "0"), ("11", "4"), ("4", "0")]),   # 4 vs 0 of 25: the example-phrase test (7.1)
     ("luderick clips in total", r"Counting: (\d+) luderick clips", ("30",)),
+    ("hand count: pipeline exact / ±1 / summed error (of 24)", r"exact on (\d+), within ±1 on (\d+), summed error (\d+)", [("18", "24", "6"), ("16", "22", "16")]),   # pipeline / reference boxes
+    ("hand count: summed error, corrected/pipeline vs boxes", r"Σ\\?\|err\\?\| (\d+) vs (\d+)|summed error (\d+), against (\d+)", ("6", "16")),
+    ("held-out precision corrected (clear fish only to unsure as fish)", r"precision (?:is )?(\d+\.\d)%?(?:–| \(clear fish only\) to )(\d+)%|precision is therefore (\d+\.\d)%", [("93.7", "100"), ("93.7",)]),
+    ("precision sheet: not a fish (of 40)", r"(\d+) not a fish \(precision|(\w+) of the 40 was called not a fish", [("0",), ("None",)]),
+    ("gapfind: time for 23 cards", r"in (\d+) min (\d+) s", ("9", "39")),
+    ("gapfind: unboxed fish tracks / boxes added", r"(\d+) (?:tracks )?unboxed fish \((\d+) boxes", ("15", "145")),
+    ("gapfind re-judged fish tracks", r"(\d+) of (\d+) earlier \"fish\"", ("11", "11")),
+    ("queue review time (tracks of four clips, seconds)", r"(\d+) queued tracks of four clips[^.]*? (\d+) s\b", ("9", "121")),
 ]
 
 STALE = [
