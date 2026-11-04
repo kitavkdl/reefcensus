@@ -20,4 +20,4 @@ pipeline used.
   (pipeline track d0:1, same box on frame 51). So the list reaches one of the four animals, for 9 of 60 frames, under
   the name "shell"; the other three nautiluses get no track from any of the 17 words.
 - Dark original (earlier baseline): 16 of 17 words 0 frames; 'octopus' 57 frames matching no counted animal; 'shell' 0.
-- Pipeline on the same brightened clip: 4 nautiluses, tracked 50-60 of 60 frames each (motion box prompts, no word).
+- Pipeline on the same brightened clip: 4 nautiluses, tracked 58-60 of 60 frames each (motion box prompts, no word).

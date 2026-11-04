@@ -125,7 +125,7 @@ def compare3(clip="imas_TF_52", run="imas_TF_52"):
 LABEL_COL = {"striped seabream": FOUND, "fish (unidentified)": (60, 200, 250)}   # BGR orange, amber
 
 
-def compare_luderick(run="eval6_fish_20190618_9", frame=35):
+def compare_luderick(run="cr11_fish_20190618_9", frame=35):
     """Video asset for the 0:16 scene, CC BY 4.0 footage (luderick archive, PANGAEA 926930, clip 20190618_9).
     Same frame three ways: SAM 3.1 "animal" (0 detections in all 107 frames), SAM 3.1 "fish", and the audited run
     (Spark's names on SAM's tracks). Cached replies only, no API calls. Writes panel_luderick_{animal,fish,pipeline}.jpg

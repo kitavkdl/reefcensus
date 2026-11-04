@@ -114,7 +114,7 @@ author of the nautilus survey and Stony Brook University's Institute for Ocean C
 
 ![**Figure 1.** The same seagrass frame (luderick archive, clip 20190618_9, frame 35; CC BY 4.0) three ways. Left:
 SAM 3.1 prompted with "animal", 0 detections (none in any of the clip's 107 frames). Middle: prompted with "fish", 10
-detections. Right: the audited pipeline, with the names the VLM audit gave each track (7 striped seabream, 3 fish
+detections. Right: the audited pipeline (run `cr11_fish_20190618_9`), with the names the VLM audit gave each track (7 luderick, 3 fish
 left unidentified).](figures/compare3_luderick.jpg){.wide}
 
 # Related work
@@ -468,7 +468,7 @@ under SAM's word ("eel", "shrimp"). Further ablations of discovery components co
 
 **Protocol.** Tables 1, 1c, 1d, 1e, 3b, 3c and 3e report the **final code** (the repository's code; re-run tag `cr7`,
 which reproduces every count of the previous re-run `cr6` exactly; §11 gives the commands). Table 2 and §7.3 use the nautilus
-clips re-run after the second motion look and the whole-animal seed box were added (`cr9_*`; every MaxN the same as `cr7`). The audit variants of §7.1
+clips re-run after the second motion look and the whole-animal seed box were added (`cr11_*`; every MaxN the same as `cr7`). The audit variants of §7.1
 (V1–V6) are earlier runs of the same code, kept as a variant study. V6 differs from v16 in two
 places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6); it reproduces
 every v16 count exactly. Luderick run eval7 was made after the first change and before the second, which cannot act on
@@ -794,7 +794,7 @@ counted, and was judged unsure (`data/noaa_heldout/crops_answers.txt`). No count
 
 ## Finding what was not asked for
 
-<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr9_s001` to `cr9_s004`). Person = non-expert,
+<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr11_s001` to `cr11_s004`). Person = non-expert,
 taxon-level list from four frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
@@ -809,8 +809,8 @@ frame, two blocks and two 3× cells of this night clip; the motion residual find
 "nautilus", and box prompts on them track 56 and 60 of 60 frames (A1 0.95 and 0.9, A2 yes). A third motion track
 (A1 0.55) is queued (v16). The final code first brightens this clip (median Lab L 5, mean 26.5; the thresholds,
 median < 15 and mean < 35, were set from the development clips' brightness;
-`report/paper/lowlight_s001.md`): "shell" then tracks one nautilus for 9 frames, four motion box prompts track 50–60 of
-60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4; the second motion look (run `cr9_s001`) adds a paler fifth nautilus at A1 0.4, which waits in the queue. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
+`report/paper/lowlight_s001.md`): "shell" then tracks one nautilus for 9 frames, four motion box prompts track 58–60 of
+60 frames, all four pass A1 and A2, and the peak check keeps 4 of 4 — nautilus 4; the second motion look (run `cr11_s001`) adds a paler fifth nautilus at A1 0.4, which waits in the queue. **s002**: "nautilus" tracks 48 frames. "crab" tracks 0 frames on the full frame; in the 3× cell
 "crab" tracks 5 frames and "shrimp" 12, and A1 calls the "shrimp" track "small red crab, not shrimp" (0.7), which
 matches Spark's discovery name, so the track is relabelled; A2 agrees. **s003**: "nautilus" tracks 33 frames forward,
 60 reversed and 45 and 44 in two zoom blocks. Spark also proposed a "large striped shrimp" that no word tracked; a
@@ -847,7 +847,7 @@ different frames, so the peak falls by three. A1 also splits those 15 into "cari
 "shrimp (unidentified)" 2; a per-label output shows only the larger name, so the result, CSV and review screen also
 give an animal-group row ("crustacean 15", the same-frame total). On the original, dark s001 clip the third motion
 nautilus waited in the queue at A1 confidence 0.55; the final code brightens the clip first, and all four motion
-nautiluses pass the audits (4; in `cr9_s001` a paler fifth waits in the queue).
+nautiluses pass the audits (4; in `cr11_s001` a paler fifth waits in the queue).
 
 **A fixed noun list instead of the VLM's names.** We prompted SAM 3.1 on the full frame of each clip with 16 basic-level
 nouns for animals seen on baited cameras (fish, shark, ray, eel, crab, shrimp, lobster, octopus, squid, snail, shell,
@@ -860,8 +860,8 @@ all. Adding "nautilus" reaches 6 of 7, as many as Spark's naming without audits 
 right word. On the brightened s001 clip that the final code tracks, the 16 words plus "nautilus" box one of the four
 counted nautiluses, as "shell", in 9 of 60 frames, and the other 16 words return nothing ($0.17,
 `report/paper/data/fixed_vocab_brightened/`); the final run counts all four, each also tracked from a box with no word
-on a moving spot Spark picked (50, 60, 59 and 60 of 60 frames; side-by-side video `report/scripts/split_s001_night.py`); a fifth, paler
-nautilus tracked from motion waits in the queue (A1 0.4, run `cr9_s001`).
+on a moving spot Spark picked (58, 60, 60 and 58 of 60 frames; side-by-side video `report/scripts/split_s001_night.py`); a fifth, paler
+nautilus tracked from motion waits in the queue (A1 0.4, run `cr11_s001`).
 A fixed list thus recovers most taxa on these clips if it happens to contain the target, but it names them by whichever
 word fired; what the VLM adds is the name, and a list it did not need to be given.
 
@@ -1192,7 +1192,7 @@ neither help nor hurt localisation, as expected since they only keep or remove w
 
 ## Where the counts come from
 
-Across the four discovery clips the final runs (`cr9_s001` to `cr9_s004`) produced 50 tracks after merging: 33 from discovered words and
+Across the four discovery clips the final runs (`cr11_s001` to `cr11_s004`) produced 50 tracks after merging: 33 from discovered words and
 their zoom or reversed passes, 15 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
 queued). Ten tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
 A3 judged 10 nested pairs (9 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
@@ -1283,10 +1283,10 @@ or no animal ("tail of another fish", "sediment between crab legs") still remove
 `{ polo":1 }:`); because one was cached, every replay failed. A reply that fails its schema check is now never
 cached and is asked once more.
 
-**Species names are proposals.** On the luderick clips, A1 labelled 4 tracks "luderick", 8 "striped seabream" (a
-different species), 13 remained "fish (unidentified)" and 2 were rejected. Evaluation against boxes ignores labels,
-but a per-species MaxN reported to a user would split one species into two names (in 20190618_9: "striped seabream" 7
-and "fish (unidentified)" 3). Species-level labels are confirmed through the review the queue provides, and a
+**Species names are proposals.** On the 30 luderick clips (final code, tag `cr11`), A1 labelled 17 tracks "luderick",
+2 "bream" and 1 "silver bream" (other species), 55 remained "fish (unidentified)" and 3 were rejected; an earlier
+run of six of these clips (`eval6`) called 8 tracks "striped seabream". Evaluation against boxes ignores labels,
+but a per-species MaxN reported to a user would split one species into several names. Species-level labels are confirmed through the review the queue provides, and a
 taxonomic list for the survey region, which marine scientists can supply, is a natural constraint to add.
 
 <figure>
@@ -1528,7 +1528,7 @@ shadow" look; refill re-runs a SAM pass that used all 16 of its object ids from 
 head noun first; x264 is capped to its AVX2 code on CPUs with AVX-512, whose AVX-512 code encodes some clips to other
 bytes so that the cache, keyed by those bytes, missed; a mid-confidence discovered track is renamed to the animal the
 discovery step named when an unprimed second look confirms it; the crowd check; the review-queue order; cut links for
-long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr9`; `cr8`, after the second motion look, and `cr9`, after the whole-animal seed box, moved no
+long videos; and an atomic spend cap. Every evaluation was re-run after each change (tags `cr3` to `cr11`; `cr8`, after the second motion look, `cr9`, after the whole-animal seed box, and `cr11`, after the evidence-frame and queue-thumbnail fixes, moved no
 row, group MaxN or discovery on the 15 nautilus and discovery runs, nor any luderick score; logs
 `report/paper/data/run_cr*.log`, row-by-row comparison `report/paper/scripts/compare_tags.py`). From the protocol runs
 to the final code, the counts that moved are these, each reported beside its protocol-run number:
