@@ -58,7 +58,11 @@ if __name__ == "__main__":
                        + ([L1 if os.path.exists(L1) else L1B] if tag == "cr7" else []))
         paths = [p for p in paths if "__S" not in p]
         rows = main(paths)
-        json.dump(rows, open(os.path.join(od, f"{tag}.json"), "w"), indent=1)
+        out = f"{tag}.json"
+        if tag == "cr7" and len(rows) < 46:      # a clone without runs/ has only the bundled 53-min run: keep the full file
+            out = f"{tag}_partial.json"
+            print(f"only {len(rows)} of the 46 cr7 runs found; writing {out}, data/settle/cr7.json left as it is")
+        json.dump(rows, open(os.path.join(od, out), "w"), indent=1)
         tot = {r: sum(x[r]["asked"] for x in rows.values()) for r in RULES}
         same = all(x[r]["same"] for x in rows.values() for r in RULES)
         print(f"{tag}: {len(rows)} runs, queue {sum(x['queue'] for x in rows.values())}, asked {tot}, "
