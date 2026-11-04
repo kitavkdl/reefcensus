@@ -1,0 +1,8 @@
+# Sheet 2 of 2 (clip_e–clip_h), pasted by Jiyul Ahn 11/4 ~12:57 ET, verbatim
+clip_e: 1
+clip_f: 12 (+2) | 진짜 세기 너무 어려움. 시간도 너무 많이 소요됨
+clip_g: 0 | 떠돌아다니는 것들은 먼지로 확신함
+clip_h: 0 | 매우 얇게 지나가는 검은색 한마리를 봄. 나머지는 먼지로 확신함
+
+# clip_h: '지금 다시 보니 부유물인 것 같음' (on a second look, a drifting particle) -> 0, asked the same way as sheet 1
+# Recorded counts: clip_e 1, clip_f 12 (+2), clip_g 0, clip_h 0

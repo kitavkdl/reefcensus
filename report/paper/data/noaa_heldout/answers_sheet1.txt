@@ -1,0 +1,11 @@
+# Sheet 1 of 2 (clip_a–clip_d), pasted by Jiyul Ahn 11/4 ~12:50 ET, verbatim (notes translated in handcount.md)
+clip_a: 15 | 우상단 물고기들이 너무 빨리 지나가서 확실하지 않음, 너무 세기 어려움
+clip_b: 4 | 점같은 것들이 움직인 것을 물고기라고 산정하고 표기함. 아니라면 0
+clip_c: 2 | 점같은 것들이 움직인 것을 물고기라고 산정하고 표기함. 아니라면 0
+clip_d: 9 (+2)
+
+# Clarification, asked by Claude with the sheet's own rule (sure = would bet it is a fish; + = can't tell from
+# background), before any model call on these clips. Answers (11/4 ~12:55 ET):
+#   clip_b, clip_c: "지금 보니 부유물이 확실해 보임" (on a second look, clearly drifting particles) -> 0 (+0)
+#   clip_a: "10+5 정도" -> 10 (+5)
+# Recorded counts: clip_a 10 (+5), clip_b 0, clip_c 0, clip_d 9 (+2)
