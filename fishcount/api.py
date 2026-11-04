@@ -90,6 +90,11 @@ def file_sha(path):
 
 
 # ---------------- SAM 3.1 ----------------
+def sam_cached(clip_path, prompt):
+    """True when sam_video(clip_path, prompt) would be answered from cache (free)."""
+    return os.path.exists(_cache_path("sam", {"clip": file_sha(clip_path), "prompt": prompt}))
+
+
 def sam_video(clip_path, prompt, n_frames, offline=False):
     """Track `prompt` through the clip. Returns the raw output_text (one line per frame with objects).
     Cached by (clip content hash, prompt). offline=True never calls the network (raises if not cached)."""

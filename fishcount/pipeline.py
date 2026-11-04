@@ -432,7 +432,8 @@ REFILL_WINDOW = 100     # frames per refill call (20 s at 5 fps; SAM bills at le
 REFILL_OVERLAP = 2      # frames shared by consecutive windows, so merge() drops the repeat and stitch() joins the pieces
 
 
-def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFILL_WINDOW, overlap=REFILL_OVERLAP):
+def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFILL_WINDOW, overlap=REFILL_OVERLAP,
+                     max_usd=None):
     """SAM 3.1 gives one call at most 16 object ids for the whole clip (tracks.SAM_MAX_OBJECTS). When a prompt/tile
     pass has used them all at frame s, nothing that arrives later is ever boxed (11/3 TF_52: the large seabream over
     the pale sand at the end, in tile r1c1 whose 16 ids were gone by frame 22). From s the video is sent again in
@@ -441,6 +442,8 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
     followed by the next window, `overlap` frames back. A short clip is one window, so this is the old chain there.
     Windows keep a long segment (LONG1: 2,658 frames, out of ids at frame 78) from re-sending everything left on
     every call. At most `max_segments` calls per window's worth of frames.
+    max_usd: a window that is not cached and would take the run past the per-video cap is not sent, and that pass
+    stops there (cached windows are free and always used, so a replay is unchanged).
     Returns extra sources (name "<pass>+<start>", frames renumbered to the clip) to merge after all others."""
     out_res = {r[0]: r for r in results}
 
@@ -453,6 +456,10 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
             e = min(n, s + window)
             seg = run.path(f"seg_{name}+{s}.mp4")
             video.segment(path, seg, s, length=None if e == n else e - s)
+            if (max_usd is not None and not offline and not api.sam_cached(seg, prompt)
+                    and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, e - s) * api.SAM_PER_FRAME > max_usd):
+                run.stage("track", f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}")
+                break
             txt = tracks.shift_text(_counted(run, api.sam_video, seg, prompt, e - s, offline=offline), s)
             d = tracks.parse_boxes(txt)
             out.append((f"{name}+{s}", label, tracks.from_tile(d, box, 2) if box else d, txt, box))
@@ -591,7 +598,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             if word:
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
     if refill:
-        results += refill_saturated(run, jobs, results, inf["n_frames"], offline)
+        results += refill_saturated(run, jobs, results, inf["n_frames"], offline, max_usd=max_usd)
     recovered =recover(run, clip, inf, others, found, disc.get("signs", []), results, max_usd, offline) if do_discover else []
     moved = []
     if do_motion:

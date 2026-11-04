@@ -14,8 +14,9 @@ def sam_text(n, used_up_at=None):
 
 
 class Run:
+    def __init__(self, billed=0.0): self.status, self.log = {"billed_usd": billed}, []
     def path(self, name): return "/nonexistent/" + name
-    def stage(self, *a): pass
+    def stage(self, *a): self.log.append(a)
 
 
 class Windows(unittest.TestCase):
@@ -32,9 +33,9 @@ class Windows(unittest.TestCase):
     def tearDown(self):
         pipeline._counted, video.segment = self._c, self._s
 
-    def refill(self, n, first_used_up):
+    def refill(self, n, first_used_up, run=None, offline=True, max_usd=None):
         res = [("p0", "fish", {}, sam_text(n, first_used_up), None)]
-        return pipeline.refill_saturated(Run(), [("p0", "fish", "fish", "clip.mp4", None)], res, n, True)
+        return pipeline.refill_saturated(run or Run(), [("p0", "fish", "fish", "clip.mp4", None)], res, n, offline, max_usd=max_usd)
 
     def test_short_clip_is_one_call_to_the_end(self):
         out = self.refill(60, 22)
@@ -64,6 +65,31 @@ class Windows(unittest.TestCase):
     def test_unsaturated_pass_makes_no_call(self):
         self.assertEqual(self.refill(400, None), [])
         self.assertEqual(self.calls, [])
+
+    def test_live_refill_stops_at_the_per_video_cap(self):
+        """ops-80 review: refill (on by default) was outside --max-usd, so the web's $2 cap did not hold."""
+        from fishcount import api
+        orig = api.sam_cached
+        api.sam_cached = lambda path, prompt: False
+        try:
+            run = Run(billed=1.99)
+            out = self.refill(400, 78, run=run, offline=False, max_usd=2.0)
+        finally:
+            api.sam_cached = orig
+        self.assertEqual((out, self.calls[1:]), ([], []))     # cut, then stopped before any paid call
+        self.assertTrue(any("cap" in " ".join(map(str, a)) for a in run.log))
+
+    def test_cached_refill_windows_ignore_the_cap(self):
+        """a replay whose windows are all cached costs nothing, so the cap must not change its result"""
+        from fishcount import api
+        orig = api.sam_cached
+        api.sam_cached = lambda path, prompt: True
+        try:
+            out = self.refill(400, 78, run=Run(billed=5.0), offline=False, max_usd=2.0)
+        finally:
+            api.sam_cached = orig
+        self.assertEqual(len(out), len(self.calls))
+        self.assertGreater(len(out), 1)
 
 
 if __name__ == "__main__":
