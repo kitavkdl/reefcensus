@@ -815,7 +815,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     run.stage("render", "drawing evidence frames")
     for name, mm in m.items():
         if mm["maxn_frame"] is not None:
-            render.evidence(clip, raw, result, mm["maxn_frame"], run.path(f"evidence_{api_safe(name)}.jpg"))
+            render.evidence(clip, raw, result, mm["maxn_frame"], run.path(f"evidence_{api_safe(name)}.jpg"), name)
     run.stage("render", "drawing the annotated video")
     render.annotate(clip, raw, result, run.path("annotated.mp4"))
     run.status["done"] = time.time()

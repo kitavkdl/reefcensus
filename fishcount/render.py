@@ -40,35 +40,45 @@ def frame_masks(text, f):
     return maskcodec.masks(text, f).get(f, [])
 
 
-def evidence(clip, raw, result, f, out_path):
-    """Frame f with every counted object masked and numbered (track names from the audit when present)."""
+def evidence_split(result, f, label):
+    """Frame f's counted boxes as (label's, other labels'), by tracks.metrics' label rule, so the count burned into
+    the image is the MaxN printed beside it (11/4: every label was summed, s004 nautilus "count 11" beside "1")."""
+    labels, trk = result.get("auto_labels", {}), result["tracks"]
+    lab = lambda t: labels.get(t, trk[t]["label"]) if t in trk else None
+    kept = [k for k in result["frames"].get(str(f), []) if lab(k["track"])]
+    return [k for k in kept if lab(k["track"]) == label], [k for k in kept if lab(k["track"]) != label]
+
+
+def evidence(clip, raw, result, f, out_path, label):
+    """Frame f with `label`'s counted objects masked and named (track names from the audit when present); other
+    counted labels get a thin grey box so the frame still shows what else was there."""
     img = video.frames(clip, [f])[f]
     H, W = img.shape[:2]
-    kept = result["frames"].get(str(f), [])
-    drop = {t for t, l in result.get("auto_labels", {}).items() if not l}
+    mine, others = evidence_split(result, f, label)
     names = {t: v.get("name", "") for t, v in result.get("verdicts", {}).items()}
     over = img.copy()
     for name, (text, tile) in raw.items():
         # 11/2: tile masks used to be skipped here (boxes only) though annotate() maps them back; same helper now
         for box, m, x0, y0 in _masks_full(text, tile, frame_masks(text, f), W, H):
-            hit = max(kept, key=lambda k: tracks.iou(k["box"], box), default=None)
-            if not hit or tracks.iou(hit["box"], box) < 0.5 or hit["track"] in drop:
+            hit = max(mine + others, key=lambda k: tracks.iou(k["box"], box), default=None)
+            if not hit or tracks.iou(hit["box"], box) < 0.5 or hit not in mine:
                 continue
             over[y0:y0 + m.shape[0], x0:x0 + m.shape[1]][m] = colour(hit["track"])
     img = cv2.addWeighted(over, 0.45, img, 0.55, 0)
-    n, placed = 0, []
-    for k in kept:
-        if k["track"] in drop:
-            continue
-        n += 1
+    for k in others:
+        x0, y0, x1, y1 = map(int, k["box"])
+        cv2.rectangle(img, (x0, y0), (x1, y1), (150, 150, 150), 1)
+    placed = []
+    for i, k in enumerate(mine, 1):
         x0, y0, x1, y1 = map(int, k["box"])
         col = colour(k["track"])
         cv2.rectangle(img, (x0, y0), (x1, y1), col, 3)
-        tag = names.get(k["track"]) or str(n)
-        placed.append(_tag(img, tag, (x0, y0, x1, y1), col, placed))
-    cv2.putText(img, f"frame {f}  count {n}", (16, H - 20), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 3)
+        placed.append(_tag(img, names.get(k["track"]) or str(i), (x0, y0, x1, y1), col, placed))
+    txt = f"frame {f}  {label}: {len(mine)}"
+    cv2.putText(img, txt, (16, H - 20), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 0), 6)
+    cv2.putText(img, txt, (16, H - 20), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 255, 255), 3)
     cv2.imwrite(out_path, img, [cv2.IMWRITE_JPEG_QUALITY, 85])
-    return n
+    return len(mine)
 
 
 def _tag(img, text, box, col, placed, scale=0.9):
