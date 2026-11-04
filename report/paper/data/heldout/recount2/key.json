@@ -1,0 +1,29 @@
+{
+ "protocol": "11/4: second independent hand count of the 24 held-out luderick videos. Second person (friend of the first author, has not seen the project's output) counts MaxN from the original videos re-encoded to 1280x720 without audio, no boxes; order shuffled with random.Random(1105), neutral names v01..v24. Fixed before the counter sees the sheet.",
+ "key": {
+  "v01": "fish_20190710_2",
+  "v02": "fish_20190618_5",
+  "v03": "fish_20190709_8",
+  "v04": "fish_20190710_5",
+  "v05": "fish_20190710_6",
+  "v06": "fish_20190710_3",
+  "v07": "fish_20190710_7",
+  "v08": "fish_20190618_10",
+  "v09": "fish_20190709_11",
+  "v10": "fish_20190710_8",
+  "v11": "fish_20190709_9",
+  "v12": "fish_20190709_17",
+  "v13": "fish_20190618_6",
+  "v14": "fish_20190709_15",
+  "v15": "fish_20190709_3",
+  "v16": "fish_20190709_2",
+  "v17": "fish_20190618_7",
+  "v18": "fish_20190618_4",
+  "v19": "fish_20190710_9",
+  "v20": "fish_20190618_2",
+  "v21": "fish_20190710_1",
+  "v22": "fish_20190618_8",
+  "v23": "fish_20190618_11",
+  "v24": "fish_20190618_1"
+ }
+}

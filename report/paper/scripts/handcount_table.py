@@ -117,4 +117,5 @@ def main():
               open(os.path.join(B, f"recount/table1d_{a.tag}.json"), "w"), indent=1)
 
 
-main()
+if __name__ == "__main__":
+    main()
