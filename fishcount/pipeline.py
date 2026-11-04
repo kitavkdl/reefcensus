@@ -94,6 +94,11 @@ SHADOW_PROMPT = """Each group (S1, S2, ...) follows one tracked object in underw
 For every group return ONLY a JSON list: [{{"tile":"S1","is_animal":true|false,"what":"fish|shadow|sand|water|other","confidence":0.0-1.0,"reason":"<=10 words"}}]
 is_animal = the rectangle itself holds an animal: a small, faint or distant fish in open water still counts, and even a dark fish shows an eye, fins, a lighter belly or highlights, or keeps a body outline in front of other things. what = "shadow" only for a dark patch lying on the seabed (evenly dark, soft edges, no eye, fin edge or lighter parts, flat on the sand, often with a lighter fish of the same outline nearby moving the same way). If you cannot tell, answer true with low confidence."""
 COUNT_MIDCONF_MOTION = True   # see run_pipeline: mid-confidence motion tracks get a second look of their own
+# a discovered track whose audit says "not a <search word>" and names, at mid confidence (0.5-0.7), an animal the
+# discovery step had named gets the unprimed second look and is renamed only on its confident yes; the count is the
+# same either way, only the name changes (11/4 s002 rehearsals: 'shrimp' word, audit "small red crab" 0.6 and 0.65,
+# shown as "shrimp (unidentified)"; the demo run had 0.7 and was renamed)
+RELABEL_MIDCONF_DISCOVERED = True
 MOTION_VERSION = "v7"   # bump to recompute the cached motion decisions (the key also hashes the prompt and the boxes)
 def _motion_reply(text):
     """check= for the motion sheet: JSON naming at least one M tile (else not cached, asked once more)."""
@@ -659,6 +664,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
 
     labels = auto_labels(trk, verdicts)
     maybe = []      # motion tracks with a mid-confidence audit yes (COUNT_MIDCONF_MOTION)
+    rename = []     # discovered tracks with a mid-confidence "it is <a discovered animal>" (RELABEL_MIDCONF_DISCOVERED)
     # every word of every discovered name: "small red crab on seabed" must match an audit "small red crab" (11/2 s002 v13:
     # norm_label kept only "seabed", so the red crab the discovery step had named was dropped as "not a shrimp")
     seen = {_head(f["what"]) for f in found} - {None}
@@ -669,6 +675,10 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 and norm_label(v.get("species") or "") in seen):
             labels[t] = v["species"].lower()
             v["relabelled"] = f"{trk[t]['label']} -> {labels[t]}"
+            continue
+        if (RELABEL_MIDCONF_DISCOVERED and trk[t]["source"].startswith("d") and v.get("is_target") is False
+                and 0.5 <= _conf(v) < 0.7 and norm_label(v.get("species") or "") in seen):
+            rename.append(t)
             continue
         # a motion label is Spark's one-word guess from a small crop; when the audit says "not a <guess>" but
         # confidently names an animal the discovery step had already named on its own, the track is that animal
@@ -725,6 +735,18 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                     verdicts[t]["midconf_counted"] = True
             run.stage("audit", f"second look at {len(maybe)} mid-confidence motion track(s): "
                       + ", ".join(f"{verdicts[t]['name']} {'counted' if labels.get(t) else 'not counted'} ({said.get(t, {}).get('reason', 'no answer')})" for t in maybe))
+        if rename:
+            said = confirm_motion(run, clip, frames, rename, offline, sheet_no=3)
+            for t in rename:
+                c = said.get(t, {})
+                verdicts[t]["confirm"] = c
+                if (c.get("is_animal") is True and _conf(c) >= 0.7
+                        and not name_disagreement(verdicts[t].get("species"), c.get("name"))):
+                    labels[t] = verdicts[t]["species"].lower()
+                    verdicts[t]["relabelled"] = f"{trk[t]['label']} -> {labels[t]}"
+                    verdicts[t]["midconf_renamed"] = True
+            run.stage("audit", f"second look at {len(rename)} mid-confidence renamed discovery track(s): "
+                      + ", ".join(f"{verdicts[t]['name']} {labels.get(t) or 'kept'} ({said.get(t, {}).get('reason', 'no answer')})" for t in rename))
     if do_audit and clean:
         for f in os.listdir(run.path()):
             if f.startswith("shadow_") and f.endswith(".jpg"):
