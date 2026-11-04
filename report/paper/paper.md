@@ -953,7 +953,7 @@ minutes, while the camera is still on the boat deck, it also counts the crew (hu
 trap named "person (unidentified)", a name split of the same kind as §7.5) and a fish lying in a trap on deck. The
 auditor rejected 35 of the 116 tracks. On the final code (clean and refill, on by default after the freeze), the same
 six segment clips were run again with every cached answer reused (run `LONG1_cr2`, log
-`report/paper/data/long_video/run_cr2c.log`; $5.67 together with an earlier partial re-run). Refill sends each
+`report/paper/data/long_video/run_cr2c.log`; $5.67 including an earlier partial re-run of segments 1–2, `LONG1_cr`, hence eight segment records). Refill sends each
 segment again after a SAM call has used its 16 object IDs, so much more of the hour is tracked: 1,373 tracks after
 cutting reused IDs, 185 rejected by the auditor. The merged run reports fish (unidentified) MaxN 14 at 418 s, grunt 2,
 flatfish 1, needlefish 1 and sand lance 1 (names are proposals, §7.5); the deck crew is unchanged (human 3, person
