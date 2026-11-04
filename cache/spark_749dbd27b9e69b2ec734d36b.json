@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"partial crab leg\"},{\"tile\":\"D2\",\"is_target\":true,\"what_it_is\":\"unclear\"}]", "usage": {"completion_tokens": 632, "prompt_tokens": 511, "total_tokens": 1143, "completion_tokens_details": {"reasoning_tokens": 586}, "prompt_tokens_details": {"cached_tokens": 0}}}

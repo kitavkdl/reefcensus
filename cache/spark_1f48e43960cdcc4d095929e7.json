@@ -1,0 +1,1 @@
+{"text": "[{\"track\":\"T8\",\"is_target\":true,\"species\":\"worm\",\"confidence\":0.4,\"reason\":\"Blurry elongated shape persists across frames\"}]", "usage": {"completion_tokens": 922, "prompt_tokens": 542, "total_tokens": 1464, "completion_tokens_details": {"reasoning_tokens": 881}, "prompt_tokens_details": {"cached_tokens": 0}}}

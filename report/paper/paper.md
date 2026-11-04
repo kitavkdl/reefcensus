@@ -39,6 +39,7 @@ is an annotation accelerator whose output a person confirms.
 | On nautilus clips VLM naming finds six of seven taxa without any audit (seven with a motion cue); audits fix names, duplicates and one false taxon | §6.3, Tables 2–3 | 4 development; 7 taxa | development data; taxa scored as present, not counts; the reference is a non-expert's list from four frames |
 | On five held-out videos the pipeline names 4 of 4 non-fish animals marked beforehand, counts 3, queues 1, counts no non-animal | §6.3, Table 3b | 5; 4 animals | clips chosen by a rule that favours non-fish animals; presence only; "not an animal" judged by the author with labels hidden |
 | On six more held-out videos it counts the one animal marked beforehand and no non-animal | §6.3, Table 3c | 6; 1 animal | four of the six were chosen because their source text names a non-fish animal; the fixed 16-word baseline finds the same animals |
+| Counts of animals found without being asked match two counters' counts of the peak frame in sparse scenes and are a lower bound in crowds: exact on 8 of the 12 frames with at most four animals; 4 vs. 15 crustaceans, 16 vs. 44 fish, 1 vs. 20 hagfish on three crowded frames | §6.3, Table 3e | 17 frames | one frame per group, key from the frozen runs; two counters |
 | The VLM auditor adopts names in its prompt and changes verdicts with the layout of the evidence | §7.1, §7.5 | 6 development | development clips; repeated calls also vary on their own |
 | Muse Wonder, Meta's larger VLM, given Spark's 101 questions, rejects tiles of a crab a person was certain of, gives 12 unsupported names against Spark's 5, and costs about 4.3× per call | §7.6, Table 7 | 15; 101 questions | same questions, not Wonder's own run; yes/no per tile without confidence thresholds |
 | A plain propose–segment–look–revise loop (the SAM 3 Agent pattern) with the same models reaches 3 of 5 held-out marked animals and 5 of 7 development taxa, against 4 of 5 and 7 of 7 | §7.7, Table 8 | 15 | text prompts, full frame, forward only; the published agent's prompts are not reproduced |
@@ -252,8 +253,8 @@ Six frames of the clip are tiled into a contact sheet and Spark is asked for "ev
 the request did not ask about", with three plain-noun search words per item, an expected count, the grid cells where
 it appears, and indirect signs (sediment puffs, moving shadows). The prompt states the segmenter's vocabulary
 constraint explicitly: plain everyday nouns work; species names, colours and words like "animal" return nothing.
-For each proposed item (the prompt allows four; the pipeline keeps the first three), a **word ladder** tries Spark's own short name first and then its
-search words on the full clip, stopping at the first word that tracks; the track keeps Spark's name ("hagfish") while
+For each proposed item (the prompt allows four; the pipeline keeps the first three), a **word ladder** tries Spark's own short name first (in the final code, every known animal noun of the name, head
+noun first; §10) and then its search words on the full clip, stopping at the first word that tracks; the track keeps Spark's name ("hagfish") while
 the word ("eel") is only SAM's handle. If the word tracks fewer animals than Spark expected, the zoom passes above
 run in the cells Spark named; if an indirect sign names a suspected animal, its cell is searched with that word.
 
@@ -913,6 +914,41 @@ describes whole videos, while each clip is a 12-s window that need not show the 
 found the DH11 animal (as "worm") and the DH7 crab (as "crab", and as "starfish" on the same crab); what the VLM adds on
 these two clips is the name, "amphipod" and "crab", not the finding.
 
+**Counts in the peak frame, checked by two counters.** Discovery is scored as presence. To check the counts, the peak
+frame of every animal group counted in the runs of Tables 2, 3b and 3c (17 frames from the frozen runs, pipeline
+numbers hidden; `report/paper/data/countsheet/`: sheet, key, answers) was counted by Jiyul Ahn and by a second person
+who had not seen the project's output, each alone, told to count only what they would bet is a separate animal. The
+two counters agree exactly on 13 of the 17 frames and within one on 15. The pipeline's number equals the first person's
+on 8 and is within one on 10 (second person: 7 and 10). All 8 exact matches are on the 12 frames where both people
+counted at most four animals. On the five crowded frames the pipeline's MaxN is a lower bound: DH3's crustaceans 4
+against 15 and 15, DH8's fish 16 against 44 and 45 (the "fish" pass used all 16 of its object ids in that frame, and the
+frozen code had no refill; the final code refills it and counts 18), s004's hagfish 1 against 20 and 24; it is above both people only on s004's
+shrimp (15 against 13 and 13), and on DH5 it lies between them (9; the people counted 3 and 37, the second "every small
+dot as a fish"). The other two misses are small groups: s002's fish 2 against 4 and 4, and s001's nautiluses 4
+against 0 and 0, where the second person noted 4 inside the trap's net.
+
+<div class="tablecap">**Table 3e.** Peak-frame counts: pipeline (frozen runs) and two counters, each alone.</div>
+
+| frame (clip, group) | pipeline | first person | second person |
+|---|--:|--:|--:|
+| DH1 crustaceans | 1 | 1 | 1 |
+| DH2 corals or anemones | 2 | 1 | 1 |
+| DH2 crustaceans | 2 | 2 | 2 |
+| DH3 crustaceans | 4 | 15 | 15 |
+| DH5 fish | 9 | 3 | 37 |
+| DH6 fish | 2 | 2 | 2 |
+| DH7 crustaceans | 3 | 4 | 4 |
+| DH8 fish | 16 | 44 | 45 |
+| DH11 crustaceans | 1 | 1 | 2 |
+| s001 nautiluses | 4 | 0 | 0 |
+| s002 nautiluses | 1 | 1 | 1 |
+| s002 fish | 2 | 4 | 4 |
+| s002 crustaceans | 1 | 1 | 1 |
+| s003 nautiluses | 3 | 3 | 3 |
+| s004 crustaceans | 15 | 13 | 13 |
+| s004 nautiluses | 1 | 1 | 1 |
+| s004 fish | 1 | 20 | 24 |
+
 ## Cost and time
 
 All model calls made during development and evaluation, including discarded experiments, cost $3.04 (450 calls: 148
@@ -927,7 +963,7 @@ data on the frozen code 42 calls ($0.11), empty-cache live rehearsals of DH11 an
 calls ($0.02), the fixed list on the brightened clip of §6.3 14 SAM calls ($0.17), the Muse Wonder comparison of §7.6
 101 calls ($2.33), the SAM 3 Agent-style baseline of §7.7 44 calls ($0.41), the 53-min deployment below 82 calls
 ($17.27 over three attempts), and, on the final code, development after the freeze with the re-runs of every frozen
-evaluation and the demo runs 620 calls ($4.53) and the re-runs of the 53-min video 269 calls ($5.67), for a ledger total of $44.88 over 3,288 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
+evaluation and the demo runs 693 calls ($5.28) and the re-runs of the 53-min video 269 calls ($5.67), for a ledger total of $45.63 over 3,361 calls; `report/paper/scripts/ledger_summary.py` produces every number in this paragraph from the
 spend ledger (a copy is in the scoring bundle). From the call counts of the final
 runs, a fresh discovery run on a 12-s clip makes 21–30 calls and costs an estimated $0.22–0.27, dominated by SAM
 passes (15–19 per clip, each billed for the clip's 60 frames, $0.012 per pass). The spend ledger does not separate
@@ -1145,7 +1181,10 @@ In four empty-cache rehearsals through the web screen (request "fish", two takes
 each; `report/paper/data/rehearsal/`), DH11's amphipod was counted once (1) and queued once
 (0), and s003 counted 3 nautiluses in one take but 1 in the other: there Spark described "chambered nautilus
 cephalopod" and proposed only "cephalopod", "shell" and "snail", so "nautilus" was never tried and only a zoom tile's
-"cephalopod" track (40 frames) was counted. No take counted a non-animal.
+"cephalopod" track (40 frames) was counted. No take counted a non-animal. The final code puts every known animal
+noun of Spark's name first in the word ladder (below, *Defaults added after the freeze*); replayed with that take's
+own Spark answers, it tries "cephalopod" (0 frames) and then "nautilus" (33 frames) and counts 3 (10 new calls, $0.08;
+`report/paper/data/rehearsal/take1_ladder/`).
 
 **Wrong rejections in the peak check.** A4 can remove a real animal. In s002 it rejected the only nautilus box in
 frame 0 as "anemone tentacles"; the nautilus still counts because a later frame, where it is clearer, became the
@@ -1359,6 +1398,17 @@ One scoring change was made after a re-run: in the first one (`DH5_cr`) the audi
 ling", the species the frozen run had called pink cusk-eel, and since no word group knew "ling" the scorer counted a
 fish as a non-fish discovery; `score_discovery_heldout.py` now treats "ling" as a fish name. No frozen run and no `cr3`
 run contains the word, so no reported score depends on it.
+Two more changes were made on 11/4, before submission. The word ladder now tries every known animal noun of Spark's
+name first, head noun first (the s003 rehearsal take above), and x264 is capped to its AVX2 code on CPUs with AVX-512:
+its AVX-512 code encodes some clips to other bytes, so the cache, keyed by those bytes, missed. A last re-run of both
+luderick sets and all 15 discovery runs on this code (tag `cr6`, log `report/paper/data/run_cr6.log`; `report/paper/scripts/compare_tags.py cr3 cr6`) gives
+the same luderick numbers, and the same rows, group MaxN and discoveries as `cr3` on 12 of the 15 runs. DH3 and DH11
+try other words for an item no word tracks (DH3 "squat lobster shrimp": shrimp, lobster, squat instead of shrimp,
+prawn, lobster; DH11 "scavenging amphipod crustacean": crustacean, amphipod, shrimp instead of crustacean, shrimp,
+crab) and count the same. s001 is the brightened night clip, whose frames still differ between CPUs (README), and Spark
+names its nautilus "chambered nautilus" instead of "nautilus", MaxN 4 in both. A re-run on the new AVX-512 host before
+the cap (`cr5`) had fresh SAM answers for DH3's reversed zoom cell and counted 3 crustaceans instead of 4; with the cap
+the cell's bytes, and the count, are those of `cr3` again.
 
 The repeated calls of Table 4b are live calls; their replies are stored in `report/paper/data/repeat_peak_f35.json`. All
 calls used the model IDs fixed in `fishcount/api.py` (`sam-3.1`, `muse-spark-1.3`), and the ledger records the time

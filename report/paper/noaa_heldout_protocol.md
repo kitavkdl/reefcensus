@@ -35,10 +35,12 @@ It also records any non-fish row counted on these fish-survey clips (false disco
   before the run beyond checking that each file decodes (frame count and duration).
 
 ## Run (one each, reported whatever it shows)
-- **Code**: frozen at the commit that adds this file (`54acfb0`). The word-ladder change `a912bc8` that it includes was
-  reverted (`e4be9d6`) and restored (`3d2667c`) on 11/4, before any clip of this set was cut or seen; the pipeline at
-  the restore is byte-identical to `54acfb0`. Only the prep and scoring scripts may be added before the run; neither
-  changes the pipeline.
+- **Code**: frozen at the commit checked out when the clips are cut; `prep_noaa_heldout.py` writes it (`git rev-parse
+  HEAD`) into `clips.json`, and no file under `fishcount/` changes between that commit and the run. Pipeline changes
+  made after this file was added (`54acfb0`) and before any clip of this set was cut or seen, all on 11/4: the
+  word-ladder change `a912bc8` reverted (`e4be9d6`) and restored (`3d2667c`); x264 capped to its AVX2 code on AVX-512
+  CPUs (`ab1638c`, replay across machines; no count logic). Only the prep and scoring scripts may be added before the
+  run; neither changes the pipeline.
 - **When**: after the demo video is recorded (owner's decision, 11/4).
 - **Settings**: the discovery settings of Table 2 and the 53-min run, on the final defaults:
   `python3 fishcount/pipeline.py <clip> --no-scout --prompts fish --discover --zoom --id N<k>_eval`.

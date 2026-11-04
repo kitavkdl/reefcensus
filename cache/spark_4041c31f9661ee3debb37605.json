@@ -1,0 +1,1 @@
+{"text": "[{\"tile\":\"D1\",\"is_target\":true,\"what_it_is\":\"spider crab\"}]", "usage": {"completion_tokens": 356, "prompt_tokens": 513, "total_tokens": 869, "completion_tokens_details": {"reasoning_tokens": 327}, "prompt_tokens_details": {"cached_tokens": 0}}}
