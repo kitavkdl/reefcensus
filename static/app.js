@@ -190,7 +190,7 @@ function tally(n, col) {
 function countRow(name, m, origin, extra = []) {
   return el("div", { class: "count" },
     el("div", { class: "name" }, name),
-    el("div", { class: "big num" }, m.maxn),
+    el("div", { class: "big num" }, (m.lower_bound ? "≥" : "") + m.maxn),
     tally(m.maxn, colour(origin)),
     el("div", { class: "facts" },
       el("span", {}, `first seen ${secs(m.first_time)}`),
@@ -202,6 +202,7 @@ function countRow(name, m, origin, extra = []) {
         el("span", { class: "num" }, `${m.maxn_confirmed}–${m.maxn}`),
         ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
       : null,
+    crowdNote(m),
     ...extra);
 }
 
@@ -267,15 +268,20 @@ function siteBlock(run) {
 const groupParts = (run, m) => m.labels.filter((n) => !run.metrics[n] || !hidden(n, run.metrics[n]))
   .map((n) => `${run.metrics[n]?.curve?.[m.maxn_frame] || 0} ${n}`);
 
+// crowd check: Spark, shown the peak frame with no boxes, counted clearly more than were tracked -> a person counts it
+const crowdNote = (m) => m.lower_bound ? el("div", { class: "range crowd" }, "Crowded: Spark counts about ", el("span", { class: "num" }, m.crowd_total),
+  " in this frame without boxes, more than were tracked. The count is a lower bound; please count this frame.") : null;
+
 // same-frame totals per animal group (server: pipeline.group_metrics), shown under both count panels
 function groupBlock(run) {
   const gm = Object.entries(run.group_metrics || {});
   if (!gm.length) return [];
   return [el("div", { class: "groups" }, el("h3", {}, "By animal group", el("small", {}, " the labels below added frame by frame")),
     ...gm.map(([g, m]) => el("div", { class: "climb" }, `All ${g === "fish" ? "fish" : g + "s"}: `,
-      el("span", { class: "num" }, m.maxn), ` in one frame (${groupParts(run, m).join(" + ")}) `,
+      el("span", { class: "num" }, (m.lower_bound ? "≥" : "") + m.maxn), ` in one frame (${groupParts(run, m).join(" + ")}) `,
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `at ${secs(m.maxn_time)}`) : null,
-      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "")))];
+      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "",
+      crowdNote(m))))];
 }
 
 // "shrimp (unidentified)" and "caridean shrimp" are both shrimp: one track has one label, so per-frame counts add.
@@ -360,18 +366,27 @@ function drawQueue() {
       const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); review(it.track, input.value); } },
         input, el("button", { class: "btn small" }, "Save name"));
       body.push(el("div", { class: "acts" },
-        el("button", { class: "btn small", onclick: () => review(it.track, guess) }, `Yes, ${guess}`),
+        el("button", { class: "btn small", onclick: () => review(it.track, it.yes_label || guess) }, `Yes, ${guess}`),
         el("button", { class: "btn ghost small", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); } }, "Rename"),
         el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")), form);
     }
-    return el("div", { class: `qitem${it.reviewed ? " done" : ""}` },
+    if (it.rank) body.unshift(el("div", { class: "decides" }, "Your answer can change a count"));
+    return el("div", { class: `qitem${it.reviewed ? " done" : ""}`, "data-rest": it.reviewed || it.rank ? null : "1" },
       el("img", { src: thumb, alt: `Crop of track ${it.name}`, loading: "lazy", onclick: () => zoom(trio, `${it.name}: ${it.reason || ""}${it.has_trio ? " (the three crops Spark saw: early, middle, late)" : ""}`) }),
       el("div", {}, ...body));
   });
+  // settle.py: only tracks whose answer can still move a MaxN or a first arrival come first; the server recomputes after
+  // every answer, so accepting one can drop others. The rest cannot change any count as things stand.
+  const rest = items.filter((x) => x.dataset.rest), head = items.filter((x) => !x.dataset.rest);
+  const left = run.n_decisive || 0;
   $("queuePanel").replaceChildren(
     el("h2", {}, "Needs a person",
       el("small", {}, total ? `${run.n_flagged} of ${total} tracks: Spark was unsure, or said it is not the animal.` : "Spark did not audit this run.")),
-    ...(items.length ? items : [el("p", { class: "empty" }, total ? `Nothing to check. Spark was confident on all ${total} tracks.` : "")]));
+    run.n_flagged ? el("p", { class: "settle" }, left
+      ? [el("b", { class: "num" }, left), ` of them can still change a MaxN or a first arrival; they are first, from the frame with the highest possible count. Each answer can make others irrelevant.`]
+      : "Every MaxN and first arrival is settled; the tracks left cannot change a count.") : null,
+    ...(items.length ? head : [el("p", { class: "empty" }, total ? `Nothing to check. Spark was confident on all ${total} tracks.` : "")]),
+    rest.length ? el("details", { class: "rest" }, el("summary", {}, `${rest.length} more that cannot change a count now (names, or a second opinion)`), ...rest) : null);
 }
 
 async function review(track, label) {
@@ -445,5 +460,4 @@ $("strip").addEventListener("click", (e) => {
 ["seeked", "timeupdate", "loadedmetadata"].forEach((ev) => $("vid").addEventListener(ev, movePlayhead));
 window.addEventListener("resize", movePlayhead);
 $("lbClose").onclick = () => $("lightbox").close();
-wireForm();
 loadRuns();

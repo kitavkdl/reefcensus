@@ -1,5 +1,5 @@
-OpCode,Family,Genus,Species,MaxN,Frame,Time_mins,spark_common_name,maxn_confirmed,origin,taxonomy_status,source_file,run_id,human_edits
-nautilus_s004_0_12,,,,14,29,0.097,caridean shrimp,12,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0
-nautilus_s004_0_12,,,,2,31,0.103,shrimp (unidentified),0,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0
-nautilus_s004_0_12,,,,1,0,0.0,chambered nautilus,1,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0
-nautilus_s004_0_12,,,,1,0,0.0,hagfish,1,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0
+OpCode,Family,Genus,Species,MaxN,Frame,Time_mins,spark_common_name,maxn_confirmed,origin,taxonomy_status,source_file,run_id,human_edits,maxn_lower_bound
+nautilus_s004_0_12,,,,14,29,0.097,caridean shrimp,12,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0,
+nautilus_s004_0_12,,,,2,31,0.103,shrimp (unidentified),0,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0,
+nautilus_s004_0_12,,,,1,0,0.0,chambered nautilus,1,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0,
+nautilus_s004_0_12,,,,1,0,0.0,hagfish,1,found,not verified: common name from Muse Spark or a reviewer,nautilus_s004_0_12.mp4,mg2_s004,0,

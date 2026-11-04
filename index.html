@@ -46,29 +46,6 @@
   <button class="btn ghost" id="newBtn" hidden style="display:none" aria-expanded="false" aria-controls="newRun">New run</button>
 </header>
 
-<section class="drawer" id="newRun" hidden>
-  <form id="runForm">
-    <div class="drop" id="drop" tabindex="0">
-      <strong>Drop an underwater clip here</strong>
-      <span>or pick one you already have</span>
-      <select id="clipSel" aria-label="Clip"></select>
-      <input type="file" id="fileIn" accept="video/*" hidden>
-      <button type="button" class="link" id="browse">Choose a file</button>
-    </div>
-    <label class="field">What should it count?
-      <input id="words" value="fish" autocomplete="off" spellcheck="false">
-      <small>Plain nouns, comma separated. SAM only sees what it is told to look for.</small>
-    </label>
-    <label class="check">Site (optional) <input id="site" autocomplete="off" spellcheck="false" placeholder="e.g. nautilus-bait" aria-label="Site name: words you gave earlier videos of this site are tried first"></label>
-    <label class="check"><input type="checkbox" id="discover" checked> Also look for living things I did not ask for</label>
-    <label class="check money"><input type="checkbox" id="allowApi"> Allow paid API calls, up to $<input id="cap" type="number" min="0.1" max="2" step="0.1" value="1" aria-label="Spending cap in dollars"></label>
-    <small class="hint" id="moneyHint">Off: replays saved API answers only, free. Clips seen before replay exactly.</small>
-    <div class="row">
-      <button class="btn" id="startBtn">Start run</button>
-      <span class="err" id="formErr" role="alert"></span>
-    </div>
-  </form>
-</section>
 
 <main class="grid" id="main" tabindex="-1">
   <section class="stage">
@@ -86,8 +63,8 @@
     <section class="panel asked" id="askedPanel"></section>
     <section class="panel found" id="foundPanel"></section>
     <section class="panel queue" id="queuePanel"></section>
-    <a class="btn ghost export" id="exportBtn" href="#">Download MaxN table (CSV)</a>
-    <a class="btn ghost export" id="exportGaBtn" href="#" title="GlobalArchive / CheckEM layout: OpCode, Family, Genus, Species, MaxN, Frame. Taxonomy columns are left blank; Spark's common name is in spark_common_name.">Download in GlobalArchive layout (CSV)</a>
+    <a class="btn ghost export" id="exportBtn" href="api/runs/mg2_s004/export.csv">Download MaxN table (CSV)</a>
+    <a class="btn ghost export" id="exportGaBtn" href="api/runs/mg2_s004/export_globalarchive.csv" title="GlobalArchive / CheckEM layout: OpCode, Family, Genus, Species, MaxN, Frame. Taxonomy columns are left blank; Spark's common name is in spark_common_name.">Download in GlobalArchive layout (CSV)</a>
   </aside>
 </main>
 
