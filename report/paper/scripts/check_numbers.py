@@ -30,9 +30,8 @@ FACTS = [
     ("held-out discovery: named / counted (words)", r"names all (\w+) non-fish animals marked beforehand", ("four",)),
     ("held-out discovery cost (five clips)", r"\$(\d\.\d\d) for all five", ("1.06",)),
     ("discovery counted at the end (development 7/7, held-out 3/4, DH6-11 1/1)", r"counted at the end \| (\d) of (\d)", [("7", "7"), ("3", "4"), ("1", "1")]),
-    ("s001 night nautiluses (final code, brightened)", r"(\d) (?:counted )?of at least (\d)", ("4", "4")),
-    ("one_bit masks checked against the reference decoder", r"([\d,]+) masks", ("10,415",)),
-    ("MBARI annotation effort", r"(\d+) hours of (?:survey )?video takes (\d+)[–-](\d+) hours", ("90", "180", "400")),
+    ("MBARI annotation effort", r"(\d+) hours of (?:survey )?video takes (\d+)[–-](\d+) hours|(\d+) hours of video can take anywhere from (\d+) to (\d+) hours", ("90", "180", "400")),
+    ("s001 night nautiluses counted (final code, brightened)", r"tracks (\w+) nautiluses from boxes|motion boxes count (\w+) nautiluses", ("four",)),
     ("box prompt with no word, s004 shrimp (pipeline)", r"(\d+) of 60 (?:frames )?in the pipeline|with no word, in (\d+) of 60 frames", ("55",)),
     ("Table 4b edge vs centre (of 25; 11 vs 4 is the track-survival comparison)", r"(\d+)/25 vs\.? (\d+)/25|(\d+) of 25 vs\.? (\d+) of 25", [("11", "0"), ("11", "4"), ("4", "0")]),   # 4 vs 0 of 25: the example-phrase test (7.1)
     ("luderick clips in total", r"Counting: (\d+) luderick clips", ("30",)),

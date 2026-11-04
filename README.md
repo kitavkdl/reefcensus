@@ -14,7 +14,7 @@ Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026): the first API
 experiments ran on Oct 31 in a scratch folder (kept in `spikes/`), this repository starts on Nov 1 (first commit `85b825d`),
 and all code here was written in those days (third-party footage and libraries are credited where used).
 
-![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes one nautilus (left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four counted, a fainter fifth sent to a person (right)](report/figures/split_s001_night_f38.jpg)
+![Night, behind a trap, same brightened frames: SAM with 17 fixed words boxes nothing in this frame (one nautilus in 9 of 60 frames; left); Muse Spark points at what moved and SAM tracks each spot from a box with no word: four counted, a fainter fifth sent to a person (right)](report/figures/split_s001_night_f38.jpg)
 
 **What it found (measured, details below; every claim with its evidence is in the table at the top of the [paper](report/paper/paper.md), PDF [here](report/paper/paper.pdf)):**
 - Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of shrimp and a hagfish.
