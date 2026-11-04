@@ -463,8 +463,9 @@ to the point where the audits would start. Without audits there are no species l
 under SAM's word ("eel", "shrimp"). Further ablations of discovery components come from the development history
 (§7.3).
 
-**Protocol.** Tables 1, 1c, 1d, 1e, 2, 3b, 3c and 3e report the **final code** (the repository's code; re-run tag `cr7`,
-which reproduces every count of the previous re-run `cr6` exactly; §11 gives the commands). The audit variants of §7.1
+**Protocol.** Tables 1, 1c, 1d, 1e, 3b, 3c and 3e report the **final code** (the repository's code; re-run tag `cr7`,
+which reproduces every count of the previous re-run `cr6` exactly; §11 gives the commands). Table 2 and §7.3 use the nautilus
+clips re-run after the second motion look was added (`cr8_*`; every MaxN the same as `cr7`). The audit variants of §7.1
 (V1–V6) are earlier runs of the same code, kept as a variant study. V6 differs from v16 in two
 places: the A4 question for word-prompted tracks (§4.6) and A3 pairs across two different words (§4.6); it reproduces
 every v16 count exactly. Luderick run eval7 was made after the first change and before the second, which cannot act on
@@ -790,7 +791,7 @@ counted, and was judged unsure (`data/noaa_heldout/crops_answers.txt`). No count
 
 ## Finding what was not asked for
 
-<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (run `cr7`; s001 run `cr8_s001`, with the second motion look of `5d1b7d9`). Person = non-expert,
+<div class="tablecap">**Table 2.** Nautilus development clips, request "fish", final code (runs `cr8_s001`, `cr8_s003`, `cr8_s004`; s002 has no motion track, so the second motion look does not run and `cr7_s002` is the current result). Person = non-expert,
 taxon-level list from four frames per clip, made before looking at outputs.</div>
 
 | clip | person listed (not fish) | final count (MaxN) | how it was found |
@@ -1188,12 +1189,12 @@ neither help nor hurt localisation, as expected since they only keep or remove w
 
 ## Where the counts come from
 
-Across the four discovery clips the final run (`cr7`) produced 47 tracks after merging: 34 from discovered words and
-their zoom or reversed passes, 11 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
-queued). Six tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
+Across the four discovery clips the final runs (`cr8_s001`, `cr7_s002`, `cr8_s003`, `cr8_s004`) produced 50 tracks after merging: 33 from discovered words and
+their zoom or reversed passes, 15 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
+queued). Ten tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
 A3 judged 10 nested pairs (9 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
 shrimp crowd; Figure 9) and 4 were kept apart; A4 checked 10 peak frames and rejected one box, the only box of the
-real nautilus in s002's frame 0 (§7.5). Of the 11 motion tracks, 6 were counted (all four s001 nautiluses, two s004
+real nautilus in s002's frame 0 (§7.5). Of the 15 motion tracks, 6 were counted (all four s001 nautiluses, two s004
 shrimp). What discovery and the audits each contribute is
 separated in Table 3 and §6.3 (no taxon without discovery; names, the s003 false taxon and the s004 duplicates fixed
 by the audits). Two further components show only in this accounting and the development history:
