@@ -629,8 +629,8 @@ reference boxes. One judge, the first author, and one sample of 40.
 
 *A second reference for all 24 clips.* Prompted by the three outliers, Jiyul Ahn then counted MaxN by hand on the
 other 21 held-out clips, from the full-rate videos without boxes, in a shuffled order under neutral file names (key
-fixed before counting; `report/paper/data/heldout/recount/`). Where he saw fish he could not tell from moving seagrass,
-he gave them separately (two clips, +1 and +2). Against this count (sure fish only):
+fixed before counting; `report/paper/data/heldout/recount/`). Fish the counter could not tell from moving seagrass
+were recorded separately (two clips, +1 and +2). Against this count (sure fish only):
 
 <div class="tablecap">**Table 1d.** Held-out MaxN against a hand count of the full videos (24 clips).</div>
 
@@ -644,8 +644,8 @@ With the faint fish added to the hand count, the pipeline (annotated frames) is 
 boxes on 15/24 with 19. The pipeline's remaining errors are four under-counts by one (20190618_6, 20190710_1, _3, _8),
 where the boxes miss the same second fish, and one over-count by one (20190709_11). Against the boxes it was
 judged on in Table 1c, the same output scores 20/24 and Σ|err| 12; against an independent count of the videos it is
-closer than the boxes are. The counter is the first author and had seen the three outlier clips flagged before he
-counted them; the other 21 were counted blind to clip identity and to every count, though some of their pipeline
+closer than the boxes are. The counter is the first author and had seen the three outlier clips flagged before
+counting them; the other 21 were counted blind to clip identity and to every count, though some of their pipeline
 boxes had appeared as unlabelled crops in the precision sheet above.
 
 *Correcting the reference in ten minutes.* After the evaluation we turned this check into a tool (`fishcount/gapfind.py`,
@@ -656,7 +656,9 @@ answered the 23 cards in 9 min 39 s (first to last tap). All three controls were
 tracks, 15 were unboxed fish (145 boxes added), one was a fish the reference had already boxed differently, one a box
 on part of a fish and three unsure; **none was "not a fish"**. The corrected annotation raises MaxN on four clips
 (20190709_9 1→5, _11 2→4, _15 2→3, _17 2→7) and matches the hand count of Table 1d as closely as the pipeline does
-(exact 18/24, within ±1 24/24, Σ|err| 6, against 16/24, 22/24 and 16 for the original boxes). The added boxes are the
+(exact 18/24, within ±1 24/24, Σ|err| 6, against 16/24, 22/24 and 16 for the original boxes). Where the two
+disagree by one, 20190709_11 (4 against the hand count's 3), the counter watched the video again and kept 3; the
+annotation is left as tapped. The added boxes are the
 pipeline's own, so we do not re-score the pipeline against this annotation; what it measures is the cost of the fix:
 under ten minutes of taps in place of drawing 145 boxes. The judge had seen 40 of the 153 boxes in the precision sheet.
 That overlap doubles as a test–retest check of the judge. Fifteen tracks appear in both sheets, judged first as single
@@ -959,6 +961,22 @@ cutting reused IDs, 185 rejected by the auditor. The merged run reports fish (un
 flatfish 1, needlefish 1 and sand lance 1 (names are proposals, §7.5); the deck crew is unchanged (human 3, person
 (unidentified) 1) and "jack" no longer appears. Without ground truth this shows what refill adds on a long video, not
 that 14 is the right count. Segments run one after another; running them in parallel is not implemented.
+
+<div class="tablecap">**Table 3d.** The 53-min deployment as a survey sheet (run `LONG1_cr2`, no ground truth). Times are
+video seconds. First arrival is the first frame with a counted track of the label, the other per-species quantity of
+baited-camera work besides MaxN (in the deep-sea studies Ellis and DeMartini, 1995, discuss, it tracked density where
+MAXNO did not); the boat-deck section (0–117.8 s, the crew and one fish lying in a trap) is left out.</div>
+
+| label (proposal) | MaxN | time of MaxN (s) | first arrival (s) |
+|---|--:|--:|--:|
+| fish (unidentified) | 14 | 417.8 | 207.6 |
+| flatfish | 1 | 307.6 | 307.6 |
+| needlefish | 1 | 2,161.8 | 2,161.8 |
+| grunt | 2 | 2,487.6 | 2,455.8 |
+| sand lance | 1 | 2,622.2 | 2,622.2 |
+
+First arrival costs no further call: every run already reports it per label next to MaxN (§4.7), read from the same
+counted tracks.
 
 # Analysis
 

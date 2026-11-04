@@ -1,0 +1,197 @@
+[
+ {
+  "clip": "DH1",
+  "group": "crustacean",
+  "frame": 0,
+  "pipeline": 1,
+  "labels": [
+   "crab"
+  ],
+  "q": 1,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "DH2",
+  "group": "cnidarian",
+  "frame": 0,
+  "pipeline": 2,
+  "labels": [
+   "coral (unidentified)",
+   "sea anemone"
+  ],
+  "q": 2,
+  "word": "corals or sea anemones"
+ },
+ {
+  "clip": "DH2",
+  "group": "crustacean",
+  "frame": 19,
+  "pipeline": 2,
+  "labels": [
+   "crab",
+   "crab (unidentified)"
+  ],
+  "q": 3,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "DH3",
+  "group": "crustacean",
+  "frame": 41,
+  "pipeline": 4,
+  "labels": [
+   "crab (unidentified)",
+   "spider crab"
+  ],
+  "q": 4,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "DH5",
+  "group": "fish",
+  "frame": 46,
+  "pipeline": 9,
+  "labels": [
+   "fish (unidentified)",
+   "pink cusk-eel"
+  ],
+  "q": 5,
+  "word": "fish (any kind, including sharks and eels)"
+ },
+ {
+  "clip": "DH6",
+  "group": "fish",
+  "frame": 4,
+  "pipeline": 2,
+  "labels": [
+   "leopard shark",
+   "shark"
+  ],
+  "q": 6,
+  "word": "fish (any kind, including sharks and eels)"
+ },
+ {
+  "clip": "DH7",
+  "group": "crustacean",
+  "frame": 34,
+  "pipeline": 3,
+  "labels": [
+   "crab"
+  ],
+  "q": 7,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "DH8",
+  "group": "fish",
+  "frame": 29,
+  "pipeline": 16,
+  "labels": [
+   "fish (unidentified)",
+   "shark (unidentified)",
+   "thresher shark"
+  ],
+  "q": 8,
+  "word": "fish (any kind, including sharks and eels)"
+ },
+ {
+  "clip": "DH11",
+  "group": "crustacean",
+  "frame": 0,
+  "pipeline": 1,
+  "labels": [
+   "scavenging amphipod crustacean"
+  ],
+  "q": 9,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "s001",
+  "group": "cephalopod",
+  "frame": 2,
+  "pipeline": 4,
+  "labels": [
+   "nautilus"
+  ],
+  "q": 10,
+  "word": "nautiluses"
+ },
+ {
+  "clip": "s002",
+  "group": "cephalopod",
+  "frame": 6,
+  "pipeline": 1,
+  "labels": [
+   "chambered nautilus"
+  ],
+  "q": 11,
+  "word": "nautiluses"
+ },
+ {
+  "clip": "s002",
+  "group": "fish",
+  "frame": 11,
+  "pipeline": 2,
+  "labels": [
+   "fish (unidentified)"
+  ],
+  "q": 12,
+  "word": "fish (any kind, including sharks and eels)"
+ },
+ {
+  "clip": "s002",
+  "group": "crustacean",
+  "frame": 0,
+  "pipeline": 1,
+  "labels": [
+   "small red crab"
+  ],
+  "q": 13,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "s003",
+  "group": "cephalopod",
+  "frame": 22,
+  "pipeline": 3,
+  "labels": [
+   "chambered nautilus"
+  ],
+  "q": 14,
+  "word": "nautiluses"
+ },
+ {
+  "clip": "s004",
+  "group": "crustacean",
+  "frame": 54,
+  "pipeline": 15,
+  "labels": [
+   "caridean shrimp",
+   "shrimp (unidentified)"
+  ],
+  "q": 15,
+  "word": "crabs, shrimp or other crustaceans"
+ },
+ {
+  "clip": "s004",
+  "group": "cephalopod",
+  "frame": 0,
+  "pipeline": 1,
+  "labels": [
+   "chambered nautilus"
+  ],
+  "q": 16,
+  "word": "nautiluses"
+ },
+ {
+  "clip": "s004",
+  "group": "fish",
+  "frame": 0,
+  "pipeline": 1,
+  "labels": [
+   "hagfish"
+  ],
+  "q": 17,
+  "word": "fish (any kind, including sharks and eels)"
+ }
+]
