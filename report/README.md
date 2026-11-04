@@ -31,7 +31,7 @@ all 107 frames). Middle: asked for "fish", 10. Right: reefcensus, with Spark's n
 A BRUV drops a camera next to a bait bag on the seabed. The standard abundance measure is MaxN: per species, the
 largest number of individuals visible in any single frame, a conservative count that never double-counts an animal
 that leaves and returns. Getting it means watching the footage. At MBARI, "these 90 hours of video can take anywhere
-from 180 to 400 hours to annotate" (MBARI expedition log, Gulf of California 2015, Leg 2, Log 8, 3 March 2015).
+from 180 to 400 hours to annotate" ([MBARI expedition log, Gulf of California 2015, Leg 2, Log 8, 3 March 2015](https://www.mbari.org/news/gulf-of-california-2015-leg-2-midwater-ecology-log-8/)).
 
 Two things make automation hard. First, the species list is open: a survey aimed at fish also films shrimp,
 nautiluses and hagfish, and those are often the interesting part. A detector trained on a fixed list cannot report

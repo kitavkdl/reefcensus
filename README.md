@@ -1,7 +1,7 @@
 # reefcensus — count what you asked for, find what you didn't
 
 Marine ecologists film the seafloor with baited cameras (BRUVs), then a person watches every frame to count what came.
-For deep-sea survey video at MBARI, "these 90 hours of video can take anywhere from 180 to 400 hours to annotate" ([source](report/README.md)).
+For deep-sea survey video at MBARI, "these 90 hours of video can take anywhere from 180 to 400 hours to annotate" ([MBARI expedition log, 3 March 2015](https://www.mbari.org/news/gulf-of-california-2015-leg-2-midwater-ecology-log-8/)).
 reefcensus does that count. Say what to count; get MaxN for each animal you name (the most animals of a kind on screen at once, the standard count of
 baited-camera surveys) and time of first arrival **with an evidence frame behind every number**, and a short queue of
 uncertain tracks for a human to confirm. Two Meta models do the work: Muse Spark decides what to look for and checks
@@ -28,7 +28,7 @@ and all code here was written in those days (third-party footage and libraries a
   with no false fish.
 - On a 53-minute reef-fish deployment the review queue holds 1,048 uncertain tracks, but asking first only the ones
   that can still change a number settles every MaxN and first arrival after 20–54 answers (about 4–12 minutes on a
-  phone), with exactly the numbers of answering all 1,048.
+  phone), with exactly the numbers of answering all 1,048 (checked with three stand-in answer rules: accept all, reject all, follow the auditor).
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord, first author of the 2014 nautilus
 survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote back the same afternoon he saw the results:
@@ -50,14 +50,14 @@ Technical report with every measurement and what it changed in the design: [repo
 **How it works: two Meta models through the Meta Model API, Spark → SAM → Spark.**
 
 - **SAM 3.1** (Meta Model API) tracks generic categories ("fish", "shark") through the video — no training.
-- **Muse Spark** looks at a contact sheet and proposes what to track and where faint animals hide (zoom tiles),
+- **Muse Spark** looks at a contact sheet (frames of the clip tiled into one image) and proposes what to track and where faint animals hide (zoom tiles),
   then audits every track crop (species, is-it-really-a-fish, confidence). Low-confidence tracks go to a human.
   Why Spark and not Meta's largest model: on the same 101 questions Muse Wonder named 12 things no reference list
   supports (4 of them not animals) against Spark's 5, rejected crops of animals a person was certain of, and cost about
   4.3× per call (paper Table 7).
 - **Discovery** (`--discover`): SAM only sees what you name: asked for "animal", it found nothing on 29 of the 39 clips we tested, including a seagrass clip where "fish" finds 10.
   So Spark looks for living things the request did *not* ask about (and indirect signs such as sediment puffs),
-  names each with plain nouns, and SAM tries them in turn (word ladder) until one tracks.
+  names each with plain nouns, and SAM tries the words one at a time (the word ladder) until one tracks.
 - **Closer look**: when Spark names a small animal and a 2x2-cell zoom still finds nothing, the one cell Spark pointed
   at is blown up 3x, every word is tried and the one tracked longest wins (the first hit can be a false one), then
   that word on the reversed cell back-fills the start. Nautilus clip s002: a ~40 px red crustacean, 0 -> 60/60 frames.
@@ -83,9 +83,9 @@ Technical report with every measurement and what it changed in the design: [repo
 
 ## Try it
 
-**No key needed to look:** the [live demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install: answering the queue recomputes the counts, ranges and CSV in your browser (kept until you reload; `demo/static_review.js`, checked against the server by `tests/test_static_review.py`). Locally: `pip install -r requirements.txt && python3 web/server.py`, then open
+**No key needed to look:** the [live demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install: answering the queue recomputes the counts, ranges and CSV in your browser (kept until you reload; `demo/static_review.js`, checked against the server by `tests/test_static_review.py`). Locally (Python 3.12+): `pip install -r requirements.txt && python3 web/server.py`, then open
 http://127.0.0.1:8793. Four finished nautilus runs (`demo/runs`, copied into `runs/` on first start) play with
-their evidence frames, motion sheets and human queue. No model is called.
+their evidence frames, motion sheets and human queue. No model is called. The web screen takes clips up to 2 minutes; longer videos run from the command line (below).
 
 **To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
 is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30 calls, an estimated $0.22–0.27 (paper §6.4).
@@ -94,7 +94,7 @@ is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
                                          # clean + refill are on by default (--no-clean --no-refill turns them off)
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
-python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full pipeline (runs cr7_<clip>, the current code)
+python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full pipeline (runs cr7_<clip>; later code, cr8–cr11, moved no score)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
@@ -183,7 +183,7 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 | | result |
 |---|---|
 | Spark names it | 7 of 7 |
-| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look; the final code brightens that dark clip and counts 4 and queues a fainter 5th for a person, v16 counted 2) |
+| counted at the end | 7 of 7 (s001's nautiluses at night behind a wire trap only through the motion look; the final code brightens that dark clip and counts 4 and queues a fainter 5th for a person) |
 | something wrong counted | 0 (Spark once proposed a shrimp that isn't there; no word found it, and the motion box that drifted onto the trap mesh was rejected by a second look) |
 | SAM "fish" alone | 0 of 7 — it only sees what it is told |
 | motion look, added | s001: the nautiluses no word found (night, wire trap; 4 once the clip is brightened, 2 before). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
@@ -215,8 +215,8 @@ bug/worm-like animal at the vent).
 | cost | $0.86 for all six (fixed-word baseline $1.00) |
 
 ## How well it counts (measured)
-Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames, IoU >= 0.3. MaxN over the annotated
-frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipeline.py --tag cr7`).
+Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames; a box matches a human box when they overlap by at least 30% of their combined area (IoU >= 0.3). MaxN over the annotated
+frames only, for both columns. Final code, run `cr7` (`fishcount/evaluate_pipeline.py --tag cr7`); the later runs `cr8`–`cr11` give the same scores.
 
 | clip | annotated frames | SAM "fish" alone: recall / precision / MaxN true→counted | full pipeline: recall / precision / MaxN true→counted | tracks sent to a human |
 |---|---|---|---|---|
