@@ -550,8 +550,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             # clustered on bait" never tried "nautilus", and all six tracks went to the queue)
             # only a known animal noun goes first; any other fallback word ("white bacterial mat" -> "mat") goes after
             # Spark's own search words, so a junk word that happens to track cannot block them (11/2 pre-freeze review)
+            # every known animal noun of the name goes first, head noun first (11/3 s003 rehearsal take 1: "chambered
+            # nautilus cephalopod" tried only cephalopod, shell, snail, never "nautilus", and counted 1 of 3)
             h = short_name(o.get("what", ""))
-            name, tail = ([h], []) if h in _GROUP_OF else ([], [h] if h else [])
+            name = animal_nouns(o.get("what", ""))
+            tail = [] if h in _GROUP_OF or not h else [h]
             words = []
             for w in name + o.get("search_words", []) + tail:
                 w = w.strip().lower()
@@ -921,16 +924,34 @@ NAME_GROUPS = {
 _GROUP_OF = {w: g for g, ws in NAME_GROUPS.items() for w in ws}
 
 
+_PLACE = ("on", "at", "in", "near", "by", "under", "over", "with", "from", "behind", "inside", "beside", "among")
+
+
+def _name_words(name):
+    """The normalised words of a discovery name before its first place preposition."""
+    ws = re.sub(r"[^a-z ]", " ", (name or "").lower()).split()
+    for i, w in enumerate(ws):
+        if w in _PLACE:
+            ws = ws[:i]
+            break
+    return [norm_label(w) for w in ws]
+
+
+def animal_nouns(name):
+    """Every known animal word (NAME_GROUPS) of a discovery name before a place preposition, from the end, so the
+    head noun comes first: "chambered nautilus cephalopod" -> [cephalopod, nautilus], "crab on a starfish" -> [crab]."""
+    out = []
+    for w in reversed(_name_words(name)):
+        if w in _GROUP_OF and w not in out:
+            out.append(w)
+    return out
+
+
 def short_name(name):
     """The animal noun of a discovery name, for SAM: words before a place preposition, then from the end the first
     known animal word (NAME_GROUPS), else the last word that is not a participle ("clustered", "swimming") or vague.
     "chambered nautilus clustered on bait" -> nautilus, "small red crab on seabed" -> crab."""
-    ws = re.sub(r"[^a-z ]", " ", (name or "").lower()).split()
-    for i, w in enumerate(ws):
-        if w in ("on", "at", "in", "near", "by", "under", "over", "with", "from", "behind", "inside", "beside", "among"):
-            ws = ws[:i]
-            break
-    cand = [norm_label(w) for w in ws]
+    cand = _name_words(name)
     for w in reversed(cand):
         if w in _GROUP_OF:
             return w
