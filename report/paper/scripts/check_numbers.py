@@ -25,7 +25,7 @@ FACTS = [
     ("ledger calls", r"over ([\d,]+) calls|/ ([\d,]+) calls", ("3,590",)),
     ("cost of one 12 s discovery run (range)", r"12 s (?:discovery run|clip) costs? (?:about )?\$(\d\.\d\d)(?:–|-|\s+\(counting only\) to \$)(\d?\.?\d\d)", ("0.02", "0.40")),
     ("fresh discovery run on a 12 s clip, estimate", r"estimated \$(\d\.\d\d)[–-](\d\.\d\d)", ("0.22", "0.27")),
-    ("same-animal nested pairs", r"\b(\d+|six) of (\d+|eight) (?:nested )?pairs", [("6", "8"), ("six", "eight")]),
+    ("same-animal nested pairs", r"\b(\d+|six) of (\d+|eight|nine) (?:nested )?pairs", [("6", "9"), ("six", "nine")]),
     ("held-out discovery: named / counted", r"named all (\d) non-fish animals marked beforehand, counted (\d)|names (\d) of 4 non-fish animals marked beforehand, counts (\d)", ("4", "3")),
     ("held-out discovery: named / counted (words)", r"names all (\w+) non-fish animals marked beforehand", ("four",)),
     ("held-out discovery cost (five clips)", r"\$(\d\.\d\d) for all five", ("1.06",)),

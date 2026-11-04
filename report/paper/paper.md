@@ -482,8 +482,8 @@ observation. **The six luderick and four nautilus clips are development data**: 
 choice of the final layout (V5) among the variants of §7.1. For counting we added, after the second review, 24
 held-out luderick clips, each run once under a protocol committed before the run with the code of that commit (§6.2),
 and for discovery eleven held-out videos from other studies, run once in the same way (§6.3). Tables 1, 2 and 3 are
-development numbers; Tables 1c, 3b and 3c are held-out. Every held-out score is the same on the protocol run and on
-the final code; where a count differs, both are given (§6.2, §6.3, §11).
+development numbers; Tables 1c, 3b and 3c are held-out. With the queue accepted, every held-out count is the same on the protocol run and
+on the final code; where a number differs, both are given (§6.2, §6.3, §11).
 
 # Results
 
@@ -508,7 +508,7 @@ rejected*: the same run with every queued track removed. Script: `report/paper/s
 (here and below, an over-count is a MaxN above the human one, not necessarily a false detection). In both, A1
 confidently rejected one track that was two or three frames long and contained only unmatched boxes (recall unchanged,
 precision 98→100% and 71→77%). Recall stays at the segmenter's 97.4% (529 of 543 boxes): of the 529 matched boxes, the
-audits removed none. The boxes sit in 27 tracks on six clips, so the interval is a percentile bootstrap over clips:
+audits removed none. The boxes come from six clips, so the interval is a percentile bootstrap over clips:
 92.4–100% for SAM alone, the length rule and the audited pipeline alike, and 75.8–98.6% if the queue is rejected.
 
 The 14 boxes SAM misses are of two kinds. Nine are one faint, distant fish in 20190710_4 (frames 52–61) that no SAM
@@ -768,8 +768,8 @@ seven of seven (Table 3). What the audits change is visible in the other rows. W
 "eel" and the crab as "shrimp", because SAM's handle is the only label; with them both carry the animal Spark named.
 With the motion residual but no audits, the s003 trap mesh is counted as two "shrimp" (a false taxon), and A2 removes
 it. In s004 the shrimp MaxN, counted over both shrimp labels in the same frame, drops from 18 to 15: A3 found six
-nested pairs that were one shrimp counted twice, and A4 removed a box on the trap's pipe; these act in different
-frames, so the peak falls by three, not seven. A1 also splits those 15 into "caridean shrimp" 14 (peak at frame 29) and
+nested pairs that were one shrimp counted twice, and A1 and A2 removed two more shrimp tracks; these act in
+different frames, so the peak falls by three. A1 also splits those 15 into "caridean shrimp" 14 (peak at frame 29) and
 "shrimp (unidentified)" 2; a per-label output shows only the larger name, so the result, CSV and review screen also
 give an animal-group row ("crustacean 15", the same-frame total). On the original, dark s001 clip the third motion
 nautilus waited in the queue at A1 confidence 0.55; the final code brightens the clip first, and all four motion
@@ -1114,13 +1114,13 @@ neither help nor hurt localisation, as expected since they only keep or remove w
 
 ## Where the counts come from
 
-Across the four discovery clips the pipeline produced 44 tracks after merging: 32 from discovered words and their
-zoom or reversed passes, 10 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
-queued). Seven tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
-A3 judged 9 nested pairs (8 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
-shrimp crowd; Figure 9) and 3 were kept apart; A4 checked 11 peak frames and rejected 3 boxes: a box on the trap's blue pipe, an 11 × 15-pixel box in empty water,
-and the only box of the real nautilus in s002's frame 0 (§7.5). Of the 10 motion
-tracks, 4 were counted (s001 two nautiluses, s004 two shrimp). What discovery and the audits each contribute is
+Across the four discovery clips the final run (`cr7`) produced 47 tracks after merging: 34 from discovered words and
+their zoom or reversed passes, 11 from motion box prompts and 2 from the requested word (s002's two "fish" tracks, both
+queued). Six tracks were not counted (a confident A1 rejection, a low-confidence motion track, or an A2 "no");
+A3 judged 10 nested pairs (9 in s004, 1 in s003), of which 6 were the same animal counted twice (all in s004, where
+shrimp crowd; Figure 9) and 4 were kept apart; A4 checked 10 peak frames and rejected one box, the only box of the
+real nautilus in s002's frame 0 (§7.5). Of the 11 motion tracks, 6 were counted (all four s001 nautiluses, two s004
+shrimp). What discovery and the audits each contribute is
 separated in Table 3 and §6.3 (no taxon without discovery; names, the s003 false taxon and the s004 duplicates fixed
 by the audits). Two further components show only in this accounting and the development history:
 
@@ -1219,7 +1219,7 @@ A1 passed as "large striped shrimp" (0.75), a name listed in its context. Bottom
 no label, no names: "looks like trap mesh, not animal". The track is not counted.</figcaption>
 </figure>
 
-![**Figure 9.** A3 sheet, s004: nested masks drawn red and cyan; Spark judged six of eight pairs to be one shrimp
+![**Figure 9.** A3 sheet, s004: nested masks drawn red and cyan; Spark judged six of nine pairs to be one shrimp
 counted twice (for example body only vs. body with legs).](figures/pairs_s004.jpg){.half}
 
 
@@ -1422,7 +1422,7 @@ python3 report/paper/scripts/fig_ablation.py         # Figure 6
 
 reproduces the counting and cost numbers of §6.1, §6.2, §6.4 and §7.1–7.2 and Table 3b; we checked this in a clone with the live
 run files and video paths absent. Re-running the pipeline itself needs the source videos (luderick from PANGAEA, nautilus from the PLOS ONE
-supplement) and either the model-reply cache of our runs (`cache/`, 12 MB, in the repository) for a
+supplement) and either the model-reply cache of our runs (`cache/`, 37 MB, in the repository) for a
 free, exact replay, or an API key and a spend cap for a live run, which can differ from ours (§7.5):
 
 ```
