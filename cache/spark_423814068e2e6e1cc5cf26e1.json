@@ -1,0 +1,1 @@
+{"text": "{\"total\": 2, \"estimated\": false, \"reason\": \"Two distinct large striped fish are clearly visible.\"}", "usage": {"completion_tokens": 529, "prompt_tokens": 6150, "total_tokens": 6679, "completion_tokens_details": {"reasoning_tokens": 495}, "prompt_tokens_details": {"cached_tokens": 99}}}

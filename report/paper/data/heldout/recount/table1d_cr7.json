@@ -1,0 +1,142 @@
+{
+ "tag": "cr7",
+ "pipeline": {
+  "fish_20190710_2": 1,
+  "fish_20190709_3": 1,
+  "fish_20190709_8": 1,
+  "fish_20190710_1": 1,
+  "fish_20190710_3": 1,
+  "fish_20190710_5": 1,
+  "fish_20190618_1": 1,
+  "fish_20190710_6": 1,
+  "fish_20190618_11": 1,
+  "fish_20190618_7": 2,
+  "fish_20190618_5": 1,
+  "fish_20190710_8": 1,
+  "fish_20190618_4": 2,
+  "fish_20190618_6": 1,
+  "fish_20190618_10": 2,
+  "fish_20190710_7": 1,
+  "fish_20190710_9": 2,
+  "fish_20190618_2": 1,
+  "fish_20190709_2": 1,
+  "fish_20190709_15": 3,
+  "fish_20190618_8": 1,
+  "fish_20190709_17": 7,
+  "fish_20190709_11": 4,
+  "fish_20190709_9": 5
+ },
+ "pipeline_full": {
+  "fish_20190710_2": 1,
+  "fish_20190709_3": 2,
+  "fish_20190709_8": 1,
+  "fish_20190710_1": 1,
+  "fish_20190710_3": 1,
+  "fish_20190710_5": 1,
+  "fish_20190618_1": 1,
+  "fish_20190710_6": 1,
+  "fish_20190618_11": 1,
+  "fish_20190618_7": 2,
+  "fish_20190618_5": 1,
+  "fish_20190710_8": 1,
+  "fish_20190618_4": 2,
+  "fish_20190618_6": 1,
+  "fish_20190618_10": 2,
+  "fish_20190710_7": 1,
+  "fish_20190710_9": 2,
+  "fish_20190618_2": 1,
+  "fish_20190709_2": 1,
+  "fish_20190709_15": 3,
+  "fish_20190618_8": 1,
+  "fish_20190709_17": 7,
+  "fish_20190709_11": 4,
+  "fish_20190709_9": 5
+ },
+ "stats": {
+  "hand count": {
+   "human reference boxes (luderick annotation)": {
+    "exact": 16,
+    "within1": 22,
+    "sum_abs": 16,
+    "mae": 0.6666666666666666,
+    "rmse": 1.5545631755148024,
+    "bias": -0.6666666666666666,
+    "n": 24
+   },
+   "pipeline (cr7), queue accepted, annotated frames": {
+    "exact": 18,
+    "within1": 24,
+    "sum_abs": 6,
+    "mae": 0.25,
+    "rmse": 0.5,
+    "bias": -0.16666666666666666,
+    "n": 24
+   },
+   "pipeline (cr7), queue accepted, every frame": {
+    "exact": 17,
+    "within1": 24,
+    "sum_abs": 7,
+    "mae": 0.2916666666666667,
+    "rmse": 0.5400617248673217,
+    "bias": -0.125,
+    "n": 24
+   },
+   "constant: always 1 (most common hand count)": {
+    "exact": 12,
+    "within1": 20,
+    "sum_abs": 23,
+    "mae": 0.9583333333333334,
+    "rmse": 1.8371173070873836,
+    "bias": -0.9583333333333334,
+    "n": 24
+   },
+   "constant: always 2": {
+    "exact": 8,
+    "within1": 22,
+    "sum_abs": 23,
+    "mae": 0.9583333333333334,
+    "rmse": 1.567907310185565,
+    "bias": 0.041666666666666664,
+    "n": 24
+   }
+  },
+  "reference boxes": {
+   "pipeline (cr7), queue accepted, annotated frames": {
+    "exact": 20,
+    "within1": 21,
+    "sum_abs": 12,
+    "mae": 0.5,
+    "rmse": 1.3844373104863459,
+    "bias": 0.5,
+    "n": 24
+   },
+   "pipeline (cr7), queue accepted, every frame": {
+    "exact": 19,
+    "within1": 21,
+    "sum_abs": 13,
+    "mae": 0.5416666666666666,
+    "rmse": 1.399404635312222,
+    "bias": 0.5416666666666666,
+    "n": 24
+   },
+   "constant: always 1 (most common hand count)": {
+    "exact": 17,
+    "within1": 24,
+    "sum_abs": 7,
+    "mae": 0.2916666666666667,
+    "rmse": 0.5400617248673217,
+    "bias": -0.2916666666666667,
+    "n": 24
+   },
+   "constant: always 2": {
+    "exact": 7,
+    "within1": 24,
+    "sum_abs": 17,
+    "mae": 0.7083333333333334,
+    "rmse": 0.8416254115301732,
+    "bias": 0.7083333333333334,
+    "n": 24
+   }
+  }
+ }
+}

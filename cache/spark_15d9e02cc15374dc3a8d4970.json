@@ -1,0 +1,1 @@
+{"text": "{\"total\": 1, \"estimated\": false, \"reason\": \"Only one large pink isopod is visible in the center.\"}", "usage": {"completion_tokens": 652, "prompt_tokens": 888, "total_tokens": 1540, "completion_tokens_details": {"reasoning_tokens": 614}, "prompt_tokens_details": {"cached_tokens": 99}}}

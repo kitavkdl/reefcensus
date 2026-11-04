@@ -10,8 +10,11 @@ uncertain tracks for a human to confirm. Built during the Meta AI hackathon (Oct
 - Asked for "fish" on a nautilus survey clip, it also found and counted a nautilus, a swarm of shrimp and a hagfish.
 - At night behind a trap, where 17 fixed words (16 generic words plus "nautilus") box one nautilus for 9 of 60 frames, Spark points at what moved and SAM
   tracks four nautiluses from boxes with no word (above; `report/scripts/split_s001_night.py` makes the video).
-- On eleven videos from other studies, run with frozen code under protocols committed before any run, it named all
-  five animals on the reference lists written beforehand.
+- On eleven videos from other studies, each run once under a protocol committed before the run, it named all five
+  animals on the reference lists written beforehand; the current code gives the same scores.
+- On a 53-minute reef-fish deployment the review queue holds 1,017 uncertain tracks, but asking first only the ones
+  that can still change a number settles every MaxN and first arrival after 22–56 answers (about 5–12 minutes on a
+  phone), with exactly the numbers of answering all 1,017.
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord, first author of the 2014 nautilus
 survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799), wrote back the same afternoon he saw the results:
@@ -67,14 +70,13 @@ is a hard cap on total spend; a fresh discovery run on a 12 s clip makes 21–30
 
 ```
 python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
-                                         # clean + refill are on by default (added after the freeze); the frozen
-                                         # evaluations replay with --no-clean --no-refill
+                                         # clean + refill are on by default (--no-clean --no-refill turns them off)
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
-python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval6_<clip>, the frozen ones)
+python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full pipeline (runs cr7_<clip>, the current code)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 83 tests, including an exact
+**Tests (no network, no key, $0):** `python3 -m unittest discover -s tests -v` runs 91 tests, including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos.** One SAM 3.1 call takes a file of up to 10 minutes. A longer video is cut automatically into equal,
@@ -166,8 +168,8 @@ four frames per clip was listed by eye at taxon level (not an expert's list): 7 
 | motion look, added | s001: the nautiluses no word found (night, wire trap; 4 once the clip is brightened, 2 before). s004: 2 shrimp at the bottom edge, outside every box. 0 counted wrongly: a sediment cloud that looked like a fish in one crop is rejected once Spark sees three, and a motion track counts only when the audit is confident and a second Spark look at other moments still sees an animal |
 
 **Five new videos, held out (measured).** Clips from three other studies (deep carcass cameras in British Columbia,
-a fish-only BRUV in New Zealand; CC BY), never used in development, run once with frozen code under a protocol
-committed first. Before the run the author and, separately, an AI assistant (Claude) marked the non-fish animals they could see: 4 animals over
+a fish-only BRUV in New Zealand; CC BY), never used in development, run once under a protocol committed first; the
+current code gives the same results (paper Table 3b). Before the run the author and, separately, an AI assistant (Claude) marked the non-fish animals they could see: 4 animals over
 the five clips, none in two of them.
 
 | | result |
@@ -177,9 +179,9 @@ the five clips, none in two of them.
 | something wrong counted | 0 (every counted crop judged an animal with its label hidden; nothing non-fish counted on the two clips without one) |
 | cost | $1.06 for all five |
 
-**Six more new videos, held out (measured, final frozen code).** Six PLOS ONE videos (two fish-only shark cameras, a
-cold-seep time-lapse, two sediment-profile time-lapses, a 2186 m vent), run once with the code frozen at `cbaf59b`
-under a second protocol committed first. Before the run the author and a second person who had never seen the
+**Six more new videos, held out (measured).** Six PLOS ONE videos (two fish-only shark cameras, a
+cold-seep time-lapse, two sediment-profile time-lapses, a 2186 m vent), run once under a second protocol committed
+first; the current code gives the same results (paper Table 3c). Before the run the author and a second person who had never seen the
 project's output marked, separately, the non-fish animals in four frames per clip: one animal over the six clips (a
 bug/worm-like animal at the vent).
 
@@ -193,17 +195,17 @@ bug/worm-like animal at the vent).
 
 ## How well it counts (measured)
 Six luderick clips with human boxes (Ditria et al. 2021), 319 annotated frames, IoU >= 0.3. MaxN over the annotated
-frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
+frames only, for both columns. Current code, run `cr7` (`fishcount/evaluate_pipeline.py --tag cr7`).
 
 | clip | annotated frames | SAM "fish" alone: recall / precision / MaxN true→counted | full pipeline: recall / precision / MaxN true→counted | tracks sent to a human |
 |---|---|---|---|---|
-| 20190618_9 | 44 | 98% / 72% / 9→10 | 98% / 72% / 9→10 | 4 of 14 |
-| 20190709_14 | 126 | 100% / 72% / 2→2 | 100% / 72% / 2→2 | 1 of 3 |
+| 20190618_9 | 44 | 98% / 72% / 9→10 | 98% / 72% / 9→10 | 6 of 15 |
+| 20190709_14 | 126 | 100% / 72% / 2→2 | 100% / 72% / 2→2 | 0 of 3 |
 | 20190618_3 | 58 | 100% / 98% / 2→3 | 100% / 100% / 2→2 | 1 of 3 |
 | 20190710_4 | 40 | 82% / 100% / 2→1 | 82% / 100% / 2→1 | 0 of 1 |
 | 20190709_13 | 40 | 100% / 100% / 2→2 | 100% / 100% / 2→2 | 0 of 3 |
-| 20190709_4 | 11 | 100% / 71% / 2→3 | 100% / 77% / 2→2 | 3 of 3 |
-| **all** | 319 | **97.4% / 78.7%**, MaxN off by 1 on 4 of 6 | **97.4% / 79.2%**, MaxN off by 1 on 2 of 6 | 9 of 27 |
+| 20190709_4 | 11 | 100% / 71% / 2→3 | 100% / 77% / 2→2 | 2 of 3 |
+| **all** | 319 | **97.4% / 78.7%**, MaxN off by 1 on 4 of 6 | **97.4% / 79.2%**, MaxN off by 1 on 2 of 6 | 9 of 28 |
 
 - Recall equals SAM alone: the checks no longer throw away real fish. They did at first (95.9%): Spark judged each
   track from one crop, and a faint fish behind seagrass was "only seagrass and water", so a 36-frame track left the
@@ -215,10 +217,11 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   faint shape), so no track the reference lacks was accepted (`report/paper/data/qtime/`).
 - Honest baseline: dropping every track shorter than 4 frames (no model call) gives exactly the same numbers on these
   clips, so here the checks match a well-chosen heuristic rather than beat it; their own value shows in discovery
-  (names, duplicates, the trap net). The 97.4% counts queued tracks as accepted; rejecting them all gives 84.2%.
-- Held out: the frozen final code, run once on the 24 annotated clips development never used (protocol committed
-  before the run, `report/paper/heldout_protocol.md`): recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
-  (SAM alone 19, the length rule 19); rejecting the queue puts every clip within ±1 at 95.6% recall. Same estuary, so
+  (names, duplicates, the trap net). The 97.4% counts queued tracks as accepted; rejecting them all gives 86.7%.
+- Held out: the 24 annotated clips development never used, run once under a protocol committed before the run
+  (`report/paper/heldout_protocol.md`); current code: recall 98.9%, MaxN exact on 20 of 24 with the queue accepted
+  (SAM alone 19, the length rule 19), the same counts as the protocol run; rejecting the queue puts every clip within
+  ±1 at 89.3% recall. Same estuary, so
   this tests transfer within one site, not to new habitats.
 - **Against a hand count of the videos, the pipeline beats the reference boxes.** The author counted MaxN by hand on all 24
   held-out videos (21 blind, shuffled under neutral names): the pipeline is exact on 18 and within ±1 on all 24, summed

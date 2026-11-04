@@ -1,0 +1,1 @@
+{"text": "{\"total\": 1, \"estimated\": false, \"reason\": \"Only one distinct large fish is visible above the seagrass at top.\"}", "usage": {"completion_tokens": 389, "prompt_tokens": 6150, "total_tokens": 6539, "completion_tokens_details": {"reasoning_tokens": 349}, "prompt_tokens_details": {"cached_tokens": 99}}}

@@ -1,0 +1,1 @@
+{"text": "{\"total\": 9, \"estimated\": false, \"reason\": \"Counted distinct shrimp and crabs around carcass excluding echinoderms.\"}", "usage": {"completion_tokens": 860, "prompt_tokens": 2123, "total_tokens": 2983, "completion_tokens_details": {"reasoning_tokens": 819}, "prompt_tokens_details": {"cached_tokens": 0}}}

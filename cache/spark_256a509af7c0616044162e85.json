@@ -1,0 +1,1 @@
+{"text": "{\"total\": 22, \"estimated\": true, \"reason\": \"Dense bait cluster plus faint distant shrimp require estimation.\"}", "usage": {"completion_tokens": 1028, "prompt_tokens": 6148, "total_tokens": 7176, "completion_tokens_details": {"reasoning_tokens": 993}, "prompt_tokens_details": {"cached_tokens": 0}}}

@@ -1,0 +1,1 @@
+{"text": "{\"total\": 1, \"estimated\": false, \"reason\": \"Only one clearly identifiable crab on the carcass.\"}", "usage": {"completion_tokens": 765, "prompt_tokens": 2378, "total_tokens": 3143, "completion_tokens_details": {"reasoning_tokens": 730}, "prompt_tokens_details": {"cached_tokens": 0}}}

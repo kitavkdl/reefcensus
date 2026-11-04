@@ -1,6 +1,7 @@
 """Held-out luderick evaluation (protocol: report/paper/heldout_protocol.md). Offline, no model calls.
-  python3 report/paper/scripts/rescore_heldout.py [--replay] [--bundle]
---replay makes the merge-only replays runs/heldabl_<clip> from cache (needed once for the length rule);
+  python3 report/paper/scripts/rescore_heldout.py [--tag held1] [--abl heldabl] [--replay] [--bundle]
+--tag: the audited runs (<tag>_<clip>; held1 = the protocol run, cr7 = the final code); --abl: the merge-only runs.
+--replay makes the merge-only replays runs/<abl>_<clip> from cache with the current code (needed once for the length rule);
 --bundle copies SAM replies and run results into report/paper/data/heldout. Without live files the bundle is read."""
 import json, os, shutil, sys
 
@@ -14,6 +15,8 @@ SMOKE = os.path.expanduser("~/meta-smoke")
 B = os.path.join(ROOT, "report/paper/data/heldout")
 RUNS = os.path.join(ROOT, "runs")
 K = 4   # fixed on the development clips
+_arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
+AUD, ABL = _arg("--tag", "held1"), _arg("--abl", "heldabl")
 
 
 def match(pred, gt, thr=0.3):
@@ -45,17 +48,17 @@ def main():
         clip = f"{SMOKE}/{c['path']}"
         if live:
             txt = api.sam_video(clip, "fish", c["n_frames"], offline=True)
-            if "--replay" in sys.argv and not os.path.exists(f"{RUNS}/heldabl_{cid}/result.json"):
-                pipeline.run_pipeline(clip, f"heldabl_{cid}", offline=True, do_scout=False, do_audit=False, prompts=["fish"])
-            ra = json.load(open(f"{RUNS}/heldabl_{cid}/result.json")); rv = json.load(open(f"{RUNS}/held1_{cid}/result.json"))
+            if "--replay" in sys.argv and not os.path.exists(f"{RUNS}/{ABL}_{cid}/result.json"):
+                pipeline.run_pipeline(clip, f"{ABL}_{cid}", offline=True, do_scout=False, do_audit=False, prompts=["fish"])
+            ra = json.load(open(f"{RUNS}/{ABL}_{cid}/result.json")); rv = json.load(open(f"{RUNS}/{AUD}_{cid}/result.json"))
             if "--bundle" in sys.argv:
                 os.makedirs(f"{B}/sam_fish", exist_ok=True); open(f"{B}/sam_fish/{cid}.txt", "w").write(txt)
-                for tag in ("heldabl", "held1"):
+                for tag in (ABL, AUD):
                     d = f"{B}/runs/{tag}_{cid}"; os.makedirs(d, exist_ok=True)
                     shutil.copy(f"{RUNS}/{tag}_{cid}/result.json", d)
         else:
             txt = open(f"{B}/sam_fish/{cid}.txt").read()
-            ra = json.load(open(f"{B}/runs/heldabl_{cid}/result.json")); rv = json.load(open(f"{B}/runs/held1_{cid}/result.json"))
+            ra = json.load(open(f"{B}/runs/{ABL}_{cid}/result.json")); rv = json.load(open(f"{B}/runs/{AUD}_{cid}/result.json"))
         q = {t for t, v in rv["verdicts"].items() if pipeline.needs_review(v)}
         sysm = {"SAM alone": {f: [d["box"] for d in ds] for f, ds in tracks.parse_boxes(txt).items()},
                 f"min length {K}": boxes(ra, lambda t: ra["tracks"][t]["n"] >= K),

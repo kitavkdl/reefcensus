@@ -1,0 +1,1 @@
+{"text": "{\"total\": 4, \"estimated\": false, \"reason\": \"Four distinct crabs visible at left, top, bottom and right edges.\"}", "usage": {"completion_tokens": 415, "prompt_tokens": 6148, "total_tokens": 6563, "completion_tokens_details": {"reasoning_tokens": 375}, "prompt_tokens_details": {"cached_tokens": 99}}}

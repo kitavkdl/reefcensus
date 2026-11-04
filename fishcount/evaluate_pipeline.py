@@ -1,7 +1,7 @@
 """Score full pipeline runs (merge, stitch, Spark audit, same-animal check, peak check) against the luderick
 ground truth (Ditria et al. 2021, CC BY 4.0), next to raw SAM 'fish' on the same clips.
 MaxN is taken over the human-annotated frames only, for both, so the two are comparable.
-  python3 fishcount/evaluate_pipeline.py [--run] [--tag eval6] [--no-clean --no-refill] [--manifest manifest_heldout.json]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
+  python3 fishcount/evaluate_pipeline.py [--run] [--tag cr7] [--no-clean --no-refill] [--manifest manifest_heldout.json]   (--run: make missing runs <tag>_<clip>; needs FISH_BUDGET)"""
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks, pipeline
@@ -36,11 +36,11 @@ def pipeline_boxes(res):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", action="store_true")
-    ap.add_argument("--tag", default="eval6")   # eval6 = the frozen final runs the paper reports (eval3 = 11/2 three-crop audit)
+    ap.add_argument("--tag", default="cr7")     # cr7 = the current code, the runs the paper reports (eval6 = v16, eval3 = 11/2 three-crop audit)
     ap.add_argument("--manifest", default="manifest_fish.json", help="manifest_heldout.json = the held-out clips (paper)")
     ap.add_argument("--misslook", action="store_true", help="opt-in missed-animal look (pipeline.miss_look)")
-    ap.add_argument("--no-clean", action="store_true", help="as the frozen runs (eval6): before clean was the default")
-    ap.add_argument("--no-refill", action="store_true", help="as the frozen runs (eval6): before refill was the default")
+    ap.add_argument("--no-clean", action="store_true", help="as the v16 runs (eval6): before clean was the default")
+    ap.add_argument("--no-refill", action="store_true", help="as the v16 runs (eval6): before refill was the default")
     a = ap.parse_args()
     man = json.load(open(f"{SMOKE}/clips/{a.manifest}"))
     rows, tot = [], {"sam": [0, 0, 0, 0], "pipe": [0, 0, 0, 0]}

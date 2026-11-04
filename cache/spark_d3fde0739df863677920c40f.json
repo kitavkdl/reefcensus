@@ -1,0 +1,1 @@
+{"text": "{\"total\": 2, \"estimated\": false, \"reason\": \"One partial head at left edge and one faint fish behind seagrass.\"}", "usage": {"completion_tokens": 608, "prompt_tokens": 6150, "total_tokens": 6758, "completion_tokens_details": {"reasoning_tokens": 568}, "prompt_tokens_details": {"cached_tokens": 99}}}

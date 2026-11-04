@@ -18,6 +18,7 @@ from fishcount import api, tracks, pipeline  # noqa: E402
 SMOKE = os.path.expanduser("~/meta-smoke")
 RUNS = os.path.join(ROOT, "runs")
 VERS = [("V1", "eval"), ("V2", "eval3"), ("V3", "eval4"), ("V4", "eval5"), ("V5", "eval6"), ("V6", "eval7")]
+FINAL = "cr7"     # the final code (master), re-run 11/4: Table 1's audited and queue-rejected columns
 
 
 def match(pred, gt, thr):
@@ -94,7 +95,7 @@ def load():
         else:
             txt = open(f"{BUNDLE}/sam_fish/{cid}.txt").read()
         runs = {}
-        for tag in ["ablnoaudit"] + [t for _, t in VERS]:
+        for tag in ["ablnoaudit"] + [t for _, t in VERS] + [FINAL]:
             p = os.path.join(RUNS if live else f"{BUNDLE}/runs", f"{tag}_{cid}", "result.json")
             if os.path.exists(p):
                 runs[tag] = json.load(open(p))
@@ -133,6 +134,11 @@ def systems(c):
     r = c["runs"]["eval6"]
     q = {t for t, v in r["verdicts"].items() if pipeline.needs_review(v)}
     out["V5 queue rejected"] = boxes(r, lambda t: t not in q)
+    if FINAL in c["runs"]:
+        r = c["runs"][FINAL]
+        qf = {t for t, v in r["verdicts"].items() if pipeline.needs_review(v)}
+        out["final"] = boxes(r, lambda t: True)
+        out["final queue rejected"] = boxes(r, lambda t: t not in qf)
     return out
 
 
@@ -174,7 +180,7 @@ def main():
     print("\n== recall, 95% percentile bootstrap over clips (10,000 resamples of the 6 clips, seed 0; IoU 0.3) ==")
     import random
     per = {n: [match(systems(c)[n], c["gt"], 0.3)[:2] for c in clips]
-           for n in ("SAM alone", "merge + min length 4", "V5", "V5 queue rejected")}
+           for n in ("SAM alone", "merge + min length 4", "V5", "V5 queue rejected", "final", "final queue rejected") if n in systems(clips[0])}
     for n, pc in per.items():
         rng = random.Random(0)      # same resamples for every system
         vals = []
@@ -201,6 +207,14 @@ def main():
         T[0] += tp; T[1] += fn; T[2] += fp; ex += mg == mp; se += abs(mg - mp)
     print(f"k per held-out clip {ks}: recall {T[0] / (T[0] + T[1]):.1%}, precision {T[0] / max(1, T[0] + T[2]):.1%}, "
           f"exact {ex}/6, sum|err| {se}")
+    if all(FINAL in c["runs"] for c in clips):
+        print(f"\n== final code ({FINAL}) per clip, IoU 0.3: audited R / P / MaxN, queue rejected R / P / MaxN, queued ==")
+        for c in clips:
+            s = systems(c); r = c["runs"][FINAL]
+            a = match(s["final"], c["gt"], 0.3); b = match(s["final queue rejected"], c["gt"], 0.3)
+            nq = sum(1 for v in r["verdicts"].values() if pipeline.needs_review(v))
+            f = lambda m: f"{m[0] / max(1, m[0] + m[1]):.0%} / {m[0] / max(1, m[0] + m[2]):.0%} / {m[3]}->{m[4]}"
+            print(f"{c['cid']:20s} {f(a):22s} {f(b):22s} {nq} of {len(r['verdicts'])}")
     print("\n== per clip, V5 queue accepted vs rejected (IoU 0.3): recall ==")
     for c in clips:
         s = systems(c)
@@ -214,16 +228,19 @@ def main():
         k += lo <= h <= hi
         print(f"{c['cid']:20s} human {h}  range {lo}-{hi}{'' if lo <= h <= hi else '  OUTSIDE'}")
     print(f"range holds the human MaxN on {k}/{len(clips)} clips")
-    print("\n== queued tracks in V5 (IoU 0.3): boxes in annotated frames matched / total, verdict ==")
-    for c in clips:
-        r = c["runs"]["eval6"]
-        _, _, _, _, _, hit = match(systems(c)["V5"], c["gt"], 0.3)
+    for qtag, qsys in (("eval6", "V5"), (FINAL, "final")):
+      if not all(qtag in c["runs"] for c in clips):
+        continue
+      print(f"\n== queued tracks in {qsys} (IoU 0.3): boxes in annotated frames matched / total, verdict ==")
+      for c in clips:
+        r = c["runs"][qtag]
+        _, _, _, _, _, hit = match(systems(c)[qsys], c["gt"], 0.3)
         for t, v in r["verdicts"].items():
             if pipeline.needs_review(v):
                 h = hit.get(t, [0, 0])
                 print(f"{c['cid']:20s} {t:7s} n={r['tracks'][t]['n']:3d}  matched {h[0]:3d}/{h[1]:3d}  "
                       f"is_target={v.get('is_target')} conf={v.get('confidence')} species={v.get('species')!r} "
-                      f"label={r['auto_labels'].get(t)!r}")
+                      f"label={r['auto_labels'].get(t)!r} shadow={bool(v.get('shadow'))}")
     print("\n== confident target with species 'unknown' (counted as '(unidentified)', not queued) ==")
     k = 0
     for c in clips:

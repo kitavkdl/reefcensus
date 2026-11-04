@@ -1,0 +1,1 @@
+{"text": "{\"total\": 2, \"estimated\": false, \"reason\": \"One fish on left edge and one in seagrass center.\"}", "usage": {"completion_tokens": 992, "prompt_tokens": 6150, "total_tokens": 7142, "completion_tokens_details": {"reasoning_tokens": 954}, "prompt_tokens_details": {"cached_tokens": 99}}}

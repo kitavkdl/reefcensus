@@ -1,0 +1,1 @@
+{"text": "{\"total\": 5, \"estimated\": false, \"reason\": \"One clear central fish plus four faint distinct fish in background and edge.\"}", "usage": {"completion_tokens": 446, "prompt_tokens": 6150, "total_tokens": 6596, "completion_tokens_details": {"reasoning_tokens": 407}, "prompt_tokens_details": {"cached_tokens": 99}}}

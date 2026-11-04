@@ -1,0 +1,1 @@
+{"text": "{\"total\": 1, \"estimated\": false, \"reason\": \"One distinct fish facing the camera with no other definite fish visible.\"}", "usage": {"completion_tokens": 410, "prompt_tokens": 6150, "total_tokens": 6560, "completion_tokens_details": {"reasoning_tokens": 372}, "prompt_tokens_details": {"cached_tokens": 99}}}

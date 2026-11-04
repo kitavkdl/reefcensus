@@ -84,7 +84,7 @@ identification). Memory: `crab`. Next videos, same site, discovery on, live allo
 
 | run | words used | frames tracked for the remembered word | counts before -> after | cost |
 |---|---|---|---|---|
-| `site_demo_Bs004_before` -> `_after` | request fish + Spark's own + `crab` | 0 | same (caridean shrimp 12, nautilus 1, hagfish 1, shrimp (unidentified) 3; run on the frozen defaults, the current demo run gives 14 + 2) | $0 (the answer for `crab` on this clip was cached from the discovery ladder) |
+| `site_demo_Bs004_before` -> `_after` | request fish + Spark's own + `crab` | 0 | same (caridean shrimp 12, nautilus 1, hagfish 1, shrimp (unidentified) 3; run with the earlier defaults (no clean/refill), the current demo run gives 14 + 2) | $0 (the answer for `crab` on this clip was cached from the discovery ladder) |
 | `site_demo_Bs003_before` -> `_after` | same | 0 | same (nautilus 3) | $0 |
 
 Result: no effect. SAM finds no "crab" at full frame in these clips (it needed a 3x zoom on s002 itself), so the memory was

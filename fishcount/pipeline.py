@@ -487,15 +487,15 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     counts clearly more animals in the peak frame. Changes no count.
     misslook: opt-in miss_look (Spark points at animals without a box on a few frames -> SAM box prompts).
     camo: opt-in camo_look (needs audits): movers no still frame shows, tracked from a SAM box when SAM follows the
-    moving spot; their verdict comes from that look, not the audit. Off by default, so frozen evaluations are unchanged.
+    moving spot; their verdict comes from that look, not the audit. Off by default, so earlier evaluations replay unchanged.
     refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
-    its number. On by default since 11/3 (refill=False reproduces the frozen evaluations before that).
+    its number. On by default since 11/3 (refill=False reproduces the evaluations made before that).
     clean: track hygiene (11/3 TF_52): tracks.repair_ids() gives back the ids SAM shuffled for a frame (boxes that
     hopped between fish, a fish's id on its shadow), tracks.split_jumps() cuts IDs SAM reused for another object, and the
     audit's "largest box" moment skips boxes cut by the frame edge. On by default since 11/3 (clean=False: the old runs).
     crowd: opt-in "crowded scene" pass (crowd_tiles): every overlapping 3x2 tile, upscaled 2x, gets SAM "fish";
-    tile duplicates merge as zoom tiles do. Off by default, so frozen evaluations are unchanged.
+    tile duplicates merge as zoom tiles do. Off by default, so earlier evaluations replay unchanged.
     site: opt-in site memory (fishcount/sitememory.py, docs/site_memory.md): words a reviewer gave to earlier
     videos of this site are added as SAM ladders; with site=None nothing below changes.
     do_motion: run the motion residual (default: only when audits run, since unaudited motion tracks would be
@@ -1321,7 +1321,7 @@ def camo_verdicts_for(run, clip, frames, trk, by_source, n):
 # recovered by filling gaps between a track's boxes, a contrast-stretched copy, the camo look or the crowd tiles: SAM
 # never boxed those fish at all. 9 of them are one faint fish far back in murky water (20190710_4 frames 52-61); shown
 # that frame with the found boxes drawn, Spark named it ("distant faint fish", 0.45) and SAM, given its box, tracked
-# it in 32 frames (4 more human boxes matched). Opt-in (--misslook): frozen evaluations stay as they were.
+# it in 32 frames (4 more human boxes matched). Opt-in (--misslook): earlier evaluations stay as they were.
 MISS_PROMPT = """Underwater survey video frame, {w}x{h} pixels. Every animal already found has a green rectangle. Look carefully, including faint, hazy or distant animals far back in murky water, small ones, and ones partly hidden by seagrass, rock or the frame edge.
 Return ONLY a JSON list of animals that have NO green rectangle: [{{"box":[x1,y1,x2,y2],"name":"one plain everyday English noun (fish, shrimp, crab, eel, octopus, ray)","what":"<=6 words","confidence":0.0-1.0}}] in pixel coordinates of this image. Return [] if every animal has a rectangle."""
 MISS_FRAMES = 6         # frames shown per clip, evenly spaced (the busiest frame among them)

@@ -1,0 +1,1 @@
+{"text": "{\"total\": 4, \"estimated\": false, \"reason\": \"Four distinct faint fish shapes visible across left and center.\"}", "usage": {"completion_tokens": 385, "prompt_tokens": 6150, "total_tokens": 6535, "completion_tokens_details": {"reasoning_tokens": 349}, "prompt_tokens_details": {"cached_tokens": 99}}}

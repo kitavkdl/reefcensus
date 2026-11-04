@@ -69,7 +69,7 @@ def main():
     show("later development (final code, long video)", later)
     show("second held-out discovery runs (DH6-11)", dh2)
     show("DH6-11 fixed-vocabulary baseline", dh2f)
-    show("re-runs of seen data on frozen code", frz)
+    show("re-runs of seen data (protocol-commit code)", frz)
     show("live rehearsal, empty cache (2 takes)", rehearsal)
     show("site-memory demo runs", sitedemo)
     show("LONG1 attempts 1-2 (stopped at memory cap)", long1_early)

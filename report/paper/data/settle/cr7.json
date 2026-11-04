@@ -1,0 +1,692 @@
+{
+ "DH10_cr7": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "DH11_cr7": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "DH1_cr7": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "DH2_cr7": {
+  "queue": 5,
+  "accept_all": {
+   "asked": 5,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 5,
+   "same": true
+  },
+  "auditor": {
+   "asked": 5,
+   "same": true
+  }
+ },
+ "DH3_cr7": {
+  "queue": 6,
+  "accept_all": {
+   "asked": 4,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 5,
+   "same": true
+  },
+  "auditor": {
+   "asked": 4,
+   "same": true
+  }
+ },
+ "DH4_cr7": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "DH5_cr7": {
+  "queue": 18,
+  "accept_all": {
+   "asked": 5,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 7,
+   "same": true
+  },
+  "auditor": {
+   "asked": 5,
+   "same": true
+  }
+ },
+ "DH6_cr7": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "DH7_cr7": {
+  "queue": 5,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 5,
+   "same": true
+  },
+  "auditor": {
+   "asked": 3,
+   "same": true
+  }
+ },
+ "DH8_cr7": {
+  "queue": 15,
+  "accept_all": {
+   "asked": 9,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 9,
+   "same": true
+  },
+  "auditor": {
+   "asked": 9,
+   "same": true
+  }
+ },
+ "DH9_cr7": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "LONG1_cr2": {
+  "queue": 1017,
+  "accept_all": {
+   "asked": 22,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 56,
+   "same": true
+  },
+  "auditor": {
+   "asked": 30,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_1": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_10": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_11": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_2": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_3": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_4": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_5": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_6": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_7": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_8": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190618_9": {
+  "queue": 6,
+  "accept_all": {
+   "asked": 2,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 4,
+   "same": true
+  },
+  "auditor": {
+   "asked": 2,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_11": {
+  "queue": 2,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_13": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_14": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_15": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_17": {
+  "queue": 5,
+  "accept_all": {
+   "asked": 4,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 5,
+   "same": true
+  },
+  "auditor": {
+   "asked": 4,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_2": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_3": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_4": {
+  "queue": 2,
+  "accept_all": {
+   "asked": 2,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 2,
+   "same": true
+  },
+  "auditor": {
+   "asked": 2,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_8": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190709_9": {
+  "queue": 4,
+  "accept_all": {
+   "asked": 4,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 4,
+   "same": true
+  },
+  "auditor": {
+   "asked": 4,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_1": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_2": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_3": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_4": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_5": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_6": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_7": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_8": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_fish_20190710_9": {
+  "queue": 1,
+  "accept_all": {
+   "asked": 1,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 1,
+   "same": true
+  },
+  "auditor": {
+   "asked": 1,
+   "same": true
+  }
+ },
+ "cr7_s001": {
+  "queue": 0,
+  "accept_all": {
+   "asked": 0,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 0,
+   "same": true
+  },
+  "auditor": {
+   "asked": 0,
+   "same": true
+  }
+ },
+ "cr7_s002": {
+  "queue": 2,
+  "accept_all": {
+   "asked": 2,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 2,
+   "same": true
+  },
+  "auditor": {
+   "asked": 2,
+   "same": true
+  }
+ },
+ "cr7_s003": {
+  "queue": 3,
+  "accept_all": {
+   "asked": 3,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 3,
+   "same": true
+  },
+  "auditor": {
+   "asked": 3,
+   "same": true
+  }
+ },
+ "cr7_s004": {
+  "queue": 9,
+  "accept_all": {
+   "asked": 6,
+   "same": true
+  },
+  "reject_all": {
+   "asked": 9,
+   "same": true
+  },
+  "auditor": {
+   "asked": 9,
+   "same": true
+  }
+ }
+}

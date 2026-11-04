@@ -1,0 +1,1 @@
+{"text": "{\"total\": 12, \"estimated\": false, \"reason\": \"Counted distinct shrimp by nautilus and clustered on bait net.\"}", "usage": {"completion_tokens": 809, "prompt_tokens": 6148, "total_tokens": 6957, "completion_tokens_details": {"reasoning_tokens": 771}, "prompt_tokens_details": {"cached_tokens": 99}}}

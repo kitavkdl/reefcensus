@@ -1,0 +1,1 @@
+{"text": "{\"total\": 3, \"estimated\": false, \"reason\": \"One large foreground fish plus one hidden in seagrass and one distant blurry fish.\"}", "usage": {"completion_tokens": 757, "prompt_tokens": 6150, "total_tokens": 6907, "completion_tokens_details": {"reasoning_tokens": 714}, "prompt_tokens_details": {"cached_tokens": 99}}}

@@ -1,6 +1,6 @@
 """Post-hoc low-light test on development clip s001 (Barord et al. 2014 S1, night, wire trap).
 
-The frozen pipeline counted 2 nautiluses here (motion look only; a person sees 1 inside the trap and 3+ outside).
+The v16 pipeline counted 2 nautiluses here (motion look only; a person sees 1 inside the trap and 3+ outside).
 This script makes brightened copies of the same 12 s clip and runs the unchanged pipeline on each with the same
 options as the demo run L1_s001_v16 (--no-scout --prompts fish --discover --zoom). The pipeline code is not touched.
 

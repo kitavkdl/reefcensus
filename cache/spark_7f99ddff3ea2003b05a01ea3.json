@@ -1,0 +1,1 @@
+{"text": "{\"total\": 3, \"estimated\": false, \"reason\": \"Three distinct nautilus shells are clearly visible together.\"}", "usage": {"completion_tokens": 478, "prompt_tokens": 6148, "total_tokens": 6626, "completion_tokens_details": {"reasoning_tokens": 443}, "prompt_tokens_details": {"cached_tokens": 99}}}
