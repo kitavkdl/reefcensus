@@ -264,6 +264,18 @@ class Replay(unittest.TestCase):
     CLIP = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")   # CC BY 4.0, see tests/data/README.md
     SAVED = os.path.join(ROOT, "demo", "runs", "mg2_s004", "result.json")
 
+    def setUp(self):    # runs go to a temp folder, not the repo's runs/ (they would show up in the review screen)
+        import tempfile
+        from fishcount import pipeline
+        self._runs, self._tmp = pipeline.RUNS, tempfile.mkdtemp()
+        pipeline.RUNS = self._tmp
+
+    def tearDown(self):
+        import shutil
+        from fishcount import pipeline
+        pipeline.RUNS = self._runs
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
     def test_s004_offline_replay_matches_saved_run(self):
         if not os.path.exists(self.CLIP):
             self.skipTest("clip not present (videos are not in git; see README Data)")

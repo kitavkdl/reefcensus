@@ -56,7 +56,7 @@ python3 fishcount/pipeline.py <video> [--discover] [--zoom] [--offline] [--no-sc
                                          # clean + refill are on by default (added after the freeze); the frozen
                                          # evaluations replay with --no-clean --no-refill
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
-python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval3_<clip>)
+python3 fishcount/evaluate_pipeline.py   # the same next to the full pipeline (runs eval6_<clip>, the frozen ones)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
@@ -220,9 +220,6 @@ frames only, for both columns. Measured 11/2 (`fishcount/evaluate_pipeline.py`).
   github.com/globalwetlands/luderick-seagrass
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799,
   supplementary videos S1–S4, CC BY 4.0 (via Wikimedia Commons)
-- Held-out discovery clips (Wikimedia Commons copies): Anderson & Bell (2014) PLOS ONE 9(10): e110710, S4/S1/S3,
-  CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, S2, CC BY 4.0; Zintzen et al. (2012) PLOS ONE 7(10):
-  e48522, Video S1, CC BY 2.5
 - Held-out discovery clips (via Wikimedia Commons): Anderson, G.S. & Bell, L.S. (2014) PLOS ONE 9(10): e110710,
   videos S4, S1, S3, CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, video S2, CC BY 4.0; Zintzen, V. et
   al. (2012) PLOS ONE 7(10): e48522, Video S1, CC BY 2.5 (URLs and hashes in `report/paper/data/discovery_heldout/clips.json`)

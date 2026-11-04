@@ -186,6 +186,20 @@ class SiteLook(Isolated):
 class OffByDefault(Isolated):
     CLIP = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")   # CC BY 4.0, see tests/data/README.md
 
+    def setUp(self):    # runs go to a temp folder, not the repo's runs/ (they would show up in the review screen)
+        super().setUp()
+        import tempfile
+        from fishcount import pipeline
+        self._runs, self._tmp = pipeline.RUNS, tempfile.mkdtemp()
+        pipeline.RUNS = self._tmp
+
+    def tearDown(self):
+        import shutil
+        from fishcount import pipeline
+        pipeline.RUNS = self._runs
+        shutil.rmtree(self._tmp, ignore_errors=True)
+        super().tearDown()
+
     def replay(self, rid, **kw):
         return pipeline.run_pipeline(self.CLIP, rid, True, False, True, True, ["fish"], 0.0, True, clean=False, refill=False, **kw)   # saved run predates clean/refill
 

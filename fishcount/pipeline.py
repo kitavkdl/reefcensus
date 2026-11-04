@@ -1712,12 +1712,12 @@ if __name__ == "__main__":
     secs = inf0["n_frames"] / inf0["fps"] if inf0["fps"] else 0
     if a.segment or secs > longvideo.MAX_SEGMENT_S:
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
-                               offline=a.offline, do_scout=not a.no_scout, do_audit=not a.no_audit, do_zoom=a.zoom,
+                               offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                misslook=a.misslook)
     else:
-        r = run_pipeline(a.video, a.id, a.offline, not a.no_scout, not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
+        r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                          camo=a.camo, misslook=a.misslook)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))

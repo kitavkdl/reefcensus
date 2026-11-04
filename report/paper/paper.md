@@ -1,6 +1,6 @@
 ---
 title: "Ask for Fish, Find the Hagfish: A VLM Names What a Promptable Segmenter Cannot See, for Abundance Counts in Baited Underwater Video"
-author: "Jiyul Ahn · Meta AI hackathon, 26 Oct – 4 Nov 2026 · draft of 3 Nov 2026"
+author: "Jiyul Ahn · Meta AI hackathon, 26 Oct – 4 Nov 2026 · 4 Nov 2026"
 lang: en
 ---
 
