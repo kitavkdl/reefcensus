@@ -120,7 +120,10 @@ from 20 tracks, so 153 per-box judgements become 20 taps; in the 40-box sample n
 **Measured once (11/3):** the author answered the 20 tracks plus 3 controls on a phone in 9 min 39 s; all 3 controls
 "already boxed", 15 tracks unboxed fish (145 boxes added), 1 already boxed, 1 part, 3 unsure, 0 not a fish. The
 corrected annotation's MaxN is within ±1 of an independent hand count on all 24 clips (summed error 6, against 16
-for the original boxes). Sheet, key, answers and corrected files: `report/paper/data/heldout/gapfind/`.
+for the original boxes). The judge is consistent: 15 tracks were judged twice (first as single boxes in the precision
+sheet, then as tracks), and all 11 called fish the first time were called fish again, with no answer turning into "not
+a fish"; two of the four first-time "unsure" tracks became fish when seen as a track. Sheet, key, answers and
+corrected files: `report/paper/data/heldout/gapfind/`.
 
 ### Site memory (added after the evaluation; not used in any paper number)
 Off unless you pass `--site NAME` (or fill "Site" in the new-run form). When a reviewer confirms or renames a queued row in a

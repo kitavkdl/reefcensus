@@ -31,7 +31,7 @@ is an annotation accelerator whose output a person confirms.
 | SAM 3.1 answers narrow words: "animal" gives no box on 29 of 39 clips; "luderick" gives nothing on all six clips of that species | §7.4, Table 6 | 39; 6 | our clips and one model version; not a property of SAM 3.1 in general |
 | On luderick the VLM audits match a tuned minimum-track-length rule and cannot raise box recall above the segmenter's | §6.1 Table 1; §6.2 Table 1c | 6 development; 24 held-out | one estuary; the length threshold was chosen with test labels on the development clips; MaxN-exact cannot separate methods (always predicting the most common value is exact on 5 of 6 and 17 of 24) |
 | Against a hand count of all 24 held-out videos the pipeline's MaxN is exact on 18, within ±1 on 24, summed error 6; the reference boxes 16, 22 and 16 | §6.2 Table 1d | 24 held-out | one counter, the first author; 21 counted blind and shuffled, 3 after being flagged as outliers |
-| One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | added boxes come from the pipeline, so the pipeline is not re-scored against them; the judge had seen 40 of the boxes before |
+| One person fixes the held-out reference in 9 min 39 s: 20 tracks judged on a phone, 15 unboxed fish (145 boxes) added, 0 not a fish; the corrected MaxN matches the hand count as closely as the pipeline (Σ\|err\| 6 vs 16) | §6.2 | 24 held-out; 20 tracks + 3 controls | added boxes come from the pipeline, so the pipeline is not re-scored against them; the judge had seen 40 of the boxes before; re-judged, 11 of 11 earlier "fish" tracks were fish again |
 | Most held-out "false positives" are unboxed fish: of 40 drawn at random, 29 fish, 2 part of a fish, 9 unsure, 0 not a fish (precision 93.7–100% vs 77.2% scored) | §6.2 | 40 boxes; 10 controls | one judge, labels hidden; 10/10 matched controls called fish |
 | The person queue holds most tracks behind the largest over-counts, and also real fish | §6.1 Table 1b; §6.2 | 24 held-out | queue is 15 of 49 tracks; rejecting it costs 3.3 points of recall |
 | Asked to count each frame itself, the VLM's MaxN is above the human box count on 16 of 24 held-out clips | §6.2, Table 1c | 24; 6 | no locations, so a count cannot be checked; some "excess" may be unboxed fish |
@@ -643,6 +643,10 @@ on part of a fish and three unsure; **none was "not a fish"**. The corrected ann
 (exact 18/24, within ±1 24/24, Σ|err| 6, against 16/24, 22/24 and 16 for the original boxes). The added boxes are the
 pipeline's own, so we do not re-score the pipeline against this annotation; what it measures is the cost of the fix:
 under ten minutes of taps in place of drawing 145 boxes. The judge had seen 40 of the 153 boxes in the precision sheet.
+That overlap doubles as a test–retest check of the judge. Fifteen tracks appear in both sheets, judged first as single
+boxes and then as tracks of three crops. All 11 tracks with at least one box called a fish in the first sheet were
+called fish again, and no answer turned into "not a fish" (none was given in either sheet). Of the four tracks
+answered only "unsure" the first time, two were called fish when seen as a track and two stayed unsure.
 
 ![**Figure 3.** The last frame of held-out clip 20190709_17. Cyan: pipeline boxes (7). Orange: the human reference boxes (2). The
 pipeline's five "false positives" here are fish; the fish in the seagrass at left is boxed by neither. A hand count
