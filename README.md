@@ -31,6 +31,9 @@ boxes and follows each animal through the video.
   footage) hand-counted separately by the author (not a marine biologist) and by a friend who had never seen the
   project's output, its summed MaxN error is 6 and 2. The human reference boxes (drawn to train a luderick detector &
   not to count MaxN) score 16 and 14 ([details](report/details.md#how-well-it-counts-measured)).
+  Against the dataset's own boxes it is exact on 20 of 24. Of the 4 misses one clip is off by one & three are clips
+  where the boxes missed fish (2→7, 1→5 and 2→4); a hand recount of those three gives 8, 3 and 5, so reefcensus is off
+  by 2 in total & the boxes by 11. Two people counting by hand also agree exactly on only 20 of 24 (all within one fish).
 - On a NOAA reef-fish set from the Gulf of Mexico hand-counted before the run, the four clips without fish come back 0
   with no false fish.
 - In a crowd one SAM pass follows at most 16 animals, so Spark also counts the peak frame with no boxes. On both
