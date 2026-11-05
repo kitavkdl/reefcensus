@@ -369,7 +369,7 @@ function drawQueue() {
       const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); review(it.track, input.value); } },
         input, el("button", { class: "btn small" }, "Save name"));
       body.push(el("div", { class: "acts" },
-        el("button", { class: "btn small", onclick: () => review(it.track, it.yes_label || guess) }, `Yes, ${guess}`),
+        el("button", { class: "btn small", onclick: () => review(it.track, it.yes_label || guess) }, `Yes, ${it.yes_label || guess}`),
         el("button", { class: "btn ghost small", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); } }, "Rename"),
         el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")), form);
     }
