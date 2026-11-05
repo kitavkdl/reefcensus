@@ -75,7 +75,10 @@ def hero(runs):
         items = []
         for name, n in sorted(by[rid].get("maxn", {}).items(), key=lambda kv: (origin.get(kv[0]) != "found", -kv[1])):
             kind = "found" if origin.get(name) == "found" else "asked"
-            items.append((kind, f'<li class="{kind}"><span class="n">{n}</span>{H.escape(name)}</li>'))
+            m = metrics.get(name) or {}
+            lo, hi = m.get("maxn_confirmed", n), m.get("maxn_upper", n)
+            shown = f"{lo} to {hi}" if lo != hi else n   # the review screen's range while queued tracks are open (§4.7)
+            items.append((kind, f'<li class="{kind}"><span class="n">{shown}</span>{H.escape(name)}</li>'))
         q = len(eff.get("queue", []))
         show = SHOW.get(rid)
         ev = (metrics.get(show) or {}).get("evidence") if show else None
@@ -98,12 +101,12 @@ def hero(runs):
             f'It also found the <span class="f">animals nobody asked for</span>.</h2>'
             f'<p class="sub">SAM 3.1 only sees what it is told to look for. Muse Spark looks first & names what is there in words '
             f'SAM can act on, then checks SAM’s work frame by frame. Four 12-second clips of deep-sea baited-camera video '
-            f'with every model answer computed beforehand. Click a clip to see the counts & the evidence & the review queue.</p>'
+            f'with every model answer computed beforehand. Click a clip to see the counts & the evidence & the review queue. A count like “4 to 6” is still open: the low end leaves out every track waiting in the queue, the high end accepts them all.</p>'
             f'<div class="cards">{"".join(cards)}</div>'
             f'<p class="proof"><b>On another dataset (24 held-out luderick fish videos not used in development)</b> hand-counted '
             f'separately by two people, the pipeline’s MaxN is closer to the hand count than the human reference boxes are: '
             f'summed error 6 against 16 for the first count (21 of 24 counted blind) and 2 against 14 for a second person who '
-            f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false none was judged not a fish. '
+            f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false none was judged not a fish (29 fish, 2 part of a fish, 9 unsure). '
             f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
             f'<p class="more">Every model answer is precomputed so there is nothing to install; answer the review queue right here. '
             f'Run your own clips & read the paper: <a href="{REPO}">GitHub</a></p></section>{js}')

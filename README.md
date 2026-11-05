@@ -29,7 +29,7 @@ boxes and follows each animal through the video.
   animals on the reference lists written beforehand; the current code gives the same scores.
 - On 24 held-out seagrass videos of 1 to 12 s (never used while building; remote underwater video & not baited-camera
   footage) hand-counted separately by the author (not a marine biologist) and by a friend who had never seen the
-  project's output, its summed MaxN error is 6 and 2. The human reference boxes (drawn to train a luderick detector &
+  project's output, its summed MaxN error is 6 and 2 (exact on 18 and on 22 of 24). The human reference boxes (drawn to train a luderick detector &
   not to count MaxN) score 16 and 14 ([details](report/details.md#how-well-it-counts-measured)).
   Against the dataset's own boxes it is exact on 20 of 24. Of the 4 misses one clip is off by one & three are clips
   where the boxes missed fish (2→7, 1→5 and 2→4); a hand recount of those three gives 8, 3 and 5, so reefcensus is off
@@ -107,7 +107,7 @@ longer videos run from the command line (below).
 
 **To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
 is a hard cap on total spend in your local `cache/ledger.jsonl`; a fresh clone starts it empty ($0). The project's own
-development spend is in `report/paper/data/ledger.jsonl`. A fresh discovery run on a 12 s clip makes 21 to 30 calls for an estimated $0.22 to $0.27 (paper §6.4).
+development spend is in `report/paper/data/ledger.jsonl`. In the held-out runs a 12 s clip cost about $0.02 to $0.40 (paper Tables 1f and 3b); a fresh discovery run on a development clip makes 21 to 30 calls for an estimated $0.22 to $0.27 (paper §6.4).
 
 ```
 python3 fishcount/pipeline.py <video> [--prompts WORD ...] [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
