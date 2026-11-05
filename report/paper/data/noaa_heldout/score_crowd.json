@@ -5,6 +5,7 @@
   "hand_faint": 0,
   "fish_maxn": 1,
   "fish_maxn_low": 1,
+  "fish_maxn_high": 1,
   "fishlike_maxn": 1,
   "fishlike_maxn_low": 1,
   "rows": [
@@ -29,6 +30,7 @@
   "hand_faint": 5,
   "fish_maxn": 16,
   "fish_maxn_low": 12,
+  "fish_maxn_high": 16,
   "fishlike_maxn": 16,
   "fishlike_maxn_low": 12,
   "rows": [
@@ -63,6 +65,7 @@
   "hand_faint": 2,
   "fish_maxn": 10,
   "fish_maxn_low": 7,
+  "fish_maxn_high": 10,
   "fishlike_maxn": 10,
   "fishlike_maxn_low": 7,
   "rows": [
@@ -89,6 +92,7 @@
   "hand_faint": 0,
   "fish_maxn": 0,
   "fish_maxn_low": 0,
+  "fish_maxn_high": 0,
   "fishlike_maxn": 0,
   "fishlike_maxn_low": 0,
   "rows": [],
@@ -105,6 +109,7 @@
   "hand_faint": 0,
   "fish_maxn": 0,
   "fish_maxn_low": 0,
+  "fish_maxn_high": 0,
   "fishlike_maxn": 0,
   "fishlike_maxn_low": 0,
   "rows": [],
@@ -121,6 +126,7 @@
   "hand_faint": 0,
   "fish_maxn": 0,
   "fish_maxn_low": 0,
+  "fish_maxn_high": 0,
   "fishlike_maxn": 0,
   "fishlike_maxn_low": 0,
   "rows": [],
@@ -137,6 +143,7 @@
   "hand_faint": 2,
   "fish_maxn": 3,
   "fish_maxn_low": 0,
+  "fish_maxn_high": 3,
   "fishlike_maxn": 3,
   "fishlike_maxn_low": 0,
   "rows": [
@@ -174,6 +181,7 @@
   "hand_faint": 0,
   "fish_maxn": 0,
   "fish_maxn_low": 0,
+  "fish_maxn_high": 0,
   "fishlike_maxn": 0,
   "fishlike_maxn_low": 0,
   "rows": [],
