@@ -108,12 +108,16 @@ def effective(rid):
     v = res["video"]
     m = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], labels) if review else res["metrics"]
     # MaxN as a range: the lower end drops every queued track no person has looked at yet (only confident Spark
-    # answers and human edits remain); the upper end is the count above. Reviewing the queue closes the range.
+    # answers and human edits remain); the upper end accepts every one under the name its "Yes" gives (settle.py), so
+    # a track Spark left uncounted is in it too. Reviewing the queue closes the range.
     open_q = {t for t, vd in res.get("verdicts", {}).items() if pipeline.needs_review(vd) and t not in review}
     lo = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], {**labels, **{t: None for t in open_q}}) if open_q else {}
+    hi = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"],
+                        {**labels, **{t: settle.accept_label(res, t) for t in open_q}}) if open_q else {}
     checked = {(c["label"], c["frame"]) for c in res.get("peak_checks", [])}
     for name, mm in m.items():
         mm["maxn_confirmed"] = lo.get(name, {}).get("maxn", 0) if open_q else mm["maxn"]
+        mm["maxn_upper"] = max(mm["maxn"], hi.get(name, {}).get("maxn", 0)) if open_q else mm["maxn"]
         if open_q and lo.get(name, {}).get("curve") != mm["curve"]:
             mm["curve_confirmed"] = lo[name]["curve"] if name in lo else [0] * len(mm["curve"])
         mm["peak_checked"] = (name, mm["maxn_frame"]) in checked

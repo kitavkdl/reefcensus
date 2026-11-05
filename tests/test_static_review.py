@@ -75,6 +75,21 @@ class StaticReviewMatchesServer(unittest.TestCase):
         for src in RUNS:
             self.run_one(src)
 
+    def test_one_yes_stays_inside_the_range(self):
+        """A "Yes" on any one open queued track lands inside the range shown before it (s004 T6: caridean 14 -> 15 <= 16)."""
+        for src in RUNS:
+            rid = os.path.basename(src)
+            os.makedirs(os.path.join(self.tmp, rid))
+            shutil.copy(os.path.join(src, "result.json"), os.path.join(self.tmp, rid))
+            before = server.effective(rid)
+            for q in [q for q in before["queue"] if not q["reviewed"]]:
+                server._save_review(rid, {q["track"]: q["yes_label"]})
+                for name, m in server.effective(rid)["metrics"].items():
+                    if name in before["metrics"]:
+                        b = before["metrics"][name]
+                        self.assertTrue(b["maxn_confirmed"] <= m["maxn"] <= b["maxn_upper"], (rid, q["track"], name))
+                server._save_review(rid, {q["track"]: "__undo__"})
+
 
 if __name__ == "__main__":
     unittest.main()

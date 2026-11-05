@@ -125,15 +125,17 @@
     const nRev = Object.keys(review).length;
     const m = nRev ? metrics(S, run.tracks, labels) : JSON.parse(JSON.stringify(S.base_metrics));
     const openQ = S.queued.filter((t) => !has(review, t));
-    let lo = {};
+    let lo = {}, hi = {};
     if (openQ.length) {
-      const l2 = { ...labels };
-      for (const t of openQ) l2[t] = null;
+      const l2 = { ...labels }, l3 = { ...labels };
+      for (const t of openQ) { l2[t] = null; l3[t] = S.accept[t]; }
       lo = metrics(S, run.tracks, l2);
+      hi = metrics(S, run.tracks, l3);
     }
     const checked = new Set((run.peak_checks || []).map((c) => `${c.label}\u0000${c.frame}`));
     for (const [name, mm] of Object.entries(m)) {
       mm.maxn_confirmed = openQ.length ? (has(lo, name) ? lo[name].maxn : 0) : mm.maxn;
+      mm.maxn_upper = openQ.length ? Math.max(mm.maxn, has(hi, name) ? hi[name].maxn : 0) : mm.maxn;
       if (openQ.length && JSON.stringify(has(lo, name) ? lo[name].curve : null) !== JSON.stringify(mm.curve))
         mm.curve_confirmed = has(lo, name) ? lo[name].curve : new Array(mm.curve.length).fill(0);
       mm.peak_checked = checked.has(`${name}\u0000${mm.maxn_frame}`);
