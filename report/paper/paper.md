@@ -376,13 +376,12 @@ The outputs are per-label MaxN and first arrival, an evidence frame per label wi
 counted masks, an annotated video, a CSV, and a review screen that shows each queued track at three moments. Prompts
 are reproduced verbatim in Appendix A; thresholds are listed in Appendix B.
 
-While the queue is open, the CSV gives MaxN as a range and the review screen shows its low end as the sure count. The
-low end leaves out every queued track no person has reviewed, so only confident verdicts and human edits count; the
-high end is the count as reported, with queued "(unidentified)" tracks counted. The tables call the two ends "queue
-rejected" and "queue accepted". Each review narrows the range and an empty queue leaves one number. The high end is
-not a ceiling: removed tracks and queued tracks Spark left uncounted are in neither end, so a reviewer who restores or
-accepts one can raise the count above it. In the demonstration runs the range is a single number for every label
-except three rows (s002 fish (unidentified) 0–2; s004 caridean shrimp 12–14 and shrimp (unidentified) 0–2).
+While the queue is open, the review screen and the CSV give MaxN as a range. The low end leaves out every queued
+track no person has reviewed, so only confident verdicts and human edits count; the high end is the count as
+reported, with queued "(unidentified)" tracks counted. Each review narrows the range and an empty queue leaves one
+number. Removed tracks are in neither end, so a reviewer who restores one can raise the count above the high end. In
+the demonstration runs the range is a single number for every label except the two "(unidentified)" rows (s002 fish
+0–2, s004 shrimp 0–3).
 
 *Asking only what can change a count* (`fishcount/settle.py`). A person does not have to clear the whole queue to
 settle the numbers. For each label, a queued track can move MaxN only if it appears in a frame whose count, with every
@@ -727,8 +726,8 @@ of the clip gives MaxN 8. Script
 On luderick the audited pipeline's box metrics equal those of the segmenter and a length rule (Table 1c). Its output
 on this task is the queue, which contains most of the tracks behind the clip-level over-counts, and also real fish
 Spark was unsure of, so that a person's work is narrowed rather than replaced. Read as the range of §4.7, from queue
-rejected to queue accepted (as reported), the held-out MaxN is a single number on 18 of 24 clips and contains the
-human MaxN on 22 (mean width 0.50). Both misses lie above the human count: 20190709_11 (3–4 against 2) and 20190709_17 (3–7 against 2),
+rejected to queue accepted, the held-out MaxN is a single number on 18 of 24 clips and contains the human MaxN on 22
+(mean width 0.50). Both misses lie above the human count: 20190709_11 (3–4 against 2) and 20190709_17 (3–7 against 2),
 the clip whose peak frame shows unboxed fish. The widest ranges (3–7, 1–5) are on the two clips with the largest
 over-counts, so the width points a reviewer to them. The range summarises the two protocol rows above.
 
@@ -773,7 +772,7 @@ with the settings of Table 2. Table 1f gives that run, then an after-seeing re-r
 setting that already existed at the cut (`--crowd`: SAM "fish" on every overlapping 3×2 tile, upscaled 2×).
 
 <div class="tablecap">**Table 1f.** NOAA held-out clips (8): fish MaxN against the hand count (sure fish; faint fish
-in brackets). Range = queue rejected–as reported (§4.7). `report/paper/scripts/score_noaa_heldout.py` (`--tag crowd` for
+in brackets). Range = queue rejected–accepted (§4.7). `report/paper/scripts/score_noaa_heldout.py` (`--tag crowd` for
 the re-run).</div>
 
 | clip | hand | protocol run | `--crowd` re-run (after seeing) |

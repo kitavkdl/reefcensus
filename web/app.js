@@ -199,12 +199,11 @@ function countRow(name, m, origin, extra = []) {
       el("span", {}, `first seen ${secs(m.first_time)}`),
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `peak at ${secs(m.maxn_time)}`) : null,
       m.peak_checked ? el("span", { class: "checked" }, "Spark checked every box in the peak frame") : null),
-    // the server's lower end leaves out queued tracks nobody has reviewed. The big number is the count as reported, not
-    // a ceiling: a "Yes" on a queued track Spark left uncounted can raise it, so only the sure count is shown here
+    // the server's lower end leaves out queued tracks nobody has reviewed; reviewing them closes the range
     m.maxn_confirmed != null && m.maxn_confirmed < m.maxn
-      ? el("div", { class: "range" }, "Sure before a person checks the queue: ",
-        el("span", { class: "num" }, `${m.maxn_confirmed}`),
-        " (what Spark was sure of). Answers can move the count up or down")
+      ? el("div", { class: "range" }, "Until a person checks the queue: ",
+        el("span", { class: "num" }, `${m.maxn_confirmed}–${m.maxn}`),
+        ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
       : null,
     crowdNote(m),
     ...extra);
@@ -244,7 +243,7 @@ function drawFound() {
       if (g) extra.push(el("div", { class: "climb" }, `All ${g.head} together: `, el("span", { class: "num" }, g.maxn),
         ` in one frame (${g.parts.join(" + ")}) `,
         el("button", { class: "jump", onclick: () => seek(g.frame) }, `at ${secs(g.frame / state.fps)}`),
-        g.low < g.maxn ? `; ${g.low} sure before the queue is checked` : ""));
+        g.low < g.maxn ? `; ${g.low} before the queue is checked` : ""));
     }
     return countRow(name, m, "found", extra);
   });
@@ -284,7 +283,7 @@ function groupBlock(run) {
     ...gm.map(([g, m]) => el("div", { class: "climb" }, `All ${g === "fish" ? "fish" : g + "s"}: `,
       el("span", { class: "num" }, (m.lower_bound ? "≥" : "") + m.maxn), ` in one frame (${groupParts(run, m).join(" + ")}) `,
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `at ${secs(m.maxn_time)}`) : null,
-      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} sure before the queue is checked` : "",
+      m.maxn_confirmed != null && m.maxn_confirmed < m.maxn ? `; ${m.maxn_confirmed} before the queue is checked` : "",
       crowdNote(m))))];
 }
 

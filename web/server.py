@@ -107,9 +107,8 @@ def effective(rid):
     frames = {int(f): ks for f, ks in res["frames"].items()}
     v = res["video"]
     m = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], labels) if review else res["metrics"]
-    # MaxN as two numbers: the lower end drops every queued track no person has looked at yet (only confident Spark
-    # answers and human edits remain); the other is the count as reported. That is not a ceiling: a "Yes" on a queued
-    # track Spark left uncounted, or restoring a removed one, can raise it. Reviewing the queue leaves one number.
+    # MaxN as a range: the lower end drops every queued track no person has looked at yet (only confident Spark
+    # answers and human edits remain); the upper end is the count above. Reviewing the queue closes the range.
     open_q = {t for t, vd in res.get("verdicts", {}).items() if pipeline.needs_review(vd) and t not in review}
     lo = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], {**labels, **{t: None for t in open_q}}) if open_q else {}
     checked = {(c["label"], c["frame"]) for c in res.get("peak_checks", [])}
