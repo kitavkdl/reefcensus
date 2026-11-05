@@ -65,7 +65,11 @@ def score(k, hand):
     labels = {t: l for t, l in r["auto_labels"].items()}
     frames = {int(f): ks for f, ks in r["frames"].items()}
     lo = tracks.metrics(frames, r["tracks"], v["n_frames"], v["fps"], {**labels, **{t: None for t in open_q}}) if open_q else r["metrics"]
-    group = {x for x in r["metrics"] if pipeline.name_group(x.split(" (")[0]) == "fish" or x.split(" (")[0] == "fish"}
+    isgroup = lambda x: pipeline.name_group(x.split(" (")[0]) == "fish" or x.split(" (")[0] == "fish"
+    group = {x for x in r["metrics"] if isgroup(x)}
+    # range high end: every open queued track accepted under the name its "Yes" gives (fishcount/settle.py, §4.7)
+    from fishcount import settle
+    hi = tracks.metrics(frames, r["tracks"], v["n_frames"], v["fps"], {**labels, **{t: settle.accept_label(r, t) for t in open_q}}) if open_q else r["metrics"]
     fishy = {x for x in r["metrics"] if S.is_fish(x)}
     rows = []
     for lab, m in r["metrics"].items():
@@ -74,6 +78,7 @@ def score(k, hand):
     sure, faint = hand
     out = dict(clip=k, hand_sure=sure, hand_faint=faint,
                fish_maxn=fish_curve(r["metrics"], group), fish_maxn_low=fish_curve(lo, group),
+               fish_maxn_high=fish_curve(hi, {x for x in hi if isgroup(x)}),
                # every label the scorer's is_fish() calls a fish (adds names the word groups miss, see below)
                fishlike_maxn=fish_curve(r["metrics"], fishy), fishlike_maxn_low=fish_curve(lo, fishy),
                rows=rows, discovered=[d["what"] for d in r.get("discovered") or []],
@@ -92,8 +97,8 @@ def main():
             continue
         s, r = score(cid, hand[cid])
         res.append(s)
-        lo, hi = s["fish_maxn_low"], s["fish_maxn"]
-        print(f"{cid}: hand {s['hand_sure']}(+{s['hand_faint']})  fish MaxN {hi}  range {lo}..{hi}"
+        lo, hi = s["fish_maxn_low"], s["fish_maxn_high"]
+        print(f"{cid}: hand {s['hand_sure']}(+{s['hand_faint']})  fish MaxN {s['fish_maxn']}  range {lo}..{hi}"
               f"  fish-like {s['fishlike_maxn_low']}..{s['fishlike_maxn']}  queued {s['queued_tracks']}"
               f"  spark-unprimed {[(c['row'], c['maxn'], c['total']) for c in s['lower_bound']]}  ${s['cost_usd']}  {s['seconds']}s  discovered {s['discovered']}")
         # metric 3: counted non-fish rows -> label-free crop

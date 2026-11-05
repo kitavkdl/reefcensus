@@ -70,14 +70,17 @@ def main():
             T[3] += mg == mp; T[4] += abs(mg - mp) <= 1; T[5] += abs(mg - mp)
             cells.append(f"{tp / max(1, tp + fn):4.0%} {tp / max(1, tp + fp):4.0%} {mg}->{mp}")
         print(f"{cid:18s} " + " | ".join(f"{x:>22s}" for x in cells) + f"  {len(q)}/{len(rv['verdicts'])}")
-        rng.append((cid, mg, mx["queue rejected"], mx["audited"]))
+        # range high end: every queued track accepted, also those Spark left unlabelled (the review screen's "Yes", §4.7)
+        lab = lambda t: rv["auto_labels"].get(t, rv["tracks"].get(t, {}).get("label"))
+        acc = {int(f): [k["box"] for k in ks if lab(k["track"]) or k["track"] in q] for f, ks in rv["frames"].items()}
+        rng.append((cid, mg, mx["queue rejected"], max(mx["audited"], match(acc, gt)[4])))
     n = len(man["clips"])
     for k in order:
         tp, fn, fp, ex, w1, se = tot[k]
         print(f"{k:16s} recall {tp / (tp + fn):.1%}  precision {tp / (tp + fp):.1%}  exact {ex}/{n}  within1 {w1}/{n}  sum|err| {se}")
-    # the review screen's MaxN range: low = queue rejected (unreviewed queued tracks left out), high = audited as reported
+    # the review screen's MaxN range: low = queue rejected (unreviewed queued tracks left out), high = every queued track accepted
     inside = [c for c, h, lo, hi in rng if lo <= h <= hi]
-    print(f"\nMaxN range [queue rejected, audited] holds the human MaxN on {len(inside)}/{n} clips; "
+    print(f"\nMaxN range [queue rejected, queue accepted] holds the human MaxN on {len(inside)}/{n} clips; "
           f"single value on {sum(lo == hi for _, _, lo, hi in rng)}/{n}; mean width {sum(hi - lo for *_, lo, hi in rng) / n:.2f}")
     for c, h, lo, hi in rng:
         if lo != hi or not lo <= h <= hi:
