@@ -365,7 +365,7 @@ function drawQueue() {
         it.remembered ? el("div", { class: "why" }, `Remembered for site ${run.site.name}: '${it.remembered}' is tried first on its next video.`) : null,
         el("div", { class: "acts" }, el("button", { class: "btn ghost small", onclick: () => review(it.track, "__undo__") }, "Undo")));
     } else {
-      const input = el("input", { value: guess, "aria-label": `New name for ${it.name}` });
+      const input = el("input", { value: guess, required: true, pattern: ".*\\S.*", title: "Type a name (Not an animal removes it)", "aria-label": `New name for ${it.name}` });   // a blank name would save as "removed"
       const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); review(it.track, input.value); } },
         input, el("button", { class: "btn small" }, "Save name"));
       body.push(el("div", { class: "acts" },
