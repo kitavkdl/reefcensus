@@ -256,7 +256,7 @@ class ExportCsv(unittest.TestCase):
     def test_empty_unidentified_rows_are_left_out(self):
         sys.path.insert(0, os.path.join(ROOT, "web"))
         import server
-        m = lambda n: dict(maxn=n, maxn_confirmed=n, maxn_time=0.0, maxn_frame=0, first_time=0.0, tracks=n, peak_checked=False, evidence=None)
+        m = lambda n: dict(maxn=n, maxn_confirmed=n, maxn_upper=n, maxn_time=0.0, maxn_frame=0, first_time=0.0, tracks=n, peak_checked=False, evidence=None)
         e = dict(metrics={"nautilus": m(3), "fish (unidentified)": m(0), "crab (unidentified)": m(2), "fish": m(0)},
                  origin={}, source="x", n_reviewed=0, group_metrics={})
         orig, server.effective = server.effective, lambda rid: e

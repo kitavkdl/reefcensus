@@ -268,18 +268,19 @@ def export_csv(rid):
     e = effective(rid)
     buf = io.StringIO()
     w = csv.writer(buf)
-    # maxn_confirmed = the low end of the MaxN range: queued tracks nobody has reviewed yet are left out
-    w.writerow(["label", "origin", "maxn", "maxn_confirmed", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks", "peak_frame_checked",
+    # maxn_confirmed / maxn_upper = the ends of the MaxN range: queued tracks nobody has reviewed yet all left out / all
+    # accepted (group rows: low end only)
+    w.writerow(["label", "origin", "maxn", "maxn_confirmed", "maxn_upper", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks", "peak_frame_checked",
                 "evidence_frame", "source", "human_edits"])
     cell = lambda v: "'" + v if isinstance(v, str) and v[:1] in "=+-@" else v    # no formulas from model text
     for name, m in sorted(e["metrics"].items(), key=lambda kv: -kv[1]["maxn"]):
         if m["maxn"] == 0 and name.endswith(" (unidentified)"):     # empty "(unidentified)" rows are hidden on screen too
             continue
-        w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
+        w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_upper"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
                     m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"]])
     # group rows: same-frame totals over the labels listed in origin (e.g. "group: caridean shrimp + shrimp (unidentified)")
     for g, m in sorted(e.get("group_metrics", {}).items(), key=lambda kv: -kv[1]["maxn"]):
-        w.writerow([cell(f"all {g}" + ("" if g == "fish" else "s")), "group: " + " + ".join(m["labels"]), m["maxn"], m["maxn_confirmed"], m["maxn_time"], m["maxn_frame"],
+        w.writerow([cell(f"all {g}" + ("" if g == "fish" else "s")), "group: " + " + ".join(m["labels"]), m["maxn"], m["maxn_confirmed"], "", m["maxn_time"], m["maxn_frame"],
                     m["first_time"], m["tracks"], "", "", e["source"], e["n_reviewed"]])
     return buf.getvalue()
 

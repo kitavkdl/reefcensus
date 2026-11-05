@@ -187,15 +187,15 @@
   const byMaxn = (o) => Object.entries(o).sort(([, a], [, b]) => b.maxn - a.maxn);
 
   function exportCsv(e) {             // web/server.py export_csv
-    const S = e._static, rows = [["label", "origin", "maxn", "maxn_confirmed", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks",
+    const S = e._static, rows = [["label", "origin", "maxn", "maxn_confirmed", "maxn_upper", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks",
       "peak_frame_checked", "evidence_frame", "source", "human_edits"]];
     for (const [name, m] of byMaxn(e.metrics)) {
       if (m.maxn === 0 && name.endsWith(" (unidentified)")) continue;
-      rows.push([noFormula(name), e.origin[name] || "", m.maxn, m.maxn_confirmed, tstr(S, m.maxn_frame), m.maxn_frame,
+      rows.push([noFormula(name), e.origin[name] || "", m.maxn, m.maxn_confirmed, m.maxn_upper, tstr(S, m.maxn_frame), m.maxn_frame,
         tstr(S, m.first_frame), m.tracks, m.peak_checked, m.evidence || "", e.source, e.n_reviewed]);
     }
     for (const [g, m] of byMaxn(e.group_metrics || {}))
-      rows.push([noFormula(`all ${g}` + (g === "fish" ? "" : "s")), "group: " + m.labels.join(" + "), m.maxn, m.maxn_confirmed,
+      rows.push([noFormula(`all ${g}` + (g === "fish" ? "" : "s")), "group: " + m.labels.join(" + "), m.maxn, m.maxn_confirmed, "",
         tstr(S, m.maxn_frame), m.maxn_frame, tstr(S, m.first_frame), m.tracks, "", "", e.source, e.n_reviewed]);
     return csv(rows, "\r\n");
   }
