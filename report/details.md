@@ -46,7 +46,7 @@ measurements in `report/long_video.md`).
 The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species
 count strip on the same timeline, shows each MaxN as a tally with its evidence frame, the second-look log, and a queue
 of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits). Until the queue
-is checked, a count that depends on it is shown as a range, from confident answers only to everything counted.
+is checked, a count that depends on it is shown as a range, from confident answers only to every queued track answered "Yes".
 New runs replay saved API answers for free unless "Allow paid API calls" is ticked (capped at $2 a run).
 
 ## Free replays on another machine

@@ -376,12 +376,15 @@ The outputs are per-label MaxN and first arrival, an evidence frame per label wi
 counted masks, an annotated video, a CSV, and a review screen that shows each queued track at three moments. Prompts
 are reproduced verbatim in Appendix A; thresholds are listed in Appendix B.
 
-While the queue is open, the review screen and the CSV give MaxN as a range. The low end leaves out every queued
-track no person has reviewed, so only confident verdicts and human edits count; the high end is the count as
-reported, with queued "(unidentified)" tracks counted. Each review narrows the range and an empty queue leaves one
-number. Removed tracks are in neither end, so a reviewer who restores one can raise the count above the high end. In
-the demonstration runs the range is a single number for every label except the two "(unidentified)" rows (s002 fish
-0–2, s004 shrimp 0–3).
+While the queue is open, the review screen and the CSV (`maxn_confirmed`, `maxn_upper`) give MaxN as a range. The low
+end leaves out every queued track no person has reviewed, so only confident verdicts and human edits count. The high
+end accepts every queued track under the name its "Yes" gives (`settle.accept_label`), so a track Spark left uncounted
+is in it too. The tables call the two ends "queue rejected" and "queue accepted". Each review narrows the range and an
+empty queue leaves one number; a test checks that one "Yes" on any open queued track stays inside the range shown
+before it. Removed tracks are in neither end, so a reviewer who restores one can raise the count above the high end. A
+label that only a "Yes" would create appears once answered. In the demonstration runs the range is a single number for
+every label except four rows (s001 chambered nautilus 4–6; s002 fish (unidentified) 0–2; s004 caridean shrimp 12–16
+and shrimp (unidentified) 0–2).
 
 *Asking only what can change a count* (`fishcount/settle.py`). A person does not have to clear the whole queue to
 settle the numbers. For each label, a queued track can move MaxN only if it appears in a frame whose count, with every
@@ -781,7 +784,7 @@ the re-run).</div>
 | N2 | 10 (+5) | 12–13 | 12–16 |
 | N3 | 12 (+2) | 10 | 7–10 |
 | N4, N5, N6, N8 | 0 each | 0 each | 0 each |
-| N7 | 9 (+2) | 0 | 0–3, marked lower bound (Spark, unprimed: 9) |
+| N7 | 9 (+2) | 0–1 | 0–3, marked lower bound (Spark, unprimed: 9) |
 | exact / Σ\|err\| vs sure | | 5/8 / 14 | 5/8 / 14 |
 | cost, time (8 clips) | | $0.54, 11 min | $0.75, 8 min |
 
