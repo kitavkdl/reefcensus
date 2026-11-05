@@ -12,7 +12,7 @@ SRC = os.path.join(ROOT, "demo", "runs")
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "demo", "site"))
 REPO = "https://github.com/kitavkdl/reefcensus"
 SITE = "https://kitavkdl.github.io/reefcensus/"
-TITLE = "reefcensus — count what you asked for & find what you didn't"
+TITLE = "reefcensus counts what you asked for & finds what you didn't"
 DESC = ("Muse Spark names what is in deep-sea baited-camera video & SAM 3.1 counts it. "
         "Four real runs with every model answer precomputed; answer the review queue in your browser.")
 # link previews (Slack, X, iMessage) need absolute URLs; the favicon is an inline SVG so it needs no file
@@ -185,7 +185,7 @@ def main():
     html = html.replace("<body>", "<body>\n" + hero(runs), 1)
     # IMAS footage is no longer used anywhere (licence not specified at the source); credit only what is shown
     html = re.sub(r'<footer class="credits">.*?</footer>',
-                  '<footer class="credits">Nautilus video: Barord et al. 2014, PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0. '
+                  '<footer class="credits">Nautilus video: Barord et al. 2014, PLOS ONE 9(6): e100799, S1 to S4, CC BY 4.0. '
                   'SAM 3.1 and Muse Spark by Meta, through the Meta Model API.</footer>', html, count=1, flags=re.S)
     html = html.replace('<main class="grid" id="main">', '<main class="grid" id="main" tabindex="-1">', 1)
     html = html.replace('<button class="btn ghost" id="newBtn"', '<button class="btn ghost" id="newBtn" hidden style="display:none"', 1)

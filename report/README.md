@@ -1,6 +1,6 @@
 # reefcensus: counting what was asked for and finding what was not, with SAM 3.1 and Muse Spark
 
-Technical report, Meta AI hackathon (Oct 26 – Nov 4, 2026). Every number below was measured on this code (the final
+Technical report, Meta AI hackathon (Oct 26 to Nov 4, 2026). Every number below was measured on this code (the final
 run is `cr7`; the paper, `paper/paper.md`, has every table in full); the command that produces it is under **Reproduce**. Where a number rests on a small sample, it says so.
 
 ## Summary
@@ -21,7 +21,7 @@ Results (details in **Evaluation**):
 - **Finding what was not asked for (4 nautilus clips, request "fish"):** Spark named all 7 taxa beyond the fish asked for that a person could see (one of them a hagfish) and all 7 reached the final count, with no label outside the person's list except two low-confidence "fish (unidentified)" tracks waiting in the queue (s002). SAM asked for "fish" alone found 0 of 7. Spark's naming plus SAM, with no checks, already finds 7 of 7 (with the motion look); the checks give the right names (hagfish, not SAM's "eel"), remove duplicate shrimp and a false "shrimp" on the trap net. On the original night clip s001 they cost one nautilus (queued, v16); the final code brightens that clip first and counts four, with a fainter fifth sent to a person. The hardest one (nautiluses at night behind a wire trap) was found only by the motion look.
 - **Finding what was not asked for, held out (5 new videos from other studies, one run under a protocol committed first; the current code scores the same):** Spark named all 4 non-fish animals the author and an AI assistant had marked before the run; 3 were counted and the 4th (a squat lobster that no word tracked, followed by a motion box in all 60 frames) was sent to a person to confirm. 0 false discoveries: every counted crop was judged an animal with its label hidden, and nothing non-fish was counted on the two clips without one. $1.06 for all five.
 - **Second held-out set (6 more videos, one run under a protocol committed first; the current code scores the same):** counted the one non-fish animal two people marked beforehand (an amphipod at a 2186 m vent), 0 false discoveries, nothing non-fish on two shark-only clips; also counted 3 crabs in a cold-seep time-lapse that neither person listed from four frames (none of the crabs is on those frames; judged crabs with labels hidden). $0.86 for six.
-- **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.40 (discovery; $0.22–0.27 on the development clips) in API calls; all answers are cached by content, so a rerun is free.
+- **Cost:** a 12 s clip costs about $0.02 (counting only) to $0.40 (discovery; $0.22 to $0.27 on the development clips) in API calls; all answers are cached by content, so a rerun is free.
 
 ![SAM "animal" vs SAM "fish" vs reefcensus on the same frame](figures/compare3_luderick.jpg)
 *Same seagrass frame (luderick archive 20190618_9, CC BY 4.0). Left: SAM 3.1 asked for "animal", 0 detections (none in
@@ -80,7 +80,7 @@ These are the behaviours the design is built around. Each was found by trial dur
 | Spark sometimes breaks JSON when asked for JSON only | twice during development (for example `{ polo":1 }:`); bad replies are no longer stored, so the rate is not known | a reply that fails its shape check is not cached and is asked once more |
 | Spark's judgement depends on where the judged frame sits | same faint fish, same three crops (luderick 20190618_9, frame 35): with the judged frame at the strip's edge Spark answered "seagrass" in 11 of 25 calls, with it in the middle 0 of 25 (Fisher p = 0.0002) | the judged frame always sits in the middle (`report/paper/scripts/repeat_peak_score.py`) |
 | Spark's judgement depends on what else is on the sheet | the same pair of masks (s004, frame 27) was "same animal" on one sheet and "different" on another | decisions that set a count are made on small sheets with three crops; doubtful ones go to a person |
-| The audit takes up a name it is offered | s003: a motion box that had drifted onto the trap's net legs was audited as "large striped shrimp", 0.75 — a name the discovery step had guessed (wrongly) and the audit prompt listed as context. Shown other moments with no label and no names, Spark said "trap mesh, not animal" | a motion track counts only after that second, unprimed look agrees |
+| The audit takes up a name it is offered | s003: a motion box that had drifted onto the trap's net legs was audited as "large striped shrimp", 0.75. It was a name the discovery step had guessed (wrongly) and the audit prompt listed as context. Shown other moments with no label and no names, Spark said "trap mesh, not animal" | a motion track counts only after that second, unprimed look agrees |
 | Spark answers from the words it is offered | s001: the motion prompt's example nouns left out nautilus, so a spot Spark described as "striped nautilus shell" got the name "snail" | a name the discovery step already gave wins when Spark's own description uses it |
 
 ## 4. Evaluation
@@ -115,7 +115,7 @@ is taken over the annotated frames only, for both columns.
 - **Precision is a lower bound, and we measured how low.** Of 12 tracks scored as false positives in an earlier run, 6
   were checked by eye and all 6 were real luderick the annotators had not boxed. On the 24 held-out clips, 40 of the
   153 unmatched boxes drawn at random and judged with labels hidden were 29 fish, 2 part of a fish, 9 unsure and 0 not
-  a fish: corrected precision 93.7% (95% interval 89.6–97.0%, resampling tracks) against 77.2% scored. Against a hand count of all 24 videos the pipeline's
+  a fish: corrected precision 93.7% (95% interval 89.6 to 97.0%, resampling tracks) against 77.2% scored. Against a hand count of all 24 videos the pipeline's
   MaxN is within ±1 on all 24 with summed error 6, the reference boxes' 16 (paper Table 1d).
 
 ### 4.2 Finding what was not asked for (nautilus)
@@ -152,7 +152,7 @@ no names: "looks like trap mesh, not animal". It is not counted.*
 
 ### 4.3 Finding what was not asked for, on five new videos (held out)
 Five clips from other studies, never used in development: three deep carcass cameras at 95 m in Saanich Inlet, British
-Columbia (DH1–DH3, Anderson & Bell 2014), a pig carcass in the Salish Sea (DH4, Anderson & Bell 2016) and a fish-only
+Columbia (DH1 to DH3, Anderson & Bell 2014), a pig carcass in the Salish Sea (DH4, Anderson & Bell 2016) and a fish-only
 New Zealand BRUV (DH5, Zintzen et al. 2012). The selection rule, metrics and command were committed before any run
 (`report/paper/discovery_heldout_protocol.md`); each clip was run once with the code of the protocol commit. Before the run the author and, separately, an AI
 assistant (Claude) marked and at a coarse group level, the non-fish animals they could see in four frames per clip.
@@ -179,7 +179,7 @@ but queued and were not judged with labels hidden (paper Table 3b).
 Rows, evidence crops, both reference lists and the judgement: `report/paper/data/discovery_heldout/`
 (`python3 report/paper/scripts/score_discovery_heldout.py`).
 
-### 4.4 A second held-out set (DH6–DH11)
+### 4.4 A second held-out set (DH6 to DH11)
 Six videos from other PLOS ONE studies: two fish-only shark cameras (DH6 BRUV, DH8 cleaning station), a cold-seep
 time-lapse at two images an hour (DH7), two sediment-profile Wormcam time-lapses (DH9, DH10) and a hydrothermal vent
 at 2186 m (DH11). Protocol `report/paper/discovery_heldout2_protocol.md` (amendment 2 fixed the code to that of the protocol commit); each
@@ -232,7 +232,7 @@ python3 web/server.py                                  # review screen, http://1
 
 ## Data
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset, CC BY 4.0, PANGAEA doi:10.1594/PANGAEA.926930
-- Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0
+- Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799, S1 to S4, CC BY 4.0
 - Held-out discovery clips (Wikimedia Commons copies): Anderson & Bell (2014) PLOS ONE 9(10): e110710, S4/S1/S3,
   CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, S2, CC BY 4.0; Zintzen et al. (2012) PLOS ONE 7(10):
   e48522, Video S1, CC BY 2.5

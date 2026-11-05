@@ -1,4 +1,4 @@
-# reefcensus — count what you asked for & find what you didn't
+# reefcensus counts what you asked for & finds what you didn't
 
 reefcensus counts animals in underwater survey video. Say what to count. You get MaxN for each animal (the most animals
 of a kind on screen at once; the standard count of baited-camera surveys) and time of first arrival (when the first one
@@ -27,7 +27,7 @@ boxes and follows each animal through the video.
   where three are still distant shapes; near the end of the clip all four are plain.
 - On eleven videos from other studies (each run once under a protocol committed before the run) it named all five
   animals on the reference lists written beforehand; the current code gives the same scores.
-- On 24 held-out seagrass videos of 1–12 s (never used while building; remote underwater video & not baited-camera
+- On 24 held-out seagrass videos of 1 to 12 s (never used while building; remote underwater video & not baited-camera
   footage) hand-counted separately by the author (not a marine biologist) and by a friend who had never seen the
   project's output, its summed MaxN error is 6 and 2. The human reference boxes (drawn to train a luderick detector &
   not to count MaxN) score 16 and 14 ([details](report/details.md#how-well-it-counts-measured)).
@@ -41,20 +41,20 @@ boxes and follows each animal through the video.
   "≥" for a person to count. It marks none of the 24 held-out seagrass peak frames. On the 53-minute deployment
   it marks the fish MaxN "≥ 14" (Spark counted 22 and 28 fish on two segment peak frames).
 - On a 53-minute reef-fish deployment the review queue holds 1,082 uncertain tracks. Asking first only the ones that
-  can still change a number settles every MaxN and first arrival after 24–84 answers (about 5–18 minutes on a phone
+  can still change a number settles every MaxN and first arrival after 24 to 84 answers (about 5 to 18 minutes on a phone
   estimated from the 13 s a track measured on 9 queued tracks) with exactly the numbers of answering all 1,082
   (checked with three simulated answer rules: accept all / reject all / follow the auditor).
 - Reviewed counts download as a CSV & in GlobalArchive column order ([details](report/details.md#standard-maxn-export-globalarchive-layout)).
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord is first author of the 2014 nautilus
-survey whose videos S1–S4 we used (Barord et al., *PLOS ONE* e100799). He wrote back the same afternoon he saw the results:
+survey whose videos S1 to S4 we used (Barord et al., *PLOS ONE* e100799). He wrote back the same afternoon he saw the results:
 
 > Wow, this is so cool to see our nautilus BRUVS being used!!! I think that this would be an incredibly helpful tool
 > for the BRUVS footage to identify nautiluses as well as the other species. Even if it cannot identify them to
 > species, having something like this that could survey what is on the video and collate them, that would streamline
 > the video analyses that we do.
 >
-> — Gregory J. Barord, Ph.D., email of Nov 2, 2026
+> Gregory J. Barord, Ph.D., email of Nov 2, 2026
 
 The two concerns he raised are what the tool is built around: low light (the night clip behind the trap above with
 four nautiluses counted & a fifth queued for a person) and spot checks (every number opens its evidence frame & doubtful
@@ -107,7 +107,7 @@ longer videos run from the command line (below).
 
 **To run new clips with your own key:** `cp .env.example .env` and set `META_API_KEY` (or export it). `FISH_BUDGET`
 is a hard cap on total spend in your local `cache/ledger.jsonl`; a fresh clone starts it empty ($0). The project's own
-development spend is in `report/paper/data/ledger.jsonl`. A fresh discovery run on a 12 s clip makes 21–30 calls for an estimated $0.22–0.27 (paper §6.4).
+development spend is in `report/paper/data/ledger.jsonl`. A fresh discovery run on a 12 s clip makes 21 to 30 calls for an estimated $0.22 to $0.27 (paper §6.4).
 
 ```
 python3 fishcount/pipeline.py <video> [--prompts WORD ...] [--discover] [--zoom] [--offline] [--no-scout] [--no-audit] [--segment S]
@@ -115,11 +115,11 @@ python3 fishcount/pipeline.py <video> [--prompts WORD ...] [--discover] [--zoom]
                                          # clean + refill are on by default (--no-clean --no-refill turns them off)
 python3 fishcount/pipeline.py clip.mp4 --prompts fish shark "sea turtle" --discover   # also finds what you did not name
 python3 fishcount/evaluate.py            # raw SAM 'fish': recall/precision/MaxN error vs. luderick ground truth
-python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full pipeline (runs cr7_<clip>; later code, cr8–cr11, moved no score)
+python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full pipeline (runs cr7_<clip>; later code cr8 to cr11 moved no score)
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 103 tests including an exact
+**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 104 tests including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
@@ -156,10 +156,10 @@ that the names Spark proposes are checked by people who know the fauna.
 
 ## Data credits
 - Ditria, E.M. et al. (2021) luderick-seagrass dataset (remote underwater video in seagrass; the source does not
-  mention bait, so these clips are not counted as BRUV footage), CC BY 4.0 — PANGAEA doi:10.1594/PANGAEA.926930,
+  mention bait, so these clips are not counted as BRUV footage), CC BY 4.0 via PANGAEA doi:10.1594/PANGAEA.926930,
   github.com/globalwetlands/luderick-seagrass
 - Barord, G.J. et al. (2014) Comparative population assessments of Nautilus sp., PLOS ONE 9(6): e100799,
-  supplementary videos S1–S4, CC BY 4.0 (via Wikimedia Commons)
+  supplementary videos S1 to S4, CC BY 4.0 (via Wikimedia Commons)
 - Held-out discovery clips (via Wikimedia Commons): Anderson, G.S. & Bell, L.S. (2014) PLOS ONE 9(10): e110710,
   videos S4, S1, S3, CC BY 4.0; Anderson & Bell (2016) PLOS ONE 11(3): e0149107, video S2, CC BY 4.0; Zintzen, V. et
   al. (2012) PLOS ONE 7(10): e48522, Video S1, CC BY 2.5 (URLs and hashes in `report/paper/data/discovery_heldout/clips.json`)
@@ -170,12 +170,12 @@ that the names Spark proposes are checked by people who know the fauna.
 - 53-minute video: NOAA Fisheries, Southeast Fisheries Science Center, reef fish baited video, station T60233001,
   camera A (Open Data Dissemination bucket `nmfs_odp_sefsc`); US government work, public domain, attribution to the
   Southeast Fisheries Science Center (download script and hashes in `report/paper/data/long_video/`)
-- NOAA held-out set (N1–N8): the same NOAA bucket, eight stations chosen by rule (`report/paper/noaa_heldout_protocol.md`;
+- NOAA held-out set (N1 to N8): the same NOAA bucket, eight stations chosen by rule (`report/paper/noaa_heldout_protocol.md`;
   stations, URLs and hashes in `report/paper/data/noaa_heldout/clips.json`); US government work, attribution as above
 
 ## Built during the hackathon
-Built during the Meta AI hackathon (Oct 26 – Nov 4, 2026). The first API experiments ran on Oct 31 in a scratch folder
-(kept in `spikes/`; its folders A–G are the early look at what SAM can do on sound / the sun / sea ice / sonar / thermal
+Built during the Meta AI hackathon (Oct 26 to Nov 4, 2026). The first API experiments ran on Oct 31 in a scratch folder
+(kept in `spikes/`; its folders A to G are the early look at what SAM can do on sound / the sun / sea ice / sonar / thermal
 video / AI-made video / a kitchen before the project settled on baited cameras). This repository starts on Nov 1
 (first commit `85b825d`) & all code here was written in those days (third-party footage and libraries are credited
 where used).
