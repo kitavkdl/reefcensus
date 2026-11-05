@@ -11,6 +11,20 @@ import server   # noqa: E402  (web/server.py: run_list, effective, export_csv re
 SRC = os.path.join(ROOT, "demo", "runs")
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "demo", "site"))
 REPO = "https://github.com/kitavkdl/reefcensus"
+SITE = "https://kitavkdl.github.io/reefcensus/"
+TITLE = "reefcensus — count what you asked for & find what you didn't"
+DESC = ("Muse Spark names what is in deep-sea baited-camera video & SAM 3.1 counts it. "
+        "Four real runs with every model answer precomputed; answer the review queue in your browser.")
+# link previews (Slack, X, iMessage) need absolute URLs; the favicon is an inline SVG so it needs no file
+HEAD = (f'<meta name="description" content="{DESC}">\n'
+        f'<meta property="og:type" content="website">\n<meta property="og:url" content="{SITE}">\n'
+        f'<meta property="og:title" content="{TITLE}">\n<meta property="og:description" content="{DESC}">\n'
+        f'<meta property="og:image" content="{SITE}static/og.png">\n'
+        f'<meta property="og:image:width" content="1280">\n<meta property="og:image:height" content="640">\n'
+        f'<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="{TITLE}">\n'
+        f'<meta name="twitter:description" content="{DESC}">\n<meta name="twitter:image" content="{SITE}static/og.png">\n'
+        '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E'
+        '%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%90%9F%3C/text%3E%3C/svg%3E">\n')
 
 
 # Landing block for judges: the claim in one line, then one card per run (asked vs. found, with its evidence frame).
@@ -91,7 +105,8 @@ def hero(runs):
             f'summed error 6 against 16 for the first count (21 of 24 counted blind) and 2 against 14 for a second person who '
             f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false none was judged not a fish. '
             f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
-            f'<p class="more">Code & paper & how to run it live: <a href="{REPO}">{REPO}</a></p></section>{js}')
+            f'<p class="more">Every model answer is precomputed so there is nothing to install; answer the review queue right here. '
+            f'Run your own clips & read the paper: <a href="{REPO}">GitHub</a></p></section>{js}')
 
 
 def static_data(rid, eff):
@@ -163,11 +178,11 @@ def main():
     if '<script src="static/app.js"></script>' not in html:
         raise SystemExit("index.html changed, update build_static.py: app.js script tag not found")
     html = html.replace('<script src="static/app.js"></script>', '<script src="static/review.js"></script>\n<script src="static/app.js"></script>', 1)
-    note = (f'<p id="staticNote" style="margin:0;padding:6px 16px;font-size:13px;background:#fff6e5;color:#5a4300">'
-            f'Interactive replay of four real runs — click a clip. Every model answer is saved so nothing here calls a model. '
-            f'Answer the review queue and the counts, ranges and CSV downloads are recomputed in your browser (kept until you reload). '
-            f'To run your own video: <a href="{REPO}">{REPO}</a></p>')
-    html = html.replace("<body>", "<body>\n" + note + "\n" + hero(runs), 1)
+    shutil.copy(os.path.join(ROOT, "demo", "og.png"), os.path.join(OUT, "static", "og.png"))
+    if html.count("<title>reefcensus</title>") != 1:
+        raise SystemExit("index.html changed, update build_static.py: <title> not found")
+    html = html.replace("<title>reefcensus</title>", f"<title>{TITLE}</title>\n{HEAD}", 1)
+    html = html.replace("<body>", "<body>\n" + hero(runs), 1)
     # IMAS footage is no longer used anywhere (licence not specified at the source); credit only what is shown
     html = re.sub(r'<footer class="credits">.*?</footer>',
                   '<footer class="credits">Nautilus video: Barord et al. 2014, PLOS ONE 9(6): e100799, S1–S4, CC BY 4.0. '
@@ -182,7 +197,7 @@ def main():
         first = runs[0]["id"]
         html = html.replace('id="exportBtn" href="#"', f'id="exportBtn" href="api/runs/{first}/export.csv"', 1)
         html = html.replace('id="exportGaBtn" href="#"', f'id="exportGaBtn" href="api/runs/{first}/export_globalarchive.csv"', 1)
-    if 'id="staticNote"' not in html or "newBtn\" hidden" not in html:
+    if 'og:image' not in html or "newBtn\" hidden" not in html:
         raise SystemExit("index.html changed, update build_static.py")
     open(os.path.join(OUT, "index.html"), "w").write(html)
     n, size = 0, 0
