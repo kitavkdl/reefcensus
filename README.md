@@ -1,16 +1,13 @@
 # reefcensus — count what you asked for & find what you didn't
 
-Underwater survey video in, survey counts out. Say what to count. You get MaxN for each animal (the most of a kind on
-screen at once, the standard count of baited-camera surveys) and time of first arrival **with an evidence frame behind
-every number** (that count seen with boxes drawn) and a short queue of uncertain tracks for a person to confirm.
+reefcensus counts animals in underwater survey video. Say what to count. You get MaxN for each animal (the most animals
+of a kind on screen at once; the standard count of baited-camera surveys) and time of first arrival (when the first one
+shows up) **with an evidence frame behind every number** (the frame where that count is seen with boxes drawn) & a
+short queue of uncertain tracks for a person to confirm.
 Built on Meta's SAM 3.1 and Muse Spark via the Meta Model API.
 
-**[Demo, no key or install](https://kitavkdl.github.io/reefcensus/)** (4 finished runs, answer the review queue in your browser) · **[Paper (PDF)](report/paper/paper.pdf)**
-<!-- after the YouTube upload add to the line above: · **[3-min video](<url>)** -->
-
-- **0 → 4** at night behind a trap: 17 fixed words box nothing in the frame below. reefcensus counts four and sends a fainter fifth to a person.
-- **20 of 24** held-out fish videos exact against the dataset's own boxes.
-- **1,082 → 24–84**: on a 53-minute deployment 24–84 answers give the same counts as answering all 1,082 queued tracks (simulated answers).
+**Demo with no key or install:** https://kitavkdl.github.io/reefcensus/ (4 finished runs with their evidence frames and
+count strip; answer the review queue in your browser).
 
 ![Night behind a trap at frame 42 of 60 on the same brightened frames. Left: SAM with 17 fixed words boxes nothing in this frame (one nautilus as 'shell' in 9 of 60 frames). Right: Muse Spark points at what moved and SAM tracks each spot from a box with no word; four counted & a fainter fifth sent to a person](report/figures/split_s001_night_f42.jpg)
 
