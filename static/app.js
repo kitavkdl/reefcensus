@@ -62,7 +62,7 @@ async function openRun(id) {
   if (st.stage !== "error") state.lastStage = st.stage;
   drawRail(st); drawMeter(st); drawLog(st);
   if (st.stage === "done") {
-    if (!state.run) { state.run = await api(`api/runs/${encodeURIComponent(id)}.json`); drawRun(true); }
+    if (!state.run) { state.run = StaticReview.open(await api(`api/runs/${encodeURIComponent(id)}.json`)); drawRun(true); }
   } else if (st.stage === "error") {
     showScreen(`Run stopped. ${st.error || ""}`);
   } else {
@@ -171,7 +171,7 @@ function drawEvidence() {
   const run = state.run;
   fill($("evidence"), ...order(run).filter(([, m]) => m.evidence).map(([name, m]) => {
     const src = `runs/${encodeURIComponent(run.id)}/${m.evidence}`;
-    const cap = `${name}: ${m.maxn} at ${secs(m.maxn_time)}${m.peak_checked ? ", every box checked by Spark" : ""}`;
+    const cap = `${name}: ${m.maxn} at ${secs(m.maxn_time)}${m.peak_checked ? ", every box checked by Spark" : ""}${m.evidence_stale ? " (image from before the review)" : ""}`;
     return el("figure", { class: run.origin[name], tabindex: 0, onclick: () => zoom(src, cap), onkeydown: (e) => e.key === "Enter" && zoom(src, cap) },
       el("img", { src, alt: `Peak frame for ${name}`, loading: "lazy" }), el("figcaption", {}, cap));
   }));
@@ -393,8 +393,8 @@ function drawQueue() {
 }
 
 async function review(track, label) {
-  const n = document.getElementById("staticNote");
-  if (n) n.textContent = "Static demo: reviews are not saved. Run the server from the repository to review and export.";
+  state.run = StaticReview.review(state.run, track, label);
+  drawRun(false);
 }
 
 function zoom(src, cap) {
@@ -464,3 +464,5 @@ $("strip").addEventListener("click", (e) => {
 window.addEventListener("resize", movePlayhead);
 $("lbClose").onclick = () => $("lightbox").close();
 loadRuns();
+for (const [b, f, n] of [["exportBtn", StaticReview.exportCsv, "_maxn.csv"], ["exportGaBtn", StaticReview.globalArchiveCsv, "_globalarchive_maxn.csv"]])
+  $(b).addEventListener("click", (e) => { if (!state.run) return; e.preventDefault(); StaticReview.download(state.id + n, f(state.run)); });
