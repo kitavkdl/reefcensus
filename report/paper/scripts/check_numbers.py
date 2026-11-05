@@ -43,7 +43,7 @@ FACTS = [
     ("gapfind: time for 23 cards", r"in (\d+) min (\d+) s", ("9", "39")),
     ("gapfind: unboxed fish tracks / boxes added", r"(\d+) (?:tracks )?unboxed fish \((\d+) boxes", ("15", "145")),
     ("gapfind re-judged fish tracks", r"(\d+) of (\d+) earlier \"fish\"", ("11", "11")),
-    ("unit tests in tests/ (python3 -m unittest discover -s tests)", r"runs (\d+) tests", ("103",)),
+    ("unit tests in tests/ (python3 -m unittest discover -s tests)", r"runs (\d+) tests", ("104",)),
     ("queue review time (tracks of four clips, seconds)", r"(\d+) queued tracks of four clips[^.]*? (\d+) s\b", ("9", "121")),
 ]
 
