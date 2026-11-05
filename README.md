@@ -174,7 +174,7 @@ that the names Spark proposes are checked by people who know the fauna.
   stations, URLs and hashes in `report/paper/data/noaa_heldout/clips.json`); US government work, attribution as above
 
 ## Built during the hackathon
-Built during the Meta AI hackathon (Oct 26 to Nov 4, 2026). The first API experiments ran on Oct 31 in a scratch folder
+Built during the Meta AI hackathon (Oct 26 to Nov 4, 2026). The first API experiments ran on Nov 1 in a scratch folder
 (kept in `spikes/`; its folders A to G are the early look at what SAM can do on sound / the sun / sea ice / sonar / thermal
 video / AI-made video / a kitchen before the project settled on baited cameras). This repository starts on Nov 1
 (first commit `85b825d`) & all code here was written in those days (third-party footage and libraries are credited
