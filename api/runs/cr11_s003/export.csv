@@ -1,2 +1,2 @@
-label,origin,maxn,maxn_confirmed,maxn_time_s,maxn_frame,first_arrival_s,tracks,peak_frame_checked,evidence_frame,source,human_edits
-chambered nautilus,found,3,3,4.4,22,0.0,3,True,evidence_chambered_nautilus.jpg,nautilus_s003_0_12.mp4,0
+label,origin,maxn,maxn_confirmed,maxn_upper,maxn_time_s,maxn_frame,first_arrival_s,tracks,peak_frame_checked,evidence_frame,source,human_edits
+chambered nautilus,found,3,3,3,4.4,22,0.0,3,True,evidence_chambered_nautilus.jpg,nautilus_s003_0_12.mp4,0

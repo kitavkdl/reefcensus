@@ -199,10 +199,10 @@ function countRow(name, m, origin, extra = []) {
       el("span", {}, `first seen ${secs(m.first_time)}`),
       m.maxn_frame != null ? el("button", { class: "jump", onclick: () => seek(m.maxn_frame) }, `peak at ${secs(m.maxn_time)}`) : null,
       m.peak_checked ? el("span", { class: "checked" }, "Spark checked every box in the peak frame") : null),
-    // the server's lower end leaves out queued tracks nobody has reviewed; reviewing them closes the range
-    m.maxn_confirmed != null && m.maxn_confirmed < m.maxn
+    // the server's ends: queued tracks nobody has reviewed all left out / all accepted; reviewing them closes the range
+    m.maxn_confirmed != null && m.maxn_confirmed < (m.maxn_upper ?? m.maxn)
       ? el("div", { class: "range" }, "Until a person checks the queue: ",
-        el("span", { class: "num" }, `${m.maxn_confirmed}–${m.maxn}`),
+        el("span", { class: "num" }, `${m.maxn_confirmed}–${m.maxn_upper ?? m.maxn}`),
         ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
       : null,
     crowdNote(m),
@@ -369,7 +369,7 @@ function drawQueue() {
       const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); review(it.track, input.value); } },
         input, el("button", { class: "btn small" }, "Save name"));
       body.push(el("div", { class: "acts" },
-        el("button", { class: "btn small", onclick: () => review(it.track, it.yes_label || guess) }, `Yes, ${guess}`),
+        el("button", { class: "btn small", onclick: () => review(it.track, it.yes_label || guess) }, `Yes, ${it.yes_label || guess}`),
         el("button", { class: "btn ghost small", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); } }, "Rename"),
         el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")), form);
     }

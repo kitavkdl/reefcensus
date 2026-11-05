@@ -125,15 +125,17 @@
     const nRev = Object.keys(review).length;
     const m = nRev ? metrics(S, run.tracks, labels) : JSON.parse(JSON.stringify(S.base_metrics));
     const openQ = S.queued.filter((t) => !has(review, t));
-    let lo = {};
+    let lo = {}, hi = {};
     if (openQ.length) {
-      const l2 = { ...labels };
-      for (const t of openQ) l2[t] = null;
+      const l2 = { ...labels }, l3 = { ...labels };
+      for (const t of openQ) { l2[t] = null; l3[t] = S.accept[t]; }
       lo = metrics(S, run.tracks, l2);
+      hi = metrics(S, run.tracks, l3);
     }
     const checked = new Set((run.peak_checks || []).map((c) => `${c.label}\u0000${c.frame}`));
     for (const [name, mm] of Object.entries(m)) {
       mm.maxn_confirmed = openQ.length ? (has(lo, name) ? lo[name].maxn : 0) : mm.maxn;
+      mm.maxn_upper = openQ.length ? Math.max(mm.maxn, has(hi, name) ? hi[name].maxn : 0) : mm.maxn;
       if (openQ.length && JSON.stringify(has(lo, name) ? lo[name].curve : null) !== JSON.stringify(mm.curve))
         mm.curve_confirmed = has(lo, name) ? lo[name].curve : new Array(mm.curve.length).fill(0);
       mm.peak_checked = checked.has(`${name}\u0000${mm.maxn_frame}`);
@@ -185,15 +187,15 @@
   const byMaxn = (o) => Object.entries(o).sort(([, a], [, b]) => b.maxn - a.maxn);
 
   function exportCsv(e) {             // web/server.py export_csv
-    const S = e._static, rows = [["label", "origin", "maxn", "maxn_confirmed", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks",
+    const S = e._static, rows = [["label", "origin", "maxn", "maxn_confirmed", "maxn_upper", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks",
       "peak_frame_checked", "evidence_frame", "source", "human_edits"]];
     for (const [name, m] of byMaxn(e.metrics)) {
       if (m.maxn === 0 && name.endsWith(" (unidentified)")) continue;
-      rows.push([noFormula(name), e.origin[name] || "", m.maxn, m.maxn_confirmed, tstr(S, m.maxn_frame), m.maxn_frame,
+      rows.push([noFormula(name), e.origin[name] || "", m.maxn, m.maxn_confirmed, m.maxn_upper, tstr(S, m.maxn_frame), m.maxn_frame,
         tstr(S, m.first_frame), m.tracks, m.peak_checked, m.evidence || "", e.source, e.n_reviewed]);
     }
     for (const [g, m] of byMaxn(e.group_metrics || {}))
-      rows.push([noFormula(`all ${g}` + (g === "fish" ? "" : "s")), "group: " + m.labels.join(" + "), m.maxn, m.maxn_confirmed,
+      rows.push([noFormula(`all ${g}` + (g === "fish" ? "" : "s")), "group: " + m.labels.join(" + "), m.maxn, m.maxn_confirmed, "",
         tstr(S, m.maxn_frame), m.maxn_frame, tstr(S, m.first_frame), m.tracks, "", "", e.source, e.n_reviewed]);
     return csv(rows, "\r\n");
   }
