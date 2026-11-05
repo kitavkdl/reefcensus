@@ -99,6 +99,8 @@ flowchart LR
 Each step in detail (closer look / duplicate boxes / motion look thresholds / mask decoder), long videos, the review
 screen, the GlobalArchive export, `gapfind`, site memory and the full measured tables: [report/details.md](report/details.md).
 
+![The demo's review queue on clip s004. Before and after one click of "Not an animal" on track T22: caridean shrimp 14 → 13, the range until a person checks 12–14 → 12–13, tracks needing a person 9 of 33 → 8 of 33](report/figures/review_queue_demo.png)
+
 ## Try it
 
 **No key needed to look:** the [demo](https://kitavkdl.github.io/reefcensus/) is the same review screen with no install.
