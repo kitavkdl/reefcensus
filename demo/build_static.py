@@ -109,7 +109,7 @@ def hero(runs):
             f'never saw the project’s output (exact on 22 of 24); within one fish on all 24. Of 40 randomly drawn boxes the reference called false none was judged not a fish (29 fish, 2 part of a fish, 9 unsure). '
             f'Reviewing the pipeline’s extra tracks on a phone, one person added 145 missing fish boxes to the reference in 9 min 39 s.</p>'
             f'<p class="more">Every model answer is precomputed so there is nothing to install; answer the review queue right here. '
-            f'Run your own clips & read the paper: <a href="{REPO}">GitHub</a></p></section>{js}')
+            f'Run your own clips & read the paper: <a href="{REPO}">GitHub</a> · <a href="https://youtu.be/XjFA1MOeVdA">3-minute video</a></p></section>{js}')
 
 
 def static_data(rid, eff):

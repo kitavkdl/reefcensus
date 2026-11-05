@@ -7,7 +7,7 @@ short queue of uncertain tracks for a person to confirm.
 Built on Meta's SAM 3.1 and Muse Spark via the Meta Model API.
 
 **Demo with no key or install:** https://kitavkdl.github.io/reefcensus/ (4 finished runs with their evidence frames and
-count strip; answer the review queue in your browser).
+count strip; answer the review queue in your browser) · **3-minute video:** https://youtu.be/XjFA1MOeVdA
 
 ![Night behind a trap at frame 42 of 60 on the same brightened frames. Left: SAM with 17 fixed words boxes nothing in this frame (one nautilus as 'shell' in 9 of 60 frames). Right: Muse Spark points at what moved and SAM tracks each spot from a box with no word; four counted & a fainter fifth sent to a person](report/figures/split_s001_night_f42.jpg)
 
