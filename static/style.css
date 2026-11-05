@@ -150,7 +150,7 @@ dialog p { margin: var(--s2) 0; }
 .credits { padding: var(--s3) var(--s5) var(--s5); font-size: 12px; color: var(--ink-2); max-width: 1680px; margin: 0 auto; }
 
 @media (max-width: 1000px) {
-  .grid { grid-template-columns: 1fr; padding: var(--s4); }
+  .grid { grid-template-columns: minmax(0, 1fr); padding: var(--s4); }   /* 1fr won't shrink below its content: s002/s004 were 730/972px wide at 390 */
   .drawer form { grid-template-columns: 1fr; }
   .drop { grid-row: auto; }
   .lane, .strip .axis { grid-template-columns: 110px 1fr 44px; }
