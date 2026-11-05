@@ -56,7 +56,7 @@ survey whose videos S1 to S4 we used (Barord et al., *PLOS ONE* e100799). He wro
 >
 > Gregory J. Barord, Ph.D., email of Nov 2, 2026
 
-The two concerns he raised are what the tool is built around: low light (the night clip behind the trap above with
+The two concerns he raised later in the same email are what the tool is built around: low light (the night clip behind the trap above with
 four nautiluses counted & a fifth queued for a person) and spot checks (every number opens its evidence frame & doubtful
 tracks wait in a queue for a person). We are continuing after the hackathon with the guidance of the researchers we
 contacted (Barord & Stony Brook University's Institute for Ocean Conservation Science): [Feedback and next steps](#feedback-and-next-steps).
