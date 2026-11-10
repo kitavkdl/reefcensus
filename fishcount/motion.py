@@ -188,7 +188,13 @@ def whole_box(clip, t, box, W, H, n, cover=0.5, max_grow=2.5):
 
 
 def box_prompt(t, box, W, H):
+    # SAM takes pixel coordinates 0..W-1 / 0..H-1 and answers HTTP 400 "box ... lies outside the 1920x1080" for x2=W or
+    # y2=H (11/9 outside data: IMR HU6/BE10, Exeter G2 lost an edge animal each, HU6 a crab Spark called at 0.70).
+    # Clamped here so every caller (motion, miss, camo look) is covered; a box already inside keeps its exact text,
+    # which is the SAM cache key (none of the 528 cached box prompts touched an edge on 11/10).
     x0, y0, x1, y1 = box
+    x0, x1 = (min(max(v, 0), W - 1) for v in (x0, x1))
+    y0, y1 = (min(max(v, 0), H - 1) for v in (y0, y1))
     return f"<{t}f>1<|box;x1={x0};y1={y0};x2={x1};y2={y1};w={W};h={H}|>"
 
 
