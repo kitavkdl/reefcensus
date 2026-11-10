@@ -74,6 +74,15 @@ class NameGroup(unittest.TestCase):
         self.assertEqual(pipeline.name_group("crab, not a shrimp"), "crustacean")
         self.assertIsNone(pipeline.name_group("non-fish debris"))
         self.assertEqual(pipeline.name_group("noaa survey fish"), "fish")      # "no" only as a word
+        # 11/10 second review: the negation ends where the answer turns to what it is; "no-" in a hyphenated word
+        for n, g in (("not a cod but a haddock", "fish"), ("not a fish but a crab", "crustacean"),
+                     ("no-name fish", "fish"), ("not a shrimp, rather a crab", "crustacean"),
+                     ("no fish, only a crab", "crustacean"), ("not a fish; instead a squid", "cephalopod"),
+                     ("no animals except a crab", "crustacean")):
+            self.assertEqual(pipeline.name_group(n), g, n)
+        self.assertIsNone(pipeline.name_group("not a fish"))
+        self.assertTrue(pipeline.same_group_answer("not a cod but a haddock", "fish"))
+        self.assertFalse(pipeline.same_group_answer("not a fish but a crab", "fish"))
 
     def test_plant_and_remains_answers_leave_the_peak(self):
         for said, g in (("fish skeleton", "fish"), ("shrimp moult", "crustacean"), ("seaweed near fish", "fish"),
@@ -94,6 +103,14 @@ class NameGroup(unittest.TestCase):
         for said, g in (("seaweed next to fish", "fish"), ("kelp frond amongst fish", "fish"),
                         ("skeleton next to fish", "fish")):
             self.assertFalse(pipeline.same_group_answer(said, g), said)
+        # 11/10 second review: "with" / "past" put the animal in the box with the plant; remains head an "of"
+        for said, g in (("kelp with fish", "fish"), ("seagrass with a fish in it", "fish"),
+                        ("seaweed drifting past fish", "fish"), ("algae with a crab", "crustacean")):
+            self.assertTrue(pipeline.same_group_answer(said, g), said)
+        for said, g in (("skeleton of fish", "fish"), ("moult of a fish", "fish"), ("moult of a shrimp", "crustacean"),
+                        ("fish remains", "fish"), ("remains of a crab", "crustacean"), ("seaweed on fish", "fish")):
+            self.assertFalse(pipeline.same_group_answer(said, g), said)
+        self.assertTrue(pipeline.same_group_answer("school of fish", "fish"))
 
     def test_more_names(self):
         for n, g in (("nephrops", "crustacean"), ("norway lobster", "crustacean"), ("langoustine", "crustacean"),
@@ -126,7 +143,10 @@ NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", 
          "caridean shrimp", "crab on a starfish", "seaweed", "fish (unidentified)", "barracuda", "union jack",
          "sand lance", "", "sea star", "ocean sunfish", "crawfish", "nonfish debris", "non-fish debris",
          "blurry water no fish", "seagrass, no fish", "not a cod, other fish", "crab, not a shrimp", "octopuses",
-         "nephrops", "noaa survey fish", "Not a fish (kelp)", "elongate non-flatfish fish", "pipe not fish")
+         "nephrops", "noaa survey fish", "Not a fish (kelp)", "elongate non-flatfish fish", "pipe not fish",
+         "not a cod but a haddock", "not a fish but a crab", "no-name fish", "not a shrimp, rather a crab",
+         "no fish, only a crab", "not a fish; instead a squid", "no animals except a crab", "not only fish",
+         "no fish however a crab", "not crab though maybe shrimp", "no fish although a crab")
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")

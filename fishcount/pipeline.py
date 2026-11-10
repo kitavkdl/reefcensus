@@ -1036,9 +1036,12 @@ def short_name(name):
     return None
 
 
-# a negated phrase, up to the next comma or bracket: "blurry water no fish", "not a cod, other fish" -> "other fish";
-# "non" only its own word: "elongate non-flatfish fish" is a fish (outreach Exeter G1, a flatfish track's peak check)
-_NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not|no)\b[^,;.()/]*")
+# a negated phrase, up to the next comma or bracket or a word that turns to what it is: "blurry water no fish",
+# "not a cod, other fish" -> "other fish", "not a cod but a haddock" -> "but a haddock" (11/10 review: these were None);
+# "no-" in a hyphenated word is not a negation ("no-name fish"); "non" only its own word: "elongate non-flatfish fish"
+# is a fish (outreach Exeter G1, a flatfish track's peak check)
+_NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not|no)\b(?!-)"
+                      r"(?:(?!\b(?:but|only|rather|instead|however|though|although|except)\b)[^,;.()/])*")
 
 
 def name_group(name):
@@ -1064,9 +1067,13 @@ _NOT_ANOTHER = {"leg", "tail", "fin", "head", "claw", "antenna", "shell", "part"
 # when no animal is named with it ("seaweed near fish", "algae on crab"). "clear striped fish over seagrass"
 # (runs/eval_fish_20190618_9), "fish next to seagrass", "fish and seaweed", "kelp and small fish", "algae urchin" stay
 # (11/10 review: the plant rule fired on "fish next to seagrass" / "fish amongst kelp" / "fish and seaweed").
-# Not "egg" or "burrow": "crab with eggs", "crab in burrow" are the animal (11/10 develop review)
+# Not "egg" or "burrow": "crab with eggs", "crab in burrow" are the animal (11/10 develop review).
+# For the plant, "with" and "past" join instead of placing: "kelp with fish", "seagrass with a fish in it", "seaweed
+# drifting past fish" say the animal is in the box with the plant and stay; "seaweed near fish" / "on" / "next to" put
+# the animal beside the box and leave. Remains head an "of": "skeleton of fish", "moult of a fish", "fish remains" leave.
 _PLANT = {"kelp", "seagrass", "seaweed", "weed", "alga", "algae"}
-_REMAINS = {"moult", "molt", "skeleton"}
+_REMAINS = {"moult", "molt", "skeleton", "remain"}
+_JOIN = ("with", "past")
 _AROUND = _PLACE + ("above", "below", "beneath", "across", "through", "around", "against", "amid", "along",
                     "alongside", "past", "next", "to", "amongst", "amidst", "within", "atop", "underneath", "beyond",
                     "into", "onto", "upon", "toward", "towards")
@@ -1079,14 +1086,18 @@ def same_group_answer(said, group):
     raw = re.sub(r"[^a-z ]", " ", (said or "").lower()).split()
     if {norm_label(w) for w in raw} & _NOT_ANOTHER:
         return False
-    lead = []
-    for w in raw:
-        if w in _AROUND:
-            break
-        lead.append(norm_label(w))
-    if set(lead) & _PLANT and not any(_group_of_word(w) for w in lead):
+    def upto(stops):
+        out = []
+        for w in raw:
+            if w in stops:
+                break
+            out.append(norm_label(w))
+        return out
+    lead = upto(_AROUND)
+    joined = upto(set(_AROUND) - set(_JOIN))
+    if set(lead) & _PLANT and not any(_group_of_word(w) for w in joined):
         return False
-    for w in reversed(lead):
+    for w in reversed(lead[:lead.index("of")] if "of" in lead else lead):
         if w in _REMAINS:
             return False
         if _group_of_word(w):
