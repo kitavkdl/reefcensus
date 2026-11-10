@@ -37,6 +37,10 @@ class NameGroup(unittest.TestCase):
         self.assertEqual(pipeline.name_group("cuttlefish"), "cephalopod")
         self.assertEqual(pipeline.name_group("crayfish"), "crustacean")
         self.assertIsNone(pipeline.name_group("shellfish"))
+        # report/paper/data/sam_agent/s002.json: SAM's agent said "crawfish" (a crayfish, not a fish)
+        self.assertEqual(pipeline.name_group("crawfish"), "crustacean")
+        self.assertEqual(pipeline.name_group("inkfish"), "cephalopod")
+        self.assertIsNone(pipeline.name_group("nonfish debris"))
 
     def test_old_groups_unchanged(self):
         for n, g in (("caridean shrimp", "crustacean"), ("chambered nautilus", "cephalopod"), ("hagfish", "fish"),
@@ -60,7 +64,7 @@ class NameGroup(unittest.TestCase):
 NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", "whitetip reef shark", "catshark",
          "jellyfish", "box jellyfish", "starfish", "cuttlefish", "crayfish", "shellfish", "painted sweetlips",
          "caridean shrimp", "crab on a starfish", "seaweed", "fish (unidentified)", "barracuda", "union jack",
-         "sand lance", "", "sea star", "ocean sunfish")
+         "sand lance", "", "sea star", "ocean sunfish", "crawfish", "nonfish debris")
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")

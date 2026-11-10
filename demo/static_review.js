@@ -31,7 +31,7 @@
   function groupOfWord(w, groupOf) {   // pipeline._group_of_word: the table, else a longer "...fish"/"...shark" word
     if (!w) return null;
     if (has(groupOf, w)) return groupOf[w];
-    if (w.length > 5 && /(fish|shark)$/.test(w) && w !== "shellfish") return "fish";
+    if (w.length > 5 && /(fish|shark)$/.test(w) && w !== "shellfish" && !w.startsWith("non")) return "fish";
     return null;
   }
   function nameGroup(name, groupOf) {  // pipeline.name_group

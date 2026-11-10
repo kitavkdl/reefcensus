@@ -974,9 +974,9 @@ NAME_GROUPS = {
              "seabass", "sweetlip", "tang", "chromis", "puffer", "barracuda", "salmon", "trout",
              "dory", "moray", "conger", "stingray", "manta", "seahorse", "dragonet", "weever", "wobbegong", "mola",
              "flathead", "remora", "cobia", "sweeper", "morwong", "drummer", "leatherjacket", "eelpout"),
-    "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish",
+    "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish", "crawfish",
                    "caridean", "copepod", "barnacle", "squat"),
-    "cephalopod": ("nautilus", "octopus", "squid", "cuttlefish", "cephalopod"),
+    "cephalopod": ("nautilus", "octopus", "squid", "cuttlefish", "inkfish", "cephalopod"),
     "gastropod": ("snail", "whelk", "slug", "nudibranch", "gastropod", "limpet"),
     "echinoderm": ("starfish", "star", "urchin", "cucumber", "brittlestar", "echinoderm", "crinoid"),
     "worm": ("worm", "polychaete", "tubeworm", "annelid"),
@@ -987,13 +987,13 @@ _GROUP_OF = {w: g for g, ws in NAME_GROUPS.items() for w in ws}
 
 def _group_of_word(w):
     """The group of one normalised word: the lists above, else any longer "...fish" / "...shark" word is a fish
-    ("lionfish", "catshark"); "shellfish" is not one animal group. Jellyfish, starfish, cuttlefish and crayfish are
-    listed under their own groups, so they never reach the suffix rule."""
+    ("lionfish", "catshark"); "shellfish" is not one animal group and "nonfish" is not a fish. Jellyfish, starfish,
+    cuttlefish, inkfish, crayfish and crawfish are listed under their own groups, so they never reach the suffix rule."""
     if not w:
         return None
     if w in _GROUP_OF:
         return _GROUP_OF[w]
-    if len(w) > 5 and w.endswith(("fish", "shark")) and w != "shellfish":
+    if len(w) > 5 and w.endswith(("fish", "shark")) and w != "shellfish" and not w.startswith("non"):
         return "fish"
     return None
 
