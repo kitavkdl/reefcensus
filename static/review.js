@@ -18,6 +18,7 @@
     let w = ws[ws.length - 1];
     if (VAGUE.includes(w)) return null;
     if (w.length > 4 && w.endsWith("ies")) w = w.slice(0, -3) + "y";
+    else if (w.length > 5 && w.endsWith("uses") && !"aeiou".includes(w[w.length - 5])) w = w.slice(0, -2);
     else if (w.length > 4 && /(shes|ches|xes)$/.test(w)) w = w.slice(0, -2);
     else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
     return w;
@@ -28,12 +29,21 @@
     if (i >= 0) ws = ws.slice(0, i);
     return normLabel(ws.join(" "));
   }
-  function nameGroup(name, groupOf) {  // pipeline.name_group
-    const h = head(name);
-    if (h != null && has(groupOf, h)) return groupOf[h];
+  function groupOfWord(w, groupOf) {   // pipeline._group_of_word: the table, else a longer "...fish"/"...shark" word
+    if (!w) return null;
+    if (has(groupOf, w)) return groupOf[w];
+    if (w.length > 5 && /(fish|shark)$/.test(w) && w !== "shellfish" && !w.startsWith("non")) return "fish";
+    return null;
+  }
+  function nameGroup(name, groupOf) {  // pipeline.name_group (a negated phrase, pipeline._NEGATED, names no animal)
+    name = (name || "").toLowerCase().replace(/\bno-([a-z]+)/g,
+      (m, w) => (groupOfWord(normLabel(w), groupOf) ? "no " + w : m)).replace(
+      /\bnon-?[a-z]*|\b(?:not\b|no\b(?!-))(?:(?!\b(?:but|only|rather|instead|however|though|although|except|yet|just)\b)[^,;.()/])*/g, " ");
+    const g = groupOfWord(head(name), groupOf);
+    if (g) return g;
     for (const w of words(name)) {
-      const n = normLabel(w);
-      if (n != null && has(groupOf, n)) return groupOf[n];
+      const n = groupOfWord(normLabel(w), groupOf);
+      if (n) return n;
     }
     return null;
   }
@@ -231,7 +241,7 @@
   const api = {
     open: (run) => kept[run.id] || run,
     review: (run, track, label) => (kept[run.id] = review(run, track, label)),
-    effective, exportCsv, globalArchiveCsv, download,
+    effective, exportCsv, globalArchiveCsv, download, nameGroup,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.StaticReview = api;
