@@ -36,8 +36,9 @@
     return null;
   }
   function nameGroup(name, groupOf) {  // pipeline.name_group (a negated phrase, pipeline._NEGATED, names no animal)
-    name = (name || "").toLowerCase().replace(
-      /\bnon-?[a-z]*|\b(?:not\b|no\b(?!-))(?:(?!\b(?:but|only|rather|instead|however|though|although|except)\b)[^,;.()/])*/g, " ");
+    name = (name || "").toLowerCase().replace(/\bno-([a-z]+)/g,
+      (m, w) => (groupOfWord(normLabel(w), groupOf) ? "no " + w : m)).replace(
+      /\bnon-?[a-z]*|\b(?:not\b|no\b(?!-))(?:(?!\b(?:but|only|rather|instead|however|though|although|except|yet|just)\b)[^,;.()/])*/g, " ");
     const g = groupOfWord(head(name), groupOf);
     if (g) return g;
     for (const w of words(name)) {

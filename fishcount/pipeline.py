@@ -1038,17 +1038,20 @@ def short_name(name):
 
 # a negated phrase, up to the next comma or bracket or a word that turns to what it is: "blurry water no fish",
 # "not a cod, other fish" -> "other fish", "not a cod but a haddock" -> "but a haddock" (11/10 review: these were None);
-# "no-" in a hyphenated word is not a negation ("no-name fish"); "non" only its own word: "elongate non-flatfish fish"
-# is a fish (outreach Exeter G1, a flatfish track's peak check)
+# "no-" in a hyphenated word is not a negation ("no-name fish") unless an animal word follows ("no-fish zone", see
+# name_group); "non" only its own word: "elongate non-flatfish fish" is a fish (outreach Exeter G1, a flatfish track's
+# peak check)
 _NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not\b|no\b(?!-))"
-                      r"(?:(?!\b(?:but|only|rather|instead|however|though|although|except)\b)[^,;.()/])*")
+                      r"(?:(?!\b(?:but|only|rather|instead|however|though|although|except|yet|just)\b)[^,;.()/])*")
 
 
 def name_group(name):
     """The coarse group of a name, by its head noun and then any of its words ("caridean shrimp" -> crustacean);
     None when no word is known. A negated phrase names no animal: "blurry water no fish" is None, not fish
     (runs/demo_TF52d,g-j and cr_s004: such peak-check answers were queued as another animal of the group)."""
-    name = _NEGATED.sub(" ", (name or "").lower())
+    name = re.sub(r"\bno-([a-z]+)", lambda m: "no " + m[1] if _group_of_word(norm_label(m[1])) else m[0],
+                  (name or "").lower())
+    name = _NEGATED.sub(" ", name)
     g = _group_of_word(_head(name))
     if g:
         return g
@@ -1070,9 +1073,12 @@ _NOT_ANOTHER = {"leg", "tail", "fin", "head", "claw", "antenna", "shell", "part"
 # Not "egg" or "burrow": "crab with eggs", "crab in burrow" are the animal (11/10 develop review).
 # For the plant, "with" and "past" join instead of placing: "kelp with fish", "seagrass with a fish in it", "seaweed
 # drifting past fish" say the animal is in the box with the plant and stay; "seaweed near fish" / "on" / "next to" put
-# the animal beside the box and leave. Remains head an "of": "skeleton of fish", "moult of a fish", "fish remains" leave.
+# the animal beside the box and leave. Remains are the last noun of a phrase that "of" / "with" / "past" end: "skeleton
+# of fish", "moult of a fish", "pile of fish skeleton", "kelp with fish skeleton", "fish remains" leave; "school of
+# fish" stays. "remains" is the noun only at the end or before "of": "the fish remains still" / "fish remains in place"
+# are the verb and stay (as on 22ea128, which had no "remains" rule; 11/10 third review).
 _PLANT = {"kelp", "seagrass", "seaweed", "weed", "alga", "algae"}
-_REMAINS = {"moult", "molt", "skeleton", "remain"}
+_REMAINS = {"moult", "molt", "skeleton"}
 _JOIN = ("with", "past")
 _AROUND = _PLACE + ("above", "below", "beneath", "across", "through", "around", "against", "amid", "along",
                     "alongside", "past", "next", "to", "amongst", "amidst", "within", "atop", "underneath", "beyond",
@@ -1086,22 +1092,20 @@ def same_group_answer(said, group):
     raw = re.sub(r"[^a-z ]", " ", (said or "").lower()).split()
     if {norm_label(w) for w in raw} & _NOT_ANOTHER:
         return False
+    words = [norm_label(w) for w in raw]
     def upto(stops):
-        out = []
-        for w in raw:
-            if w in stops:
-                break
-            out.append(norm_label(w))
-        return out
-    lead = upto(_AROUND)
-    joined = upto(set(_AROUND) - set(_JOIN))
-    if set(lead) & _PLANT and not any(_group_of_word(w) for w in joined):
+        return next((i for i, w in enumerate(raw) if w in stops), len(raw))
+    lead, end = words[:upto(_AROUND)], upto(set(_AROUND) - set(_JOIN))
+    if set(lead) & _PLANT and not any(_group_of_word(w) for w in words[:end]):
         return False
-    for w in reversed(lead[:lead.index("of")] if "of" in lead else lead):
-        if w in _REMAINS:
-            return False
-        if _group_of_word(w):
-            break
+    animal = False          # each phrase from its last word back: remains before an animal word leave
+    for i in reversed(range(end)):
+        if raw[i] in ("of",) + _JOIN:
+            animal = False
+        elif not animal:
+            if words[i] in _REMAINS or (raw[i] == "remains" and (i + 1 == len(raw) or raw[i + 1] == "of")):
+                return False
+            animal = bool(_group_of_word(words[i]))
     return name_group(said) == group
 
 

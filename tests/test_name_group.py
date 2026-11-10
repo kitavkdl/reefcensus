@@ -84,6 +84,12 @@ class NameGroup(unittest.TestCase):
         self.assertIsNone(pipeline.name_group("not-a-fish"))     # only "no-" makes a compound, not "not-"
         self.assertTrue(pipeline.same_group_answer("not a cod but a haddock", "fish"))
         self.assertFalse(pipeline.same_group_answer("not a fish but a crab", "fish"))
+        # 11/10 third review: "no-" before an animal word is a negation ("no-fish zone"); "yet" / "just" turn too
+        for n, g in (("no-fish", None), ("no-fish zone", None), ("no-name fish", "fish"), ("not-a-fish", None),
+                     ("not a cod yet a haddock", "fish"), ("no fish just a crab", "crustacean"),
+                     ("not just a fish", "fish"), ("no fish", None), ("not a fish but a crab", "crustacean")):
+            self.assertEqual(pipeline.name_group(n), g, n)
+        self.assertFalse(pipeline.same_group_answer("no-fish", "fish"))
 
     def test_plant_and_remains_answers_leave_the_peak(self):
         for said, g in (("fish skeleton", "fish"), ("shrimp moult", "crustacean"), ("seaweed near fish", "fish"),
@@ -112,6 +118,17 @@ class NameGroup(unittest.TestCase):
                         ("fish remains", "fish"), ("remains of a crab", "crustacean"), ("seaweed on fish", "fish")):
             self.assertFalse(pipeline.same_group_answer(said, g), said)
         self.assertTrue(pipeline.same_group_answer("school of fish", "fish"))
+        # 11/10 third review: remains after an "of" or a "with" are still the last noun of their phrase; "remains"
+        # is the noun only at the end or before "of" ("the fish remains still" is the verb)
+        for said, g in (("pile of fish skeleton", "fish"), ("bit of fish skeleton", "fish"),
+                        ("school of fish skeleton", "fish"), ("kelp with fish skeleton", "fish"),
+                        ("pair of crab moult", "crustacean"), ("skeleton of fish", "fish"), ("moult of a fish", "fish"),
+                        ("skeleton next to fish", "fish"), ("fish skeleton", "fish"), ("fish remains", "fish"),
+                        ("remains of a crab", "crustacean")):
+            self.assertFalse(pipeline.same_group_answer(said, g), said)
+        for said, g in (("school of fish", "fish"), ("kelp with fish", "fish"), ("fish next to seagrass", "fish"),
+                        ("the fish remains still", "fish"), ("fish remains in place", "fish")):
+            self.assertTrue(pipeline.same_group_answer(said, g), said)
 
     def test_more_names(self):
         for n, g in (("nephrops", "crustacean"), ("norway lobster", "crustacean"), ("langoustine", "crustacean"),
@@ -147,7 +164,9 @@ NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", 
          "nephrops", "noaa survey fish", "Not a fish (kelp)", "elongate non-flatfish fish", "pipe not fish",
          "not a cod but a haddock", "not a fish but a crab", "no-name fish", "not a shrimp, rather a crab",
          "no fish, only a crab", "not a fish; instead a squid", "no animals except a crab", "not only fish",
-         "no fish however a crab", "not crab though maybe shrimp", "no fish although a crab", "not-a-fish")
+         "no fish however a crab", "not crab though maybe shrimp", "no fish although a crab", "not-a-fish",
+         "no-fish", "no-fish zone", "not a cod yet a haddock", "no fish just a crab", "not just a fish", "no fish",
+         "no-name fish zone", "no-crab")
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")
