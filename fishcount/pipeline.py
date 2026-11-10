@@ -1041,8 +1041,10 @@ def short_name(name):
 # "no-" in a hyphenated word is not a negation ("no-name fish") unless an animal word follows ("no-fish zone", see
 # name_group); "non" only its own word: "elongate non-flatfish fish" is a fish (outreach Exeter G1, a flatfish track's
 # peak check)
+# re.ASCII: \b as in JavaScript (demo/static_review.js), so a letter like "é" next to "no" splits them the same way
 _NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not\b|no\b(?!-))"
-                      r"(?:(?!\b(?:but|only|rather|instead|however|though|although|except|yet|just)\b)[^,;.()/])*")
+                      r"(?:(?!\b(?:but|only|rather|instead|however|though|although|except|yet|just)\b)[^,;.()/])*",
+                      re.ASCII)
 
 
 def name_group(name):
@@ -1050,7 +1052,7 @@ def name_group(name):
     None when no word is known. A negated phrase names no animal: "blurry water no fish" is None, not fish
     (runs/demo_TF52d,g-j and cr_s004: such peak-check answers were queued as another animal of the group)."""
     name = re.sub(r"\bno-([a-z]+)", lambda m: "no " + m[1] if _group_of_word(norm_label(m[1])) else m[0],
-                  (name or "").lower())
+                  (name or "").lower(), flags=re.ASCII)
     name = _NEGATED.sub(" ", name)
     g = _group_of_word(_head(name))
     if g:
@@ -1090,22 +1092,31 @@ def same_group_answer(said, group):
     a duplicate or a non-animal that merely mentions an animal word (11/2 pre-freeze review: "sediment between crab
     legs" was kept under "crab"; 11/10: "blurry water no fish" was kept under "fish", see name_group)."""
     raw = re.sub(r"[^a-z ]", " ", (said or "").lower()).split()
-    if {norm_label(w) for w in raw} & _NOT_ANOTHER:
-        return False
     words = [norm_label(w) for w in raw]
+    if set(words) & _NOT_ANOTHER:
+        return False
     def upto(stops):
         return next((i for i, w in enumerate(raw) if w in stops), len(raw))
     lead, end = words[:upto(_AROUND)], upto(set(_AROUND) - set(_JOIN))
     if set(lead) & _PLANT and not any(_group_of_word(w) for w in words[:end]):
         return False
-    animal = False          # each phrase from its last word back: remains before an animal word leave
-    for i in reversed(range(end)):
-        if raw[i] in ("of",) + _JOIN:
-            animal = False
-        elif not animal:
-            if words[i] in _REMAINS or (raw[i] == "remains" and (i + 1 == len(raw) or raw[i + 1] == "of")):
-                return False
-            animal = bool(_group_of_word(words[i]))
+    # Remains: each "with" / "past" phrase in turn, each "of" part read from its last word back; remains there that no
+    # animal word follows leave ("fish skeleton", "skeleton of fish"). The first phrase that names an animal is what
+    # the box is, so the phrases after it are only beside it: "fish with skeleton" stays, "kelp with fish skeleton" not.
+    start = 0
+    for stop in [i for i in range(end) if raw[i] in _JOIN] + [end]:
+        animal = named = False
+        for i in reversed(range(start, stop)):
+            if raw[i] == "of":
+                animal = False
+            elif not animal:
+                if words[i] in _REMAINS or (raw[i] == "remains" and (i + 1 == len(raw) or raw[i + 1] == "of")):
+                    return False
+                animal = bool(_group_of_word(words[i]))
+                named = named or animal
+        if named:
+            break
+        start = stop + 1
     return name_group(said) == group
 
 

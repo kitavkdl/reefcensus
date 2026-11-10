@@ -127,7 +127,11 @@ class NameGroup(unittest.TestCase):
                         ("remains of a crab", "crustacean")):
             self.assertFalse(pipeline.same_group_answer(said, g), said)
         for said, g in (("school of fish", "fish"), ("kelp with fish", "fish"), ("fish next to seagrass", "fish"),
-                        ("the fish remains still", "fish"), ("fish remains in place", "fish")):
+                        ("the fish remains still", "fish"), ("fish remains in place", "fish"),
+                        # an animal before "with" / "past" is what the box is; the remains after it are only beside it
+                        ("fish with skeleton", "fish"), ("fish with remains of food", "fish"),
+                        ("crab with a moult next to it", "crustacean"), ("school of fish with skeleton", "fish"),
+                        ("school of fish past skeleton", "fish")):
             self.assertTrue(pipeline.same_group_answer(said, g), said)
 
     def test_more_names(self):
@@ -166,7 +170,7 @@ NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", 
          "no fish, only a crab", "not a fish; instead a squid", "no animals except a crab", "not only fish",
          "no fish however a crab", "not crab though maybe shrimp", "no fish although a crab", "not-a-fish",
          "no-fish", "no-fish zone", "not a cod yet a haddock", "no fish just a crab", "not just a fish", "no fish",
-         "no-name fish zone", "no-crab")
+         "no-name fish zone", "no-crab", "éno fish", "ßnon-fish", "café no fish")
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")
