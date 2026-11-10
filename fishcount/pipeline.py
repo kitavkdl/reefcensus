@@ -1040,7 +1040,7 @@ def short_name(name):
 # "not a cod, other fish" -> "other fish", "not a cod but a haddock" -> "but a haddock" (11/10 review: these were None);
 # "no-" in a hyphenated word is not a negation ("no-name fish"); "non" only its own word: "elongate non-flatfish fish"
 # is a fish (outreach Exeter G1, a flatfish track's peak check)
-_NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not|no)\b(?!-)"
+_NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not\b|no\b(?!-))"
                       r"(?:(?!\b(?:but|only|rather|instead|however|though|although|except)\b)[^,;.()/])*")
 
 

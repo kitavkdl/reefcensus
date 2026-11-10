@@ -81,6 +81,7 @@ class NameGroup(unittest.TestCase):
                      ("no animals except a crab", "crustacean")):
             self.assertEqual(pipeline.name_group(n), g, n)
         self.assertIsNone(pipeline.name_group("not a fish"))
+        self.assertIsNone(pipeline.name_group("not-a-fish"))     # only "no-" makes a compound, not "not-"
         self.assertTrue(pipeline.same_group_answer("not a cod but a haddock", "fish"))
         self.assertFalse(pipeline.same_group_answer("not a fish but a crab", "fish"))
 
@@ -146,7 +147,7 @@ NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", 
          "nephrops", "noaa survey fish", "Not a fish (kelp)", "elongate non-flatfish fish", "pipe not fish",
          "not a cod but a haddock", "not a fish but a crab", "no-name fish", "not a shrimp, rather a crab",
          "no fish, only a crab", "not a fish; instead a squid", "no animals except a crab", "not only fish",
-         "no fish however a crab", "not crab though maybe shrimp", "no fish although a crab")
+         "no fish however a crab", "not crab though maybe shrimp", "no fish although a crab", "not-a-fish")
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")
