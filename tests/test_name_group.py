@@ -86,6 +86,14 @@ class NameGroup(unittest.TestCase):
                         ("crab with eggs", "crustacean"), ("box contains algae urchin above", "echinoderm"),
                         ("kelp and small fish", "fish")):
             self.assertTrue(pipeline.same_group_answer(said, g), said)
+        # 11/10 review: the plant rule fired with no place word or one outside the list; a plant named next to an
+        # animal is only where the animal is
+        for said, g in (("fish next to seagrass", "fish"), ("fish amongst kelp", "fish"), ("fish and seaweed", "fish"),
+                        ("small fish among algae", "fish"), ("crab amidst seaweed", "crustacean")):
+            self.assertTrue(pipeline.same_group_answer(said, g), said)
+        for said, g in (("seaweed next to fish", "fish"), ("kelp frond amongst fish", "fish"),
+                        ("skeleton next to fish", "fish")):
+            self.assertFalse(pipeline.same_group_answer(said, g), said)
 
     def test_more_names(self):
         for n, g in (("nephrops", "crustacean"), ("norway lobster", "crustacean"), ("langoustine", "crustacean"),
@@ -95,6 +103,12 @@ class NameGroup(unittest.TestCase):
             self.assertEqual(pipeline.name_group(n), g, n)
         self.assertEqual(pipeline.norm_label("octopuses"), "octopus")
         self.assertEqual(pipeline.norm_label("nautiluses"), "nautilus")
+        self.assertEqual(pipeline.norm_label("walruses"), "walrus")
+        for w, want in (("houses", "house"), ("causes", "cause"), ("blouses", "blouse")):   # 11/10 review: "hous"
+            self.assertEqual(pipeline.norm_label(w), want, w)
+        # 51c7363's new list words become SAM's word for a name that holds one (it was the last word): on purpose,
+        # short_name's rule is "known animal word first"; no saved discover name or site label changes (11/10)
+        self.assertEqual(pipeline.short_name("haddock shoal"), "haddock")
 
 
 class MissLabel(unittest.TestCase):

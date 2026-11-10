@@ -18,7 +18,7 @@
     let w = ws[ws.length - 1];
     if (VAGUE.includes(w)) return null;
     if (w.length > 4 && w.endsWith("ies")) w = w.slice(0, -3) + "y";
-    else if (w.length > 5 && w.endsWith("uses")) w = w.slice(0, -2);
+    else if (w.length > 5 && w.endsWith("uses") && !"aeiou".includes(w[w.length - 5])) w = w.slice(0, -2);
     else if (w.length > 4 && /(shes|ches|xes)$/.test(w)) w = w.slice(0, -2);
     else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
     return w;

@@ -1060,12 +1060,16 @@ def name_group(name):
 # ("sediment between crab legs", "tail of another fish", "second box on the same fish"): such a box leaves the peak
 _NOT_ANOTHER = {"leg", "tail", "fin", "head", "claw", "antenna", "shell", "part", "body", "same", "second", "sediment",
                 "sand", "rock", "bait", "shadow", "reflection", "mesh", "trap", "debris", "carcass", "between"}
-# plants and remains, when they are the last noun before a place word: "fish skeleton", "shrimp moult", "seaweed near
-# fish" leave the peak; "clear striped fish over seagrass" (runs/eval_fish_20190618_9) and "algae urchin" stay.
+# Before a place word: remains as the last noun leave the peak ("fish skeleton", "shrimp moult"); a plant leaves only
+# when no animal is named with it ("seaweed near fish", "algae on crab"). "clear striped fish over seagrass"
+# (runs/eval_fish_20190618_9), "fish next to seagrass", "fish and seaweed", "kelp and small fish", "algae urchin" stay
+# (11/10 review: the plant rule fired on "fish next to seagrass" / "fish amongst kelp" / "fish and seaweed").
 # Not "egg" or "burrow": "crab with eggs", "crab in burrow" are the animal (11/10 develop review)
-_NOT_ANOTHER_HEAD = {"kelp", "seagrass", "seaweed", "weed", "alga", "algae", "moult", "molt", "skeleton"}
+_PLANT = {"kelp", "seagrass", "seaweed", "weed", "alga", "algae"}
+_REMAINS = {"moult", "molt", "skeleton"}
 _AROUND = _PLACE + ("above", "below", "beneath", "across", "through", "around", "against", "amid", "along",
-                    "alongside", "past")
+                    "alongside", "past", "next", "to", "amongst", "amidst", "within", "atop", "underneath", "beyond",
+                    "into", "onto", "upon", "toward", "towards")
 
 
 def same_group_answer(said, group):
@@ -1080,8 +1084,10 @@ def same_group_answer(said, group):
         if w in _AROUND:
             break
         lead.append(norm_label(w))
+    if set(lead) & _PLANT and not any(_group_of_word(w) for w in lead):
+        return False
     for w in reversed(lead):
-        if w in _NOT_ANOTHER_HEAD:
+        if w in _REMAINS:
             return False
         if _group_of_word(w):
             break
@@ -1205,8 +1211,10 @@ def norm_label(name):
         return None
     if len(w) > 4 and w.endswith("ies"):
         w = w[:-3] + "y"                       # jellies -> jelly
-    elif len(w) > 5 and w.endswith("uses"):
-        w = w[:-2]                             # octopuses -> octopus, nautiluses -> nautilus
+    elif len(w) > 5 and w.endswith("uses") and w[-5] not in "aeiou":
+        # octopuses -> octopus, nautiluses -> nautilus, walruses -> walrus; houses, causes, blouses fall through to
+        # the plain rule (house). ponytail: "excuses"/"abuses" still lose the e (excus) - no animal name, no list
+        w = w[:-2]
     elif len(w) > 4 and w.endswith(("shes", "ches", "xes")):
         w = w[:-2]                             # fishes -> fish
     elif len(w) > 3 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
