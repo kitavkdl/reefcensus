@@ -29,6 +29,27 @@ class BoxPrompt(unittest.TestCase):
         x0, y0, x1, y1, W, H = coords(motion.box_prompt(0, [-5, -2, 2000, 1200], 1920, 1080))
         self.assertEqual((x0, y0, x1, y1), (0, 0, 1919, 1079))
 
+    def test_box_beyond_edge_keeps_a_width(self):
+        # a box wholly past the right edge clamped both x to 1919: a zero-width box (11/10 develop review)
+        x0, y0, x1, y1, W, H = coords(motion.box_prompt(0, [1920, 300, 1960, 380], 1920, 1080))
+        self.assertLess(x0, x1)
+        x0, y0, x1, y1, W, H = coords(motion.box_prompt(0, [-40, -30, -2, -1], 1920, 1080))
+        self.assertLess(x0, x1)
+        self.assertLess(y0, y1)
+        self.assertGreaterEqual(x0, 0)
+
+
+class MissBox(unittest.TestCase):
+    def test_size_checked_after_clamping(self):
+        from fishcount import pipeline
+        # Spark's missed-animal box, scale 1: 45 px wide but only 5 px of it inside a 1920-wide frame
+        self.assertIsNone(pipeline._miss_box({"box": [1915, 300, 1960, 380]}, 1, 1920, 1080))
+        self.assertIsNone(pipeline._miss_box({"box": [1930, 300, 1990, 380]}, 1, 1920, 1080))
+        self.assertEqual(pipeline._miss_box({"box": [1800, 300, 1960, 380]}, 1, 1920, 1080), [1800, 300, 1920, 380])
+        self.assertEqual(pipeline._miss_box({"box": [200, 100, 400, 300]}, 2, 1920, 1080), [100, 50, 200, 150])
+        self.assertIsNone(pipeline._miss_box({"box": [1, 2]}, 1, 1920, 1080))
+        self.assertIsNone(pipeline._miss_box({"what": "x"}, 1, 1920, 1080))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -973,12 +973,13 @@ NAME_GROUPS = {
              "anchovy", "tuna", "bonito", "jack", "trevally", "fusilier", "gurnard", "sculpin", "greenling", "bass",
              "seabass", "sweetlip", "tang", "chromis", "puffer", "barracuda", "salmon", "trout",
              "dory", "moray", "conger", "stingray", "manta", "seahorse", "dragonet", "weever", "wobbegong", "mola",
-             "flathead", "remora", "cobia", "sweeper", "morwong", "drummer", "leatherjacket", "eelpout"),
+             "flathead", "remora", "cobia", "sweeper", "morwong", "drummer", "leatherjacket", "eelpout",
+             "hammerhead", "sandeel", "megrim", "tarpon", "snook", "porgy"),
     "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish", "crawfish",
-                   "caridean", "copepod", "barnacle", "squat"),
-    "cephalopod": ("nautilus", "octopus", "squid", "cuttlefish", "inkfish", "cephalopod"),
+                   "caridean", "copepod", "barnacle", "squat", "nephrop", "langoustine"),   # norm_label: nephrops -> nephrop
+    "cephalopod": ("nautilus", "octopus", "octopi", "squid", "cuttlefish", "inkfish", "cephalopod"),
     "gastropod": ("snail", "whelk", "slug", "nudibranch", "gastropod", "limpet"),
-    "echinoderm": ("starfish", "star", "urchin", "cucumber", "brittlestar", "echinoderm", "crinoid"),
+    "echinoderm": ("starfish", "star", "seastar", "urchin", "cucumber", "brittlestar", "echinoderm", "crinoid"),
     "worm": ("worm", "polychaete", "tubeworm", "annelid"),
     "cnidarian": ("anemone", "jellyfish", "jelly", "coral", "hydroid", "cnidarian"),
 }
@@ -1035,9 +1036,16 @@ def short_name(name):
     return None
 
 
+# a negated phrase, up to the next comma or bracket: "blurry water no fish", "not a cod, other fish" -> "other fish";
+# "non" only its own word: "elongate non-flatfish fish" is a fish (outreach Exeter G1, a flatfish track's peak check)
+_NEGATED = re.compile(r"\bnon-?[a-z]*|\b(?:not|no)\b[^,;.()/]*")
+
+
 def name_group(name):
     """The coarse group of a name, by its head noun and then any of its words ("caridean shrimp" -> crustacean);
-    None when no word is known."""
+    None when no word is known. A negated phrase names no animal: "blurry water no fish" is None, not fish
+    (runs/demo_TF52d,g-j and cr_s004: such peak-check answers were queued as another animal of the group)."""
+    name = _NEGATED.sub(" ", (name or "").lower())
     g = _group_of_word(_head(name))
     if g:
         return g
@@ -1052,14 +1060,32 @@ def name_group(name):
 # ("sediment between crab legs", "tail of another fish", "second box on the same fish"): such a box leaves the peak
 _NOT_ANOTHER = {"leg", "tail", "fin", "head", "claw", "antenna", "shell", "part", "body", "same", "second", "sediment",
                 "sand", "rock", "bait", "shadow", "reflection", "mesh", "trap", "debris", "carcass", "between"}
+# plants and remains, when they are the last noun before a place word: "fish skeleton", "shrimp moult", "seaweed near
+# fish" leave the peak; "clear striped fish over seagrass" (runs/eval_fish_20190618_9) and "algae urchin" stay.
+# Not "egg" or "burrow": "crab with eggs", "crab in burrow" are the animal (11/10 develop review)
+_NOT_ANOTHER_HEAD = {"kelp", "seagrass", "seaweed", "weed", "alga", "algae", "moult", "molt", "skeleton"}
+_AROUND = _PLACE + ("above", "below", "beneath", "across", "through", "around", "against", "amid", "along",
+                    "alongside", "past")
 
 
 def same_group_answer(said, group):
     """True when a peak-check answer names another animal of `group` ("other fish" under a fish label), not a part,
     a duplicate or a non-animal that merely mentions an animal word (11/2 pre-freeze review: "sediment between crab
-    legs" was kept under "crab")."""
-    ws = {norm_label(w) for w in re.sub(r"[^a-z ]", " ", (said or "").lower()).split()}
-    return not (ws & _NOT_ANOTHER) and name_group(said) == group
+    legs" was kept under "crab"; 11/10: "blurry water no fish" was kept under "fish", see name_group)."""
+    raw = re.sub(r"[^a-z ]", " ", (said or "").lower()).split()
+    if {norm_label(w) for w in raw} & _NOT_ANOTHER:
+        return False
+    lead = []
+    for w in raw:
+        if w in _AROUND:
+            break
+        lead.append(norm_label(w))
+    for w in reversed(lead):
+        if w in _NOT_ANOTHER_HEAD:
+            return False
+        if _group_of_word(w):
+            break
+    return name_group(said) == group
 
 
 CROWD_WORDS = {"fish": "fish (any kind, including sharks and eels)", "crustacean": "crabs, shrimp or other crustaceans",
@@ -1179,6 +1205,8 @@ def norm_label(name):
         return None
     if len(w) > 4 and w.endswith("ies"):
         w = w[:-3] + "y"                       # jellies -> jelly
+    elif len(w) > 5 and w.endswith("uses"):
+        w = w[:-2]                             # octopuses -> octopus, nautiluses -> nautilus
     elif len(w) > 4 and w.endswith(("shes", "ches", "xes")):
         w = w[:-2]                             # fishes -> fish
     elif len(w) > 3 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
@@ -1217,6 +1245,32 @@ def _named(v, names):
         if lab and (lab in words or lab + "s" in words or lab + "es" in words):
             return lab
     return norm_label(v.get("name") if isinstance(v.get("name"), str) else "")
+
+
+def _miss_box(v, s, W, H, min_side=8):
+    """Spark's missed-animal box in frame pixels (its picture scaled by `s`), clamped to the frame; None when it is
+    malformed or less than `min_side` px wide or tall inside the frame. The size is checked after clamping: a 45 px box
+    with 5 px inside the frame used to pass and reach SAM as a sliver (11/10 develop review)."""
+    try:
+        b = [float(x) / s for x in v["box"]][:4]
+    except (KeyError, TypeError, ValueError):
+        return None
+    if len(b) < 4:
+        return None
+    b = [max(0, min(W, b[0])), max(0, min(H, b[1])), max(0, min(W, b[2])), max(0, min(H, b[3]))]
+    if b[2] - b[0] < min_side or b[3] - b[1] < min_side:
+        return None
+    return b
+
+
+def _miss_label(lab, labels):
+    """A missed animal's label: in a one-label request, a name of the same known group takes the request's label
+    ("luderick" or "bream" in a fish request is a fish). Two names outside every group are not the same group."""
+    if len(labels) == 1 and lab not in [norm_label(l) for l in labels]:
+        g = name_group(lab)
+        if g and g == name_group(labels[0]):
+            return norm_label(labels[0])
+    return lab
 
 
 def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=(), rnd=1):
@@ -1424,20 +1478,15 @@ def miss_look(run, clip, inf, results, max_usd, offline, labels=(), names=(), k=
             run.stage("miss", f"frame {f}: missed-animal look failed ({type(e).__name__})")
             continue
         for v in api.parse_json_list(reply):
-            try:
-                b = [float(x) / s for x in v["box"]][:4]
-            except (KeyError, TypeError, ValueError):
+            b = _miss_box(v, s, W, H)
+            if b is None:
                 continue
-            if len(b) < 4 or b[2] - b[0] < 8 or b[3] - b[1] < 8:
-                continue
-            b = [max(0, min(W, b[0])), max(0, min(H, b[1])), max(0, min(W, b[2])), max(0, min(H, b[3]))]
             if any(tracks.overlap(b, kb) >= 0.3 for kb in known.get(f, [])):
                 continue        # Spark pointed at an animal that has a box after all
             lab = _named(v, list(labels) + list(names))
             if not lab:
                 continue
-            if lab not in [norm_label(l) for l in labels] and len(labels) == 1 and name_group(lab) == name_group(labels[0]):
-                lab = norm_label(labels[0])     # "luderick" or "bream" in a fish request is a fish
+            lab = _miss_label(lab, labels)
             props.append(dict(frame=f, box=[int(round(x)) for x in b], label=lab, what=v.get("what"), confidence=_conf(v)))
     del imgs
     log = [dict(kind="miss-scan", what="Animals without a box", tried=[], word=None, frames=show, proposed=len(props),

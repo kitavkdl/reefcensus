@@ -195,6 +195,11 @@ def box_prompt(t, box, W, H):
     x0, y0, x1, y1 = box
     x0, x1 = (min(max(v, 0), W - 1) for v in (x0, x1))
     y0, y1 = (min(max(v, 0), H - 1) for v in (y0, y1))
+    # a box wholly past an edge would collapse to zero width or height: keep one pixel (11/10 develop review)
+    if x1 <= x0:
+        x0, x1 = (x1 - 1, x1) if x1 > 0 else (0, 1)
+    if y1 <= y0:
+        y0, y1 = (y1 - 1, y1) if y1 > 0 else (0, 1)
     return f"<{t}f>1<|box;x1={x0};y1={y0};x2={x1};y2={y1};w={W};h={H}|>"
 
 

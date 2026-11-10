@@ -18,6 +18,7 @@
     let w = ws[ws.length - 1];
     if (VAGUE.includes(w)) return null;
     if (w.length > 4 && w.endsWith("ies")) w = w.slice(0, -3) + "y";
+    else if (w.length > 5 && w.endsWith("uses")) w = w.slice(0, -2);
     else if (w.length > 4 && /(shes|ches|xes)$/.test(w)) w = w.slice(0, -2);
     else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
     return w;
@@ -34,7 +35,8 @@
     if (w.length > 5 && /(fish|shark)$/.test(w) && w !== "shellfish" && !w.startsWith("non")) return "fish";
     return null;
   }
-  function nameGroup(name, groupOf) {  // pipeline.name_group
+  function nameGroup(name, groupOf) {  // pipeline.name_group (a negated phrase, pipeline._NEGATED, names no animal)
+    name = (name || "").toLowerCase().replace(/\bnon-?[a-z]*|\b(?:not|no)\b[^,;.()/]*/g, " ");
     const g = groupOfWord(head(name), groupOf);
     if (g) return g;
     for (const w of words(name)) {

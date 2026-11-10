@@ -60,11 +60,59 @@ class NameGroup(unittest.TestCase):
         self.assertTrue(pipeline.same_group_answer("young haddock", "fish"))
         self.assertFalse(pipeline.same_group_answer("tail of a haddock", "fish"))
 
+    def test_negated_answer_is_not_another_animal(self):
+        # runs/demo_TF52d,g,h,i,j and cr_s004: these peak-check answers were kept as "another animal of the group" and
+        # queued, because the head noun is the negated word ("... no fish")
+        for said, g in (("blurry water no fish", "fish"), ("pipe structure no fish", "fish"),
+                        ("blue pipe no shrimp", "crustacean"), ("seagrass, no fish", "fish"),
+                        ("not a fish, kelp", "fish"), ("non-fish debris", "fish")):
+            self.assertFalse(pipeline.same_group_answer(said, g), said)
+        self.assertTrue(pipeline.same_group_answer("not a cod, other fish", "fish"))
+        # outreach Exeter G1, peak check of a flatfish track: another fish, it stays and is queued
+        self.assertTrue(pipeline.same_group_answer("elongate non-flatfish fish", "fish"))
+        self.assertTrue(pipeline.same_group_answer("other fish", "fish"))
+        self.assertEqual(pipeline.name_group("crab, not a shrimp"), "crustacean")
+        self.assertIsNone(pipeline.name_group("non-fish debris"))
+        self.assertEqual(pipeline.name_group("noaa survey fish"), "fish")      # "no" only as a word
+
+    def test_plant_and_remains_answers_leave_the_peak(self):
+        for said, g in (("fish skeleton", "fish"), ("shrimp moult", "crustacean"), ("seaweed near fish", "fish"),
+                        ("algae on crab", "crustacean"), ("crab moults", "crustacean")):
+            self.assertFalse(pipeline.same_group_answer(said, g), said)
+        # the plant or the pipe is only where the animal is (runs/eval_fish_20190618_9, fx0_s004, cr10_s004,
+        # imr_BE10_RA4_L5_ml)
+        for said, g in (("Clear striped fish over seagrass", "fish"), ("Dark striped fish in seagrass", "fish"),
+                        ("red crab by blue pipe", "crustacean"), ("shrimp alongside blue pipe structure", "crustacean"),
+                        ("crab with eggs", "crustacean"), ("box contains algae urchin above", "echinoderm"),
+                        ("kelp and small fish", "fish")):
+            self.assertTrue(pipeline.same_group_answer(said, g), said)
+
+    def test_more_names(self):
+        for n, g in (("nephrops", "crustacean"), ("norway lobster", "crustacean"), ("langoustine", "crustacean"),
+                     ("hammerhead", "fish"), ("seastar", "echinoderm"), ("sandeel", "fish"), ("megrim", "fish"),
+                     ("tarpon", "fish"), ("snook", "fish"), ("porgy", "fish"), ("octopuses", "cephalopod"),
+                     ("octopi", "cephalopod"), ("nautiluses", "cephalopod")):
+            self.assertEqual(pipeline.name_group(n), g, n)
+        self.assertEqual(pipeline.norm_label("octopuses"), "octopus")
+        self.assertEqual(pipeline.norm_label("nautiluses"), "nautilus")
+
+
+class MissLabel(unittest.TestCase):
+    def test_one_label_request(self):
+        self.assertEqual(pipeline._miss_label("luderick", ["fish"]), "fish")
+        self.assertEqual(pipeline._miss_label("crab", ["fish"]), "crab")
+        # neither name in a group: they are not "the same group" (None == None relabelled anything)
+        self.assertEqual(pipeline._miss_label("kelp", ["sole"]), "kelp")
+        self.assertEqual(pipeline._miss_label("fish", ["fish", "crab"]), "fish")
+        self.assertEqual(pipeline._miss_label("bream", ["fish", "crab"]), "bream")
+
 
 NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", "whitetip reef shark", "catshark",
          "jellyfish", "box jellyfish", "starfish", "cuttlefish", "crayfish", "shellfish", "painted sweetlips",
          "caridean shrimp", "crab on a starfish", "seaweed", "fish (unidentified)", "barracuda", "union jack",
-         "sand lance", "", "sea star", "ocean sunfish", "crawfish", "nonfish debris")
+         "sand lance", "", "sea star", "ocean sunfish", "crawfish", "nonfish debris", "non-fish debris",
+         "blurry water no fish", "seagrass, no fish", "not a cod, other fish", "crab, not a shrimp", "octopuses",
+         "nephrops", "noaa survey fish", "Not a fish (kelp)", "elongate non-flatfish fish", "pipe not fish")
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")
