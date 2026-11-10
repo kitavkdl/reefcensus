@@ -971,7 +971,7 @@ NAME_GROUPS = {
              "haddock", "pollack", "pollock", "saithe", "whiting", "hake", "lingcod", "rockling",
              "plaice", "halibut", "turbot", "brill", "mackerel", "herring", "sprat", "sardine",
              "anchovy", "tuna", "bonito", "jack", "trevally", "fusilier", "gurnard", "sculpin", "greenling", "bass",
-             "seabass", "sweetlips", "tang", "chromis", "puffer", "barracuda", "salmon", "trout",
+             "seabass", "sweetlip", "tang", "chromis", "puffer", "barracuda", "salmon", "trout",
              "dory", "moray", "conger", "stingray", "manta", "seahorse", "dragonet", "weever", "wobbegong", "mola",
              "flathead", "remora", "cobia", "sweeper", "morwong", "drummer", "leatherjacket", "eelpout"),
     "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish",

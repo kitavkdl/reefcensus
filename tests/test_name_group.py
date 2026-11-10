@@ -2,7 +2,7 @@
 did not have, so they fell out of the "fish" total and out of the peak check's same-group rule:
 Exeter G2 haddock 2 (group fish 6 without it), IMR BE10 "pollack / saithe" 5 (no fish row at all), FinPrint
 "trevally jack" / "fusilier" / "jack" (no fish row in three of five clips)."""
-import os, sys, unittest
+import json, os, shutil, subprocess, sys, unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import pipeline
 
@@ -22,6 +22,14 @@ class NameGroup(unittest.TestCase):
                   "cod-like roundfish", "lionfish", "small demersal reef fish", "whitetip reef shark", "catshark",
                   "plaice", "mackerel", "wobbegong", "stingray"):
             self.assertEqual(pipeline.name_group(n), "fish", n)
+
+    def test_list_words_survive_norm_label(self):
+        # name_group compares norm_label(word) with the list, so a list word that norm_label changes never matches
+        # ("sweetlips" -> "sweetlip" was listed as "sweetlips" and painted sweetlips stayed outside the fish total)
+        for g, ws in pipeline.NAME_GROUPS.items():
+            for w in ws:
+                self.assertEqual(pipeline.norm_label(w), w, w)
+        self.assertEqual(pipeline.name_group("painted sweetlips"), "fish")
 
     def test_fish_suffix_does_not_take_other_groups(self):
         self.assertEqual(pipeline.name_group("jellyfish"), "cnidarian")
@@ -47,6 +55,25 @@ class NameGroup(unittest.TestCase):
         # a "cod" box that the peak check calls a haddock is still a fish: it stays and goes to the queue
         self.assertTrue(pipeline.same_group_answer("young haddock", "fish"))
         self.assertFalse(pipeline.same_group_answer("tail of a haddock", "fish"))
+
+
+NAMES = ("haddock", "pollack / saithe", "lionfish", "needlefish", "damselfish", "whitetip reef shark", "catshark",
+         "jellyfish", "box jellyfish", "starfish", "cuttlefish", "crayfish", "shellfish", "painted sweetlips",
+         "caridean shrimp", "crab on a starfish", "seaweed", "fish (unidentified)", "barracuda", "union jack",
+         "sand lance", "", "sea star", "ocean sunfish")
+
+
+@unittest.skipUnless(shutil.which("node"), "node missing")
+class StaticDemoNameGroup(unittest.TestCase):
+    def test_js_matches_python(self):
+        # demo/static_review.js recomputes group totals in the browser from pipeline._GROUP_OF; the "...fish" /
+        # "...shark" rule lives in code, not in that table, so the JS has to carry it too
+        js = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "demo", "static_review.js")
+        prog = ("const R = require(process.argv[1]); const inp = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+                "console.log(JSON.stringify(inp.names.map((n) => R.nameGroup(n, inp.group_of))));")
+        out = subprocess.run(["node", "-e", prog, js], input=json.dumps(dict(names=NAMES, group_of=pipeline._GROUP_OF)),
+                             capture_output=True, text=True, check=True).stdout
+        self.assertEqual(dict(zip(NAMES, json.loads(out))), {n: pipeline.name_group(n) for n in NAMES})
 
 
 if __name__ == "__main__":

@@ -28,12 +28,18 @@
     if (i >= 0) ws = ws.slice(0, i);
     return normLabel(ws.join(" "));
   }
+  function groupOfWord(w, groupOf) {   // pipeline._group_of_word: the table, else a longer "...fish"/"...shark" word
+    if (!w) return null;
+    if (has(groupOf, w)) return groupOf[w];
+    if (w.length > 5 && /(fish|shark)$/.test(w) && w !== "shellfish") return "fish";
+    return null;
+  }
   function nameGroup(name, groupOf) {  // pipeline.name_group
-    const h = head(name);
-    if (h != null && has(groupOf, h)) return groupOf[h];
+    const g = groupOfWord(head(name), groupOf);
+    if (g) return g;
     for (const w of words(name)) {
-      const n = normLabel(w);
-      if (n != null && has(groupOf, n)) return groupOf[n];
+      const n = groupOfWord(normLabel(w), groupOf);
+      if (n) return n;
     }
     return null;
   }
@@ -231,7 +237,7 @@
   const api = {
     open: (run) => kept[run.id] || run,
     review: (run, track, label) => (kept[run.id] = review(run, track, label)),
-    effective, exportCsv, globalArchiveCsv, download,
+    effective, exportCsv, globalArchiveCsv, download, nameGroup,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.StaticReview = api;
