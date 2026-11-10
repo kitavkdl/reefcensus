@@ -964,7 +964,16 @@ def _head(name):
 # (a "fish" against a "shrimp"); a name outside this list never does.
 NAME_GROUPS = {
     "fish": ("fish", "eel", "hagfish", "shark", "ray", "seabream", "bream", "luderick", "grouper", "snapper", "wrasse",
-             "goby", "blenny", "cod", "rockfish", "flatfish", "flounder", "skate", "lamprey", "perch", "mullet"),
+             "goby", "blenny", "cod", "rockfish", "flatfish", "flounder", "skate", "lamprey", "perch", "mullet",
+             # 11/9 outside data (IMR, Exeter, FinPrint): Spark named these and they fell out of the fish total and the
+             # peak check's same-group rule (G2 haddock 2, BE10 "pollack / saithe" 5, FinPrint jack/trevally/fusilier).
+             # Any other "...fish" or "...shark" word is a fish too (_group_of_word), unless listed under another group.
+             "haddock", "pollack", "pollock", "saithe", "whiting", "hake", "lingcod", "rockling",
+             "plaice", "halibut", "turbot", "brill", "mackerel", "herring", "sprat", "sardine",
+             "anchovy", "tuna", "bonito", "jack", "trevally", "fusilier", "gurnard", "sculpin", "greenling", "bass",
+             "seabass", "sweetlips", "tang", "chromis", "puffer", "barracuda", "salmon", "trout",
+             "dory", "moray", "conger", "stingray", "manta", "seahorse", "dragonet", "weever", "wobbegong", "mola",
+             "flathead", "remora", "cobia", "sweeper", "morwong", "drummer", "leatherjacket", "eelpout"),
     "crustacean": ("shrimp", "prawn", "crab", "lobster", "krill", "amphipod", "isopod", "crustacean", "crayfish",
                    "caridean", "copepod", "barnacle", "squat"),
     "cephalopod": ("nautilus", "octopus", "squid", "cuttlefish", "cephalopod"),
@@ -974,6 +983,19 @@ NAME_GROUPS = {
     "cnidarian": ("anemone", "jellyfish", "jelly", "coral", "hydroid", "cnidarian"),
 }
 _GROUP_OF = {w: g for g, ws in NAME_GROUPS.items() for w in ws}
+
+
+def _group_of_word(w):
+    """The group of one normalised word: the lists above, else any longer "...fish" / "...shark" word is a fish
+    ("lionfish", "catshark"); "shellfish" is not one animal group. Jellyfish, starfish, cuttlefish and crayfish are
+    listed under their own groups, so they never reach the suffix rule."""
+    if not w:
+        return None
+    if w in _GROUP_OF:
+        return _GROUP_OF[w]
+    if len(w) > 5 and w.endswith(("fish", "shark")) and w != "shellfish":
+        return "fish"
+    return None
 
 
 _PLACE = ("on", "at", "in", "near", "by", "under", "over", "with", "from", "behind", "inside", "beside", "among")
@@ -1016,13 +1038,13 @@ def short_name(name):
 def name_group(name):
     """The coarse group of a name, by its head noun and then any of its words ("caridean shrimp" -> crustacean);
     None when no word is known."""
-    head = _head(name)
-    if head in _GROUP_OF:
-        return _GROUP_OF[head]
+    g = _group_of_word(_head(name))
+    if g:
+        return g
     for w in re.sub(r"[^a-z ]", " ", (name or "").lower()).split():
-        w = norm_label(w)
-        if w in _GROUP_OF:
-            return _GROUP_OF[w]
+        g = _group_of_word(norm_label(w))
+        if g:
+            return g
     return None
 
 
