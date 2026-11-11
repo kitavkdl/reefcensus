@@ -41,6 +41,23 @@ segment start plus the time inside it, and no frame is counted twice. A name is 
 both segments; names sharing a head noun are listed for the reviewer to rename (`fishcount/longvideo.py`,
 measurements in `report/long_video.md`).
 
+`--skip-empty` (opt-in, added after the evaluation, no paper number uses it): every 5 fps frame is read at 480x270
+($0) and compared with the last frame the models saw, after matching brightness; a blob of 12 px or more that stands
+out from the rest of the frame is a change, and so is a quarter of the frame differing (camera knocked, an animal
+filling the view; murk spreading over the whole frame is sent too, which costs money, not a miss). The quarter rule is
+there because when the whole frame changes no cell stands out from the rest, so the blob rule alone would never move
+the reference on: on a 53-minute NOAA SEFSC GoPro drop (Gulf of Mexico station T60233160_A, its three files joined
+at 5 fps) the camera is still sinking for the first ~160 s; with the rule 38% of the frames are sent, without it the
+reference stays a sinking-camera frame, every sea-bed frame differs from it everywhere, and only the head (1.9%) is
+sent. Stretches with no change are not sent and get the last analysed frame's boxes (marked carried, listed in
+`result["skipped"]`). A sent stretch starts 10 s before a change and ends after 10 s without one; close stretches
+join, each lasts at least 60 s, the first 60 s always go. A 10 s probe goes every 10 minutes of skipped footage, and if its counted boxes do not pair
+with the carried ones the stretch before it is sent once, up to the probe, whose own run is kept. Each run gets what
+is left of the whole-video cap (`--max-usd-video`, default $4 an hour; the per-segment `--max-usd` is not used); at
+the first run a cap or `FISH_BUDGET` stops, nothing from there to the end is analysed or carried (animals there count
+0) and that span is `result["unsent"]`. Stages a run skipped at the cap are listed in `result["capped"]`, by any run
+with or without `--skip-empty` (`fishcount/screen.py`, `fishcount/longvideo.py`).
+
 ## The review screen
 
 The review screen plays the annotated clip (blue = asked for, orange = found without being asked) over a per-species

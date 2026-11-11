@@ -1,6 +1,6 @@
 """Long videos: segment plan and the merge of segment runs (no network, no spend).
 Run: python3 -m unittest discover -s tests -v"""
-import glob, json, os, sys, tempfile, unittest
+import glob, json, os, subprocess, sys, tempfile, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -143,3 +143,250 @@ class CrowdAndEmptyTracks(unittest.TestCase):
         self.assertEqual(R["metrics"]["fish"]["tracks"], 13)      # the two emptied tracks are not counted
         self.assertEqual([(c["frame"], c["maxn"], c["lower_bound"]) for c in R["crowd_checks"]], [(0, 9, False), (2, 9, False)])
         self.assertIsNone(R["tracks"]["S1:gone"]["first"])
+
+
+def _fake_seg(d, n, last_boxes=(), capped=None, label="fish"):
+    """A segment run: track t<i> on frame 0 and on frame n-1 for each box in last_boxes."""
+    trk = {f"t{i}": dict(label=label, source="p0", first=0, last=n - 1, n=2) for i in range(len(last_boxes))}
+    fr = {"0": [dict(track=f"t{i}", box=list(b)) for i, b in enumerate(last_boxes)]}
+    fr[str(n - 1)] = [dict(track=f"t{i}", box=list(b)) for i, b in enumerate(last_boxes)]
+    res = dict(source="v.mp4", video=dict(n_frames=n, fps=5, width=100, height=100), tracks=trk,
+               metrics={label: dict(maxn=len(last_boxes))} if last_boxes else {}, auto_labels={}, frames=fr)
+    if capped:
+        res["capped"] = capped
+    os.makedirs(d, exist_ok=True)
+    json.dump(res, open(os.path.join(d, "result.json"), "w"))
+
+
+class SkipEmptyMerge(unittest.TestCase):
+    def test_a_skipped_stretch_carries_the_last_analysed_frame(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a, b = os.path.join(tmp, "a"), os.path.join(tmp, "b")
+            _fake_seg(a, 10, [(10, 10, 30, 30)])
+            _fake_seg(b, 10, [])
+            R = longvideo.merge("t", "v.mp4", [(a, 0, 10), (b, 20, 10)], 5, out_dir=os.path.join(tmp, "o"),
+                                n_total=40, carry=[(10, 20), (30, 40)])
+        self.assertEqual(R["video"]["n_frames"], 40)
+        self.assertEqual(len(R["metrics"]["fish"]["curve"]), 40)
+        for f in range(10, 20):
+            self.assertEqual(R["frames"][str(f)], [dict(track="S1:t0", box=[10, 10, 30, 30], carried=True)])
+        self.assertNotIn("35", R["frames"])                   # segment 2 ended on empty water: nothing to carry
+        self.assertEqual(R["metrics"]["fish"]["curve"][15], 1)
+        self.assertEqual(R["tracks"]["S1:t0"]["last"], 19)
+        self.assertEqual([(s["start_frame"], s["end_frame"], s["carried"]) for s in R["skipped"]], [(10, 20, 1), (30, 40, 0)])
+        # the link across the skipped stretch compares the last carried frame with segment 2's first
+        self.assertEqual(R["boundary_links"], [])
+
+    def test_without_skip_empty_the_merge_adds_no_keys(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a = os.path.join(tmp, "a")
+            _fake_seg(a, 10, [(10, 10, 30, 30)])
+            R = longvideo.merge("t", "v.mp4", [(a, 0, 10)], 5, out_dir=os.path.join(tmp, "o"))
+        for k in ("skipped", "unsent", "capped", "probes"):
+            self.assertNotIn(k, R)
+
+    def test_capped_stages_are_collected_with_their_segment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a, b = os.path.join(tmp, "a"), os.path.join(tmp, "b")
+            _fake_seg(a, 10, [], capped=[dict(stage="miss", msg="skipped the missed-animal look")])
+            _fake_seg(b, 10, [])
+            R = longvideo.merge("t", "v.mp4", [(a, 0, 10), (b, 10, 10)], 5, out_dir=os.path.join(tmp, "o"))
+        self.assertEqual(R["capped"], [dict(stage="miss", msg="skipped the missed-animal look", segment="S1")])
+
+
+class SkipEmptyRun(unittest.TestCase):
+    """run_long(skip_empty=True) with the video tools and run_pipeline replaced by fakes: which frames go to the
+    models, the remaining video cap each run gets, and what happens when the cap or FISH_BUDGET stops a run."""
+    N = 1000
+
+    def setUp(self):
+        from unittest import mock
+        from fishcount import api, pipeline, screen, video
+        self.tmp = tempfile.mkdtemp()
+        self.cuts, self.calls, self.results = {}, [], {}
+        self.bill, self.cap_need = 0.5, 0.5
+
+        def ingest(src, dst, **k):
+            open(dst, "w").close()
+
+        def cut(clip, dst, start, n):
+            self.cuts[dst] = (start, n)
+            open(dst, "w").close()
+
+        def run_pipeline(sp, srid, **kw):
+            start, n = self.cuts[sp]
+            self.calls.append((start, n, round(kw["max_usd"], 3)))
+            d = os.path.join(self.tmp, srid)
+            os.makedirs(d, exist_ok=True)
+            if kw["max_usd"] < self.cap_need:
+                raise api.BudgetExceeded("estimate > per-video cap")
+            _fake_seg(d, n, self.results.get(start, []))
+            json.dump(dict(live_calls=1, cached_calls=0, billed_usd=self.bill), open(os.path.join(d, "status.json"), "w"))
+
+        self.patches = [mock.patch.object(pipeline, "RUNS", self.tmp), mock.patch.object(video, "ingest", ingest),
+                        mock.patch.object(video, "info", lambda p: dict(n_frames=self.N, fps=5.0, width=100, height=100)),
+                        mock.patch.object(video, "light_stats", lambda p: dict(median_l=100, mean_l=100)),
+                        mock.patch.object(longvideo, "cut", cut), mock.patch.object(longvideo, "_filler", lambda full, d, a, *k: os.path.join(d, f"skip{a}")),
+                        mock.patch.object(pipeline, "run_pipeline", run_pipeline),
+                        mock.patch.object(screen, "scan", lambda clip, fps, **k: self.wins)]
+        for p in self.patches:
+            p.start()
+
+    def tearDown(self):
+        import shutil
+        for p in self.patches:
+            p.stop()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def sent_frames(self):
+        return {f for s, n, _ in self.calls for f in range(s, s + n)}
+
+    def test_skipped_stretches_get_no_call_and_the_cap_stops_what_it_cannot_pay(self):
+        self.wins = [dict(start=0, n=300, kind="head"), dict(start=500, n=300, kind="change", triggers=[550])]
+        self.results = {0: [(10, 10, 30, 30)]}
+        R = longvideo.run_long("v.mp4", "r1", skip_empty=True, max_usd_video=0.8, max_usd=1.0)
+        self.assertEqual(self.calls, [(0, 300, 0.8), (500, 300, 0.3)])     # cap minus what earlier runs spent
+        self.assertFalse(self.sent_frames() & set(range(300, 500)))         # completion criterion 1: no call there
+        self.assertEqual([(s["start_frame"], s["end_frame"]) for s in R["skipped"]], [(300, 500)])
+        self.assertEqual([(u["start_frame"], u["end_frame"]) for u in R["unsent"]], [(500, 1000)])
+        self.assertEqual(R["video"]["n_frames"], self.N)
+        self.assertEqual(R["metrics"]["fish"]["curve"][400], 1)            # carried
+        self.assertEqual(R["metrics"]["fish"]["curve"][600], 0)            # unsent: not carried
+
+    def test_fish_budget_mid_video_keeps_the_segments_already_done(self):
+        from fishcount import api
+        self.wins = [dict(start=0, n=300, kind="head"), dict(start=500, n=300, kind="change", triggers=[550])]
+        self.cap_need = 0.0
+        orig = self.patches[6].new
+
+        def second_fails(sp, srid, **kw):
+            if self.cuts[sp][0] == 500:
+                raise api.BudgetExceeded("would spend > budget (set FISH_BUDGET)")
+            return orig(sp, srid, **kw)
+        from fishcount import pipeline
+        pipeline.run_pipeline = second_fails
+        R = longvideo.run_long("v.mp4", "r2", skip_empty=True, max_usd_video=5)
+        self.assertEqual([s["start_frame"] for s in R["segments"]], [0])
+        self.assertEqual([(u["start_frame"], u["end_frame"]) for u in R["unsent"]], [(500, 1000)])
+
+    def test_a_probe_that_disagrees_re_sends_the_stretch_before_it_once(self):
+        self.wins = [dict(start=0, n=300, kind="head"), dict(start=700, n=50, kind="probe")]
+        self.results = {0: [(10, 10, 30, 30)], 700: []}                    # the box is gone by the probe
+        R = longvideo.run_long("v.mp4", "r3", skip_empty=True, max_usd_video=10)
+        # the re-send stops where the probe starts: the probe's own frames are not paid twice, its run is used as is
+        self.assertEqual([(s, n) for s, n, _ in self.calls], [(0, 300), (700, 50), (300, 400)])
+        self.assertEqual([p["match"] for p in R["probes"]], [False])
+        self.assertEqual([(s["start_frame"], s["end_frame"]) for s in R["skipped"]], [(750, 1000)])
+        self.assertEqual([s["start_frame"] for s in R["segments"]], [0, 300, 700])
+        self.assertEqual(R["metrics"]["fish"]["curve"][720], 0)            # the probe's empty frames, not carried boxes
+
+    def test_a_probe_that_agrees_keeps_the_carried_boxes(self):
+        self.wins = [dict(start=0, n=300, kind="head"), dict(start=700, n=50, kind="probe")]
+        self.results = {0: [(10, 10, 30, 30)], 700: [(11, 10, 31, 30)]}
+        R = longvideo.run_long("v.mp4", "r4", skip_empty=True, max_usd_video=10)
+        self.assertEqual([(s, n) for s, n, _ in self.calls], [(0, 300), (700, 50)])
+        self.assertEqual([p["match"] for p in R["probes"]], [True])
+        self.assertEqual([(s["start_frame"], s["end_frame"]) for s in R["skipped"]], [(300, 1000)])
+        self.assertEqual(R["metrics"]["fish"]["curve"][720], 1)
+        self.assertEqual(R["frames"]["720"][0]["track"], "S1:t0")
+
+
+class SkipEmptyFlags(unittest.TestCase):
+    def test_video_cap_and_probe_flags_need_skip_empty(self):
+        """--max-usd-video / --probe-every without --skip-empty would be ignored, so the CLI refuses them."""
+        for flag in (["--max-usd-video", "3"], ["--probe-every", "90"]):
+            p = subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), "missing.mp4"] + flag,
+                               capture_output=True, text=True, timeout=120)
+            self.assertEqual(p.returncode, 2, p.stderr)
+            self.assertIn("need --skip-empty", p.stderr)
+
+
+class CappedStages(unittest.TestCase):
+    def test_every_cap_skip_is_recorded(self):
+        """The seven stages that skip quietly at the per-video cap go through pipeline._capped."""
+        import re
+        src = open(os.path.join(ROOT, "fishcount", "pipeline.py")).read()
+        lines = [l for l in src.splitlines() if "would pass the per-video cap ${" in l]
+        self.assertEqual(len(lines), 7)
+        self.assertTrue(all("_capped(" in l for l in lines), [l for l in lines if "_capped(" not in l])
+
+    def test_capped_logs_and_records(self):
+        from fishcount import pipeline
+        with tempfile.TemporaryDirectory() as tmp:
+            old = pipeline.RUNS
+            pipeline.RUNS = tmp
+            try:
+                run = pipeline.Run("x")
+                pipeline._capped(run, "miss", "skipped the missed-animal look: est $0.10 would pass the per-video cap $0.05")
+            finally:
+                pipeline.RUNS = old
+        self.assertEqual(run.capped, [dict(stage="miss", msg="skipped the missed-animal look: est $0.10 would pass the per-video cap $0.05")])
+        self.assertTrue(run.status["log"][-1].endswith("would pass the per-video cap $0.05"))
+
+
+class ReviewVideoLength(unittest.TestCase):
+    """--skip-empty review videos, with the real ffmpeg: sent piece + skipped piece (carried box) + sent piece laid end
+    to end are as long as the video, for clip, annotated and (dark video) clip_original."""
+
+    def test_pieces_add_up_to_the_video(self):
+        from fishcount import render, video
+        for brightened in (False, True):
+            with tempfile.TemporaryDirectory() as d:
+                full = os.path.join(d, "full.mp4")
+                subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                                "testsrc=size=160x120:rate=5", "-frames:v", "60", "-c:v", "libx264", "-pix_fmt", "yuv420p", full],
+                               check=True)
+                R = dict(video=dict(fps=5.0), jobs=[], auto_labels={}, tracks={"t1": dict(label="fish", source="discover")},
+                         frames={"20": [dict(track="t1", box=[10, 10, 50, 40], carried=True)]})
+                segs = []
+                for a, n in ((0, 20), (40, 20)):
+                    sd = os.path.join(d, f"S{a}")
+                    os.makedirs(sd)
+                    clip = os.path.join(sd, "clip.mp4")
+                    if brightened:
+                        longvideo.cut(full, os.path.join(sd, "clip_original.mp4"), a, n)
+                        video.brighten(os.path.join(sd, "clip_original.mp4"), clip)
+                    else:
+                        longvideo.cut(full, clip, a, n)
+                    render.annotate(clip, {}, dict(video=dict(n_frames=n, fps=5.0), tracks={}, frames={}), os.path.join(sd, "annotated.mp4"))
+                    segs.append(sd)
+                fd = longvideo._filler(full, d, 20, 40, R, brightened)
+                longvideo._review_videos(d, [segs[0], fd, segs[1]])
+                kinds = ("clip.mp4", "annotated.mp4") + (("clip_original.mp4",) if brightened else ())
+                for kind in kinds:
+                    self.assertEqual(video.info(os.path.join(d, kind))["n_frames"], 60, (kind, brightened))
+                self.assertEqual(brightened, os.path.exists(os.path.join(d, "clip_original.mp4")))
+
+    def test_run_long_n_frames_is_the_real_frame_count(self):
+        """run_long(skip_empty) on a real ffmpeg video, only screen.scan and the model run faked: result n_frames,
+        the curve and the review clip all match the frames decoded from the source (63, an odd count)."""
+        import cv2
+        from unittest import mock
+        from fishcount import pipeline, render, screen, video
+        with tempfile.TemporaryDirectory() as d:
+            src = os.path.join(d, "src.mp4")
+            subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                            "testsrc=size=160x120:rate=5", "-frames:v", "63", "-c:v", "libx264", "-pix_fmt", "yuv420p", src],
+                           check=True)
+            cap, real = cv2.VideoCapture(src), 0
+            while cap.read()[0]:
+                real += 1
+            cap.release()
+
+            def run_pipeline(sp, srid, **kw):
+                rd = os.path.join(d, srid)
+                n = video.info(sp)["n_frames"]
+                _fake_seg(rd, n, [(10, 10, 30, 30)])
+                json.dump(dict(live_calls=1, cached_calls=0, billed_usd=0.0), open(os.path.join(rd, "status.json"), "w"))
+                os.replace(sp, os.path.join(rd, "clip.mp4"))
+                render.annotate(os.path.join(rd, "clip.mp4"), {}, dict(video=dict(n_frames=n, fps=5.0), tracks={}, frames={}),
+                                os.path.join(rd, "annotated.mp4"))
+
+            wins = [dict(start=0, n=20, kind="head"), dict(start=40, n=20, kind="change", triggers=[45])]
+            with mock.patch.object(pipeline, "RUNS", d), mock.patch.object(pipeline, "run_pipeline", run_pipeline), \
+                    mock.patch.object(screen, "scan", lambda clip, fps, **k: wins):
+                R = longvideo.run_long(src, "rv", skip_empty=True, max_usd_video=10)
+            self.assertEqual(real, 63)
+            self.assertEqual(R["video"]["n_frames"], real)
+            self.assertEqual(len(R["metrics"]["fish"]["curve"]), real)
+            self.assertEqual(video.info(os.path.join(d, "rv", "clip.mp4"))["n_frames"], real)

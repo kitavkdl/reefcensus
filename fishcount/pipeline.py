@@ -114,6 +114,7 @@ class Run:
         os.makedirs(self.dir, exist_ok=True)
         self.status = dict(id=rid, stage="queued", log=[], live_calls=0, cached_calls=0, billed_usd=0.0, started=time.time())
         self._lock = threading.Lock()   # ladders and the second look call stage() from worker threads
+        self.capped = []                # stages skipped at the per-video cap (_capped), result["capped"] when any
 
     def path(self, *p):
         return os.path.join(self.dir, *p)
@@ -130,6 +131,21 @@ class Run:
 
     def save(self, name, obj):
         json.dump(obj, open(self.path(name), "w"))
+
+
+def _capped(run, stage, msg):
+    """A stage skipped because it would pass the per-video cap: logged as before and listed in result["capped"], so a
+    half-analysed segment is marked (longvideo --skip-empty gives each segment what is left of the video cap)."""
+    if not hasattr(run, "capped"):      # stand-in runs (tests) built without Run.__init__
+        run.capped = []
+    run.capped.append(dict(stage=stage, msg=msg))
+    run.stage(stage, msg)
+
+
+def _skip_stage(run, stage, msg, e):
+    """A stage given up on error e: a FISH_BUDGET stop (BudgetExceeded is a RuntimeError) is a stage skipped at a cap
+    too, so it is listed in result["capped"]; any other error is only logged."""
+    (_capped if isinstance(e, api.BudgetExceeded) else Run.stage)(run, stage, msg)
 
 
 def _counted(run, fn, *a, **k):
@@ -476,7 +492,7 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
             video.segment(path, seg, s, length=None if e == n else e - s)
             if (max_usd is not None and not offline and not api.sam_cached(seg, prompt)
                     and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, e - s) * api.SAM_PER_FRAME > max_usd):
-                run.stage("track", f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}")
+                _capped(run, "track", f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}")
                 break
             txt = tracks.shift_text(_counted(run, api.sam_video, seg, prompt, e - s, offline=offline), s)
             d = tracks.parse_boxes(txt)
@@ -633,7 +649,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             if any(e.get("source") for e in moved):
                 moved += motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found], rnd=2)
         except MOTION_ERRORS as e:
-            run.stage("motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}")
+            _skip_stage(run, "motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}", e)
         recovered += moved
     camo_verdicts = {}
     if camo and do_audit:
@@ -641,13 +657,13 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             got_log, camo_verdicts = camo_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found])
             recovered += got_log
         except MOTION_ERRORS as e:
-            run.stage("camo", f"camouflage look skipped: {type(e).__name__}: {str(e)[:160]}")
+            _skip_stage(run, "camo", f"camouflage look skipped: {type(e).__name__}: {str(e)[:160]}", e)
     if misslook:
         try:
             recovered += miss_look(run, clip, inf, results, max_usd, offline, labels=[lab for lab, _ in plist],
                                    names=[f["what"] for f in found])
         except MOTION_ERRORS as e:
-            run.stage("miss", f"missed-animal look skipped: {type(e).__name__}: {str(e)[:160]}")
+            _skip_stage(run, "miss", f"missed-animal look skipped: {type(e).__name__}: {str(e)[:160]}", e)
     site_entries = []
     if site:      # after recovery and the motion look, so their inputs and cache keys are exactly those of a run without site
         site_entries, site_results = site_look(run, clip, inf, site, {q for _, q in plist} | {f["word"] for f in found if f["word"]},
@@ -828,6 +844,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                   crowd_checks=crowd, frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
     if site:
         result["site"] = dict(name=site, entries=site_entries)
+    if run.capped:      # only when a stage was skipped at the cap, so other results keep their exact bytes
+        result["capped"] = run.capped
     run.save("result.json", result)
     run.stage("render", "drawing evidence frames")
     for name, mm in m.items():
@@ -850,7 +868,7 @@ def site_look(run, clip, inf, site, skip, max_usd, offline):
     per_word = max(api.SAM_MIN_FRAMES, inf["n_frames"]) * api.SAM_PER_FRAME
     while entries and not offline and run.status["billed_usd"] + sum(len(e["words"]) for e in entries) * per_word > max_usd:
         e = entries.pop()
-        run.stage("recover", f"site memory '{e['label']}' skipped: would pass the per-video cap ${max_usd:.2f}")
+        _capped(run, "recover", f"site memory '{e['label']}' skipped: would pass the per-video cap ${max_usd:.2f}")
     if not entries:
         return [], []
     run.stage("recover", "site memory: " + ", ".join(f"{e['label']} -> try {e['words']}" for e in entries))
@@ -910,7 +928,7 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
     if not todo:
         return log
     if run.status["billed_usd"] + est > max_usd and not offline:
-        run.stage("recover", f"skipped second look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        _capped(run, "recover", f"skipped second look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return log
     run.stage("recover", "second look: " + ", ".join(f"{jb['kind']} {jb['cell'] or ''} {jb['words']}".replace("  ", " ") for jb in todo))
     rev = run.path("clip_rev.mp4")
@@ -1328,7 +1346,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     scan = "Movement outside every box" + ("" if rnd == 1 else " (second look, after the first boxes)")
     est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
-        run.stage("motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        _capped(run, "motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return []
     if os.path.exists(cpath):
         mc = json.load(open(cpath))
@@ -1492,7 +1510,7 @@ def miss_look(run, clip, inf, results, max_usd, offline, labels=(), names=(), k=
             known.setdefault(f, []).extend(list(det["box"]) for det in ds)
     est = k * 0.005 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
-        run.stage("miss", f"skipped the missed-animal look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        _capped(run, "miss", f"skipped the missed-animal look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return []
     step = n / k
     show = sorted({min(n - 1, int(step * (i + 0.5))) for i in range(k)})
@@ -1593,7 +1611,7 @@ def camo_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_c
     cpath = os.path.join(api.CACHE, f"camo_{key}.json")
     est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
-        run.stage("camo", f"skipped camouflage look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        _capped(run, "camo", f"skipped camouflage look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return [], {}
     if os.path.exists(cpath):
         mc = json.load(open(cpath))
@@ -1699,7 +1717,7 @@ def closer_look(run, clip, inf, jobs, results, max_usd, offline):
     jobs = jobs[:2]
     est = sum(len(jb["words"]) + 1 for jb in jobs) * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
-        run.stage("recover", f"skipped closer look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+        _capped(run, "recover", f"skipped closer look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return []
     run.stage("recover", "closer look, one cell at 3x: " + ", ".join(f"{jb['what']} in {jb['cell']} {jb['words']}" for jb in jobs))
 
@@ -1968,17 +1986,24 @@ if __name__ == "__main__":
     ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
     ap.add_argument("--segment", type=float, help="split into segments of at most this many seconds and merge "
                     "(automatic at 600 s, the SAM 3.1 per-file limit, for longer videos)")
+    ap.add_argument("--skip-empty", action="store_true", help="long videos: stretches where the picture does not change from "
+                    "the last analysed frame are not sent; their boxes are carried (fishcount/screen.py). Uses --max-usd-video, not --max-usd")
+    ap.add_argument("--max-usd-video", type=float, help="with --skip-empty: cap for the whole video (default $4 an hour)")
+    ap.add_argument("--probe-every", type=float, help="with --skip-empty: seconds between probes of a skipped stretch (default 600)")
     a = ap.parse_args()
+    if not a.skip_empty and (a.max_usd_video is not None or a.probe_every is not None):
+        ap.error("--max-usd-video and --probe-every need --skip-empty (without it each segment uses --max-usd)")
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
     from fishcount import longvideo
     inf0 = video.info(a.video)
     secs = inf0["n_frames"] / inf0["fps"] if inf0["fps"] else 0
-    if a.segment or secs > longvideo.MAX_SEGMENT_S:
+    if a.segment or a.skip_empty or secs > longvideo.MAX_SEGMENT_S:
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
-                               misslook=a.misslook, crowd_look=not a.no_crowd_look)
+                               misslook=a.misslook, crowd_look=not a.no_crowd_look,
+                               skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,

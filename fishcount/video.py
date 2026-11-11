@@ -51,22 +51,33 @@ DARK_MEAN_L = 35
 
 
 def light_stats(path, every=5, width=480):
-    """Brightness of a clip: mean and median Lab L (0-255) and the share of pixels with L < 50, every `every`-th frame."""
+    """Brightness of a clip: mean and median Lab L (0-255) and the share of pixels with L < 50, every `every`-th frame.
+    L values are counted into a 256-bin histogram, so memory does not grow with the clip (11/11: stacking them as
+    float took ~6.8 GB on a 53-minute clip and the run was OOM-killed)."""
     cap = cv2.VideoCapture(path)
-    Ls, i = [], 0
+    h, i = np.zeros(256, np.int64), 0
     while True:
         ok, f = cap.read()
         if not ok:
             break
         if i % every == 0:
             f = cv2.resize(f, (width, max(1, int(width * f.shape[0] / f.shape[1]))))
-            Ls.append(cv2.cvtColor(f, cv2.COLOR_BGR2LAB)[:, :, 0])
+            h += np.bincount(cv2.cvtColor(f, cv2.COLOR_BGR2LAB)[:, :, 0].ravel(), minlength=256)
         i += 1
     cap.release()
-    if not Ls:
+    if not h.any():
         return dict(mean_l=None, median_l=None, dark_share=None)
-    L = np.stack(Ls).astype(float)
-    return dict(mean_l=round(float(L.mean()), 1), median_l=round(float(np.median(L)), 1), dark_share=round(float((L < 50).mean()), 3))
+    n = int(h.sum())
+    return dict(mean_l=round(float(h @ np.arange(256)) / n, 1), median_l=round(_hist_median(h), 1),
+                dark_share=round(float(h[:50].sum()) / n, 3))
+
+
+def _hist_median(h):
+    """np.median of the values a histogram counts (bin i = value i); an even count averages the two middle values."""
+    c = np.cumsum(h)
+    n = int(c[-1])
+    lo, hi = np.searchsorted(c, [(n - 1) // 2, n // 2], side="right")
+    return (float(lo) + float(hi)) / 2
 
 
 def is_dark(st):

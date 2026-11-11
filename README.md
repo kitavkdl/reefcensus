@@ -119,11 +119,17 @@ python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full p
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 121 tests including an exact
+**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 147 tests including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
-([details](report/details.md#long-videos)).
+([details](report/details.md#long-videos)). `--skip-empty` (opt-in): stretches where the picture does not change from
+the last analysed frame are not sent; empty water stays empty and a resting animal keeps its box (marked carried). The
+full analysis runs wherever something appears or moves (`fishcount/screen.py`; whole-video cap `--max-usd-video`,
+default $4 an hour, in place of the per-segment `--max-usd`; `--max-usd-video` and `--probe-every` need
+`--skip-empty`). The result lists the stretches carried (`skipped`) and the span a cap left unanalysed to the end
+(`unsent`, counted 0). Any run, with or without `--skip-empty`, lists the stages it skipped at its cap in `capped`
+(absent when none, so a run under its cap keeps its exact bytes).
 
 **Fresh runs.** Spark's answers are not fixed, so a run with an empty cache can differ from the cached one. In four
 empty-cache rehearsals DH11's amphipod was counted once and queued once & s003 counted 3 nautiluses in one take and 1

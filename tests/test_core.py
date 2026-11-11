@@ -211,6 +211,48 @@ class LowLight(unittest.TestCase):
         self.assertFalse(video.is_dark(dict(median_l=26.0, mean_l=42.0)))   # s004, nearest lit clip
         self.assertFalse(video.is_dark(dict(median_l=None, mean_l=None)))
 
+    def test_hist_median(self):
+        from fishcount import video
+        import numpy as np
+        h = lambda a: np.bincount(np.asarray(a, np.uint8).ravel(), minlength=256)
+        self.assertEqual(video._hist_median(h([1, 1, 3, 3])), 2.0)      # even count: the two middle values averaged
+        self.assertEqual(video._hist_median(h([1, 2, 9])), 2.0)
+        rng = np.random.default_rng(0)
+        for n in (1, 2, 7, 1000, 1001):
+            a = rng.integers(0, 256, n)
+            self.assertEqual(video._hist_median(h(a)), float(np.median(a.astype(float))))
+
+    def test_light_stats_matches_stacked_frames(self):
+        """light_stats counts L values per frame (memory flat in clip length, 11/11: a 53-min clip stacked as float
+        took ~6.8 GB); the numbers equal those of stacking every 5th frame's L as before."""
+        import tempfile
+        import cv2
+        import numpy as np
+        from fishcount import video
+        clip = os.path.join(tempfile.mkdtemp(), "l.mp4")
+        vw = cv2.VideoWriter(clip, cv2.VideoWriter_fourcc(*"mp4v"), 5, (320, 180))
+        rng = np.random.default_rng(1)
+        for i in range(23):
+            f = np.tile(np.linspace(0, 255, 320, dtype=np.uint8), (180, 1))[..., None].repeat(3, 2)
+            f = (f // (1 + i % 4)).astype(np.uint8)                       # darker every few frames: some L < 50
+            f[rng.integers(0, 180, 50), rng.integers(0, 320, 50)] = rng.integers(0, 256, (50, 3))
+            vw.write(f)
+        vw.release()
+        cap, Ls, i = cv2.VideoCapture(clip), [], 0
+        while True:
+            ok, f = cap.read()
+            if not ok:
+                break
+            if i % 5 == 0:
+                f = cv2.resize(f, (480, max(1, int(480 * f.shape[0] / f.shape[1]))))
+                Ls.append(cv2.cvtColor(f, cv2.COLOR_BGR2LAB)[:, :, 0])
+            i += 1
+        L = np.stack(Ls).astype(float)
+        old = dict(mean_l=round(float(L.mean()), 1), median_l=round(float(np.median(L)), 1),
+                   dark_share=round(float((L < 50).mean()), 3))
+        self.assertEqual(video.light_stats(clip), old)
+        self.assertGreater(old["dark_share"], 0)
+
 
 class ShortName(unittest.TestCase):
     def test_head_noun(self):
@@ -307,6 +349,7 @@ class Replay(unittest.TestCase):
         got = {k: (v["maxn"], v["maxn_frame"], v["first_frame"]) for k, v in r["metrics"].items()}
         want = {k: (v["maxn"], v["maxn_frame"], v["first_frame"]) for k, v in saved.items()}
         self.assertEqual(got, want)
+        self.assertNotIn("capped", r)      # nothing skipped at a cap: the result has no new key
 
 
 if __name__ == "__main__":
