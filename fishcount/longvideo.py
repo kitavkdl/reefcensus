@@ -223,6 +223,27 @@ def _fingerprint(seg_clip, kw):
                 code=h.hexdigest()[:24])
 
 
+FORECAST_MIN = 2   # segments run before a range is given: one segment is a point, not a range
+
+
+def forecast(costs, secs, left, workers=1):
+    """What the segments still to run may cost, from the segments this run has finished: each left segment between the
+    cheapest and the dearest one so far, in dollars and wall seconds. No constants: segments of one video differ a lot
+    (the 53-min NOAA video's cold segments cost $1.63 to $5.88), so the range is the honest answer and it narrows only
+    by being measured. The pipeline's own 'est' line counts the first pass alone (2.8-5.1x under on that video).
+    From FORECAST_MIN segments on. Backtest on saved runs (after 2-5 segments, dollars and minutes): the NOAA video's
+    cold run 8 of 8 inside, its partly cached runs 6, 4 and 4 of 8, the second NOAA video (cache only) 8 of 8; the
+    misses are a dearer segment still to come, so it is a range from what has been seen, not a cap. After 1 segment
+    ($0.54) it would have said $2.72 for a rest that cost $14.54.
+    workers segments run at once: the time range is min x left/workers to max x ceil(left/workers).
+    -> dict(left, usd=[lo, hi], s=[lo, hi]) or None before FORECAST_MIN segments have run or when nothing is left."""
+    if len(costs) < FORECAST_MIN or left <= 0:
+        return None
+    w = max(1, int(workers or 1))
+    return dict(left=left, usd=[round(min(costs) * left, 3), round(max(costs) * left, 3)],
+                s=[round(min(secs) * left / w), round(max(secs) * math.ceil(left / w))])
+
+
 def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
              segment_workers=1, resume=False, **kw):
     """Split `src` into segments of at most seg_s seconds, run the pipeline on each, merge. kw -> run_pipeline.
@@ -268,10 +289,12 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
                      + ", ".join(f"{s}+{n}" for s, n in segs) + (f"; {workers} at once" if workers > 1 else ""))
     _status(d, stage="segments", log=st["log"], video=inf)
     tally, lock, failed = dict(live=0, cached=0, billed=0.0), threading.Lock(), threading.Event()
+    ran = dict(usd=[], s=[], finished=0)     # segments run (not kept) this time: their spend and wall time
 
     def one(k, start, n):
         if failed.is_set():     # another segment raised: what has not started is not sent
             return None
+        t_seg = time.time()
         sp = os.path.join(d, f"seg{k + 1}.mp4")
         cut(full, sp, start, n)
         srid = f"{rid}__S{k + 1}"
@@ -301,10 +324,20 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
                 tally["live"] += sst["live_calls"]
                 tally["cached"] += sst["cached_calls"]
                 tally["billed"] += sst["billed_usd"]
+                ran["usd"].append(sst["billed_usd"])
+                ran["s"].append(time.time() - t_seg)
+            ran["finished"] += 1
             st["log"].append(f"{time.strftime('%H:%M:%S')} segment S{k + 1} ({start / inf['fps']:.1f}-{(start + n) / inf['fps']:.1f} s) "
                              + ("kept from the earlier run (--resume): " if kept else "done: ") + maxn)
+            fc = forecast(ran["usd"], ran["s"], len(segs) - ran["finished"], workers)
+            if fc:      # so a person watching a long batch sees where money and time are heading, not only the start
+                st["log"].append(
+                    f"{time.strftime('%H:%M:%S')} forecast: {len(ran['usd'])} segment(s) run so far ${sum(ran['usd']):.2f}, "
+                    f"{sum(ran['s']) / 60:.0f} min; {fc['left']} left: ${fc['usd'][0]:.2f}-${fc['usd'][1]:.2f}, "
+                    f"{fc['s'][0] / 60:.0f}-{fc['s'][1] / 60:.0f} min (each like the cheapest / dearest segment so far; "
+                    "not a cap: a busier segment later costs more)")
             _status(d, stage="segments", log=st["log"], live_calls=tally["live"], cached_calls=tally["cached"],
-                    billed_usd=tally["billed"])
+                    billed_usd=tally["billed"], forecast=fc)
         return sd, start, n
 
     if workers == 1:

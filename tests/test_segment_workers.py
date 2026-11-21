@@ -35,6 +35,7 @@ class SegmentWorkers(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.cuts, self.started, self.fail_at = {}, [], None
         self.inside = Overlap()
+        self.other_in = threading.Event()
 
         def ingest(src, dst, **k):
             open(dst, "w").close()
@@ -47,9 +48,14 @@ class SegmentWorkers(unittest.TestCase):
             start, n = self.cuts[sp]
             self.started.append(start)
             with self.inside:
-                time.sleep(0.3)
                 if self.fail_at == start:
+                    # fail while another segment is running: when both just slept 0.3 s, the other could finish first
+                    # and start a third segment before the failure was seen (2 in 10 runs), or, failing at once, the
+                    # other had not started yet; so wait until another segment is in, then fail
+                    self.other_in.wait(5)
                     raise api.BudgetExceeded("FISH_BUDGET")
+                self.other_in.set()
+                time.sleep(0.3)
                 d = os.path.join(self.tmp, srid)
                 # a different count per segment, so a merge that took them out of order would show
                 _fake_seg(d, n, [(10 * i, 10, 5, 5) for i in range(start // 750 + 1)])
