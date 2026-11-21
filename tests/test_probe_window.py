@@ -16,9 +16,26 @@ class Windows(unittest.TestCase):
         self.assertEqual(pipeline._probe_windows([2125], 2658, 25), [(2100, 51)])
         self.assertEqual(pipeline._probe_windows([0, 531], 2658, 25), [(0, 26), (506, 51)])
 
-    def test_overlaps_join_and_only_two_frames(self):
-        self.assertEqual(pipeline._probe_windows([100, 120, 900], 2658, 25), [(75, 71)])
+    def test_overlaps_join_and_every_spark_frame_gets_a_window(self):
+        self.assertEqual(pipeline._probe_windows([100, 120, 900], 2658, 25), [(75, 71), (875, 51)])
         self.assertEqual(pipeline._probe_windows([2650], 2658, 25), [(2625, 33)])
+        # 11/21: a window on only the first two of Spark's frames missed the nautilus in s004 (Spark frames 0, 11,
+        # ...; SAM tracks it from frame 44). Every frame Spark named gets one: 347/347 saved words found.
+        self.assertEqual(pipeline._probe_windows([0, 531, 1062, 1594, 2125, 2657], 2658, 25),
+                         [(0, 26), (506, 51), (1037, 51), (1569, 51), (2100, 51), (2632, 26)])
+
+    def test_windows_over_half_the_clip_mean_no_probe(self):
+        self.assertEqual(pipeline._probe_windows([60, 120], 300, 25), [(35, 51), (95, 51)])   # 102 of 300
+        self.assertEqual(pipeline._probe_windows([60, 120, 180], 300, 25), [])                 # 153 of 300
+        self.assertEqual(pipeline._probe_windows([60, 120, 180], 306, 25), [(35, 51), (95, 51), (155, 51)])
+
+    def test_clips_under_300_frames_keep_the_plain_ladder(self):
+        # 11/21: on saved short clips the windows gave back 1,379 frames in 1,162 runs and held every miss (s004
+        # nautilus from frame 44, DH7 crab from frame 28 after a sign at frame 0)
+        self.assertEqual(pipeline._probe_windows([0, 11], 60, 25), [])
+        self.assertEqual(pipeline._probe_windows([0], 60, 25), [])
+        self.assertEqual(pipeline._probe_windows([100], 299, 25), [])
+        self.assertEqual(pipeline._probe_windows([100], 300, 25), [(75, 51)])
 
     def test_short_clip_or_no_frames_means_no_probe(self):
         self.assertEqual(pipeline._probe_windows([10, 40], 60, 25), [])     # windows cover the 12-s clip

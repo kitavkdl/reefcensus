@@ -209,16 +209,24 @@ def discover(run, clip, inf, targets, offline):
 # Opt-in (--probe-window): a discovered word is first tried on short windows around the frames Spark named for the
 # animal; only a word that finds something there is sent with the whole clip. 11/21 night, every saved run with a
 # discovery ladder: all 347 words that tracked anything on the whole clip had boxes within 25 frames of a frame
-# Spark named (5 of 5 on clips over 300 frames), and the 12 words that found nothing on long clips billed 31,896
-# frames ($6.38; LONG1_cr9 S2 "dark lump on seabed": 8 whole-segment calls, $4.25, all empty).
+# Spark named (a window on only the first two of Spark's frames missed 47: the s004 nautilus, Spark frames 0, 11,
+# ..., tracked from frame 44), and the 12 words that found nothing on clips over 300 frames billed 31,896 frames
+# ($6.38; LONG1_cr9 S2 "dark lump on seabed": 8 whole-segment calls, $4.25, all empty) -> 612 in windows.
 PROBE_WINDOW = 25       # frames on each side of a frame Spark named
-PROBE_FRAMES = 2        # at most this many of Spark's frames get a window
+PROBE_MAX_SHARE = 0.5   # windows longer than this share of the clip: the word goes straight to the whole clip
+PROBE_MIN_FRAMES = 300  # shorter clips (1 min at 5 fps) keep the plain ladder: on saved short clips the windows gave
+                        # back 1,379 frames over 1,162 runs and held every miss (s004 nautilus; DH7 crab from frame 28
+                        # after a sign at frame 0)
 
 
-def _probe_windows(frames, n, half, k=PROBE_FRAMES):
-    """[(start, length)] windows of +-half frames around the first `k` frames Spark named (overlaps joined); [] when
-    Spark named none or the windows would cover the clip (a short clip: the word goes straight to the whole clip)."""
-    fs = sorted({int(f) for f in list(frames or [])[:k] if isinstance(f, (int, float)) and not isinstance(f, bool) and 0 <= f < n})
+def _probe_windows(frames, n, half):
+    """[(start, length)] windows of +-half frames around every frame Spark named (overlaps joined); [] when Spark
+    named none or the windows add up to more than half the clip (a short clip: the word goes straight to the whole
+    clip, as without the option, so a word that is found costs at most 1.5 whole-clip calls) or the clip is shorter
+    than PROBE_MIN_FRAMES."""
+    if n < PROBE_MIN_FRAMES:
+        return []
+    fs = sorted({int(f) for f in list(frames or []) if isinstance(f, (int, float)) and not isinstance(f, bool) and 0 <= f < n})
     ws = []
     for f in fs:
         s, e = max(0, f - half), min(n, f + half + 1)
@@ -226,7 +234,7 @@ def _probe_windows(frames, n, half, k=PROBE_FRAMES):
             ws[-1][1] = max(ws[-1][1], e)
         else:
             ws.append([s, e])
-    if not ws or sum(e - s for s, e in ws) >= n:
+    if not ws or sum(e - s for s, e in ws) > PROBE_MAX_SHARE * n:
         return []
     return [(s, e - s) for s, e in ws]
 
@@ -554,7 +562,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
                  misslook=False, crowd_look=True, box_window=None, probe_window=None):
     """probe_window: opt-in (PROBE_WINDOW): a discovered word is tried on +-probe_window frames around the frames Spark
-    named before the whole clip (word_ladder, recover, closer_look). None (default): straight to the whole clip.
+    named before the whole clip (discovery ladder, zoom tiles, closer_look cells; clips of PROBE_MIN_FRAMES or more;
+    not signs or reversed back-fills). None (default): straight to the whole clip.
     box_window: opt-in (BOX_WINDOW): a motion box prompt on a clip longer than 2 * box_window + 1 frames sends SAM
     only the frames within box_window of its spot (motion_look). None (default): the whole clip, as before.
     crowd_look: crowd_check (on by default, needs audits): marks a MaxN a lower bound when Muse Spark, unprimed,
@@ -995,7 +1004,9 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
 
     def one(jb):
         m = video.info(jb["path"])["n_frames"]
-        probe = _probe_windows(jb.get("spark_frames"), m, probe_window) if probe_window and jb["kind"] != "backfill" else None
+        # not a sign: Spark's one frame is where the sand moved, the animal may show later (11/21 DH7: sign at frame 0,
+        # SAM's crab from frame 28 - a window would have dropped it)
+        probe = _probe_windows(jb.get("spark_frames"), m, probe_window) if probe_window and jb["kind"] == "zoom" else None
         word, txt, tried = word_ladder(run, jb["path"], m, jb["words"], offline, probe)
         return jb, word, txt, tried
 
@@ -2098,8 +2109,8 @@ if __name__ == "__main__":
     ap.add_argument("--box-window", type=int, nargs="?", const=BOX_WINDOW, metavar="FRAMES",
                     help=f"long clips: a motion box prompt sends SAM only the frames within FRAMES (default {BOX_WINDOW}) of its spot")
     ap.add_argument("--probe-window", type=int, nargs="?", const=PROBE_WINDOW, metavar="FRAMES",
-                    help=f"long clips: a discovered word is tried on FRAMES (default {PROBE_WINDOW}) around the frames Spark named "
-                         "before the whole clip")
+                    help=f"clips of {PROBE_MIN_FRAMES}+ frames: a discovered word is tried on FRAMES (default {PROBE_WINDOW}) around "
+                         "every frame Spark named before the whole clip")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
