@@ -1,6 +1,6 @@
 """Video helpers: re-encode to the analysis rate, read frames, crop tiles. Uses the ffmpeg binary shipped with
 imageio-ffmpeg and OpenCV for frame access (pip install -r requirements.txt, or a vendored folder via FISH_PYLIB)."""
-import os, re, subprocess, sys
+import os, re, subprocess, sys, threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import _pylib  # noqa: F401
@@ -218,6 +218,15 @@ def segment(src, dst, start, fps=5, length=None):
 
 
 REVERSE_CHUNK = 600  # frames held by ffmpeg's reverse filter at once (~1.9 GB at 1080p yuv420)
+# One reverse filter at a time in this process: each holds up to REVERSE_CHUNK decoded frames (~2.3 GB of ffmpeg
+# memory at 1080p), and the zoom ladder (2 tiles at once) or two segments at once (longvideo segment_workers) could
+# otherwise hold two and pass a 4 GB cap. Output bytes do not depend on it.
+REVERSE_SLOT = threading.BoundedSemaphore(1)
+
+
+def _reverse_run(cmd):
+    with REVERSE_SLOT:
+        subprocess.run(cmd, check=True)
 
 
 def reverse(src, dst, chunk=REVERSE_CHUNK):
@@ -228,8 +237,8 @@ def reverse(src, dst, chunk=REVERSE_CHUNK):
     run and cache entry unchanged); longer ones are reversed in chunks of `chunk` frames and joined last-first."""
     n = info(src)["n_frames"]
     if n <= chunk * 1.5:
-        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", "reverse", "-an",
-                        "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
+        _reverse_run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf", "reverse", "-an",
+                      "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst])
         return info(dst)
     import tempfile
     fps = info(src)["fps"]
@@ -242,8 +251,8 @@ def reverse(src, dst, chunk=REVERSE_CHUNK):
         # and S6, 10 of 10 chunks identical by sha256), a 2,658-frame clip reversed in 63 s instead of 94
         cut = ([*seek_args(s, fps), "-i", src, "-vf", f"trim=end_frame={e - s + 1},setpts=N/FRAME_RATE/TB,reverse"]
                if round(fps, 6) == round(fps) else ["-i", src, "-vf", f"select='between(n,{s},{e})',setpts=N/FRAME_RATE/TB,reverse"])
-        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", *cut, "-an", "-fps_mode", "cfr", "-r", str(fps),
-                        "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", part], check=True)
+        _reverse_run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", *cut, "-an", "-fps_mode", "cfr", "-r", str(fps),
+                      "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", part])
         got = info(part)["n_frames"]
         if got != e - s + 1:
             raise RuntimeError(f"reverse chunk {k}: wanted {e - s + 1} frames, got {got}")

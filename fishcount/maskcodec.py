@@ -2,7 +2,7 @@
 meta_sam_parser is pure Python and decodes every mask twice over (parse validates, decode_mask_to_raster
 again), ~1 s a mask at our sizes -> 11/1 s003 annotated video took ~2 min. Same results, checked mask by mask
 against the reference (spikes/maskcheck.py). Without a C compiler it falls back to the reference decoder."""
-import ctypes, hashlib, os, re, subprocess, sys, tempfile
+import ctypes, hashlib, os, re, subprocess, sys, tempfile, threading
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import _pylib  # noqa: F401
 import numpy as np
@@ -14,13 +14,18 @@ RECORD = re.compile(r",?([0-9]+)((?:<\|[^|]*\|>)+)")
 TOKEN = re.compile(r"<\|([A-Za-z][A-Za-z0-9_.-]*)(?:;([^|]*))?\|>")
 DATA = re.compile(r"([0-9]+),([0-9]+),([!~][^|]+)")
 _lib = None
+_lib_lock = threading.Lock()   # threads asking at once wait for the one compile instead of seeing "no C decoder"
 
 
 def _load():
     """Compile _maskdec.c once into __pycache__ (keyed by source hash, atomic rename for parallel workers)."""
     global _lib
-    if _lib is None:
-        _lib = False
+    if _lib is not None:
+        return _lib
+    with _lib_lock:
+        if _lib is not None:
+            return _lib
+        got = False     # set only when done: a thread outside the lock must never see a half-made answer
         try:
             tag = hashlib.sha1(open(SRC, "rb").read()).hexdigest()[:12]
             so = os.path.join(HERE, "__pycache__", f"_maskdec-{tag}.so")
@@ -33,9 +38,10 @@ def _load():
             lib = ctypes.CDLL(so)
             lib.decode_one_bit.argtypes = [ctypes.c_char_p, ctypes.c_int64, ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
             lib.decode_one_bit.restype = ctypes.c_int
-            _lib = lib
+            got = lib
         except (OSError, subprocess.CalledProcessError):
             pass
+        _lib = got
     return _lib
 
 

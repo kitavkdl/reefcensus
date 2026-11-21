@@ -22,7 +22,7 @@ Boundary design (why the merge is exact for the survey numbers):
   pair is added to name_variants for the reviewer. Counts are unchanged.
 - Evidence frames, the annotated video and the queue thumbnails come from the segment runs (an evidence image is
   labelled with the frame number inside its segment; result["segments"] gives each segment's start)."""
-import json, math, os, shutil, subprocess, sys, time
+import concurrent.futures as cf, json, math, os, shutil, subprocess, sys, threading, time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, pipeline, render, screen, tracks, video
@@ -210,10 +210,17 @@ def _review_videos(d, dirs):
             _concat(parts, os.path.join(d, kind))
 
 
-def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None, **kw):
+def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
+             segment_workers=1, **kw):
     """Split `src` into segments of at most seg_s seconds, run the pipeline on each, merge. kw -> run_pipeline.
     skip_empty: only the stretches screen.scan picks are sent (_run_skipping); max_usd_video caps the whole video
-    (default $4 an hour), probe_every_s overrides screen.PROBE_EVERY_S."""
+    (default $4 an hour), probe_every_s overrides screen.PROBE_EVERY_S.
+    segment_workers: segments run at once (threads in this process; default 1 = one after another). A segment spends
+    most of its time waiting on SAM, so two at once nearly halve the wall time; the answers are the same (each segment
+    is its own run, the merge takes them in order). Memory: one segment peaks at ~1.1 GB plus ~2.3 GB while ffmpeg
+    reverses a 600-frame chunk, and video.reverse lets one chunk be reversed at a time in the process, so two workers
+    peaked at 3.3 GB (11/21, LONG1 S1 + S6 replayed in one 4 GB cgroup); each worker past two adds ~1.2 GB.
+    Not used with skip_empty, whose video cap is paid out segment by segment."""
     rid = rid or time.strftime("%m%d-%H%M%S")
     d = os.path.join(pipeline.RUNS, rid)
     os.makedirs(d, exist_ok=True)
@@ -229,23 +236,54 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
     kw["lowlight"] = "on" if light["brightened"] else "off"
     inf["lowlight"] = light
     if skip_empty:
+        if segment_workers > 1:
+            st["log"].append(f"{time.strftime('%H:%M:%S')} segment_workers={segment_workers} not used with skip_empty "
+                             "(the video cap is paid out segment by segment): one segment at a time")
         return _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, max_usd_video, probe_every_s, kw)
     segs = plan(inf["n_frames"], inf["fps"], seg_s)
+    workers = max(1, min(int(segment_workers or 1), len(segs)))
     st["log"].append(f"{time.strftime('%H:%M:%S')} {inf['n_frames']} frames -> {len(segs)} segment(s) of <= {seg_s:g} s: "
-                     + ", ".join(f"{s}+{n}" for s, n in segs))
+                     + ", ".join(f"{s}+{n}" for s, n in segs) + (f"; {workers} at once" if workers > 1 else ""))
     _status(d, stage="segments", log=st["log"], video=inf)
-    done, live, cached, billed = [], 0, 0, 0.0
-    for k, (start, n) in enumerate(segs):
+    tally, lock, failed = dict(live=0, cached=0, billed=0.0), threading.Lock(), threading.Event()
+
+    def one(k, start, n):
+        if failed.is_set():     # another segment raised: what has not started is not sent
+            return None
         sp = os.path.join(d, f"seg{k + 1}.mp4")
         cut(full, sp, start, n)
         srid = f"{rid}__S{k + 1}"
-        pipeline.run_pipeline(sp, srid, **kw)
-        sst = json.load(open(os.path.join(pipeline.RUNS, srid, "status.json")))
-        live, cached, billed = live + sst["live_calls"], cached + sst["cached_calls"], billed + sst["billed_usd"]
-        done.append((os.path.join(pipeline.RUNS, srid), start, n))
-        st["log"].append(f"{time.strftime('%H:%M:%S')} segment S{k + 1} ({start / inf['fps']:.1f}-{(start + n) / inf['fps']:.1f} s) done: "
-                         + ", ".join(f"{m} {v['maxn']}" for m, v in json.load(open(os.path.join(done[-1][0], "result.json")))["metrics"].items()))
-        _status(d, stage="segments", log=st["log"], live_calls=live, cached_calls=cached, billed_usd=billed)
+        try:
+            pipeline.run_pipeline(sp, srid, **kw)
+        except BaseException:
+            failed.set()
+            raise
+        sd = os.path.join(pipeline.RUNS, srid)
+        sst = json.load(open(os.path.join(sd, "status.json")))
+        maxn = ", ".join(f"{m} {v['maxn']}" for m, v in json.load(open(os.path.join(sd, "result.json")))["metrics"].items())
+        with lock:      # workers finish in any order; the log says which segment, the merge goes by segment order
+            tally["live"] += sst["live_calls"]
+            tally["cached"] += sst["cached_calls"]
+            tally["billed"] += sst["billed_usd"]
+            st["log"].append(f"{time.strftime('%H:%M:%S')} segment S{k + 1} ({start / inf['fps']:.1f}-{(start + n) / inf['fps']:.1f} s) done: "
+                             + maxn)
+            _status(d, stage="segments", log=st["log"], live_calls=tally["live"], cached_calls=tally["cached"],
+                    billed_usd=tally["billed"])
+        return sd, start, n
+
+    if workers == 1:
+        done = [one(k, start, n) for k, (start, n) in enumerate(segs)]
+    else:
+        with cf.ThreadPoolExecutor(workers) as ex:
+            futs = [ex.submit(one, k, start, n) for k, (start, n) in enumerate(segs)]
+            try:
+                done = [f.result() for f in futs]
+            except BaseException:
+                failed.set()        # segments not started yet are not sent; the ones running finish their calls
+                for f in futs:
+                    f.cancel()
+                raise
+    live, cached, billed = tally["live"], tally["cached"], tally["billed"]
     R = merge(rid, os.path.basename(src), done, inf["fps"])
     R["video"]["lowlight"] = light
     with open(os.path.join(d, "result.json"), "w") as f:

@@ -2261,9 +2261,14 @@ if __name__ == "__main__":
                     "the last analysed frame are not sent; their boxes are carried (fishcount/screen.py). Uses --max-usd-video, not --max-usd")
     ap.add_argument("--max-usd-video", type=float, help="with --skip-empty: cap for the whole video (default $4 an hour)")
     ap.add_argument("--probe-every", type=float, help="with --skip-empty: seconds between probes of a skipped stretch (default 600)")
+    ap.add_argument("--segment-workers", type=int, default=1, metavar="N",
+                    help="long videos: run N segments at once (same result, sooner; two fit a 4 GB memory cap, each "
+                         "more needs ~1.2 GB; not with --skip-empty)")
     a = ap.parse_args()
     if not a.skip_empty and (a.max_usd_video is not None or a.probe_every is not None):
         ap.error("--max-usd-video and --probe-every need --skip-empty (without it each segment uses --max-usd)")
+    if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
+        ap.error("--segment-workers needs a number >= 1, and only 1 with --skip-empty (its video cap is paid segment by segment)")
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
     from fishcount import longvideo
     inf0 = video.info(a.video)
@@ -2274,7 +2279,8 @@ if __name__ == "__main__":
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                               probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
+                               probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
+                               segment_workers=a.segment_workers)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
