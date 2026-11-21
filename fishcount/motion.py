@@ -11,6 +11,9 @@ pass had tracked; a box on one (frame 32) tracked it in 57 of 60 frames, before 
 the candidates were sediment, shadows, bait and nautilus tentacles; on a busy reef clip (IMAS TF_52) they were too
 many to be useful. Hence Spark decides, and at most a few boxes go to SAM.
 """
+import os
+import tempfile
+
 from fishcount import video   # also sets up the optional FISH_PYLIB path before cv2
 import cv2
 import numpy as np
@@ -35,6 +38,55 @@ def _frames(clip, scale):
     return out, inf["width"] / w, inf["height"] / h
 
 
+def _read(clip, w, h):
+    """The clip's frames one at a time, shrunk to w x h while reading (as _frames does)."""
+    cap = cv2.VideoCapture(clip)
+    try:
+        while True:
+            ok, f = cap.read()
+            if not ok:
+                return
+            yield cv2.resize(f, (w, h), interpolation=cv2.INTER_AREA)
+    finally:
+        cap.release()
+
+
+class _Spill:
+    """A clip's frames shrunk to w x h: decoded once (read(), yielding each frame as it goes) into an unnamed
+    temporary file beside the clip, then read back from that file (again()) as often as wanted -- the same bytes,
+    without holding them in memory or decoding the video again. /tmp is RAM on this server, hence beside the clip."""
+
+    def __init__(self, clip, w, h):
+        self.clip, self.shape, self.n = clip, (h, w, 3), 0
+        try:
+            self.fh = tempfile.TemporaryFile(dir=os.path.dirname(os.path.abspath(clip)))
+        except OSError:
+            self.fh = tempfile.TemporaryFile()
+
+    def read(self):
+        for f in _read(self.clip, self.shape[1], self.shape[0]):
+            self.fh.write(np.ascontiguousarray(f).tobytes())
+            self.n += 1
+            yield f
+
+    def again(self):
+        self.fh.flush()
+        self.fh.seek(0)
+        size = int(np.prod(self.shape))
+        for _ in range(self.n):
+            yield np.frombuffer(self.fh.read(size), np.uint8).reshape(self.shape)
+
+    def close(self):
+        self.fh.close()
+
+
+def _median_frame(frames, band=32):
+    """np.median(np.stack(frames), axis=0) a band of rows at a time: each pixel's median is its own, so the same
+    values, without stacking a full copy of the frames (and median's own copy of that)."""
+    rows = frames[0].shape[0]
+    return np.concatenate([np.median(np.stack([f[r:r + band] for f in frames]), axis=0) for r in range(0, rows, band)])
+
+
 def _lab(f):
     return cv2.cvtColor(f, cv2.COLOR_BGR2LAB).astype(np.float32)
 
@@ -47,19 +99,38 @@ def candidates(clip, known, gap=2, min_area=12, max_area=2500, link=14, pad=6, s
     if scale != SCALE:      # areas are in analysis pixels; keep them meaning the same animal size
         k = (scale / SCALE) ** 2
         min_area, max_area, link, pad = max(4, int(min_area * k)), int(max_area * k), link * scale / SCALE, pad * scale / SCALE
-    frames, sx, sy = _frames(clip, scale)
-    step = 1 if len(frames) <= LONG else 3
-    bgl = _lab(np.median(np.stack(frames[::step]), axis=0).astype(np.uint8))
+    # 11/21: the frames are gone through three times (median, threshold, blobs) instead of all held: a 600-s
+    # segment's 2,658 frames at 1/3 scale were ~1.8 GB, plus copies for the median. Decoded once and spilled to a
+    # temporary file beside the clip for the second and third time. Same frames, same numbers.
+    inf = video.info(clip)
+    w, h = round(inf["width"] * scale), round(inf["height"] * scale)
+    sx, sy = inf["width"] / w, inf["height"] / h
+    spill = _Spill(clip, w, h)
+    sample, total = [], 0
+    for t, f in enumerate(spill.read()):              # read 1: the frames the median uses (every 3rd past LONG)
+        total = t + 1
+        if t < LONG or t % 3 == 0:
+            sample.append((t, f))
+    step = 1 if total <= LONG else 3
+    bgl = _lab(_median_frame([f for t, f in sample if t % step == 0]).astype(np.uint8))
+    del sample
     dist = lambda f: cv2.GaussianBlur(np.linalg.norm(_lab(f) - bgl, axis=2), (5, 5), 0)
-    allv = np.concatenate([dist(f)[::4, ::4].ravel() for f in frames])     # pass 1: threshold only
+    allv = np.concatenate([dist(f)[::4, ::4].ravel() for f in spill.again()])       # read 2: threshold only
     med = float(np.median(allv))
     thr = max(8.0, med + 6 * (float(np.median(np.abs(allv - med))) + 1e-6))
+    del allv
     ks = {f: [[b[0] / sx, b[1] / sy, b[2] / sx, b[3] / sy] for b in bs] for f, bs in known.items()}
     done, live = [], []
-    for t in range(len(frames)):                                            # pass 2: blobs
-        d = dist(frames[t])
-        a, b = max(0, t - gap), min(len(frames) - 1, t + gap)
-        moved = cv2.GaussianBlur(np.linalg.norm(_lab(frames[b]) - _lab(frames[a]), axis=2), (5, 5), 0) > thr * 0.8
+    win, src, nread = {}, spill.again(), 0            # read 3: blobs, frames t-gap .. t+gap held
+    for t in range(total):
+        a, b = max(0, t - gap), min(total - 1, t + gap)
+        while nread <= b:
+            win[nread] = next(src)
+            nread += 1
+        for i in [i for i in win if i < a]:
+            del win[i]
+        d = dist(win[t])
+        moved = cv2.GaussianBlur(np.linalg.norm(_lab(win[b]) - _lab(win[a]), axis=2), (5, 5), 0) > thr * 0.8
         m = ((d > thr) & moved).astype(np.uint8)
         m = cv2.dilate(cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)), np.ones((3, 3), np.uint8))
         n, cc, st, cen = cv2.connectedComponentsWithStats(m, 8)
@@ -89,6 +160,8 @@ def candidates(clip, known, gap=2, min_area=12, max_area=2500, link=14, pad=6, s
                 done.append(tr)
         nxt += [[bl] for j, bl in enumerate(blobs) if j not in used]
         live = nxt
+    src.close()
+    spill.close()
     out = []
     for tr in done + live:
         out.append(dict(first=tr[0]["t"], last=tr[-1]["t"], n=len(tr),

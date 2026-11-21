@@ -127,6 +127,18 @@ def all_masks(text):
     return maskcodec.masks(text)
 
 
+class _FrameMasks:
+    """all_masks(text) read a frame at a time: .get(f, default) decodes only that frame's line(s)."""
+
+    def __init__(self, text):
+        self.lines = maskcodec.frame_lines(text)
+
+    def get(self, f, default=None):
+        if f not in self.lines:
+            return default
+        return maskcodec.masks(self.lines[f]).get(f, default)
+
+
 def asked_labels(result):
     """Labels backed by at least one track from a requested prompt (or its zoom tile); the rest were found by
     discovery. By track source, not label text: 'shrimp (unidentified)' found by discovery is not 'shrimp' asked."""
@@ -148,8 +160,8 @@ def annotate(clip, raw, result, out_path):
     asked = asked_labels(result)
     is_asked = lambda l: l in asked
     srcs = [(text, tile) for text, tile in raw.values() if text]
-    if maskcodec.fast():      # C decoder: s003's 263 masks in ~1 s
-        decoded = [all_masks(t) for t, _ in srcs]
+    if maskcodec.fast():      # C decoder: s003's 263 masks in ~1 s; each frame decoded when drawn (11/21, memory:
+        decoded = [_FrameMasks(t) for t, _ in srcs]      # a 600-s segment's masks all at once ran to GBs)
     else:                     # reference decoder ~0.5 s a mask: one process per source
         import concurrent.futures as cf
         with cf.ProcessPoolExecutor(min(6, len(srcs) or 1)) as ex:

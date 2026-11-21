@@ -412,33 +412,48 @@ def dark_tracks(clip, frames, ts, W, H):
     paths = _paths(frames)
     at = {t: [paths[t][j] for j in sorted({min(len(paths[t]) - 1, len(paths[t]) // 8), len(paths[t]) // 2,
                                              max(0, len(paths[t]) - 1 - len(paths[t]) // 8)})] for t in ts}
-    imgs = video.frames(clip, {f for t in ts for f, _ in at[t]})
-    lab = {}
+    # 11/21: a frame at a time (read in order, every box on it measured, then dropped) instead of holding every frame
+    # and its L channel: LONG1_cr9 S1 went from 0.7 GB to over 4 GB here. Same numbers per box.
+    on = {}
+    for t in ts:
+        for j, (f, b) in enumerate(at[t]):
+            on.setdefault(f, []).append((t, j, b))
+    got = {}
+    for f, img in video.iter_frames(clip, on):
+        L = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)[:, :, 0].astype(np.float32)
+        for t, j, b in on[f]:
+            got[t, j] = _dark_at(L, b, W, H)
     out = []
     for t in ts:
         dl, hi = [], []
-        for f, b in at[t]:
-            if f not in lab:
-                lab[f] = cv2.cvtColor(imgs[f], cv2.COLOR_BGR2LAB)[:, :, 0].astype(np.float32)
-            x0, y0, x1, y1 = (int(round(v)) for v in b)
-            x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
-            w, h = x1 - x0, y1 - y0
-            if w < 5 or h < 5:
-                continue
-            inner = lab[f][y0 + h // 5:y1 - h // 5, x0 + w // 5:x1 - w // 5]
-            X0, Y0, X1, Y1 = max(0, x0 - w // 2), max(0, y0 - h // 2), min(W, x1 + w // 2), min(H, y1 + h // 2)
-            m = np.ones((Y1 - Y0, X1 - X0), bool)
-            m[y0 - Y0:y1 - Y0, x0 - X0:x1 - X0] = False
-            ring = lab[f][Y0:Y1, X0:X1][m]
-            if inner.size < 4 or ring.size < 4:
-                continue
-            r = float(np.median(ring))
-            dl.append(float(np.median(inner)) - r)
-            hi.append(float(np.percentile(inner, 95)) - r)
+        for j in range(len(at[t])):
+            v = got.get((t, j))
+            if v:
+                dl.append(v[0])
+                hi.append(v[1])
         if dl and np.median(dl) <= SHADOW_DARK and np.median(hi) <= SHADOW_BRIGHT:
             out.append(t)
-    del imgs
     return out
+
+
+def _dark_at(L, b, W, H):
+    """(inner median - ring median, inner 95th percentile - ring median) of box b on one frame's L channel, or None
+    when the box or its ring is too small."""
+    import numpy as np
+    x0, y0, x1, y1 = (int(round(v)) for v in b)
+    x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
+    w, h = x1 - x0, y1 - y0
+    if w < 5 or h < 5:
+        return None
+    inner = L[y0 + h // 5:y1 - h // 5, x0 + w // 5:x1 - w // 5]
+    X0, Y0, X1, Y1 = max(0, x0 - w // 2), max(0, y0 - h // 2), min(W, x1 + w // 2), min(H, y1 + h // 2)
+    m = np.ones((Y1 - Y0, X1 - X0), bool)
+    m[y0 - Y0:y1 - Y0, x0 - X0:x1 - X0] = False
+    ring = L[Y0:Y1, X0:X1][m]
+    if inner.size < 4 or ring.size < 4:
+        return None
+    r = float(np.median(ring))
+    return float(np.median(inner)) - r, float(np.percentile(inner, 95)) - r
 
 
 def shadow_pairs(frames, dark, counted):

@@ -126,22 +126,29 @@ def frames(path, indices):
     """Return {index: BGR ndarray} for the requested frame indices (sequential read: every frame is decoded, but only
     the wanted ones are converted to BGR -- grab() + retrieve() is read() split in two, the same pixels; 11/21 a
     2,658-frame 1080p clip 5.5 s -> 4.4 s)."""
-    want, out = set(indices), {}
+    return dict(iter_frames(path, indices))
+
+
+def iter_frames(path, indices):
+    """(index, BGR ndarray) for the requested frame indices in order, one at a time: what frames() returns, without
+    holding them all (11/21: dark_tracks on a 600-s segment held ~400 1080p frames and passed a 4 GB cap)."""
+    want = set(indices)
     if not want:
-        return out
+        return
     cap = cv2.VideoCapture(path)
-    i, last = 0, max(want)
-    while i <= last:
-        if not cap.grab():
-            break
-        if i in want:
-            ok, f = cap.retrieve()
-            if not ok:
+    try:
+        i, last = 0, max(want)
+        while i <= last:
+            if not cap.grab():
                 break
-            out[i] = f
-        i += 1
-    cap.release()
-    return out
+            if i in want:
+                ok, f = cap.retrieve()
+                if not ok:
+                    break
+                yield i, f
+            i += 1
+    finally:
+        cap.release()
 
 
 def jpg(img, max_w=None, q=85):
