@@ -661,8 +661,19 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
-                 misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1):
-    """skip_people: opt-in (_is_people): a discovery naming people or a boat and no animal is not searched for, and a
+                 misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1,
+                 crowd_peak=None, _peak=None, _run=None, haze="off"):
+    """haze: opt-in "auto" / "on" (video.is_hazy, video.clahe_frame): a clip that is not dark but washed out (median
+    L p95-p5 below video.HAZE_WIDTH) is analysed after CLAHE on L alone; the original is kept as clip_original.mp4 and
+    the numbers go into result["video"]["lowlight"]["haze"]. A dark clip's brightening already includes CLAHE.
+    "off" (default): nothing changes.
+    crowd_peak: opt-in half width in frames (CROWD_PEAK). After the crowd check, every row it marks a lower bound has
+    the frames within crowd_peak of its peak frame sent as the 3x2 crowd tiles (peak_windows, peak_tiles), and the
+    run is made again in the same folder with those tile tracks merged last, so they are audited, peak-checked and
+    counted like any other track (every earlier call is a cache hit the second time). It also asks the crowd check
+    about requested words that counted nothing (empty_rows), so a 0 can be marked a lower bound and tiled too.
+    result["crowd_peak"] keeps the windows and the first pass's crowd check. None (default): nothing changes.
+    skip_people: opt-in (_is_people): a discovery naming people or a boat and no animal is not searched for, and a
     sign whose suspected animal is one is not either. False (default): every discovery is searched, as before.
     probe_window: opt-in (PROBE_WINDOW): a discovered word is tried on +-probe_window frames around the frames Spark
     named before the whole clip (discovery ladder, zoom tiles, closer_look cells; clips of PROBE_MIN_FRAMES or more;
@@ -690,9 +701,10 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     counted unchecked). The paper's no-audit discovery baseline sets it explicitly.
     lowlight: "auto" brightens only a dark clip (video.is_dark), "on" always, "off" never; the original is kept as
     clip_original.mp4 and the decision with the brightness numbers goes into result["video"]["lowlight"]."""
+    args = dict(locals())
     do_motion = (do_discover and do_audit) if do_motion is None else do_motion
     rid = rid or time.strftime("%m%d-%H%M%S")
-    run = Run(rid)
+    run = _run or Run(rid)
     clip = run.path("clip.mp4")
     # 11/3: identical clip copies of finished runs are hard links to each other (disk full); writing into one would
     # rewrite them all, so a run starts from fresh files.
@@ -710,6 +722,14 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         os.replace(clip, run.path("clip_original.mp4"))
         video.brighten(run.path("clip_original.mp4"), clip)
         run.stage("ingest", f"dark clip (median L {light['median_l']}, mean {light['mean_l']}): brightened with gamma 0.5 + CLAHE")
+    elif haze != "off":
+        hz = video.contrast_stats(clip)
+        hz.update(mode=haze, applied=haze == "on" or (haze == "auto" and video.is_hazy(hz)))
+        light["haze"] = hz
+        if hz["applied"]:
+            os.replace(clip, run.path("clip_original.mp4"))
+            video.brighten(run.path("clip_original.mp4"), clip, frame_fn=video.clahe_frame)
+            run.stage("ingest", f"washed-out clip (L p95-p5 {hz['l_width']}): CLAHE on L")
     inf = video.info(clip)
     inf["lowlight"] = light
     run.status["video"] = inf
@@ -837,6 +857,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         site_entries, site_results = site_look(run, clip, inf, site, {q for _, q in plist} | {f["word"] for f in found if f["word"]},
                                                max_usd, offline)
         results[0:0] = site_results       # a remembered specific kind wins overlaps, like the scout's words
+    if _peak:     # --crowd-peak second pass: last, so every input and cache key above is that of the first pass
+        results += peak_tiles(run, clip, inf, _peak["windows"], plist[-1][0], max_usd, offline)
     raw = {name: (txt, tile) for name, _, _, txt, tile in results}   # tile=None: full-frame text (masks drawable)
     # clean: SAM 3.1 sometimes hands a frame's boxes the wrong ids (tracks.repair_ids); ids only, boxes and counts stay
     sources = [(name, label, tracks.repair_ids(d) if clean else d) for name, label, d, _, _ in results]
@@ -998,9 +1020,16 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     crowd = []
     if do_audit and crowd_look:
         try:
-            crowd = crowd_check(run, clip, m, inf["fps"], offline)
+            crowd = crowd_check(run, clip, m, inf["fps"], offline,
+                                extra=empty_rows(m, plist, frames, trk, inf["n_frames"]) if crowd_peak is not None else ())
         except FileNotFoundError as e:      # an offline replay of a run made before the crowd check
             run.stage("verify", f"crowd check skipped: {str(e)[:120]}")
+    if crowd_peak is not None and _peak is None:
+        win = peak_windows(crowd, inf["n_frames"], crowd_peak)
+        if win:
+            run.stage("verify", f"crowd peak: lower bound(s) at frame(s) {sorted({c['frame'] for c in crowd if c.get('lower_bound')})}; "
+                      f"3x2 tiles on frames {', '.join(f'{s}-{e - 1}' for s, e in win)}, then the run again with them")
+            return run_pipeline(**dict(args, rid=rid, _peak=dict(windows=win, first=crowd), _run=run))
     live = {}       # frames a track still holds after verify_peaks/drop_nested removed boxes (trk keeps the pre-removal list)
     for f, ks in frames.items():
         for k in ks:
@@ -1012,6 +1041,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                   crowd_checks=crowd, frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
     if site:
         result["site"] = dict(name=site, entries=site_entries)
+    if _peak:
+        result["crowd_peak"] = dict(half=crowd_peak, windows=_peak["windows"], first_pass=_peak["first"])
     if run.capped:      # only when a stage was skipped at the cap, so other results keep their exact bytes
         result["capped"] = run.capped
     run.save("result.json", result)
@@ -1375,8 +1406,89 @@ def crowd_rows(m, fps):
     return out
 
 
-def crowd_check(run, clip, m, fps, offline):
-    """GPT review 11/4, Table 3e: in crowded peak frames MaxN is a lower bound (DH3 crustaceans 4 against two
+def empty_rows(m, plist, frames, trk, n):
+    """--crowd-peak only: each requested word whose animal group counted nothing gets a crowd_check row too, MaxN 0,
+    asked at the frame where most boxes of that word were before the audit (or the middle frame when SAM found none).
+    Without it a clip whose boxes were all turned down, or never made, says 0 and nothing asks again; crowd_rows keeps
+    only rows with a MaxN. Spark's count marks the 0 a lower bound at CROWD_MIN_EXTRA or more, as for any row."""
+    counted = {name_group(x) or x for x, mm in m.items() if mm["maxn"]}
+    out = []
+    for lab, _ in plist:
+        g = name_group(lab) or lab
+        if g in counted or any(r[0] == g for r in out):
+            continue
+        per = {}
+        for f, ks in frames.items():
+            for k in ks:
+                if trk.get(k["track"], {}).get("label") == lab:
+                    per[int(f)] = per.get(int(f), 0) + 1
+        f = min(per, key=lambda x: (-per[x], x)) if per else n // 2
+        out.append((g, [], 0, f, CROWD_WORDS.get(g, short_name(lab) or lab)))
+    return out
+
+
+# Opt-in (--crowd-peak): the crowd tiles (crowd_tiles, 3x2, 2x) only around a peak frame the crowd check marked a lower
+# bound. 11/21 night: LONG1 S1, S5, S6 peaks are lower bounds (MaxN 14 / 10 / 8 against Spark 22 / 19 / 28); --crowd on
+# a 600-s segment sends six whole-segment tiles ($3.19), a window of 51 frames costs 6 x 51 frames ($0.06).
+CROWD_PEAK = 25         # frames on each side of the peak frame (51 frames = 10 s at 5 fps)
+CROWD_PEAK_MAX = 3      # windows per clip
+
+
+def peak_windows(checks, n, half):
+    """[(start, end)] frame ranges around every lower-bound row's frame, overlapping ones joined, at most CROWD_PEAK_MAX.
+    The whole clip when a window would be half of it or more (a 12-s clip: the tiles are then --crowd's own calls)."""
+    fs = sorted({c["frame"] for c in checks if c.get("lower_bound")})
+    if not fs:
+        return []
+    if 2 * (2 * half + 1) >= n:
+        return [(0, n)]
+    out = []
+    for f in fs:
+        s, e = max(0, f - half), min(n, f + half + 1)
+        if out and s <= out[-1][1]:
+            out[-1] = (out[-1][0], max(out[-1][1], e))
+        else:
+            out.append((s, e))
+    return out[:CROWD_PEAK_MAX]
+
+
+def peak_tiles(run, clip, inf, windows, label, max_usd, offline):
+    """SAM 'fish' on the crowd tiles of each window (a clip of its own, video.segment), frames renumbered to the clip.
+    Each tile of each window is a fresh call with its own 16 ids. Returns sources (name "peak+<start>-<tile>") to
+    merge after every other source, so every earlier track keeps its number."""
+    jobs = []
+    for s, e in windows:
+        src = clip
+        if e - s < inf["n_frames"]:
+            src = run.path(f"peak+{s}.mp4")
+            video.segment(clip, src, s, length=e - s)
+        for name, box in crowd_tiles(inf["width"], inf["height"]):
+            tp = run.path(f"tile_peak+{s}-{name}.mp4")
+            video.crop_tile(src, tp, box, scale=2)
+            jobs.append((f"peak+{s}-{name}", label, "fish", tp, box, s, e - s))
+    todo = []
+    for j in jobs:
+        if (not offline and not api.sam_cached(j[3], j[2])
+                and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, j[6]) * api.SAM_PER_FRAME > max_usd):
+            _capped(run, "track", f"crowd peak: {j[0]} not sent: would pass the per-video cap ${max_usd:.2f}")
+            continue
+        todo.append(j)
+
+    def one(j):
+        name, label, prompt, path, box, s, m = j
+        txt = tracks.shift_text(_counted(run, api.sam_video, path, prompt, m, offline=offline), s)
+        return name, label, tracks.from_tile(tracks.parse_boxes(txt), box, 2), txt, box
+
+    with cf.ThreadPoolExecutor(4) as ex:
+        out = list(ex.map(one, todo))
+    run.stage("track", "crowd peak tiles: " + ", ".join(
+        f"{o[0]} {len({d['id'] for ds in o[2].values() for d in ds})} ids" for o in out))
+    return out
+
+
+def crowd_check(run, clip, m, fps, offline, extra=()):
+    """extra: more rows in crowd_rows' form (empty_rows, --crowd-peak only).
+    GPT review 11/4, Table 3e: in crowded peak frames MaxN is a lower bound (DH3 crustaceans 4 against two
     counters' 15, DH8 fish 16 against 44, s004 hagfish 1 against 20), and nothing in the output said so. SAM 3.1 gives
     one call 16 object ids and answers only some words, so the tracks cannot be made to see every animal; instead the
     count is checked. Muse Spark, unprimed (no boxes, no number), counts the row's animals in its peak frame, given
@@ -1384,7 +1496,7 @@ def crowd_check(run, clip, m, fps, offline):
     lower bound when Spark's total is at least CROWD_MIN_EXTRA more than MaxN and at least CROWD_RATIO times it; the
     review screen then shows MaxN as ">= n" with a "count this frame" card, and the export carries the flag. Spark's
     number is never used as the count: Table 1c shows its own counts run high."""
-    rows = crowd_rows(m, fps)
+    rows = crowd_rows(m, fps) + list(extra)
     if not rows:
         return []
     imgs = video.frames(clip, {r[3] for r in rows})
@@ -1402,6 +1514,8 @@ def crowd_check(run, clip, m, fps, offline):
         lb = tot >= maxn + CROWD_MIN_EXTRA and tot >= CROWD_RATIO * maxn
         out.append(dict(row=name, labels=labels, frame=f, maxn=maxn, total=tot, estimated=bool(j.get("estimated")),
                         reason=j.get("reason", ""), lower_bound=lb))
+        if not maxn:        # an empty_rows row: nothing was counted, Spark was asked anyway
+            out[-1]["empty"] = True
     run.stage("verify", "crowd check (Muse Spark counts each row's peak frame, unprimed): " + ", ".join(
         f"{c['row']} MaxN {c['maxn']} / Spark {c['total']}{' -> lower bound' if c['lower_bound'] else ''}" for c in out))
     return out
@@ -2238,6 +2352,9 @@ if __name__ == "__main__":
     ap.add_argument("--camo", action="store_true", help="also look for movers no still frame shows (frame-to-frame change -> "
                     "Spark sees still and 'what moved' crops -> SAM box; kept when SAM follows the moving spot)")
     ap.add_argument("--misslook", action="store_true", help="Spark points at animals with no box on a few frames -> SAM box prompts")
+    ap.add_argument("--crowd-peak", type=int, nargs="?", const=CROWD_PEAK, metavar="FRAMES",
+                    help=f"crowded peaks: the 3x2 crowd tiles only within FRAMES (default {CROWD_PEAK}) of a peak frame the "
+                         "crowd check marks a lower bound, then the run again with those tracks (not with --crowd)")
     ap.add_argument("--box-window", type=int, nargs="?", const=BOX_WINDOW, metavar="FRAMES",
                     help=f"long clips: a motion box prompt sends SAM only the frames within FRAMES (default {BOX_WINDOW}) of its spot")
     ap.add_argument("--probe-window", type=int, nargs="?", const=PROBE_WINDOW, metavar="FRAMES",
@@ -2255,6 +2372,8 @@ if __name__ == "__main__":
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
     ap.add_argument("--max-usd", type=float, default=1.0, help="per-video cap (per segment when the video is split)")
     ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
+    ap.add_argument("--haze", choices=("auto", "on", "off"), default="off",
+                    help="washed-out clips: CLAHE on L before the analysis (auto: when L p95-p5 is below video.HAZE_WIDTH)")
     ap.add_argument("--segment", type=float, help="split into segments of at most this many seconds and merge "
                     "(automatic at 600 s, the SAM 3.1 per-file limit, for longer videos)")
     ap.add_argument("--skip-empty", action="store_true", help="long videos: stretches where the picture does not change from "
@@ -2267,6 +2386,8 @@ if __name__ == "__main__":
     a = ap.parse_args()
     if not a.skip_empty and (a.max_usd_video is not None or a.probe_every is not None):
         ap.error("--max-usd-video and --probe-every need --skip-empty (without it each segment uses --max-usd)")
+    if a.crowd_peak is not None and (a.crowd or a.crowd_peak < 1 or a.no_audit or a.no_crowd_look):
+        ap.error("--crowd-peak needs a number >= 1, the audit and the crowd check, and not --crowd (which tiles the whole clip)")
     if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
         ap.error("--segment-workers needs a number >= 1, and only 1 with --skip-empty (its video cap is paid segment by segment)")
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
@@ -2280,11 +2401,12 @@ if __name__ == "__main__":
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                                probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
-                               segment_workers=a.segment_workers)
+                               segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                          camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                         probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead)
+                         probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
+                         crowd_peak=a.crowd_peak, haze=a.haze)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
     print(f"run folder: {os.path.relpath(os.path.join(RUNS, a.id))}/", file=sys.stderr)

@@ -303,11 +303,12 @@ class SkipEmptyFlags(unittest.TestCase):
 
 class CappedStages(unittest.TestCase):
     def test_every_cap_skip_is_recorded(self):
-        """The seven stages that skip quietly at the per-video cap go through pipeline._capped."""
+        """The eight stages that skip quietly at the per-video cap go through pipeline._capped (the eighth: the
+        --crowd-peak tiles, 11/21)."""
         import re
         src = open(os.path.join(ROOT, "fishcount", "pipeline.py")).read()
         lines = [l for l in src.splitlines() if "would pass the per-video cap ${" in l]
-        self.assertEqual(len(lines), 7)
+        self.assertEqual(len(lines), 8)
         self.assertTrue(all("_capped(" in l for l in lines), [l for l in lines if "_capped(" not in l])
 
     def test_capped_logs_and_records(self):

@@ -234,6 +234,11 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
     mode = kw.get("lowlight", "auto")
     light.update(mode=mode, brightened=mode == "on" or (mode == "auto" and video.is_dark(light)))
     kw["lowlight"] = "on" if light["brightened"] else "off"
+    if kw.get("haze", "off") != "off":      # --haze: also decided once, on the whole video (not for a dark one)
+        hz = video.contrast_stats(full)
+        hz.update(mode=kw["haze"], applied=not light["brightened"] and (kw["haze"] == "on" or video.is_hazy(hz)))
+        light["haze"] = hz
+        kw["haze"] = "on" if hz["applied"] else "off"
     inf["lowlight"] = light
     if skip_empty:
         if segment_workers > 1:

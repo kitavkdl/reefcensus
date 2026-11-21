@@ -84,6 +84,41 @@ def is_dark(st):
     return st.get("median_l") is not None and st["median_l"] < DARK_MEDIAN_L and st["mean_l"] < DARK_MEAN_L
 
 
+# Opt-in (--haze): a washed-out clip (milky water, little contrast but not dark) gets CLAHE on L alone. 11/21 night,
+# the six luderick development clips: median L p95-p5 of 80, 90, 97, 108, 127, 131; the one at 80 (fish_20190710_4)
+# is the one whose second fish the pipeline misses (recall 82%). The bound was set from those widths before any run.
+HAZE_WIDTH = 85
+
+
+def contrast_stats(path, samples=400, width=480):
+    """Median over about `samples` frames spread over the clip (`width` px wide) of the Lab L p95-p5 width."""
+    every = max(1, info(path)["n_frames"] // samples)
+    cap = cv2.VideoCapture(path)
+    ws, i = [], 0
+    while True:
+        ok, f = cap.read()
+        if not ok:
+            break
+        if i % every == 0:
+            f = cv2.resize(f, (width, max(1, int(width * f.shape[0] / f.shape[1]))))
+            p5, p95 = np.percentile(cv2.cvtColor(f, cv2.COLOR_BGR2LAB)[:, :, 0], (5, 95))
+            ws.append(float(p95 - p5))
+        i += 1
+    cap.release()
+    return dict(l_width=round(float(np.median(ws)), 1) if ws else None)
+
+
+def is_hazy(st):
+    return st.get("l_width") is not None and st["l_width"] < HAZE_WIDTH
+
+
+def clahe_frame(img):
+    """CLAHE (clipLimit 2.0, 8x8 tiles) on the Lab L channel, no gamma: brighten_frame without lifting the shadows."""
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    lab[:, :, 0] = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(lab[:, :, 0])
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+
 def brighten_frame(img):
     """gamma 0.5 per channel, then CLAHE (clipLimit 2.0, 8x8 tiles) on the Lab L channel."""
     lut = (255.0 * (np.arange(256) / 255.0) ** 0.5).clip(0, 255).astype(np.uint8)
@@ -92,8 +127,9 @@ def brighten_frame(img):
     return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
 
-def brighten(src, dst):
-    """Write `src` brightened frame by frame to `dst` (H.264 crf 18, same size and rate; the encoding of the post-hoc
+def brighten(src, dst, frame_fn=None):
+    """frame_fn: what each frame goes through (default brighten_frame; clahe_frame for --haze).
+    Write `src` brightened frame by frame to `dst` (H.264 crf 18, same size and rate; the encoding of the post-hoc
     test, so its cached API answers still apply)."""
     cap = cv2.VideoCapture(src)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -105,7 +141,7 @@ def brighten(src, dst):
         ok, f = cap.read()
         if not ok:
             break
-        p.stdin.write(brighten_frame(f).tobytes())
+        p.stdin.write((frame_fn or brighten_frame)(f).tobytes())
     cap.release()
     p.stdin.close()
     if p.wait():
