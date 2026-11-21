@@ -133,6 +133,25 @@ class Run:
         json.dump(obj, open(self.path(name), "w"))
 
 
+TEMP_PREFIXES = ("tile_", "seg_", "probe_", "peak+", "box_")     # working cuts sent to SAM, made again on any re-run
+
+
+def drop_temp(d):
+    """Remove a finished run's working videos: the reversed clip and the tile / refill / probe / peak / box cuts sent to
+    SAM. Nothing reads them after the run (the cache is keyed by the bytes, which a re-run makes again; run_pipeline
+    starts from fresh files), and they were 8.85 of the 27.7 GB in runs/ on 11/21 (32%), which caps how many hours a
+    disk holds. The review screen's files (clip.mp4, clip_original.mp4, annotated.mp4, jpg, json) stay.
+    FISH_KEEP_TEMP=1 keeps them (to look at what SAM was sent). -> names removed."""
+    if os.environ.get("FISH_KEEP_TEMP") == "1":
+        return []
+    gone = []
+    for f in sorted(os.listdir(d)):
+        if f.endswith(".mp4") and (f == "clip_rev.mp4" or f.startswith(TEMP_PREFIXES)):
+            os.remove(os.path.join(d, f))
+            gone.append(f)
+    return gone
+
+
 def _capped(run, stage, msg):
     """A stage skipped because it would pass the per-video cap: logged as before and listed in result["capped"], so a
     half-analysed segment is marked (longvideo --skip-empty gives each segment what is left of the video cap)."""
@@ -1097,6 +1116,9 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             render.evidence(clip, raw, result, mm["maxn_frame"], run.path(f"evidence_{api_safe(name)}.jpg"), name)
     run.stage("render", "drawing the annotated video")
     render.annotate(clip, raw, result, run.path("annotated.mp4"))
+    gone = drop_temp(run.dir)
+    if gone:
+        run.stage("render", f"removed {len(gone)} working video(s) sent to SAM (FISH_KEEP_TEMP=1 keeps them)")
     run.status["done"] = time.time()
     run.stage("done", f"finished in {run.status['done'] - run.status['started']:.0f}s; live calls {run.status['live_calls']}, cached {run.status['cached_calls']}, billed ${run.status['billed_usd']:.3f}")
     return result

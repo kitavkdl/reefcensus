@@ -223,7 +223,15 @@ def _fingerprint(seg_clip, kw):
                 code=h.hexdigest()[:24])
 
 
-FORECAST_MIN = 2   # segments run before a range is given: one segment is a point, not a range
+def _drop_cut(sp):
+    """A finished segment's cut from the whole video: its folder holds the same bytes as clip.mp4 (run_pipeline copies a
+    5-fps mp4), and --resume cuts again to compare bytes, so the cut is not kept (1.94 of the 53-min NOAA video's
+    6.6 GB). A segment that failed keeps its cut. FISH_KEEP_TEMP=1 keeps it."""
+    if os.environ.get("FISH_KEEP_TEMP") != "1" and os.path.exists(sp):
+        os.remove(sp)
+
+
+FORECAST_MIN = 2  # segments run before a range is given: one segment is a point, not a range
 
 
 def forecast(costs, secs, left, workers=1):
@@ -317,6 +325,7 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
                 raise
             with open(rp, "w") as f:     # written on every run, so a run started without --resume can be resumed
                 json.dump(fp, f)
+        _drop_cut(sp)
         sst = json.load(open(os.path.join(sd, "status.json")))
         maxn = ", ".join(f"{m} {v['maxn']}" for m, v in json.load(open(os.path.join(sd, "result.json")))["metrics"].items())
         with lock:      # workers finish in any order; the log says which segment, the merge goes by segment order
@@ -433,6 +442,7 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
         srid, acc["at"] = f"{rid}__{tag}", start
         try:
             pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=max(0.0, cap - acc["spent"])))
+            _drop_cut(sp)
         finally:
             p = os.path.join(pipeline.RUNS, srid, "status.json")
             if os.path.exists(p):
