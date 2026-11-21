@@ -40,9 +40,14 @@ def plan(n_frames, fps, seg_s):
 
 
 def cut(clip, dst, start, n):
-    """Frames start..start+n-1 of a 5 fps clip, by frame number (exact), re-encoded like video.ingest."""
-    subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", clip,
-                    "-vf", f"select=between(n\\,{start}\\,{start + n - 1}),setpts=N/5/TB", "-r", "5", "-fps_mode", "cfr",
+    """Frames start..start+n-1 of a 5 fps clip, by frame number (exact), re-encoded like video.ingest. Entered by
+    seeking (video.seek_args) rather than a select filter that decodes everything before `start`: same bytes
+    (11/21: LONG1 S2 and S6 cut both ways, identical sha256), 46-50 s -> 26 s a 600-s segment."""
+    if round(video.info(clip)["fps"], 6) == 5:
+        cmd = [*video.seek_args(start, 5), "-i", clip, "-frames:v", str(n), "-vf", "setpts=N/5/TB"]
+    else:
+        cmd = ["-i", clip, "-vf", f"select=between(n\\,{start}\\,{start + n - 1}),setpts=N/5/TB"]
+    subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", *cmd, "-r", "5", "-fps_mode", "cfr",
                     "-an", "-c:v", "libx264", *video.X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst], check=True)
     got = video.info(dst)["n_frames"]
     if got != n:

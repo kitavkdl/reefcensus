@@ -174,14 +174,29 @@ def crop_tile(src, dst, box, scale=2, fps=5):
     return info(dst)
 
 
+def seek_args(start, src_fps):
+    """ffmpeg input options that start decoding at frame `start` of a constant-rate clip: seek to half a frame
+    before it, so frame start-1 is dropped and frame `start` is the first kept (ffmpeg's accurate seek drops frames
+    before the seek point). [] for frame 0."""
+    return ["-ss", f"{(start - 0.5) / src_fps:.6f}"] if start > 0 else []
+
+
 def segment(src, dst, start, fps=5, length=None):
     """Frames [start, start+length) of src (to the end when length is None) as a clip of its own (a fresh SAM call
-    gets a fresh set of 16 ids). length=None keeps the exact ffmpeg command, so cached segment calls stay valid."""
-    n = info(src)["n_frames"]
+    gets a fresh set of 16 ids). A clip already at `fps` is entered by seeking (-ss) instead of decoding every frame
+    before `start` through a select filter: the output is the same bytes (11/21: 88 of 88 cuts of 60- and 2,658-frame
+    clips, plain and reversed, identical by sha256), so cached segment calls stay valid, and a 100-frame window late
+    in a 600-s segment takes about 1 s instead of 5. Other rates keep the select command."""
+    inf = info(src)
+    n = inf["n_frames"]
     end = n if length is None else min(n, start + length)
-    sel = f"gte(n,{start})" if end == n else f"between(n,{start},{end - 1})"
-    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
-                    f"select='{sel}',setpts=N/FRAME_RATE/TB", "-an", "-fps_mode", "cfr", "-r", str(fps),
+    if round(inf["fps"], 6) == fps:
+        cmd = [*seek_args(start, inf["fps"]), "-i", src, *(["-frames:v", str(end - start)] if end < n else []),
+               "-vf", "setpts=N/FRAME_RATE/TB"]
+    else:
+        sel = f"gte(n,{start})" if end == n else f"between(n,{start},{end - 1})"
+        cmd = ["-i", src, "-vf", f"select='{sel}',setpts=N/FRAME_RATE/TB"]
+    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", *cmd, "-an", "-fps_mode", "cfr", "-r", str(fps),
                     "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", dst], check=True)
     out = info(dst)
     if out["n_frames"] != end - start:
@@ -210,8 +225,11 @@ def reverse(src, dst, chunk=REVERSE_CHUNK):
     for k, s in enumerate(range(0, n, chunk)):
         e = min(n, s + chunk) - 1
         part = os.path.join(tmp, f"part{k:03d}.mp4")
-        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vf",
-                        f"select='between(n,{s},{e})',setpts=N/FRAME_RATE/TB,reverse", "-an", "-fps_mode", "cfr", "-r", str(fps),
+        # seek + trim instead of select (which decodes every frame before s): same bytes per chunk (11/21: LONG1 S1
+        # and S6, 10 of 10 chunks identical by sha256), a 2,658-frame clip reversed in 63 s instead of 94
+        cut = ([*seek_args(s, fps), "-i", src, "-vf", f"trim=end_frame={e - s + 1},setpts=N/FRAME_RATE/TB,reverse"]
+               if round(fps, 6) == round(fps) else ["-i", src, "-vf", f"select='between(n,{s},{e})',setpts=N/FRAME_RATE/TB,reverse"])
+        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", *cut, "-an", "-fps_mode", "cfr", "-r", str(fps),
                         "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", part], check=True)
         got = info(part)["n_frames"]
         if got != e - s + 1:
