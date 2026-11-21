@@ -2,7 +2,7 @@
 -> audit (Spark) -> metrics -> evidence frames.  Each stage writes into runs/<id>/ and updates status.json,
 which the web UI polls.
   python3 fishcount/pipeline.py <video> [--offline] [--no-scout] [--no-audit] [--zoom] [--prompts fish ...]"""
-import argparse, concurrent.futures as cf, hashlib, json, os, re, shutil, sys, threading, time
+import argparse, concurrent.futures as cf, hashlib, json, math, os, re, shutil, sys, threading, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, tracks, video, render, maskdedupe, motion
 import requests
@@ -206,11 +206,52 @@ def discover(run, clip, inf, targets, offline):
     return api.parse_json(reply)
 
 
-def word_ladder(run, clip, n, words, offline):
+# Opt-in (--probe-window): a discovered word is first tried on short windows around the frames Spark named for the
+# animal; only a word that finds something there is sent with the whole clip. 11/21 night, every saved run with a
+# discovery ladder: all 347 words that tracked anything on the whole clip had boxes within 25 frames of a frame
+# Spark named (5 of 5 on clips over 300 frames), and the 12 words that found nothing on long clips billed 31,896
+# frames ($6.38; LONG1_cr9 S2 "dark lump on seabed": 8 whole-segment calls, $4.25, all empty).
+PROBE_WINDOW = 25       # frames on each side of a frame Spark named
+PROBE_FRAMES = 2        # at most this many of Spark's frames get a window
+
+
+def _probe_windows(frames, n, half, k=PROBE_FRAMES):
+    """[(start, length)] windows of +-half frames around the first `k` frames Spark named (overlaps joined); [] when
+    Spark named none or the windows would cover the clip (a short clip: the word goes straight to the whole clip)."""
+    fs = sorted({int(f) for f in list(frames or [])[:k] if isinstance(f, (int, float)) and not isinstance(f, bool) and 0 <= f < n})
+    ws = []
+    for f in fs:
+        s, e = max(0, f - half), min(n, f + half + 1)
+        if ws and s <= ws[-1][1]:
+            ws[-1][1] = max(ws[-1][1], e)
+        else:
+            ws.append([s, e])
+    if not ws or sum(e - s for s, e in ws) >= n:
+        return []
+    return [(s, e - s) for s, e in ws]
+
+
+def _probe(run, path, word, windows, offline):
+    """True when SAM finds `word` in one of the windows of `path` (cut with video.segment), False when in none."""
+    base = os.path.splitext(os.path.basename(path))[0] + "_" + re.sub(r"[^A-Za-z0-9]+", "_", word)
+    for s, m in windows:
+        seg = run.path(f"probe_{base}+{s}.mp4")
+        video.segment(path, seg, s, length=m)
+        if any(tracks.parse_boxes(_counted(run, api.sam_video, seg, word, m, offline=offline)).values()):
+            return True
+    return False
+
+
+def word_ladder(run, clip, n, words, offline, probe=None):
     """Try SAM with each word in turn; stop at the first that tracks anything. Returns (word|None, text, tried).
-    `clip` may be a zoom tile; then frames/boxes are in tile coordinates."""
+    `clip` may be a zoom tile; then frames/boxes are in tile coordinates.
+    probe: windows (_probe_windows) a word must find something in before the whole clip is sent; a word that finds
+    nothing there is recorded with frames 0 and its windows."""
     tried = []
     for w in words:
+        if probe and not _probe(run, clip, w, probe, offline):
+            tried.append(dict(word=w, frames=0, probe=[list(x) for x in probe]))
+            continue
         txt = _counted(run, api.sam_video, clip, w, n, offline=offline)
         d = tracks.parse_boxes(txt)
         tried.append(dict(word=w, frames=len(d)))
@@ -511,8 +552,12 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
-                 misslook=False, crowd_look=True):
-    """crowd_look: crowd_check (on by default, needs audits): marks a MaxN a lower bound when Muse Spark, unprimed,
+                 misslook=False, crowd_look=True, box_window=None, probe_window=None):
+    """probe_window: opt-in (PROBE_WINDOW): a discovered word is tried on +-probe_window frames around the frames Spark
+    named before the whole clip (word_ladder, recover, closer_look). None (default): straight to the whole clip.
+    box_window: opt-in (BOX_WINDOW): a motion box prompt on a clip longer than 2 * box_window + 1 frames sends SAM
+    only the frames within box_window of its spot (motion_look). None (default): the whole clip, as before.
+    crowd_look: crowd_check (on by default, needs audits): marks a MaxN a lower bound when Muse Spark, unprimed,
     counts clearly more animals in the peak frame. Changes no count.
     misslook: opt-in miss_look (Spark points at animals without a box on a few frames -> SAM box prompts).
     camo: opt-in camo_look (needs audits): movers no still frame shows, tracked from a SAM box when SAM follows the
@@ -627,7 +672,9 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         return name, label, (tracks.from_tile(d, box, 2) if box else d), txt, box
 
     with cf.ThreadPoolExecutor(4) as ex:
-        ladders = [ex.submit(word_ladder, run, clip, inf["n_frames"], words, offline) for _, words in others]
+        ladders = [ex.submit(word_ladder, run, clip, inf["n_frames"], words, offline,
+                             _probe_windows(o.get("frames"), inf["n_frames"], probe_window) if probe_window else None)
+                   for o, words in others]
         results = list(ex.map(one, jobs))
         for i, ((o, _), fu) in enumerate(zip(others, ladders)):
             word, txt, tried = fu.result()
@@ -638,16 +685,18 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
     if refill:
         results += refill_saturated(run, jobs, results, inf["n_frames"], offline, max_usd=max_usd)
-    recovered =recover(run, clip, inf, others, found, disc.get("signs", []), results, max_usd, offline) if do_discover else []
+    recovered = recover(run, clip, inf, others, found, disc.get("signs", []), results, max_usd, offline,
+                        probe_window=probe_window) if do_discover else []
     moved = []
     if do_motion:
         try:
-            moved = motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found])
+            moved = motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found], box_window=box_window)
             # second look (11/4 s001: the first sheet's 8 spots were all pieces of the 4 nautiluses it then tracked,
             # so a 5th that moved only in frames 35-40 ranked 20th and was never shown; with those tracks known it
             # ranks 7th). Only when the first look added a track: otherwise the candidates would be the same.
             if any(e.get("source") for e in moved):
-                moved += motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found], rnd=2)
+                moved += motion_look(run, clip, inf, results, max_usd, offline, names=[f["what"] for f in found], rnd=2,
+                                     box_window=box_window)
         except MOTION_ERRORS as e:
             _skip_stage(run, "motion", f"motion look skipped: {type(e).__name__}: {str(e)[:160]}", e)
         recovered += moved
@@ -893,7 +942,7 @@ def site_look(run, clip, inf, site, skip, max_usd, offline):
     return entries, results
 
 
-def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max_tiles=3):
+def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max_tiles=3, probe_window=None):
     """Second look for discovered animals (11/1 s003: full frame 'nautilus' tracked 1 of 3; a zoomed crop tracked
     all 3, and a reversed pass back-filled the frames before SAM first recognised it).
       backfill: the word that worked, run again on the reversed clip;
@@ -908,7 +957,8 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
         if (f["maxn_full"] or 0) < int(o.get("approx_max_count") or 1):
             ladder = ([f["word"]] if f["word"] else []) + [w for w in words if w != f["word"]]
             for cell in [c for c in o.get("cells", []) if c in CELLS][:2]:
-                jobs.append(dict(kind="zoom", name=f"d{i}z-{cell}", what=o["what"], words=ladder[:2], ladder=ladder[:3], cell=cell))
+                jobs.append(dict(kind="zoom", name=f"d{i}z-{cell}", what=o["what"], words=ladder[:2], ladder=ladder[:3], cell=cell,
+                                 spark_frames=o.get("frames")))
     for j, sg in enumerate(signs):
         guess = (sg.get("possible_animal") or "").lower()
         if sg.get("region") not in CELLS or "unknown" in guess:
@@ -916,7 +966,8 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
         match = next((f for f in found if f["word"] and (f["word"] in guess or guess in f["what"].lower())), None)
         words = [match["word"]] if match else [w for w in guess.split()[-1:] if w.isalpha()]
         if words:
-            jobs.append(dict(kind="sign", name=f"s{j}-{sg['region']}", what=sg.get("sign", ""), words=words, cell=sg["region"]))
+            jobs.append(dict(kind="sign", name=f"s{j}-{sg['region']}", what=sg.get("sign", ""), words=words, cell=sg["region"],
+                             spark_frames=[sg.get("frame")]))
     seen, todo = set(), []
     for jb in jobs:     # one tile per (block, first word); backfills always kept, tiles capped
         key = (jb["cell"] and block_box(jb["cell"], W, H), jb["words"][0])
@@ -943,7 +994,9 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
             jb["box"], jb["path"] = None, rev
 
     def one(jb):
-        word, txt, tried = word_ladder(run, jb["path"], video.info(jb["path"])["n_frames"], jb["words"], offline)
+        m = video.info(jb["path"])["n_frames"]
+        probe = _probe_windows(jb.get("spark_frames"), m, probe_window) if probe_window and jb["kind"] != "backfill" else None
+        word, txt, tried = word_ladder(run, jb["path"], m, jb["words"], offline, probe)
         return jb, word, txt, tried
 
     with cf.ThreadPoolExecutor(3) as ex:
@@ -962,7 +1015,7 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
     closer = [dict(jb, kind="cell", name=jb["name"].replace("z-", "c-"), words=jb["ladder"]) for jb in todo
               if jb["kind"] == "zoom" and not any(e["kind"] == "zoom" and e["what"] == jb["what"] and e["cell"] == jb["cell"] and e["word"] for e in log)]
     if closer:
-        log += closer_look(run, clip, inf, closer, results, max_usd, offline)
+        log += closer_look(run, clip, inf, closer, results, max_usd, offline, probe_window=probe_window)
     return log
 
 
@@ -1325,11 +1378,65 @@ def _miss_label(lab, labels):
     return lab
 
 
-def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=(), rnd=1):
+# Opt-in (--box-window): a box prompt on a long clip goes to SAM with only the frames around the spot's frame.
+# 11/21 night (LONG1_cr9, 6 segments of 2,658 frames): 28 box prompts were $14.88, 57% of the SAM bill, and the
+# boxes they left counted toward no MaxN (all 6 segments, every label, unchanged with them removed). 92% of their
+# boxes lay over 100 frames from the spot: the same still object (seabed, a crab, a snail; the audit rejected them)
+# all segment long, or SAM's id 1 moved to other fish, already tracked by the "fish" pass.
+BOX_WINDOW = 100        # frames on each side of the spot's frame (201 frames = 40 s at 5 fps)
+BOX_STILL = 0.5         # a windowed track whose centre stays within this many box sizes counts as sitting still
+
+
+def _box_clip(run, clip, frame, n, half, tag):
+    """(path, first frame, frames) of the clip a box prompt at `frame` goes to: the whole clip, or with `half` the
+    frames [frame - half, frame + half] cut out as a clip of their own (video.segment). A window as long as the clip
+    is the clip itself, so short clips keep their exact SAM call (and cache key)."""
+    if half is None:
+        return clip, 0, n
+    s, e = max(0, frame - half), min(n, frame + half + 1)
+    if e - s >= n:
+        return clip, 0, n
+    seg = run.path(f"box_{tag}+{s}.mp4")
+    video.segment(clip, seg, s, length=e - s)
+    return seg, s, e - s
+
+
+def _sits_still(d, still=BOX_STILL):
+    """True when every box in `d` keeps its centre within `still` box sizes of the first one (a resting animal, a
+    rock, a crab that has not moved)."""
+    fs = sorted(f for f, ds in d.items() if ds)
+    if len(fs) < 2:
+        return False
+    b0 = d[fs[0]][0]["box"]
+    size = max(b0[2] - b0[0], b0[3] - b0[1], 1)
+    cx, cy = (b0[0] + b0[2]) / 2, (b0[1] + b0[3]) / 2
+    return all(math.hypot((x["box"][0] + x["box"][2]) / 2 - cx, (x["box"][1] + x["box"][3]) / 2 - cy) <= still * size
+               for f in fs for x in d[f])
+
+
+def _followed(box, frame, mine, windowed):
+    """Name of an earlier box call whose track already has this spot, or None. In its frame (motion_look's rule);
+    with windowed calls also a track that sat still in its window and has this box at its frame nearest to `frame`
+    (11/21 night LONG1_cr9: the whole-clip calls skipped 13 spots as already followed; on 100-frame windows the
+    frame rule alone still skips 2 of them, with the nearest frame of a still track 11, and none of the 28 spots the
+    whole-clip calls sent is skipped)."""
+    for name, d in mine:
+        if any(tracks.overlap(box, k["box"]) >= 0.3 for k in d.get(frame, [])):
+            return name
+        if windowed and _sits_still(d):
+            g = min((f for f, ds in d.items() if ds), key=lambda f: abs(f - frame))
+            if any(tracks.overlap(box, k["box"]) >= 0.3 for k in d[g]):
+                return name
+    return None
+
+
+def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_conf=0.6, names=(), rnd=1, box_window=None):
     """Look where pixels moved but nothing was boxed (fishcount/motion.py): up to `k` spots go to Spark on one
     sheet; up to `max_boxes` it calls animals go to SAM as box prompts, no word. Appends ("m<i>", label, dets,
     text, None) to `results`; returns log entries for the UI. Spark's verdict and the chosen boxes are cached per
-    clip (cache/motion_<sha>_<ver>.json), so a free replay does not depend on re-deriving the same sheet bytes."""
+    clip (cache/motion_<sha>_<ver>.json), so a free replay does not depend on re-deriving the same sheet bytes.
+    box_window: opt-in half width in frames (BOX_WINDOW): each box prompt sees only the frames around its spot
+    (_box_clip); None = the whole clip, as before."""
     n, W, H = inf["n_frames"], inf["width"], inf["height"]
     known = {}
     for _, _, d, _, _ in results:            # +-3 frames: a box SAM lost for a frame still covers its animal
@@ -1344,7 +1451,8 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     cpath = os.path.join(api.CACHE, f"motion_{key}.json")
     sheet_jpg = run.path("motion_sheet.jpg" if rnd == 1 else f"motion_sheet{rnd}.jpg")
     scan = "Movement outside every box" + ("" if rnd == 1 else " (second look, after the first boxes)")
-    est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    per_box = min(n, 2 * box_window + 1) if box_window is not None else n
+    est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, per_box) * api.SAM_PER_FRAME
     if run.status["billed_usd"] + est > max_usd and not offline:
         _capped(run, "motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return []
@@ -1409,12 +1517,17 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     run.stage("motion", "SAM 3.1 tracks from a box, no word: " + ", ".join(f"{c['tile']} {c['what']} (frame {c['frame']})" for c in chosen))
 
     def one(c):
-        prompt = motion.box_prompt(c["frame"], c["box"], W, H)
-        return c, _counted(run, api.sam_video, clip, prompt, n, offline=offline)
+        path, s, m = _box_clip(run, clip, c["frame"], n, box_window, f"r{rnd}{c['tile']}")
+        prompt = motion.box_prompt(c["frame"] - s, c["box"], W, H)
+        txt = _counted(run, api.sam_video, path, prompt, m, offline=offline)
+        return c, (tracks.shift_text(txt, s) if s else txt)
 
     # one at a time: SAM tracks a box both ways through the clip, so a later spot may be the animal an earlier box
     # already followed (11/2 s004: M4 at frame 34 and M7 at frame 50 were one red shrimp) -> skip, no second call
+    windowed = box_window is not None and 2 * box_window + 1 < n
     prior, mine, calls = list(results), [], 0
+    if windowed:    # a second look's spot may be a still animal a first-look window ended before: it is known
+        mine = [(src, d) for src, _, d, _, _ in results if re.fullmatch(r"m\d+", src)]
     for i, c in enumerate(chosen):
         entry = dict(kind="motion", tile=c["tile"], what=c.get("what") or c["label"], cell=None, frame=c["frame"], box=c["box"],
                      tried=[dict(word="box", frames=None)], word=None, **({"round": rnd} if rnd > 1 else {}))
@@ -1425,7 +1538,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
         if wb != list(c["box"]):
             entry.update(box=wb, sheet_box=c["box"])
             c = dict(c, box=wb)
-        same = next((t for t, d in mine if any(tracks.overlap(c["box"], k["box"]) >= 0.3 for k in d.get(c["frame"], []))), None)
+        same = _followed(c["box"], c["frame"], mine, windowed)
         if same:
             entry.update(note=f"already followed by {same}")
             log.append(entry)
@@ -1453,6 +1566,7 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
             entry["source"] = src
         log.append(entry)
         run.stage("motion", f"{c['tile']} box -> '{label}' tracked in {k_frames} of {n} frames"
+                  + (f" (frames {max(0, c['frame'] - box_window)}-{min(n - 1, c['frame'] + box_window)} sent)" if windowed else "")
                   + (f" ({clash} frames already tracked removed" + (f", joined '{took}')" if took else ")") if clash else ""))
     return log
 
@@ -1708,7 +1822,7 @@ def camo_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_c
     return log, verdicts
 
 
-def closer_look(run, clip, inf, jobs, results, max_usd, offline):
+def closer_look(run, clip, inf, jobs, results, max_usd, offline, probe_window=None):
     """A block found nothing: crop just the cell Spark named at 3x and try every word, keeping the one tracked in
     the most frames (11/2 s002: 'crab' fired 5 frames on the nautilus' shell edge, 'shrimp' 12 frames on the real
     crustacean; stopping at the first hit would keep the wrong one). Then the same word on the reversed cell
@@ -1726,8 +1840,12 @@ def closer_look(run, clip, inf, jobs, results, max_usd, offline):
         path = run.path(f"tile_{jb['name']}.mp4")
         video.crop_tile(clip, path, box, scale=CELL_SCALE)
         tried, best = [], (0, None, "")
+        probe = _probe_windows(jb.get("spark_frames"), n, probe_window) if probe_window else None
         for w in jb["words"]:
             try:
+                if probe and not _probe(run, path, w, probe, offline):
+                    tried.append(dict(word=w, frames=0, probe=[list(x) for x in probe]))
+                    continue
                 txt = _counted(run, api.sam_video, path, w, n, offline=offline)
             except FileNotFoundError:   # free replay of a run made before this step existed
                 tried.append(dict(word=w, frames=None, note="not cached"))
@@ -1977,6 +2095,11 @@ if __name__ == "__main__":
     ap.add_argument("--camo", action="store_true", help="also look for movers no still frame shows (frame-to-frame change -> "
                     "Spark sees still and 'what moved' crops -> SAM box; kept when SAM follows the moving spot)")
     ap.add_argument("--misslook", action="store_true", help="Spark points at animals with no box on a few frames -> SAM box prompts")
+    ap.add_argument("--box-window", type=int, nargs="?", const=BOX_WINDOW, metavar="FRAMES",
+                    help=f"long clips: a motion box prompt sends SAM only the frames within FRAMES (default {BOX_WINDOW}) of its spot")
+    ap.add_argument("--probe-window", type=int, nargs="?", const=PROBE_WINDOW, metavar="FRAMES",
+                    help=f"long clips: a discovered word is tried on FRAMES (default {PROBE_WINDOW}) around the frames Spark named "
+                         "before the whole clip")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
@@ -2002,11 +2125,12 @@ if __name__ == "__main__":
                                offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
-                               misslook=a.misslook, crowd_look=not a.no_crowd_look,
-                               skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
+                               misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
+                               probe_window=a.probe_window, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
-                         camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look)
+                         camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
+                         probe_window=a.probe_window)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
     print(f"run folder: {os.path.relpath(os.path.join(RUNS, a.id))}/", file=sys.stderr)
