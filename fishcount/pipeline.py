@@ -560,8 +560,10 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
-                 misslook=False, crowd_look=True, box_window=None, probe_window=None):
-    """probe_window: opt-in (PROBE_WINDOW): a discovered word is tried on +-probe_window frames around the frames Spark
+                 misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False):
+    """skip_people: opt-in (_is_people): a discovery naming people or a boat and no animal is not searched for, and a
+    sign whose suspected animal is one is not either. False (default): every discovery is searched, as before.
+    probe_window: opt-in (PROBE_WINDOW): a discovered word is tried on +-probe_window frames around the frames Spark
     named before the whole clip (discovery ladder, zoom tiles, closer_look cells; clips of PROBE_MIN_FRAMES or more;
     not signs or reversed back-fills). None (default): straight to the whole clip.
     box_window: opt-in (BOX_WINDOW): a motion box prompt on a clip longer than 2 * box_window + 1 frames sends SAM
@@ -652,8 +654,11 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                     words.append(w)
             words = words[:3]
             if words and len(others) < 3:
-                others.append((o, words))
-        run.stage("discover", "Spark also sees: " + (", ".join(f"{o['what']} -> try {w}" for o, w in others) or "nothing else"))
+                # --skip-people: kept with no words, so the name still reaches the audit context and the motion
+                # sheet as before (their Spark prompts, cache keys and verdicts unchanged) but SAM is never asked
+                others.append((o, [] if skip_people and _is_people(o) else words))
+        run.stage("discover", "Spark also sees: " + (", ".join(f"{o['what']} -> try {w}" if w else f"{o['what']} -> not searched (--skip-people)"
+                                                         for o, w in others) or "nothing else"))
     if do_zoom:
         cells = []
         for r in sc.get("faint_regions", []):
@@ -694,7 +699,9 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
     if refill:
         results += refill_saturated(run, jobs, results, inf["n_frames"], offline, max_usd=max_usd)
-    recovered = recover(run, clip, inf, others, found, disc.get("signs", []), results, max_usd, offline,
+    signs = [sg for sg in disc.get("signs", []) if not (skip_people and isinstance(sg, dict)
+                                                        and _is_people(dict(what=sg.get("possible_animal"))))]
+    recovered = recover(run, clip, inf, others, found, signs, results, max_usd, offline,
                         probe_window=probe_window) if do_discover else []
     moved = []
     if do_motion:
@@ -961,6 +968,8 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
     n, W, H = inf["n_frames"], inf["width"], inf["height"]
     jobs, log = [], []
     for i, ((o, words), f) in enumerate(zip(others, found)):
+        if not words:       # --skip-people
+            continue
         if f["word"]:
             jobs.append(dict(kind="backfill", name=f"d{i}rev", what=o["what"], words=[f["word"]], cell=None))
         if (f["maxn_full"] or 0) < int(o.get("approx_max_count") or 1):
@@ -1116,6 +1125,26 @@ def short_name(name):
         if w and not w.endswith(("ed", "ing")) and len(w) > 2:
             return w
     return None
+
+
+# Opt-in (--skip-people): a discovery that names people or a boat and no animal is not searched for. 11/21 night,
+# LONG1_cr9 S1 (the camera on deck before it went in): "human on boat deck" -> 'person' on the whole segment and on
+# it reversed (5,316 billed frames, $1.06) plus 10 audits and 3 duplicate checks, all for rows "human" (MaxN 3) and
+# "person (unidentified)" (1) in a fish census. Off by default: a survey that counts divers or boats keeps them.
+PEOPLE_WORDS = {"person", "persons", "people", "human", "humans", "man", "men", "woman", "women", "diver", "divers",
+                "snorkeler", "swimmer", "fisherman", "fishermen", "crew", "hand", "hands", "arm", "leg", "foot", "feet",
+                "boat", "vessel", "ship", "deck", "hull", "kayak"}
+
+
+def _is_people(o):
+    """True when a Spark discovery (others[i]) names a person or a boat in its name or search words and no animal."""
+    words = _name_words(o.get("what") or "")
+    for w in o.get("search_words") or []:
+        if isinstance(w, str):
+            words += [norm_label(x) for x in re.sub(r"[^a-z ]", " ", w.lower()).split()]
+    if any(_group_of_word(w) for w in words):
+        return False
+    return any(w in PEOPLE_WORDS or w.rstrip("s") in PEOPLE_WORDS for w in words if w)
 
 
 # a negated phrase, up to the next comma or bracket or a word that turns to what it is: "blurry water no fish",
@@ -2111,6 +2140,8 @@ if __name__ == "__main__":
     ap.add_argument("--probe-window", type=int, nargs="?", const=PROBE_WINDOW, metavar="FRAMES",
                     help=f"clips of {PROBE_MIN_FRAMES}+ frames: a discovered word is tried on FRAMES (default {PROBE_WINDOW}) around "
                          "every frame Spark named before the whole clip")
+    ap.add_argument("--skip-people", action="store_true",
+                    help="a discovery that names people or a boat and no animal (camera still on deck) is not searched for")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
@@ -2137,11 +2168,11 @@ if __name__ == "__main__":
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                               probe_window=a.probe_window, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
+                               probe_window=a.probe_window, skip_people=a.skip_people, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                          camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                         probe_window=a.probe_window)
+                         probe_window=a.probe_window, skip_people=a.skip_people)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
     print(f"run folder: {os.path.relpath(os.path.join(RUNS, a.id))}/", file=sys.stderr)
