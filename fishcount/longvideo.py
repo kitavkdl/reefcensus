@@ -210,8 +210,21 @@ def _review_videos(d, dirs):
             _concat(parts, os.path.join(d, kind))
 
 
+def _fingerprint(seg_clip, kw):
+    """What a finished segment's result depends on: its clip's bytes, the run options (except offline: a replay from
+    cache gives the same result as the live run that filled it) and the code (every fishcount/*.py file)."""
+    h = __import__("hashlib").sha256()
+    here = os.path.dirname(os.path.abspath(__file__))
+    for f in sorted(os.listdir(here)):
+        if f.endswith(".py"):
+            h.update(f.encode() + open(os.path.join(here, f), "rb").read())
+    opts = {k: v for k, v in kw.items() if k != "offline"}
+    return dict(clip=api.file_sha(seg_clip), options=json.loads(json.dumps(opts, sort_keys=True, default=repr)),
+                code=h.hexdigest()[:24])
+
+
 def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
-             segment_workers=1, **kw):
+             segment_workers=1, resume=False, **kw):
     """Split `src` into segments of at most seg_s seconds, run the pipeline on each, merge. kw -> run_pipeline.
     skip_empty: only the stretches screen.scan picks are sent (_run_skipping); max_usd_video caps the whole video
     (default $4 an hour), probe_every_s overrides screen.PROBE_EVERY_S.
@@ -220,7 +233,11 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
     is its own run, the merge takes them in order). Memory: one segment peaks at ~1.1 GB plus ~2.3 GB while ffmpeg
     reverses a 600-frame chunk, and video.reverse lets one chunk be reversed at a time in the process, so two workers
     peaked at 3.3 GB (11/21, LONG1 S1 + S6 replayed in one 4 GB cgroup); each worker past two adds ~1.2 GB.
-    Not used with skip_empty, whose video cap is paid out segment by segment."""
+    Not used with skip_empty, whose video cap is paid out segment by segment.
+    resume: a segment whose folder already holds a finished run of the same clip bytes, options and code
+    (resume.json, written whenever a segment finishes) is not run again; the merge reads its saved result. After a crash
+    (OOM, network, a bug in the merge) only the unfinished segments run: a fully cached 600-s segment still takes about
+    5 minutes to replay. Not used with skip_empty."""
     rid = rid or time.strftime("%m%d-%H%M%S")
     d = os.path.join(pipeline.RUNS, rid)
     os.makedirs(d, exist_ok=True)
@@ -258,20 +275,34 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
         sp = os.path.join(d, f"seg{k + 1}.mp4")
         cut(full, sp, start, n)
         srid = f"{rid}__S{k + 1}"
-        try:
-            pipeline.run_pipeline(sp, srid, **kw)
-        except BaseException:
-            failed.set()
-            raise
         sd = os.path.join(pipeline.RUNS, srid)
+        fp = _fingerprint(sp, kw)
+        rp = os.path.join(sd, "resume.json")
+        kept = False
+        if resume and os.path.exists(rp) and os.path.exists(os.path.join(sd, "result.json")):
+            try:
+                kept = json.load(open(rp)) == fp
+            except ValueError:
+                kept = False
+        if not kept:
+            if os.path.exists(rp):      # a run that dies half-way must not leave an older fingerprint on its result
+                os.remove(rp)
+            try:
+                pipeline.run_pipeline(sp, srid, **kw)
+            except BaseException:
+                failed.set()
+                raise
+            with open(rp, "w") as f:     # written on every run, so a run started without --resume can be resumed
+                json.dump(fp, f)
         sst = json.load(open(os.path.join(sd, "status.json")))
         maxn = ", ".join(f"{m} {v['maxn']}" for m, v in json.load(open(os.path.join(sd, "result.json")))["metrics"].items())
         with lock:      # workers finish in any order; the log says which segment, the merge goes by segment order
-            tally["live"] += sst["live_calls"]
-            tally["cached"] += sst["cached_calls"]
-            tally["billed"] += sst["billed_usd"]
-            st["log"].append(f"{time.strftime('%H:%M:%S')} segment S{k + 1} ({start / inf['fps']:.1f}-{(start + n) / inf['fps']:.1f} s) done: "
-                             + maxn)
+            if not kept:    # a kept segment spent nothing this time
+                tally["live"] += sst["live_calls"]
+                tally["cached"] += sst["cached_calls"]
+                tally["billed"] += sst["billed_usd"]
+            st["log"].append(f"{time.strftime('%H:%M:%S')} segment S{k + 1} ({start / inf['fps']:.1f}-{(start + n) / inf['fps']:.1f} s) "
+                             + ("kept from the earlier run (--resume): " if kept else "done: ") + maxn)
             _status(d, stage="segments", log=st["log"], live_calls=tally["live"], cached_calls=tally["cached"],
                     billed_usd=tally["billed"])
         return sd, start, n
