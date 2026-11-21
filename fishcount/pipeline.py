@@ -375,7 +375,30 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
 
 
+# Tracks per shadow / confirm sheet. 11/21: ~226 dark tracks of a 2-min TNC rockfish clip on one 46,992 x 1,228 sheet
+# made Spark refuse it ("image decode limit exceeded") and the run died with no result. The largest shadow sheet that
+# went through held 32 tracks (LONG1_cr9 S1, 6,640 px tall), so up to this many the sheet is exactly as before and a
+# longer list goes on more sheets of this size (confirm rows are half as tall, so the same count is well inside).
+SHADOW_PER_SHEET = 32
+CONFIRM_PER_SHEET = 32
+
+
+def _split_sheets(fn, per, run, clip, frames, ts, offline, sheet_no):
+    """fn's answers for ts cut into sheets of `per`: the first keeps sheet_no, later ones are '<sheet_no>_<k>'."""
+    out = {}
+    for k in range(0, len(ts), per):
+        out.update(fn(run, clip, frames, ts[k:k + per], offline, sheet_no=sheet_no if k == 0 else f"{sheet_no}_{k // per + 1}"))
+    return out
+
+
 def confirm_motion(run, clip, frames, ts, offline, sheet_no=1):
+    """_confirm_sheet on sheets of at most CONFIRM_PER_SHEET tracks. Returns {track: reply dict}."""
+    if len(ts) > CONFIRM_PER_SHEET:
+        return _split_sheets(_confirm_sheet, CONFIRM_PER_SHEET, run, clip, frames, ts, offline, sheet_no)
+    return _confirm_sheet(run, clip, frames, ts, offline, sheet_no=sheet_no)
+
+
+def _confirm_sheet(run, clip, frames, ts, offline, sheet_no=1):
     """Second look at motion tracks the audit would count: crops at other moments than the audit's (the path's first
     and last eighth and its middle), no label and no earlier names in the prompt. Saved as confirm_<n>.jpg."""
     paths = _paths(frames)
@@ -495,6 +518,13 @@ def shadow_pairs(frames, dark, counted):
 
 
 def shadow_look(run, clip, frames, ts, offline, sheet_no=1):
+    """_shadow_sheet on sheets of at most SHADOW_PER_SHEET tracks. Returns {track: reply dict}."""
+    if len(ts) > SHADOW_PER_SHEET:
+        return _split_sheets(_shadow_sheet, SHADOW_PER_SHEET, run, clip, frames, ts, offline, sheet_no)
+    return _shadow_sheet(run, clip, frames, ts, offline, sheet_no=sheet_no)
+
+
+def _shadow_sheet(run, clip, frames, ts, offline, sheet_no=1):
     """Ask, with a wide view, whether each dark track is an animal or a fish's shadow / bare seabed (SHADOW_PROMPT).
     Saved as shadow_<sheet_no>.jpg. Returns {track: reply dict}."""
     paths = _paths(frames)
