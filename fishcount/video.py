@@ -87,6 +87,9 @@ def is_dark(st):
 # Opt-in (--haze): a washed-out clip (milky water, little contrast but not dark) gets CLAHE on L alone. 11/21 night,
 # the six luderick development clips: median L p95-p5 of 80, 90, 97, 108, 127, 131; the one at 80 (fish_20190710_4)
 # is the one whose second fish the pipeline misses (recall 82%). The bound was set from those widths before any run.
+# It does not carry over: the two 53-minute SEFSC videos (bright, median L 160-175, not dark) measure 28-37 and 66, so
+# "auto" would CLAHE every frame of them, while DH1-11, the nautilus clips, TF and TNC measure 113-249. One dataset's
+# bound, so "auto" is not a default candidate; "on" is for a person who has looked at the footage.
 HAZE_WIDTH = 85
 
 

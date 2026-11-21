@@ -220,6 +220,29 @@ def _upload(clip_path, key, fresh=False, sha=None):
         return fid, False
 
 
+CALL_TRIES = 3                          # a SAM or Spark request is sent at most this many times (round 2, 11/21)
+RETRY_STATUS = (429, 500, 502, 503, 504)
+
+
+def _post(url, **kw):
+    """requests.post, sent again (after 5 s, then 15 s) when the connection fails before a reply arrives (DNS failure,
+    refused, reset, connect timeout) or the server answers 429/5xx. Before this, Spark had no retry at all: a DNS
+    failure killed LONG1_cr9 mid-segment and the run had to be started again (a 600-s segment's replay takes ~5 min
+    even when every call is cached). A read timeout is not retried: the server may have done (and billed) the work.
+    The last answer is returned as it is (the caller raises on its status)."""
+    for attempt in range(CALL_TRIES):
+        try:
+            r = requests.post(url, **kw)
+        except requests.ConnectionError:
+            if attempt == CALL_TRIES - 1:
+                raise
+        else:
+            if r.status_code not in RETRY_STATUS or attempt == CALL_TRIES - 1:
+                return r
+            r.close()
+        time.sleep(5 * 3 ** attempt)
+
+
 def _sam_live(clip_path, prompt, n_frames, payload, cp):
     key = _key()
     fid, reused = _upload(clip_path, key, sha=payload["clip"])
@@ -227,8 +250,8 @@ def _sam_live(clip_path, prompt, n_frames, payload, cp):
         body = {"model": "sam-3.1", "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
                 "input": [{"type": "message", "role": "user", "content": [
                     {"type": "input_text", "text": prompt}, {"type": "input_video", "file_id": fid}]}]}
-        r = requests.post(f"{BASE}/responses", headers={"Authorization": f"Bearer {key}", "Accept": "text/event-stream"},
-                          json=body, stream=True, timeout=(30, 900))
+        r = _post(f"{BASE}/responses", headers={"Authorization": f"Bearer {key}", "Accept": "text/event-stream"},
+                  json=body, stream=True, timeout=(30, 900))
         if 400 <= r.status_code < 500 and reused:
             r.close()       # a reused file_id the server no longer has (expired, deleted): upload once more
             fid, reused = _upload(clip_path, key, fresh=True, sha=payload["clip"])
@@ -238,23 +261,29 @@ def _sam_live(clip_path, prompt, n_frames, payload, cp):
     with r:
         if r.status_code >= 300:
             raise RuntimeError(f"SAM HTTP {r.status_code}: {r.text[:300]}")
-        for raw in r.iter_lines(decode_unicode=True):
-            if not raw or not raw.startswith("data:"):
-                continue
-            d = raw[5:].strip()
-            if d == "[DONE]":
-                break
-            try:
-                ev = json.loads(d)
-            except ValueError:
-                continue
-            t = ev.get("type")
-            if t == "response.output_text.delta":
-                text.append(ev.get("delta", ""))
-            elif t == "response.completed":
-                status, usage = "completed", (ev.get("response") or {}).get("usage")
-            elif t in ("response.failed", "response.incomplete", "error"):
-                status = t
+        try:
+            for raw in r.iter_lines(decode_unicode=True):
+                if not raw or not raw.startswith("data:"):
+                    continue
+                d = raw[5:].strip()
+                if d == "[DONE]":
+                    break
+                try:
+                    ev = json.loads(d)
+                except ValueError:
+                    continue
+                t = ev.get("type")
+                if t == "response.output_text.delta":
+                    text.append(ev.get("delta", ""))
+                elif t == "response.completed":
+                    status, usage = "completed", (ev.get("response") or {}).get("usage")
+                elif t in ("response.failed", "response.incomplete", "error"):
+                    status = t
+        except (requests.RequestException, OSError):
+            # the stream broke after SAM took the call: it may be billed, so the ledger (and the budget that reads it)
+            # gets the clip's frames; before, nothing was logged and the spend was invisible to the cap
+            _log("sam", max(SAM_MIN_FRAMES, n_frames) * SAM_PER_FRAME, f"{os.path.basename(clip_path)}:{prompt} (stream broke)")
+            raise
     billed = (usage or {}).get("video_frames_processed") or max(SAM_MIN_FRAMES, n_frames)
     _log("sam", billed * SAM_PER_FRAME, f"{os.path.basename(clip_path)}:{prompt}")
     if status != "completed":
@@ -311,7 +340,7 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
 
 
 def _spark_live(payload, model):
-    r = requests.post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
+    r = _post(f"{BASE}/chat/completions", headers={"Authorization": f"Bearer {_key()}"}, json=payload, timeout=(30, 300))
     if r.status_code >= 300:
         raise RuntimeError(f"Spark HTTP {r.status_code}: {r.text[:300]}")
     j = r.json()
