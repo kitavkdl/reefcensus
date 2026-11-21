@@ -895,7 +895,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     raw = {name: (txt, tile) for name, _, _, txt, tile in results}   # tile=None: full-frame text (masks drawable)
     # clean: SAM 3.1 sometimes hands a frame's boxes the wrong ids (tracks.repair_ids); ids only, boxes and counts stay
     sources = [(name, label, tracks.repair_ids(d) if clean else d) for name, label, d, _, _ in results]
-    frames, trk = tracks.merge(sources)
+    frames, trk = tracks.merge(sources, apart=("peak+",))
     n0 = len(trk)
     if clean:
         frames, trk = tracks.split_jumps(frames, trk)

@@ -80,7 +80,13 @@ def from_tile(dets, tile, scale, margin=0.02):
     return out
 
 
-def merge(sources, thr=0.5):
+def merge(sources, thr=0.5, apart=()):
+    """apart: source prefixes (--crowd-peak "peak+") whose tracks are never linked into a track outside their group
+    and whose boxes never make another box a group box (drop_group_boxes), so every other track keeps its boxes."""
+    return _merge(sources, thr, apart)
+
+
+def _merge(sources, thr, apart):
     """Combine detections from several SAM runs (different prompts or tiles) into one set of global tracks.
     sources: list of (source_name, label, {frame: [det]}) in priority order (first wins on overlap).
     Track identity: (source_name, sam_id). A lower-priority detection overlapping (IoU>=thr) a kept one in the
@@ -107,10 +113,11 @@ def merge(sources, thr=0.5):
     for tid, hits in dup.items():
         top, n = max(hits.items(), key=lambda t: t[1])
         coexist = any(any(k["track"] == tid for k in ks) and any(k["track"] == top for k in ks) for ks in kept.values())
-        if n >= 0.5 * seen[tid] and not coexist:
+        grp = lambda t: next((p for p in apart if t.startswith(p)), None)
+        if n >= 0.5 * seen[tid] and not coexist and grp(tid) == grp(top):
             alias[tid] = top
     for f in kept:
-        kept[f] = drop_group_boxes(kept[f])
+        kept[f] = drop_group_boxes(kept[f], apart=apart)
     frames, tracks = {}, {}
     for f, ks in kept.items():
         for k in ks:
@@ -121,16 +128,22 @@ def merge(sources, thr=0.5):
     return frames, tracks
 
 
-def drop_group_boxes(ks, contain=0.8):
+def drop_group_boxes(ks, contain=0.8, apart=()):
     """11/1 s004: one box was drawn around two shrimp that other passes had boxed separately, so all three were
     counted. A box that contains two or more other same-label boxes is a group box and is dropped. A box holding
-    just one (s003: a nautilus partly behind a bigger one) is kept."""
+    just one (s003: a nautilus partly behind a bigger one) is kept.
+    apart: source prefixes (e.g. ("peak+",)) whose boxes do not make a box from outside their group a group box, so
+    adding them leaves every other box as it was (11/21 LONG1_cr9 S5 --crowd-peak: 2x tile boxes inside a first-pass
+    fish box dropped it, that track's audit crops moved and its sheet was asked again)."""
+    grp = lambda k: next((p for p in apart if str(k.get("src", "")).startswith(p)), None)
+    counts = lambda k, g: grp(k) is None or grp(k) == grp(g)
     def inside(a, b):   # share of a lying inside b
         ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
         iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
         return ix * iy / max(1e-6, (a[2] - a[0]) * (a[3] - a[1]))
     group = {i for i, g in enumerate(ks)
-             if sum(1 for j, k in enumerate(ks) if j != i and k["label"] == g["label"] and inside(k["box"], g["box"]) >= contain) >= 2}
+             if sum(1 for j, k in enumerate(ks) if j != i and k["label"] == g["label"] and counts(k, g)
+                    and inside(k["box"], g["box"]) >= contain) >= 2}
     return [k for i, k in enumerate(ks) if i not in group]
 
 
