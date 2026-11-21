@@ -278,8 +278,11 @@ def stitch(frames, tracks, max_gap=10, min_iou=0.2, apart=()):
     ends, they never co-occur, share a label, and A's last box overlaps / is near B's first box.
     apart: source prefixes (e.g. ("camo",)) whose tracks are joined only with each other, so adding them leaves every
     other track as it was (11/3 TF_52: a camo box joined a crowd track, every later track number moved by one and the
-    audit sheets were asked again).
+    audit sheets were asked again). Each prefix is its own group (camo tracks join camo tracks, "peak+" tracks join
+    "peak+" tracks): 11/21 LONG1_cr9 S5/S6 --crowd-peak, a first-pass fish starting just after a peak-tile track was
+    joined onto it and took the tile track's name, so a counted first-pass track vanished from the result.
     Mutates `frames` in place; returns the new tracks dict."""
+    group = lambda t: next((p for p in apart if tracks[t]["source"].startswith(p)), None)
     span = {}
     for f in sorted(frames):
         for k in frames[f]:
@@ -295,7 +298,7 @@ def stitch(frames, tracks, max_gap=10, min_iou=0.2, apart=()):
             ra = root(a)
             if ra == b or a == b or tracks[a]["label"] != tracks[b]["label"]:
                 continue
-            if tracks[ra]["source"].startswith(apart) != tracks[b]["source"].startswith(apart):
+            if group(ra) != group(b):
                 continue
             sa = span[ra]
             gap = span[b][0] - sa[1]

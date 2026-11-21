@@ -131,5 +131,67 @@ class PeakTiles(unittest.TestCase):
         self.assertEqual((out, self.sent, len(r.capped)), ([], [], 6))
 
 
+class PeakTracksKeepFirstPass(unittest.TestCase):
+    """11/21 LONG1_cr9 S5/S6: the second pass must leave every first-pass track, its number and its sheets as they
+    were; tile tracks are joined only with each other and audited last on their own sheets."""
+    def frames(self):
+        # peak tile track A ends at frame 4, first-pass track B starts at frame 6 where A ended
+        fr = {t: [dict(track="peak+0-r0c0:1", box=[100, 100, 140, 140])] for t in range(5)}
+        for t in range(6, 10):
+            fr[t] = [dict(track="p0:3", box=[102, 100, 142, 140])]
+        trk = {"peak+0-r0c0:1": dict(label="fish", source="peak+0-r0c0"), "p0:3": dict(label="fish", source="p0")}
+        return fr, trk
+
+    def test_stitch_keeps_peak_apart(self):
+        fr, trk = self.frames()
+        self.assertEqual(set(tracks.stitch(fr, trk)), {"peak+0-r0c0:1"})          # the old join
+        fr, trk = self.frames()
+        self.assertEqual(set(tracks.stitch(fr, trk, apart=("camo", "peak+"))), {"peak+0-r0c0:1", "p0:3"})
+
+    def test_stitch_camo_and_peak_are_separate_groups(self):
+        fr, trk = self.frames()
+        trk["p0:3"] = dict(label="fish", source="camo0")
+        self.assertEqual(set(tracks.stitch(fr, trk, apart=("camo", "peak+"))), {"peak+0-r0c0:1", "p0:3"})
+
+    def test_stitch_peak_tracks_join_each_other(self):
+        fr, trk = self.frames()
+        trk["p0:3"] = dict(label="fish", source="peak+0-r0c1")
+        self.assertEqual(set(tracks.stitch(fr, trk, apart=("camo", "peak+"))), {"peak+0-r0c0:1"})
+
+    def test_audit_first_pass_sheets_unchanged(self):
+        import tempfile
+        import numpy as np
+        from fishcount import motion, render
+        saved = (video.frames, video.jpg, render.crop, motion.trio, motion.layout, pipeline._counted)
+        sheets, asked = [], []
+        video.frames = lambda clip, idx: {i: np.zeros((8, 8, 3), np.uint8) for i in idx}
+        video.jpg = lambda img, **k: b"j"
+        render.crop = lambda img, b, **k: img
+        motion.trio = lambda imgs, trio, name, **k: name
+        motion.layout = lambda groups: sheets.append(list(groups)) or b"sheet"
+        pipeline._counted = lambda run, fn, prompt, imgs, **k: asked.append(prompt) or "[]"
+        try:
+            fr = {}
+            for i, (t, f0) in enumerate((("p0:1", 0), ("p0:2", 20), ("peak+5-r0c0:1", 5), ("peak+5-r0c1:2", 25))):
+                for f in range(f0, f0 + 4):
+                    fr.setdefault(f, []).append(dict(track=t, box=[10 * i, 10, 10 * i + 8, 18]))
+            trk = {t: dict(label="fish", source=t.split(":")[0]) for ks in fr.values() for t in (k["track"] for k in ks)}
+            first = {f: [k for k in ks if not k["track"].startswith("peak+")] for f, ks in fr.items()}
+            first = {f: ks for f, ks in first.items() if ks}
+            with tempfile.TemporaryDirectory() as d:
+                alone = pipeline.audit(Run(d), "c", first, trk, "fish", "ctx", True)
+                want = list(sheets)
+                sheets.clear()
+                is_peak = lambda t: t.startswith("peak+")
+                v1 = pipeline.audit(Run(d), "c", fr, trk, "fish", "ctx", True, only=lambda t: not is_peak(t))
+                v2 = pipeline.audit(Run(d), "c", fr, trk, "fish", "ctx", True, start=len(v1), only=is_peak, tag="peak_")
+                self.assertEqual(sheets[0], want[0])                              # same first-pass sheet
+                self.assertEqual({t: v["name"] for t, v in v1.items()}, {t: v["name"] for t, v in alone.items()})
+                self.assertEqual({t: v["name"] for t, v in v2.items()}, {"peak+5-r0c0:1": "T3", "peak+5-r0c1:2": "T4"})
+                self.assertTrue(os.path.exists(os.path.join(d, "audit_peak_fish_1.jpg")))
+        finally:
+            video.frames, video.jpg, render.crop, motion.trio, motion.layout, pipeline._counted = saved
+
+
 if __name__ == "__main__":
     unittest.main()

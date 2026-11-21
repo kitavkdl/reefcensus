@@ -316,14 +316,17 @@ def _steady(p, j, k=2, ratio=2.0):
 AUDIT_WORKERS = 3      # audit sheets prepared and sent at once (each holds its ~40 frames: ~0.3 GB at 1080p)
 
 
-def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None, frame_wh=None):
+def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None, frame_wh=None, only=None, tag=""):
     """Show Spark three crops per track (early, largest box, late) in sheets of 12; returns {track: verdict}.
     frame_wh=(W, H) (opt-in, clean tracks): the "largest box" moment skips boxes touching the frame edge when the
     track has any other (11/3 TF_52: a fish leaving the frame had its largest box half cut off at the edge).
     Each sheet is saved as audit_<label>_<n>.jpg and each track's three crops as thumbs/T<k>_trio.jpg, so a person
-    sees what Spark saw."""
+    sees what Spark saw.
+    only: optional test on a track id (only those tracks); tag: sheet file prefix (audit_<tag><label>_<n>.jpg), so
+    tracks audited on their own sheets (--crowd-peak tile tracks) leave every other sheet as it was."""
     # camo tracks (--camo) are left out: still crops cannot show a camouflaged animal; camo_look decided them
-    paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label and not trk[t]["source"].startswith("camo")}
+    paths = {t: p for t, p in _paths(frames).items() if trk[t]["label"] == label and not trk[t]["source"].startswith("camo")
+             and (only is None or only(t))}
     best, trios, thumb = {}, {}, {}
     for t, p in paths.items():
         area = lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1])
@@ -354,7 +357,7 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
             open(run.path("thumbs", f"{names[t]}_trio.jpg"), "wb").write(video.jpg(groups[-1], max_w=900))
         del imgs
         sheet = motion.layout(groups)
-        open(run.path(f"audit_{api_safe(label)}_{i // per_sheet + 1}.jpg"), "wb").write(sheet)
+        open(run.path(f"audit_{tag}{api_safe(label)}_{i // per_sheet + 1}.jpg"), "wb").write(sheet)
         reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [sheet], offline=offline, check=api.parse_json_list)
         return api.parse_json_list(reply)
 
@@ -491,9 +494,9 @@ def shadow_pairs(frames, dark, counted):
     return out
 
 
-def shadow_look(run, clip, frames, ts, offline):
+def shadow_look(run, clip, frames, ts, offline, sheet_no=1):
     """Ask, with a wide view, whether each dark track is an animal or a fish's shadow / bare seabed (SHADOW_PROMPT).
-    Saved as shadow_1.jpg. Returns {track: reply dict}."""
+    Saved as shadow_<sheet_no>.jpg. Returns {track: reply dict}."""
     paths = _paths(frames)
     groups, names, trios = [], {}, {}
     for t in ts:
@@ -511,7 +514,7 @@ def shadow_look(run, clip, frames, ts, offline):
                                  motion.trio(imgs, trios[t], "", half=wide, words=("wide", "wide", "wide"))]))
     del imgs
     sheet = motion.layout(groups)
-    open(run.path("shadow_1.jpg"), "wb").write(sheet)
+    open(run.path(f"shadow_{sheet_no}.jpg"), "wb").write(sheet)
     want = set(names.values())
 
     def every_tile(text):
@@ -867,7 +870,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     if clean:
         frames, trk = tracks.split_jumps(frames, trk)
         run.stage("track", f"{n0} raw tracks -> {len(trk)} after cutting reused IDs")
-    trk = tracks.stitch(frames, trk, apart=("camo",))
+    trk = tracks.stitch(frames, trk, apart=("camo", "peak+"))
     run.stage("track", f"{n0} raw tracks -> {len(trk)} after re-joining broken IDs")
 
     verdicts = {}
@@ -879,10 +882,17 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         # labels only site memory produced are audited last, so every other label keeps its track numbers and cached sheets
         site_only = lambda l: bool(site_src) and all(t["source"] in site_src for t in trk.values() if t["label"] == l)
         asked.update({e["word"]: e["label"] for e in site_entries if e.get("word")})
-        for label in sorted({t["label"] for t in trk.values()}, key=lambda l: (site_only(l), l)):
-            run.stage("audit", f"Muse Spark checks every '{label}' track crop")
-            verdicts.update(audit(run, clip, frames, trk, label, context, offline, start=len(verdicts), target=asked.get(label),
-                                  frame_wh=(inf["width"], inf["height"]) if clean else None))
+        # --crowd-peak tile tracks go on their own sheets after every other track (11/21 LONG1_cr9 S5/S6: mixed into
+        # the 'fish' sheets they renumbered the first-pass tracks, the sheets were asked again and Spark's answers on
+        # first-pass tracks moved: two saddled seabream became "unidentified", a flatfish row vanished)
+        is_peak = lambda t: trk[t]["source"].startswith("peak+")
+        own = (None,) if not any(is_peak(t) for t in trk) else (lambda t: not is_peak(t), is_peak)
+        for only in own:
+            for label in sorted({v["label"] for t, v in trk.items() if only is None or only(t)}, key=lambda l: (site_only(l), l)):
+                run.stage("audit", f"Muse Spark checks every '{label}' track crop" + (" (crowd-peak tiles)" if only is is_peak else ""))
+                verdicts.update(audit(run, clip, frames, trk, label, context, offline, start=len(verdicts), target=asked.get(label),
+                                      frame_wh=(inf["width"], inf["height"]) if clean else None,
+                                      only=only, tag="peak_" if only is is_peak else ""))
         if camo_verdicts:
             verdicts.update(camo_verdicts_for(run, clip, frames, trk, camo_verdicts, inf["n_frames"]))
         n_flag = sum(1 for v in verdicts.values() if needs_review(v))
@@ -980,7 +990,12 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
         counted = [t for t in verdicts if labels.get(t) and not trk[t]["source"].startswith("camo")]
         dark = dark_tracks(clip, frames, counted, inf["width"], inf["height"]) if counted else []
         if dark:
-            said = shadow_look(run, clip, frames, dark, offline)
+            # --crowd-peak tile tracks on their own sheet (shadow_2), so the first-pass sheet and its answer stay
+            said = {}
+            for ts, no in (([t for t in dark if not trk[t]["source"].startswith("peak+")], 1),
+                           ([t for t in dark if trk[t]["source"].startswith("peak+")], 2)):
+                if ts:
+                    said.update(shadow_look(run, clip, frames, ts, offline, sheet_no=no))
             pairs = shadow_pairs(frames, dark, counted)
             for t in dark:
                 c = said.get(t, {})
@@ -2243,10 +2258,13 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8,
                 if key not in into or c > into[key][0]:
                     into[key] = (c, f, ms[o], ms[n_])
     out = []
-    for found, prefix in ((best, "pairs"), (cross, "pairsx")):
-        if not found:
+    # a pair with a --crowd-peak tile track goes on its own sheets (pairsp_/pairsxp_), so every first-pass pair keeps
+    # its tile number, sheet and cached answer
+    pk = lambda k: any(trk[t]["source"].startswith("peak+") for t in k)
+    for found, prefix, mine in ((best, "pairs", False), (cross, "pairsx", False), (best, "pairsp", True), (cross, "pairsxp", True)):
+        pairs = sorted((k for k in found if pk(k) == mine), key=lambda k: found[k][1])
+        if not pairs:
             continue
-        pairs = sorted(found, key=lambda k: found[k][1])
         imgs = video.frames(clip, {found[k][1] for k in pairs})
         tiles = [video.label(render.square(pair_tile(imgs[found[k][1]], found[k][2], found[k][3]), 256), f"P{i + 1}") for i, k in enumerate(pairs)]
         said = {}
