@@ -174,20 +174,67 @@ def sam_video(clip_path, prompt, n_frames, offline=False):
         return _sam_live(clip_path, prompt, n_frames, payload, cp)
 
 
+UPLOAD_REUSE_S = 20 * 3600     # an uploaded clip's file_id is reused this long (the upload expires after 24 h)
+UPLOAD_TRIES = 3               # a failed upload (timeout, dropped connection, 5xx) is sent again, up to this many times
+# The whole multipart body goes out in one socket sendall() under the *connect* timeout (urllib3 2.x), and since
+# Python 3.5 a socket timeout bounds the whole sendall, not each send: with (300, 600) any upload slower than 300 s
+# failed every time ("The write operation timed out": cr9 S2/S4, a 396 MB segment at 1.3 MB/s, 11/21). The send is
+# now allowed size / UPLOAD_MIN_BPS seconds (396 MB: ~33 min), at least 300 s as before.
+UPLOAD_MIN_BPS = 200 * 1024
+_uploads, _upload_locks, _uploads_lock = {}, {}, threading.Lock()
+
+
+def _upload(clip_path, key, fresh=False, sha=None):
+    """(file_id of `clip_path` on the API, whether it was reused). 11/21: every SAM call uploaded its clip again,
+    though one 600-s segment gets several words on the same ~350 MB file (LONG1_cr9: 3-11 calls per segment clip)
+    and this uplink manages 0.5-1.3 MB/s; the same bytes now go up once per process (per clip content,
+    UPLOAD_REUSE_S), and threads asking for the same clip wait for that one upload. A failed upload (dropped
+    connection, timeout, 5xx) is sent again. Uploading is free; SAM sees the same file either way, so answers and
+    cache keys do not change. fresh=True uploads again even when an id is held (the server no longer had it)."""
+    sha = sha or file_sha(clip_path)
+    with _uploads_lock:
+        lock = _upload_locks.setdefault(sha, threading.Lock())
+    with lock:
+        got = _uploads.get(sha)
+        if got and not fresh and time.time() - got[1] < UPLOAD_REUSE_S:
+            return got[0], True
+        for attempt in range(UPLOAD_TRIES):
+            try:
+                with open(clip_path, "rb") as fh:
+                    r = requests.post(f"{BASE}/files", headers={"Authorization": f"Bearer {key}"},
+                                      data={"purpose": "user_data", "expires_after[anchor]": "created_at", "expires_after[seconds]": "86400"},
+                                      files={"file": (os.path.basename(clip_path), fh, "video/mp4")},
+                                      timeout=(max(300.0, os.path.getsize(clip_path) / UPLOAD_MIN_BPS), 600))
+                if r.status_code < 500:
+                    r.raise_for_status()
+                    break
+                err = requests.HTTPError(f"upload HTTP {r.status_code}: {r.text[:200]}")
+            except (requests.ConnectionError, requests.Timeout) as e:
+                err = e
+            if attempt == UPLOAD_TRIES - 1:
+                raise err
+            time.sleep(5 * 3 ** attempt)
+        fid = r.json()["id"]
+        _uploads[sha] = (fid, time.time())
+        return fid, False
+
+
 def _sam_live(clip_path, prompt, n_frames, payload, cp):
     key = _key()
-    with open(clip_path, "rb") as fh:
-        r = requests.post(f"{BASE}/files", headers={"Authorization": f"Bearer {key}"},
-                          data={"purpose": "user_data", "expires_after[anchor]": "created_at", "expires_after[seconds]": "86400"},
-                          files={"file": (os.path.basename(clip_path), fh, "video/mp4")}, timeout=(300, 600))  # 11/1 night: uplink ~45 KB/s stalled sends past 30 s
-    r.raise_for_status()
-    fid = r.json()["id"]
-    body = {"model": "sam-3.1", "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
-            "input": [{"type": "message", "role": "user", "content": [
-                {"type": "input_text", "text": prompt}, {"type": "input_video", "file_id": fid}]}]}
+    fid, reused = _upload(clip_path, key, sha=payload["clip"])
+    for attempt in range(2):
+        body = {"model": "sam-3.1", "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
+                "input": [{"type": "message", "role": "user", "content": [
+                    {"type": "input_text", "text": prompt}, {"type": "input_video", "file_id": fid}]}]}
+        r = requests.post(f"{BASE}/responses", headers={"Authorization": f"Bearer {key}", "Accept": "text/event-stream"},
+                          json=body, stream=True, timeout=(30, 900))
+        if 400 <= r.status_code < 500 and reused:
+            r.close()       # a reused file_id the server no longer has (expired, deleted): upload once more
+            fid, reused = _upload(clip_path, key, fresh=True, sha=payload["clip"])
+            continue
+        break
     text, usage, status = [], None, "unknown"
-    with requests.post(f"{BASE}/responses", headers={"Authorization": f"Bearer {key}", "Accept": "text/event-stream"},
-                       json=body, stream=True, timeout=(30, 900)) as r:
+    with r:
         if r.status_code >= 300:
             raise RuntimeError(f"SAM HTTP {r.status_code}: {r.text[:300]}")
         for raw in r.iter_lines(decode_unicode=True):
