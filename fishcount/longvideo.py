@@ -231,7 +231,31 @@ def _drop_cut(sp):
         os.remove(sp)
 
 
-FORECAST_MIN = 2  # segments run before a range is given: one segment is a point, not a range
+REVIEW_VIDEOS = ("clip.mp4", "annotated.mp4", "clip_original.mp4")     # what _review_videos lays end to end
+
+
+def _bytes(d, names=None):
+    """Bytes under folder d (names: only these files at its top)."""
+    tot = 0
+    for root, _, fs in os.walk(d):
+        for f in fs:
+            if names is None or (root == d and f in names):
+                try:
+                    tot += os.path.getsize(os.path.join(root, f))
+                except OSError:     # removed while walking (another worker's temp cut)
+                    pass
+    return tot
+
+
+def disk_need(seg_bytes, review_bytes, left, n_segs):
+    """Bytes the rest of a long run may still write: each segment left like the largest segment folder so far, plus the
+    merged review videos (one more copy of every segment's clip / annotated / clip_original, as large as the largest
+    so far). Measured, no constants: a segment folder is mostly its clip, whose size follows its length, so the first
+    segment already says most of it. The whole-video re-encode is freed only after the merge, so it is not counted."""
+    return max(seg_bytes) * left + max(review_bytes) * n_segs
+
+
+FORECAST_MIN = 2 # segments run before a range is given: one segment is a point, not a range
 
 
 def forecast(costs, secs, left, workers=1):
@@ -298,6 +322,7 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
     _status(d, stage="segments", log=st["log"], video=inf)
     tally, lock, failed = dict(live=0, cached=0, billed=0.0), threading.Lock(), threading.Event()
     ran = dict(usd=[], s=[], finished=0)     # segments run (not kept) this time: their spend and wall time
+    room = dict(seg=[], review=[], warned=False)    # every finished segment's folder bytes, for disk_need
 
     def one(k, start, n):
         if failed.is_set():     # another segment raised: what has not started is not sent
@@ -345,8 +370,19 @@ def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video
                     f"{sum(ran['s']) / 60:.0f} min; {fc['left']} left: ${fc['usd'][0]:.2f}-${fc['usd'][1]:.2f}, "
                     f"{fc['s'][0] / 60:.0f}-{fc['s'][1] / 60:.0f} min (each like the cheapest / dearest segment so far; "
                     "not a cap: a busier segment later costs more)")
+            room["seg"].append(_bytes(sd))
+            room["review"].append(_bytes(sd, REVIEW_VIDEOS))
+            disk = dict(need=disk_need(room["seg"], room["review"], len(segs) - ran["finished"], len(segs)),
+                        free=shutil.disk_usage(d).free)
+            if disk["need"] > disk["free"] and not room["warned"]:     # said once, so a batch stops before the disk does
+                room["warned"] = True
+                st["log"].append(
+                    f"{time.strftime('%H:%M:%S')} disk: the rest of this video may write about {disk['need'] / 1e9:.1f} GB "
+                    f"(each segment left like the largest folder so far, plus the merged review videos), "
+                    f"{disk['free'] / 1e9:.1f} GB free: free space or put runs/ on a bigger disk "
+                    "(a run stopped by a full disk goes on with --resume)")
             _status(d, stage="segments", log=st["log"], live_calls=tally["live"], cached_calls=tally["cached"],
-                    billed_usd=tally["billed"], forecast=fc)
+                    billed_usd=tally["billed"], forecast=fc, disk=disk)
         return sd, start, n
 
     if workers == 1:
