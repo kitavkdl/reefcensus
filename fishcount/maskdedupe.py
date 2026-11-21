@@ -2,18 +2,46 @@
 legs from one, body only from another), so MaxN counted each twice. Box overlap can't separate that from two
 animals touching (11/1 s003: one nautilus partly behind another, whole and correct). Masks can: a duplicate's
 mask lies inside the other's; two animals' masks barely overlap even when their boxes nest."""
+import collections
+
 from fishcount import maskcodec, render, tracks
 
 
+class LazyFrames:
+    """One source's {frame: [(box, mask, x0, y0)]}, decoded a frame at a time when asked (.get), the last `keep`
+    frames remembered. Decoding every mask of every source up front held them all at once: on a 600-s segment
+    (LONG1_cr9 S1) the process went from 0.8 to over 4 GB here and was killed at a 4 GB cap (11/21)."""
+
+    def __init__(self, text, tile, W, H, keep=64):
+        self.text, self.tile, self.W, self.H, self.keep = text, tile, W, H, keep
+        self.lines = maskcodec.frame_lines(text)
+        self._memo = collections.OrderedDict()
+
+    def get(self, f, default=None):
+        if f not in self.lines:
+            return default
+        if f in self._memo:
+            self._memo.move_to_end(f)
+            return self._memo[f]
+        v = render._masks_full(self.text, self.tile, maskcodec.masks(self.lines[f]).get(f, []), self.W, self.H)
+        self._memo[f] = v
+        if len(self._memo) > self.keep:
+            self._memo.popitem(last=False)
+        return v
+
+    def __contains__(self, f):
+        return f in self.lines
+
+    def __getitem__(self, f):
+        if f not in self.lines:
+            raise KeyError(f)
+        return self.get(f)
+
+
 def decode_sources(raw, W, H):
-    """{src: {frame: [(box, mask, x0, y0)]}} in full-frame pixels (tile masks mapped back)."""
-    out = {}
-    for src, (text, tile) in raw.items():
-        if not text:
-            continue
-        dec = maskcodec.masks(text)
-        out[src] = {f: render._masks_full(text, tile, ms, W, H) for f, ms in dec.items()}
-    return out
+    """{src: frames} in full-frame pixels (tile masks mapped back), each source a LazyFrames: .get(f, default)
+    gives what the eager {frame: [(box, mask, x0, y0)]} gave for that frame."""
+    return {src: LazyFrames(text, tile, W, H) for src, (text, tile) in raw.items() if text}
 
 
 def det_mask(dec, src, f, box):

@@ -76,6 +76,18 @@ def records(text, frame=None):
             yield int(h.group(1)), (x1, y1, x2 + 1, y2 + 1), int(d.group(1)), int(d.group(2)), d.group(3)
 
 
+def frame_lines(text):
+    """{frame: that frame's line(s) of a SAM output}, so one frame can be decoded with masks(lines[f]) without
+    scanning the whole output again (records() reads the same lines the same way)."""
+    out = {}
+    for line in text.splitlines():
+        h = HEADER.fullmatch(line.strip())
+        if h:
+            f = int(h.group(1))
+            out[f] = out[f] + "\n" + line if f in out else line
+    return out
+
+
 def masks(text, frame=None):
     """{frame: [(box, bool mask)]} for every record (or just `frame`)."""
     out = {}
