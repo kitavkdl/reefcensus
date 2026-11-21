@@ -7,6 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api
 import requests
 
+_sleep = time.sleep     # the server's own pace: setUp silences time.sleep (retry back-off), which must not stop this
+
 
 class Server:
     """POST /files: reads the body at `bps` bytes a second (0 = at once), answers {"id": "u<n>"}; the first `fail`
@@ -28,7 +30,7 @@ class Server:
                         k = min(left, 16384 if srv.bps else left)
                         left -= len(self.rfile.read(k))
                         if srv.bps:
-                            time.sleep(k / srv.bps)
+                            _sleep(k / srv.bps)
                     srv.uploads += 1
                     if srv.uploads <= srv.fail:
                         return self._send(500, b"busy")
@@ -129,7 +131,6 @@ class Upload(unittest.TestCase):
         self.sam("fish")
         self.assertEqual(s.responses, ["u1"])
 
-    @unittest.skip("11/21 night-speed-7: on loopback the 1 s timeout did not fail -- the one-sendall hypothesis is unconfirmed (see handoff)")
     def test_send_timeout_grows_with_the_file(self):
         """The body goes out in one sendall under the connect timeout, and the timeout bounds the whole sendall: a
         24 MB body read at 6 MB/s (4 s; loopback buffers take ~10 MB at once) fails with a 1 s timeout though bytes
@@ -139,10 +140,15 @@ class Upload(unittest.TestCase):
         s = self.serve(bps=6_000_000)
         with open(self.clip, "rb") as fh, self.assertRaises((requests.ConnectionError, requests.Timeout)):
             requests.post(f"{s.base}/files", files={"file": ("c.mp4", fh, "video/mp4")}, timeout=(1, 5))
-        with mock.patch.object(api, "UPLOAD_MIN_BPS", 24_000_000 / 30):    # 30 s allowed
+        seen, post = [], requests.post
+        def spy(*a, **k):
+            seen.append(k["timeout"])
+            return post(*a, **k)
+        with mock.patch.object(api, "UPLOAD_MIN_BPS", 24_000_000 / 600), mock.patch.object(api.requests, "post", spy):
             fid, reused = api._upload(self.clip, "k")
         self.assertFalse(reused)
         self.assertTrue(fid.startswith("u"))
+        self.assertEqual(seen, [(600.0, 600)])      # 24 MB at 40 kB/s allowed: 600 s, not the old fixed 300
 
 
 if __name__ == "__main__":

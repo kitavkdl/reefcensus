@@ -179,7 +179,8 @@ UPLOAD_TRIES = 3               # a failed upload (timeout, dropped connection, 5
 # The whole multipart body goes out in one socket sendall() under the *connect* timeout (urllib3 2.x), and since
 # Python 3.5 a socket timeout bounds the whole sendall, not each send: with (300, 600) any upload slower than 300 s
 # failed every time ("The write operation timed out": cr9 S2/S4, a 396 MB segment at 1.3 MB/s, 11/21). The send is
-# now allowed size / UPLOAD_MIN_BPS seconds (396 MB: ~33 min), at least 300 s as before.
+# now allowed size / UPLOAD_MIN_BPS seconds (396 MB: ~33 min), at least 300 s as before. Checked 11/21: that 396 MB
+# segment went up in 744 s (0.53 MB/s) in one try, and the live SAM API answered a reused file_id like a fresh upload.
 UPLOAD_MIN_BPS = 200 * 1024
 _uploads, _upload_locks, _uploads_lock = {}, {}, threading.Lock()
 
