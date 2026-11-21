@@ -543,8 +543,77 @@ REFILL_WINDOW = 100     # frames per refill call (20 s at 5 fps; SAM bills at le
 REFILL_OVERLAP = 2      # frames shared by consecutive windows, so merge() drops the repeat and stitch() joins the pieces
 
 
+def _refill_capped(run, name, s, max_usd):
+    _capped(run, "track", f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}")
+
+
+def _refill_chain_ahead(run, job, s, n, offline, ahead, window, overlap, cap, max_usd):
+    """refill_saturated's chain for one pass with up to `ahead` windows in flight (opt-in, --refill-ahead).
+    The chain goes window by window: the next starts `window - overlap` frames on unless this one ran out of ids at r
+    (then at r). That is known only when the answer is back, so the serial chain waits for every call (LONG1_cr9:
+    141 calls, all one after another). Here the windows on the no-run-out grid (s, s+98, s+196, ...) are sent at
+    once; the chain still walks its own path and uses an answer only for the window it would have sent itself (same
+    start, same cut, so the same cache entry), and a window off its path (after a run-out) is paid for and dropped.
+    So the sources returned are the serial chain's (11/21: 6 LONG1_cr9 segments, 43 rounds instead of 141, 20
+    wasted 100-frame calls, ~$0.40, t4_sim.py). Under max_usd a window is sent only while the cap would hold with
+    every call still in flight paid for (the serial chain has none in flight, so there it is the same check)."""
+    name, label, prompt, path, box = job
+    step = window - overlap
+    live_cap = max_usd is not None and not offline
+    out, pending, held = [], {}, {}     # held: future -> what it may still bill (in run.status once it is done)
+
+    def cut(t):
+        e = min(n, t + window)
+        seg = run.path(f"seg_{name}+{t}.mp4")
+        video.segment(path, seg, t, length=None if e == n else e - t)
+        return e, seg
+
+    def call(t):
+        e, seg = cut(t)
+        return e, _counted(run, api.sam_video, seg, prompt, e - t, offline=offline)
+
+    def price(t):
+        e, seg = cut(t)
+        return 0.0 if api.sam_cached(seg, prompt) else max(api.SAM_MIN_FRAMES, e - t) * api.SAM_PER_FRAME
+
+    def owed():
+        return run.status["billed_usd"] + sum(c for f, c in held.items() if not f.done())
+
+    with cf.ThreadPoolExecutor(ahead) as ex:
+        while s is not None and s < n - 2 and len(out) < cap:
+            if s not in pending:
+                cost = price(s) if live_cap else 0.0
+                if live_cap and cost and owed() + cost > max_usd:     # owed: dropped calls still running bill too
+                    _refill_capped(run, name, s, max_usd)
+                    break
+                pending[s] = ex.submit(call, s)
+                held[pending[s]] = cost
+            for i in range(1, ahead):
+                t = s + i * step
+                if t >= n - 2 or len(out) + i >= cap:
+                    break
+                if t in pending:
+                    continue
+                cost = price(t) if live_cap else 0.0
+                if live_cap and owed() + cost > max_usd:
+                    break
+                pending[t] = ex.submit(call, t)
+                held[pending[t]] = cost
+            e, raw = pending.pop(s).result()
+            txt = tracks.shift_text(raw, s)
+            d = tracks.parse_boxes(txt)
+            out.append((f"{name}+{s}", label, tracks.from_tile(d, box, 2) if box else d, txt, box))
+            r = tracks.saturation_frame(d)
+            s = r if r is not None and r > s else (e - overlap if e < n else None)
+            for t in [t for t in pending if s is None or t < s or (t - s) % step]:
+                pending.pop(t).cancel()     # off the chain's path: dropped (a call already sent still finishes)
+        for f in pending.values():
+            f.cancel()
+    return out
+
+
 def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFILL_WINDOW, overlap=REFILL_OVERLAP,
-                     max_usd=None):
+                     max_usd=None, ahead=1):
     """SAM 3.1 gives one call at most 16 object ids for the whole clip (tracks.SAM_MAX_OBJECTS). When a prompt/tile
     pass has used them all at frame s, nothing that arrives later is ever boxed (11/3 TF_52: the large seabream over
     the pale sand at the end, in tile r1c1 whose 16 ids were gone by frame 22). From s the video is sent again in
@@ -555,6 +624,8 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
     every call. At most `max_segments` calls per window's worth of frames.
     max_usd: a window that is not cached and would take the run past the per-video cap is not sent, and that pass
     stops there (cached windows are free and always used, so a replay is unchanged).
+    ahead: opt-in (--refill-ahead N): up to N windows of a chain in flight at once (_refill_chain_ahead); same
+    sources as the serial chain, sooner, for the calls it sends past a run-out. 1 (default): one at a time.
     Returns extra sources (name "<pass>+<start>", frames renumbered to the clip) to merge after all others."""
     out_res = {r[0]: r for r in results}
 
@@ -563,13 +634,15 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
         s = tracks.saturation_frame(tracks.parse_boxes(out_res[name][3]))
         out = []
         cap = max_segments * -(-(n - s) // (window - overlap)) if s is not None else 0
+        if ahead > 1:
+            return _refill_chain_ahead(run, job, s, n, offline, ahead, window, overlap, cap, max_usd)
         while s is not None and s < n - 2 and len(out) < cap:
             e = min(n, s + window)
             seg = run.path(f"seg_{name}+{s}.mp4")
             video.segment(path, seg, s, length=None if e == n else e - s)
             if (max_usd is not None and not offline and not api.sam_cached(seg, prompt)
                     and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, e - s) * api.SAM_PER_FRAME > max_usd):
-                _capped(run, "track", f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}")
+                _refill_capped(run, name, s, max_usd)
                 break
             txt = tracks.shift_text(_counted(run, api.sam_video, seg, prompt, e - s, offline=offline), s)
             d = tracks.parse_boxes(txt)
@@ -588,7 +661,7 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
 
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
-                 misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False):
+                 misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1):
     """skip_people: opt-in (_is_people): a discovery naming people or a boat and no animal is not searched for, and a
     sign whose suspected animal is one is not either. False (default): every discovery is searched, as before.
     probe_window: opt-in (PROBE_WINDOW): a discovered word is tried on +-probe_window frames around the frames Spark
@@ -604,6 +677,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
     refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
     its number. On by default since 11/3 (refill=False reproduces the evaluations made before that).
+    refill_ahead: opt-in (--refill-ahead N): those re-sends go up to N windows at a time (same result, sooner, and a
+    few calls paid for and dropped where a window runs out of ids). 1 (default): one after another, as before.
     clean: track hygiene (11/3 TF_52): tracks.repair_ids() gives back the ids SAM shuffled for a frame (boxes that
     hopped between fish, a fish's id on its shadow), tracks.split_jumps() cuts IDs SAM reused for another object, and the
     audit's "largest box" moment skips boxes cut by the frame edge. On by default since 11/3 (clean=False: the old runs).
@@ -726,7 +801,7 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             if word:
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
     if refill:
-        results += refill_saturated(run, jobs, results, inf["n_frames"], offline, max_usd=max_usd)
+        results += refill_saturated(run, jobs, results, inf["n_frames"], offline, max_usd=max_usd, ahead=refill_ahead)
     signs = [sg for sg in disc.get("signs", []) if not (skip_people and isinstance(sg, dict)
                                                         and _is_people(dict(what=sg.get("possible_animal"))))]
     recovered = recover(run, clip, inf, others, found, signs, results, max_usd, offline,
@@ -2172,6 +2247,9 @@ if __name__ == "__main__":
                     help="a discovery that names people or a boat and no animal (camera still on deck) is not searched for")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
+    ap.add_argument("--refill-ahead", type=int, default=1, metavar="N",
+                    help="send up to N of those re-run windows at once (same result, sooner; a few calls past a window "
+                         "that runs out of ids are paid for and dropped: LONG1 about $0.40 an hour at N=4)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
@@ -2196,11 +2274,11 @@ if __name__ == "__main__":
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                               probe_window=a.probe_window, skip_people=a.skip_people, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
+                               probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                          camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                         probe_window=a.probe_window, skip_people=a.skip_people)
+                         probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
     print(f"run folder: {os.path.relpath(os.path.join(RUNS, a.id))}/", file=sys.stderr)

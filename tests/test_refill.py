@@ -92,5 +92,69 @@ class Windows(unittest.TestCase):
         self.assertGreater(len(out), 1)
 
 
+class Ahead(unittest.TestCase):
+    """--refill-ahead N: windows sent N at a time; the chain keeps the serial chain's windows, so the same sources."""
+    def setUp(self):
+        import re, threading
+        self.sent, self.lock, self._c, self._s = [], threading.Lock(), pipeline._counted, video.segment
+        self.used_up, self.price = {}, 0.0
+        def seg(src, dst, start, fps=5, length=None):
+            pass
+        def counted(run, fn, path, prompt, n, offline=False):
+            s = int(re.search(r"\+(\d+)\.mp4$", path).group(1))
+            with self.lock:
+                self.sent.append(s)
+                run.status["billed_usd"] += self.price
+            return sam_text(n, self.used_up.get(s))
+        video.segment, pipeline._counted = seg, counted
+
+    def tearDown(self):
+        pipeline._counted, video.segment = self._c, self._s
+
+    def refill(self, n, first_used_up, ahead, run=None, offline=True, max_usd=None):
+        self.sent = []
+        res = [("p0", "fish", {}, sam_text(n, first_used_up), None)]
+        return pipeline.refill_saturated(run or Run(), [("p0", "fish", "fish", "clip.mp4", None)], res, n, offline,
+                                         max_usd=max_usd, ahead=ahead)
+
+    def same_as_serial(self, n, first_used_up, ahead):
+        serial = self.refill(n, first_used_up, 1)
+        serial_sent = list(self.sent)
+        got = self.refill(n, first_used_up, ahead)
+        self.assertEqual(got, serial)
+        self.assertTrue(set(serial_sent) <= set(self.sent))
+        return serial_sent, list(self.sent)
+
+    def test_no_run_out_same_windows_and_no_waste(self):
+        for ahead in (2, 4, 8):
+            serial_sent, sent = self.same_as_serial(1000, 78, ahead)
+            self.assertEqual(sorted(sent), serial_sent)
+
+    def test_run_outs_same_sources_wasted_calls_extra(self):
+        self.used_up.update({78: 30, 206: 50, 354: 0})      # 78 -> 108; 108+98=206 -> 256; a first-frame run-out at 354
+        serial_sent, sent = self.same_as_serial(1000, 78, 4)
+        self.assertEqual(serial_sent[:6], [78, 108, 206, 256, 354, 452])
+        self.assertGreater(len(sent), len(serial_sent))     # windows on the old grid past 78 and 206 were dropped
+
+    def test_short_clip_one_call(self):
+        serial_sent, sent = self.same_as_serial(60, 22, 4)
+        self.assertEqual((serial_sent, sent), ([22], [22]))
+
+    def test_live_cap_holds_with_calls_in_flight(self):
+        from fishcount import api
+        orig = api.sam_cached
+        api.sam_cached = lambda path, prompt: False
+        self.price = 100 * api.SAM_PER_FRAME
+        try:
+            serial = self.refill(1000, 78, 1, run=Run(billed=1.95), offline=False, max_usd=2.0)
+            run = Run(billed=1.95)
+            got = self.refill(1000, 78, 4, run=run, offline=False, max_usd=2.0)
+        finally:
+            api.sam_cached = orig
+        self.assertEqual(got, serial)
+        self.assertEqual(len(serial), 2)
+        self.assertLessEqual(run.status["billed_usd"], 2.0 + 1e-9)
+
+
 if __name__ == "__main__":
     unittest.main()
