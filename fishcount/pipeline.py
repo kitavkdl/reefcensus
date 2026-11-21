@@ -711,6 +711,16 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
     return extra
 
 
+def first_estimate(jobs, others, clip, n_frames):
+    """Worst-case $ of the first pass's SAM calls: each prompt / tile job and each discovery word as a whole-clip call
+    (the word ladder may try them all). Calls already in the cache are free and do not count: a rerun of a 600-s
+    segment whose calls were all cached stopped at the default $1 cap before ("estimate $2.13 > per-video cap $1.00",
+    LONG1 S2, 11/21c), with nothing to pay."""
+    n = (sum(1 for j in jobs if not api.sam_cached(j[3], j[2]))
+         + sum(1 for _, ws in others for w in ws if not api.sam_cached(clip, w)))
+    return n * max(api.SAM_MIN_FRAMES, n_frames) * api.SAM_PER_FRAME
+
+
 def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
                  misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1,
@@ -849,8 +859,8 @@ def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_
             tp = run.path(f"tile_crowd-{name}.mp4")
             video.crop_tile(clip, tp, box, scale=2)
             jobs.append((f"crowd-{name}", plist[-1][0], "fish", tp, box))
-    est = (len(jobs) + sum(len(w) for _, w in others)) * max(api.SAM_MIN_FRAMES, inf["n_frames"]) * api.SAM_PER_FRAME
-    run.stage("track", f"SAM 3.1 tracking {len(jobs)} prompt(s)/tile(s) in parallel: {[(j[2], j[0]) for j in jobs]} (est ${est:.2f} if not cached)")
+    est = first_estimate(jobs, others, clip, inf["n_frames"])
+    run.stage("track", f"SAM 3.1 tracking {len(jobs)} prompt(s)/tile(s) in parallel: {[(j[2], j[0]) for j in jobs]} (est ${est:.2f} for the calls not cached)")
     if est > max_usd and not offline:
         raise api.BudgetExceeded(f"estimate ${est:.2f} > per-video cap ${max_usd:.2f}")
 
