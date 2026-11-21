@@ -313,6 +313,9 @@ def _steady(p, j, k=2, ratio=2.0):
     return len(nb) < 2 or area(p[j][1]) <= ratio * nb[len(nb) // 2]
 
 
+AUDIT_WORKERS = 3      # audit sheets prepared and sent at once (each holds its ~40 frames: ~0.3 GB at 1080p)
+
+
 def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0, target=None, frame_wh=None):
     """Show Spark three crops per track (early, largest box, late) in sheets of 12; returns {track: verdict}.
     frame_wh=(W, H) (opt-in, clean tracks): the "largest box" moment skips boxes touching the frame edge when the
@@ -339,8 +342,7 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     ids = sorted(best, key=lambda t: best[t][1])
     names = {t: f"T{start + i + 1}" for i, t in enumerate(ids)}
     os.makedirs(run.path("thumbs"), exist_ok=True)
-    out = {}
-    for i in range(0, len(ids), per_sheet):
+    def one(i):
         chunk = ids[i:i + per_sheet]
         imgs = video.frames(clip, {f for t in chunk for f, _ in trios[t]} | {thumb[t][0] for t in chunk})   # one sheet's frames at a time
         groups = []
@@ -354,8 +356,19 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
         sheet = motion.layout(groups)
         open(run.path(f"audit_{api_safe(label)}_{i // per_sheet + 1}.jpg"), "wb").write(sheet)
         reply = _counted(run, api.spark, AUDIT_PROMPT.format(label=label, target=target or label, context=context), [sheet], offline=offline, check=api.parse_json_list)
-        for v in api.parse_json_list(reply):
-            out[v["track"]] = v
+        return api.parse_json_list(reply)
+
+    # sheets are independent (own frames, own track names, own Spark call): AUDIT_WORKERS at a time, each decoding its
+    # frames while another waits on Spark. Same sheets, same prompts, answers read in sheet order (11/21 LONG1_cr9 S1,
+    # cache only: 18 sheets and every thumbnail byte-identical, 74 s -> see out/speed.md)
+    out = {}
+    ex = cf.ThreadPoolExecutor(AUDIT_WORKERS)
+    try:
+        for got in ex.map(one, range(0, len(ids), per_sheet)):
+            for v in got:
+                out[v["track"]] = v
+    finally:    # a sheet that raised (cache miss offline, budget stop) leaves the sheets not yet started unsent
+        ex.shutdown(wait=True, cancel_futures=True)
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
 
 

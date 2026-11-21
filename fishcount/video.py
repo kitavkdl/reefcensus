@@ -123,15 +123,21 @@ def info(path):
 
 
 def frames(path, indices):
-    """Return {index: BGR ndarray} for the requested frame indices (sequential read; clips are short)."""
+    """Return {index: BGR ndarray} for the requested frame indices (sequential read: every frame is decoded, but only
+    the wanted ones are converted to BGR -- grab() + retrieve() is read() split in two, the same pixels; 11/21 a
+    2,658-frame 1080p clip 5.5 s -> 4.4 s)."""
     want, out = set(indices), {}
+    if not want:
+        return out
     cap = cv2.VideoCapture(path)
-    i = 0
-    while want - out.keys():
-        ok, f = cap.read()
-        if not ok:
+    i, last = 0, max(want)
+    while i <= last:
+        if not cap.grab():
             break
         if i in want:
+            ok, f = cap.retrieve()
+            if not ok:
+                break
             out[i] = f
         i += 1
     cap.release()
