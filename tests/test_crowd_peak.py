@@ -158,6 +158,47 @@ class PeakTracksKeepFirstPass(unittest.TestCase):
         trk["p0:3"] = dict(label="fish", source="peak+0-r0c1")
         self.assertEqual(set(tracks.stitch(fr, trk, apart=("camo", "peak+"))), {"peak+0-r0c0:1"})
 
+    @staticmethod
+    def det(i, box, cut=False):
+        return dict(id=i, box=box, conf=0.9, cut=cut)
+
+    def test_merge_peak_boxes_do_not_make_a_group_box(self):
+        # two uncut tile boxes inside a first-pass box: without apart the first-pass box is dropped as a group box
+        src = lambda: [("p0", "fish", {5: [self.det(1, [0, 0, 100, 100])]}),
+                       ("peak+5-r0c0", "fish", {5: [self.det(1, [5, 5, 40, 40]), self.det(2, [50, 50, 95, 95])]})]
+        fr, _ = tracks.merge(src())
+        self.assertNotIn("p0:1", [k["track"] for k in fr[5]])                      # the old drop
+        fr, trk = tracks.merge(src(), apart=("peak+",))
+        self.assertEqual([k["box"] for k in fr[5] if k["track"] == "p0:1"], [[0, 0, 100, 100]])
+        self.assertEqual(len(fr[5]), 3)
+
+    def test_merge_first_pass_group_box_still_dropped(self):
+        # two first-pass boxes from other passes inside a first-pass box: the 11/1 s004 group box rule still applies
+        src = [("p0", "fish", {5: [self.det(1, [0, 0, 100, 100])]}),
+               ("d0", "fish", {5: [self.det(1, [5, 5, 40, 40]), self.det(2, [50, 50, 95, 95])]})]
+        fr, _ = tracks.merge(src, apart=("peak+",))
+        self.assertEqual(sorted(k["track"] for k in fr[5]), ["d0:1", "d0:2"])
+
+    def test_merge_peak_track_not_aliased_into_first_pass(self):
+        # a tile track overlapping a first-pass track on 4 of its 6 frames: without apart its 2 own frames are
+        # handed to the first-pass track, which then has frames it never had
+        a = [10, 10, 50, 50]
+        src = lambda: [("p0", "fish", {f: [self.det(1, a)] for f in range(4)}),
+                       ("peak+0-r0c0", "fish", {f: [self.det(7, a)] for f in range(6)})]
+        _, trk = tracks.merge(src())
+        self.assertEqual(trk["p0:1"]["frames"], [0, 1, 2, 3, 4, 5])               # the old alias
+        _, trk = tracks.merge(src(), apart=("peak+",))
+        self.assertEqual(trk["p0:1"]["frames"], [0, 1, 2, 3])
+        self.assertEqual(trk["peak+0-r0c0:7"]["frames"], [4, 5])
+
+    def test_merge_without_peak_sources_unchanged(self):
+        # first-pass tracks still alias each other with apart set
+        a = [10, 10, 50, 50]
+        src = lambda: [("p0", "fish", {f: [self.det(1, a)] for f in range(4)}),
+                       ("d0", "fish", {f: [self.det(3, a)] for f in range(6)})]
+        self.assertEqual(tracks.merge(src()), tracks.merge(src(), apart=("peak+",)))
+        self.assertEqual(tracks.merge(src())[1]["p0:1"]["frames"], [0, 1, 2, 3, 4, 5])
+
     def test_audit_first_pass_sheets_unchanged(self):
         import tempfile
         import numpy as np
