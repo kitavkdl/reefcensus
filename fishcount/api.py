@@ -133,12 +133,22 @@ def thread_spent():
     return getattr(_tl, "usd", 0.0)
 
 
+def set_tag(tag):
+    """Name what this thread's next paid calls belong to ({"run": id, "stage": name}, or None); -> the previous tag.
+    pipeline._counted sets it around each call, so a shared ledger can say which video and which stage spent what."""
+    prev = getattr(_tl, "tag", None)
+    _tl.tag = tag
+    return prev
+
+
 def _log(kind, usd, note):
     _tl.usd = thread_spent() + usd
     os.makedirs(os.path.dirname(LEDGER), exist_ok=True)
     os.makedirs(CACHE, exist_ok=True)
+    row = {"t": time.time(), "kind": kind, "usd": usd, "note": note}     # these four keys: unchanged, always first
+    row.update(getattr(_tl, "tag", None) or {})
     with open(LEDGER, "a") as f:
-        f.write(json.dumps({"t": time.time(), "kind": kind, "usd": usd, "note": note}) + "\n")
+        f.write(json.dumps(row) + "\n")
 
 
 def _cache_path(kind, payload):

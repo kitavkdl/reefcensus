@@ -168,11 +168,16 @@ def _skip_stage(run, stage, msg, e):
 
 
 def _counted(run, fn, *a, **k):
-    """Call an api function and record whether it hit the network (this thread logged spend) or the cache."""
+    """Call an api function and record whether it hit the network (this thread logged spend) or the cache. A paid
+    call's ledger line names the run and the stage (the function that called _counted: scout, refill, ...), so a
+    ledger shared by many videos can be split by video and stage (round 3); the line's other keys are unchanged."""
     before = api.thread_spent()
+    rid = getattr(run, "id", None)
+    prev = api.set_tag(dict(run=rid, stage=sys._getframe(1).f_code.co_qualname.split(".")[0]) if rid else None)
     try:
         return fn(*a, **k)
     finally:    # a call that raises after paying (Spark's retry of a broken reply) still counts toward the cap
+        api.set_tag(prev)
         d = api.thread_spent() - before
         with run._lock:
             run.status["live_calls" if d > 0 else "cached_calls"] += 1
