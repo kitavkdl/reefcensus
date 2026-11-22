@@ -51,7 +51,8 @@ over the sum of the F's, so the shares add up to the cap even when a short last 
 estimate against the share as before; the first pass leaves things out rather than stopping: discovery words from the
 last, then the zoom / crowd tiles, then the scout's words (last, since without them a crab or shrimp would be counted
 as "fish"). The --prompts words are always sent. What was left out is in `result["capped"]` (an offline replay of the
-same folder leaves the same items out; any other cache miss stops the replay, as before). The video's spend is read
+same folder leaves the same items out, and skips the later stages the live run skipped at its cap, each listed with
+an item; any other cache miss stops the replay, as before). The video's spend is read
 from the ledger (rows of this run id and its `__S<n>` / `__P<n>` runs since the try started; `--resume` after a crash
 counts on from the try it continues when the options and code are the same, and a segment that runs again gets its
 share less what it spent in that try, never below F; a finished run or one with other options or code starts afresh, so ids ending

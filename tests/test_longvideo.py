@@ -308,12 +308,16 @@ class SkipEmptyFlags(unittest.TestCase):
 class CappedStages(unittest.TestCase):
     def test_every_cap_skip_is_recorded(self):
         """The nine stages that skip quietly at the per-video cap go through pipeline._capped (the eighth: the
-        --crowd-peak tiles, 11/21; the ninth: first-pass items left unsent, D-NIGHT3)."""
-        import re
-        src = open(os.path.join(ROOT, "fishcount", "pipeline.py")).read()
-        lines = [l for l in src.splitlines() if "would pass the per-video cap ${" in l]
-        self.assertEqual(len(lines), 9)
-        self.assertTrue(all("_capped(" in l for l in lines), [l for l in lines if "_capped(" not in l])
+        --crowd-peak tiles, 11/21; the ninth: first-pass items left unsent, D-NIGHT3). The eight after the first pass
+        go through pipeline._live_cap, so an offline replay skips what the live run skipped (D-NIGHT3-F1)."""
+        src = open(os.path.join(ROOT, "fishcount", "pipeline.py")).read().splitlines()
+        at = [i for i, l in enumerate(src) if "would pass the per-video cap ${" in l]
+        self.assertEqual(len(at), 9)
+        call = {i: next((c for c in ("_live_cap(", "_capped(") if any(c in src[j] for j in range(i - 3, i + 1))), None)
+                for i in at}     # the call the message is an argument of: on its line or up to three lines above
+        self.assertEqual([i for i, c in call.items() if c is None], [])
+        self.assertEqual([src[i].strip()[:60] for i, c in call.items() if c == "_capped("],
+                         ['_capped(run, "first_pass", f"first pass: {what} not sent: wo'])
 
     def test_capped_logs_and_records(self):
         from fishcount import pipeline

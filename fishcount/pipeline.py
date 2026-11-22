@@ -166,6 +166,19 @@ def _capped(run, stage, msg, **extra):
     run.stage(stage, msg)
 
 
+def _live_cap(run, stage, item, offline, over, msg):
+    """True when this stage (or job: item) is skipped at the per-video cap; it is listed in capped with its item.
+    Live: when `over`. Offline: exactly when the live run in this folder skipped it (run.live_capped, its message
+    kept), so a replay neither tries what was never cached nor runs what the live run left out (D-NIGHT3-F1; before,
+    only the first pass did this and a replay ran the later stage and gave another result)."""
+    if offline:
+        msg = getattr(run, "live_capped", {}).get(item)
+        over = msg is not None
+    if over:
+        _capped(run, stage, msg, item=item)
+    return over
+
+
 def _skip_stage(run, stage, msg, e):
     """A stage given up on error e: a FISH_BUDGET stop (BudgetExceeded is a RuntimeError) is a stage skipped at a cap
     too, so it is listed in result["capped"] (reason "fish"); any other error is only logged."""
@@ -617,8 +630,9 @@ REFILL_WINDOW = 100     # frames per refill call (20 s at 5 fps; SAM bills at le
 REFILL_OVERLAP = 2      # frames shared by consecutive windows, so merge() drops the repeat and stitch() joins the pieces
 
 
-def _refill_capped(run, name, s, max_usd):
-    _capped(run, "track", f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}")
+def _refill_capped(run, name, s, max_usd, offline, over):
+    return _live_cap(run, "track", f"refill:{name}+{s}", offline, over,
+                     f"16-id limit: {name} not re-sent from frame {s}: would pass the per-video cap ${max_usd:.2f}" if over else "")
 
 
 def _refill_chain_ahead(run, job, s, n, offline, ahead, window, overlap, cap, max_usd):
@@ -657,8 +671,8 @@ def _refill_chain_ahead(run, job, s, n, offline, ahead, window, overlap, cap, ma
         while s is not None and s < n - 2 and len(out) < cap:
             if s not in pending:
                 cost = price(s) if live_cap else 0.0
-                if live_cap and cost and owed() + cost > max_usd:     # owed: dropped calls still running bill too
-                    _refill_capped(run, name, s, max_usd)
+                if _refill_capped(run, name, s, max_usd, offline,      # owed: dropped calls still running bill too
+                                  bool(live_cap and cost and owed() + cost > max_usd)):
                     break
                 pending[s] = ex.submit(call, s)
                 held[pending[s]] = cost
@@ -714,9 +728,9 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
             e = min(n, s + window)
             seg = run.path(f"seg_{name}+{s}.mp4")
             video.segment(path, seg, s, length=None if e == n else e - s)
-            if (max_usd is not None and not offline and not api.sam_cached(seg, prompt)
-                    and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, e - s) * api.SAM_PER_FRAME > max_usd):
-                _refill_capped(run, name, s, max_usd)
+            if _refill_capped(run, name, s, max_usd, offline, bool(
+                    max_usd is not None and not offline and not api.sam_cached(seg, prompt)
+                    and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, e - s) * api.SAM_PER_FRAME > max_usd)):
                 break
             txt = tracks.shift_text(_counted(run, api.sam_video, seg, prompt, e - s, offline=offline), s)
             d = tracks.parse_boxes(txt)
@@ -793,14 +807,15 @@ def first_pass_trim(jobs, others, clip, n_frames, max_usd, required, probes=None
 
 
 def _left_unsent(run):
-    """Items the live run in this folder left unsent at the cap (result["capped"] item): an offline replay of it
-    leaves them out too. Any other cache miss raises, as it always did."""
+    """Items the live run in this folder left out at the cap (result["capped"] item -> its message): an offline replay
+    of it leaves them out too (first-pass jobs; later stages through _live_cap). Any other cache miss raises, as it
+    always did."""
     try:
         with open(run.path("result.json")) as f:
             res = json.load(f)
-        return {c["item"] for c in res.get("capped", []) if isinstance(c, dict) and c.get("item")}
+        return {c["item"]: c.get("msg", "") for c in res.get("capped", []) if isinstance(c, dict) and c.get("item")}
     except (OSError, ValueError, AttributeError, TypeError):
-        return set()
+        return {}
 
 
 def mark_error(d, e):
@@ -886,7 +901,8 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
     do_motion = (do_discover and do_audit) if do_motion is None else do_motion
     rid = rid or time.strftime("%m%d-%H%M%S")
     run = _run or Run(rid)
-    unsent_before = _left_unsent(run) if offline else set()     # read before this run writes its own result
+    unsent_before = _left_unsent(run) if offline else {}     # read before this run writes its own result
+    run.live_capped = unsent_before
     clip = run.path("clip.mp4")
     # 11/3: identical clip copies of finished runs are hard links to each other (disk full); writing into one would
     # rewrite them all, so a run starts from fresh files.
@@ -1285,9 +1301,12 @@ def site_look(run, clip, inf, site, skip, max_usd, offline):
     from fishcount import sitememory
     entries = sitememory.plan(site, skip_words=skip)
     per_word = max(api.SAM_MIN_FRAMES, inf["n_frames"]) * api.SAM_PER_FRAME
-    while entries and not offline and run.status["billed_usd"] + sum(len(e["words"]) for e in entries) * per_word > max_usd:
-        e = entries.pop()
-        _capped(run, "recover", f"site memory '{e['label']}' skipped: would pass the per-video cap ${max_usd:.2f}")
+    while entries:     # offline: the entries the live run skipped, from the last as it did
+        over = not offline and run.status["billed_usd"] + sum(len(e["words"]) for e in entries) * per_word > max_usd
+        if not _live_cap(run, "recover", f"site:{entries[-1]['label']}", offline, over,
+                         f"site memory '{entries[-1]['label']}' skipped: would pass the per-video cap ${max_usd:.2f}" if over else ""):
+            break
+        entries.pop()
     if not entries:
         return [], []
     run.stage("recover", "site memory: " + ", ".join(f"{e['label']} -> try {e['words']}" for e in entries))
@@ -1356,8 +1375,8 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
         k = len(jb["words"])
         pw = _probe_windows(jb.get("spark_frames"), n, probe_window) if probe_window and jb["kind"] == "zoom" else []
         est += min(k * whole, k * _window_cost(pw) + whole) if pw else k * whole
-    if run.status["billed_usd"] + est > max_usd and not offline:
-        _capped(run, "recover", f"skipped second look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+    if _live_cap(run, "recover", "recover:second", offline, run.status["billed_usd"] + est > max_usd,
+                 f"skipped second look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}"):
         return log
     run.stage("recover", "second look: " + ", ".join(f"{jb['kind']} {jb['cell'] or ''} {jb['words']}".replace("  ", " ") for jb in todo))
     rev = run.path("clip_rev.mp4")
@@ -1694,9 +1713,10 @@ def peak_tiles(run, clip, inf, windows, label, max_usd, offline):
             jobs.append((f"peak+{s}-{name}", label, "fish", tp, box, s, e - s))
     todo = []
     for j in jobs:
-        if (not offline and not api.sam_cached(j[3], j[2])
-                and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, j[6]) * api.SAM_PER_FRAME > max_usd):
-            _capped(run, "track", f"crowd peak: {j[0]} not sent: would pass the per-video cap ${max_usd:.2f}")
+        if _live_cap(run, "track", f"peak:{j[0]}", offline, bool(
+                not offline and not api.sam_cached(j[3], j[2])
+                and run.status["billed_usd"] + max(api.SAM_MIN_FRAMES, j[6]) * api.SAM_PER_FRAME > max_usd),
+                "" if offline else f"crowd peak: {j[0]} not sent: would pass the per-video cap ${max_usd:.2f}"):
             continue
         todo.append(j)
 
@@ -1936,8 +1956,8 @@ def motion_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min
     scan = "Movement outside every box" + ("" if rnd == 1 else " (second look, after the first boxes)")
     per_box = min(n, 2 * box_window + 1) if box_window is not None else n
     est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, per_box) * api.SAM_PER_FRAME
-    if run.status["billed_usd"] + est > max_usd and not offline:
-        _capped(run, "motion", f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+    if _live_cap(run, "motion", f"motion:{rnd}", offline, run.status["billed_usd"] + est > max_usd,
+                 f"skipped motion look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}"):
         return []
     if os.path.exists(cpath):
         mc = json.load(open(cpath))
@@ -2106,8 +2126,8 @@ def miss_look(run, clip, inf, results, max_usd, offline, labels=(), names=(), k=
         for f, ds in d.items():
             known.setdefault(f, []).extend(list(det["box"]) for det in ds)
     est = k * 0.005 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
-    if run.status["billed_usd"] + est > max_usd and not offline:
-        _capped(run, "miss", f"skipped the missed-animal look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+    if _live_cap(run, "miss", "miss", offline, run.status["billed_usd"] + est > max_usd,
+                 f"skipped the missed-animal look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}"):
         return []
     step = n / k
     show = sorted({min(n - 1, int(step * (i + 0.5))) for i in range(k)})
@@ -2207,8 +2227,8 @@ def camo_look(run, clip, inf, results, max_usd, offline, k=8, max_boxes=5, min_c
     key = hashlib.sha256((api.file_sha(clip) + kb + CAMO_PROMPT + CAMO_VERSION).encode()).hexdigest()[:24]
     cpath = os.path.join(api.CACHE, f"camo_{key}.json")
     est = 0.04 + max_boxes * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
-    if run.status["billed_usd"] + est > max_usd and not offline:
-        _capped(run, "camo", f"skipped camouflage look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+    if _live_cap(run, "camo", "camo", offline, run.status["billed_usd"] + est > max_usd,
+                 f"skipped camouflage look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}"):
         return [], {}
     if os.path.exists(cpath):
         mc = json.load(open(cpath))
@@ -2313,8 +2333,8 @@ def closer_look(run, clip, inf, jobs, results, max_usd, offline, probe_window=No
     n, W, H = inf["n_frames"], inf["width"], inf["height"]
     jobs = jobs[:2]
     est = sum(len(jb["words"]) + 1 for jb in jobs) * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
-    if run.status["billed_usd"] + est > max_usd and not offline:
-        _capped(run, "recover", f"skipped closer look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
+    if _live_cap(run, "recover", "recover:closer", offline, run.status["billed_usd"] + est > max_usd,
+                 f"skipped closer look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}"):
         return []
     run.stage("recover", "closer look, one cell at 3x: " + ", ".join(f"{jb['what']} in {jb['cell']} {jb['words']}" for jb in jobs))
 

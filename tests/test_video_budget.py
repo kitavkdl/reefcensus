@@ -93,6 +93,64 @@ class FirstPass(unittest.TestCase):
         self.assertNotIn("cap", str(e.exception))
 
 
+class LaterStages(unittest.TestCase):
+    """D-NIGHT3-F1: a stage after the first pass that the live run skipped at its cap (here the motion look) is listed
+    with an item, and an offline replay of that folder skips it too: before, the replay ran it (the cap check was
+    live only) and gave another result. The real _run_pipeline on the 12-s clip, every API call a fake keyed by
+    clip and prompt."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.cache = set()
+
+        def spark(prompt, images=(), offline=False, check=None, **k):
+            return json.dumps(dict(others=[dict(what="crab", search_words=["crab", "shell"], approx_max_count=1,
+                                                cells=["c5"], frames=[0])], signs=[]))
+
+        def sam_video(path, prompt, n, offline=False):
+            key = (os.path.basename(path), prompt)
+            if key not in self.cache:
+                if offline:
+                    raise FileNotFoundError(f"not cached: SAM {prompt!r} on {path}")
+                self.cache.add(key)
+            return ""
+
+        for p in (mock.patch.object(pipeline, "RUNS", self.tmp), mock.patch.object(api, "LEDGER", os.path.join(self.tmp, "l.jsonl")),
+                  mock.patch.object(api, "CACHE", self.tmp),     # the motion look writes its sheet there
+                  mock.patch.object(api, "spark", spark), mock.patch.object(api, "sam_video", sam_video),
+                  mock.patch.object(api, "sam_cached", lambda path, prompt: (os.path.basename(path), prompt) in self.cache)):
+            p.start()
+        self.addCleanup(mock.patch.stopall)
+
+    def run_(self, rid, offline=False):     # audit on, $0.05: the first pass fits, the $0.10 motion look does not
+        return pipeline.run_pipeline(CLIP, rid, offline, False, True, False, ["fish"], 0.05, True)
+
+    def test_offline_replay_skips_the_stage_the_live_run_skipped(self):
+        L = self.run_("m")
+        self.assertEqual([(c["stage"], c["item"]) for c in L["capped"]], [("motion", "motion:1")])
+        O = self.run_("m", offline=True)
+        self.assertEqual(json.dumps(O, sort_keys=True), json.dumps(L, sort_keys=True))
+
+    def test_offline_replay_elsewhere_still_runs_the_stage(self):
+        self.run_("m")
+        O = self.run_("other", offline=True)        # no live result here: the cap is not checked offline, as before
+        self.assertFalse(any(c["stage"] == "motion" for c in O.get("capped", [])))
+
+    def test_live_cap_helper(self):
+        class Run:
+            def stage(self, *a):
+                pass
+        r = Run()
+        self.assertTrue(pipeline._live_cap(r, "camo", "camo", False, True, "skipped camo"))
+        self.assertFalse(pipeline._live_cap(r, "miss", "miss", False, False, "x"))
+        self.assertEqual(r.capped, [dict(stage="camo", msg="skipped camo", item="camo")])
+        r.live_capped = {"miss": "skipped miss (live)"}
+        self.assertTrue(pipeline._live_cap(r, "miss", "miss", True, False, "est differs offline"))
+        self.assertFalse(pipeline._live_cap(r, "camo", "camo", True, True, "over, but offline and not live"))
+        self.assertEqual(r.capped[-1], dict(stage="miss", msg="skipped miss (live)", item="miss"))
+
+
 class Trim(unittest.TestCase):
     jobs = [("p0", "crab", "crab", "clip.mp4", None), ("p1", "fish", "fish", "clip.mp4", None),
             ("zoom-r1c1", "fish", "fish", "tile_r1c1.mp4", (0, 0, 1, 1)), ("crowd-a", "fish", "fish", "tile_crowd-a.mp4", (0, 0, 1, 1))]
