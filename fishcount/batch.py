@@ -19,14 +19,16 @@ gives on its own (long videos split as usual).
   ledger_usd (every ledger row tagged with this run id or its segments: earlier failed tries too), wall_s.
   A video that counted nothing is a line with labels_counted 0; one that failed says why (status.json "error").
 <out>/maxn_all.csv: every finished video's standard MaxN rows (maxn_export.py, the GlobalArchive / CheckEM layout)
-  under one header.
+  under one header. OpCode is the video's file name as in maxn_export.py; two inputs with the same file name take
+  their run ids instead (x, x_2), so no two videos share an OpCode.
 <out>/logs/<run id>.log: that video's pipeline output.
 
 Run the same command again after a crash, a kill or a full disk: a video whose run finished with the same options
 and the same source file (path, size, modification time; <run>/batch.json) is kept and not run again (no API call);
 the others run, a long one with --resume so its finished segments are kept (not with --skip-empty). A failed video
-does not stop the batch."""
-import csv, json, os, re, subprocess, sys, time
+does not stop the batch; the exit code is 1 if any video failed. Ctrl-C or SIGTERM stops the running video's
+process too, writes the tables (videos not reached: pending) and exits with 130."""
+import csv, json, os, re, signal, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -49,10 +51,11 @@ def videos(args):
                     if f.lower().endswith(VIDEO_EXT) and os.path.isfile(os.path.join(a, f))]
         elif a.lower().endswith(".txt"):
             base = os.path.dirname(os.path.abspath(a))
-            for line in open(a, encoding="utf-8"):
-                p = line.strip()
-                if p and not p.startswith("#"):
-                    out.append(p if os.path.isabs(p) else os.path.join(base, p))
+            with open(a, encoding="utf-8") as f:
+                for line in f:
+                    p = line.strip()
+                    if p and not p.startswith("#"):
+                        out.append(p if os.path.isabs(p) else os.path.join(base, p))
         else:
             out.append(a)
     return [os.path.abspath(p) for p in out]
@@ -95,11 +98,31 @@ def command(path, rid, opts):
     return [sys.executable, PIPELINE, path, "--id", rid, *opts, *extra]
 
 
+class Stopped(Exception):
+    """The batch got SIGTERM (kill, systemd stop)."""
+
+
+def _stop(signum, frame):
+    raise Stopped(f"signal {signum}")
+
+
 def run_one(path, rid, opts, log_path):
-    """Run one video; returns (ok, wall seconds). Never raises for the video's own failure."""
+    """Run one video; returns (ok, wall seconds, exit code). Never raises for the video's own failure. If the batch
+    itself is stopped (Ctrl-C, kill), the video's process is stopped too before the batch exits, so a rerun never
+    has two processes writing one run folder."""
     t = time.time()
     with open(log_path, "w") as log:
-        rc = subprocess.run(command(path, rid, opts), stdout=log, stderr=subprocess.STDOUT, cwd=ROOT).returncode
+        p = subprocess.Popen(command(path, rid, opts), stdout=log, stderr=subprocess.STDOUT, cwd=ROOT)
+        try:
+            rc = p.wait()
+        except BaseException:
+            p.terminate()
+            try:
+                p.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.wait()
+            raise
     st = _json(os.path.join(pipeline.RUNS, rid, "status.json")) or {}
     ok = rc == 0 and st.get("stage") == "done"
     if ok:
@@ -128,11 +151,14 @@ def ledger_by_run(path=None):
     return out
 
 
-def row(path, rid, state, ledger):
-    """One videos.csv line from the run folder (state: dict(status, error, wall_s))."""
+def row(path, rid, state, ledger, opcodes=None):
+    """One videos.csv line from the run folder (state: dict(status, error, wall_s)), and its maxn_all.csv rows.
+    opcodes: run id -> OpCode for videos whose file names clash (else maxn_export's default, the file name)."""
     import server
     d = os.path.join(pipeline.RUNS, rid)
-    st = _json(os.path.join(d, "status.json")) or {}
+    # a video not run yet in this batch: an earlier try's numbers would read as this batch's (the ledger column
+    # still counts what earlier tries paid)
+    st = (_json(os.path.join(d, "status.json")) or {}) if state["status"] != "pending" else {}
     res = _json(os.path.join(d, "result.json")) if state["status"] in ("done", "kept") else None
     v = (res or {}).get("video") or st.get("video") or {}
     warn = v.get("source_warnings") or st.get("source_warnings") or []
@@ -148,14 +174,22 @@ def row(path, rid, state, ledger):
         r.update(labels_counted=len(counted), maxn_by_label="; ".join(f"{n} {m['maxn']}" for n, m in counted),
                  maxn_lower_bound="; ".join(n for n, m in counted if maxn_export._lower_bound(e, n, m)),
                  review_queue=e.get("n_flagged", 0))
-    return r, (maxn_export.rows(e) if e else [])
+    return r, (maxn_export.rows(e, (opcodes or {}).get(rid)) if e else [])
+
+
+def clashing_opcodes(paths, rids):
+    """OpCode is the video's file name (maxn_export.default_opcode); two inputs with one name (a/x.mp4, b/x.mp4)
+    would share it in maxn_all.csv, so those take their run id (x, x_2) instead."""
+    names = [os.path.splitext(os.path.basename(p))[0] for p in paths]
+    return {rid: rid for n, rid in zip(names, rids) if names.count(n) > 1}
 
 
 def write_tables(out, paths, rids, states, ledger_path=None):
     ledger = ledger_by_run(ledger_path)
+    opcodes = clashing_opcodes(paths, rids)
     lines, maxn = [], []
     for p, rid in zip(paths, rids):
-        r, m = row(p, rid, states.get(rid, dict(status="pending")), ledger)
+        r, m = row(p, rid, states.get(rid, dict(status="pending")), ledger, opcodes)
         lines.append(r)
         maxn += m
     for name, header, body in (("videos.csv", COLUMNS, [[r[c] for c in COLUMNS] for r in lines]),
@@ -191,24 +225,34 @@ def main(argv=None):
     os.makedirs(os.path.join(a.out, "logs"), exist_ok=True)
     states = {}
     write_tables(a.out, paths, rids, states)
+    signal.signal(signal.SIGTERM, _stop)
+    try:
+        run_all(a.out, paths, rids, opts, states)
+    except (Stopped, KeyboardInterrupt) as e:
+        write_tables(a.out, paths, rids, states)
+        print(f"batch stopped ({e or 'Ctrl-C'}); the same command again keeps the finished videos", flush=True)
+        return 130
+    lines = write_tables(a.out, paths, rids, states)
+    n = {s: sum(1 for r in lines if r["status"] == s) for s in ("done", "kept", "error")}
+    print(f"batch: {n['done']} done, {n['kept']} kept, {n['error']} failed of {len(paths)}; "
+          f"{os.path.join(a.out, 'videos.csv')}, {os.path.join(a.out, 'maxn_all.csv')}", flush=True)
+    return 1 if n["error"] else 0
+
+
+def run_all(out, paths, rids, opts, states):
     for i, (p, rid) in enumerate(zip(paths, rids)):
         if is_kept(rid, p, opts):
             states[rid] = dict(status="kept")
             print(f"[{i + 1}/{len(paths)}] {rid}: kept (finished earlier with these options)", flush=True)
         else:
             print(f"[{i + 1}/{len(paths)}] {rid}: {p}", flush=True)
-            ok, wall, rc = run_one(p, rid, opts, os.path.join(a.out, "logs", f"{rid}.log"))
+            ok, wall, rc = run_one(p, rid, opts, os.path.join(out, "logs", f"{rid}.log"))
             st = _json(os.path.join(pipeline.RUNS, rid, "status.json")) or {}
             states[rid] = dict(status="done" if ok else "error", wall_s=round(wall, 1),
                                error="" if ok else (st.get("error") or f"exit code {rc} (see logs/{rid}.log)"))
             print(f"[{i + 1}/{len(paths)}] {rid}: {states[rid]['status']} in {wall:.0f}s"
                   + (f": {states[rid]['error']}" if not ok else ""), flush=True)
-        write_tables(a.out, paths, rids, states)
-    lines = write_tables(a.out, paths, rids, states)
-    n = {s: sum(1 for r in lines if r["status"] == s) for s in ("done", "kept", "error")}
-    print(f"batch: {n['done']} done, {n['kept']} kept, {n['error']} failed of {len(paths)}; "
-          f"{os.path.join(a.out, 'videos.csv')}, {os.path.join(a.out, 'maxn_all.csv')}", flush=True)
-    return 1 if n["error"] else 0
+        write_tables(out, paths, rids, states)
 
 
 if __name__ == "__main__":
