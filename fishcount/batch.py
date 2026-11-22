@@ -177,7 +177,8 @@ def row(path, rid, state, ledger, opcodes=None):
              review_queue="", live_calls=st.get("live_calls", ""), cached_calls=st.get("cached_calls", ""),
              billed_usd=round(st["billed_usd"], 4) if isinstance(st.get("billed_usd"), (int, float)) else "",
              ledger_usd=round(ledger.get(rid, 0.0), 4), wall_s=state.get("wall_s", ""),
-             capped="; ".join(dict.fromkeys(c.get("segment", "run") for c in (res or {}).get("capped", []) if isinstance(c, dict))))
+             capped="; ".join(list(dict.fromkeys(c.get("segment", "run") for c in (res or {}).get("capped", []) if isinstance(c, dict)))
+                              + [f"unsent {u.get('start_s')}-{u.get('end_s')} s" for u in (res or {}).get("unsent", []) if isinstance(u, dict)]))
     e = server.effective(rid) if res else None
     if e:
         counted = sorted(((n, m) for n, m in e["metrics"].items() if m["maxn"] > 0), key=lambda kv: (-kv[1]["maxn"], kv[0]))

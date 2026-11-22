@@ -42,17 +42,19 @@ both segments; names sharing a head noun are listed for the reviewer to rename (
 measurements in `report/long_video.md`).
 
 Budget (added after the evaluation, no paper number uses it). The whole video has one cap, `--max-usd-video`, by
-default $6 an hour of video and at least $1. Each segment gets a fixed equal share of it, never less than F, the first
-pass of the `--prompts` words on that segment (SAM's price for its frames, as if nothing were cached), and at most
-`--max-usd`. A default cap below the sum of the F's is raised to it (said in the log); a cap you set below it stops
-before anything is paid. The share does not depend on the order or how many segments run at once
+default $6 an hour of video and at least $1. Each segment gets a fixed share: F, the first pass of the `--prompts`
+words on that segment (SAM's price for its frames, as if nothing were cached), plus an equal part of what the cap has
+over the sum of the F's, so the shares add up to the cap even when a short last segment has a smaller F; at most
+`--max-usd`. A default cap below the sum of the F's is raised to it (said in the log); a cap you set below it, a
+`--max-usd` below a segment's F, or a short clip's cap below its F stops before anything is paid. The share does not depend on the order or how many segments run at once
 (`--segment-workers`), and money a segment does not use is not passed on. Inside a segment the stages check their own
 estimate against the share as before; the first pass leaves things out rather than stopping: discovery words from the
 last, then the zoom / crowd tiles, then the scout's words (last, since without them a crab or shrimp would be counted
 as "fish"). The --prompts words are always sent. What was left out is in `result["capped"]` (an offline replay of the
 same folder leaves the same items out; any other cache miss stops the replay, as before). The video's spend is read
 from the ledger (rows of this run id and its `__S<n>` / `__P<n>` runs since the try started; `--resume` after a crash
-counts on from the try it continues, a finished run or one whose segments all run again starts afresh, so ids ending
+counts on from the try it continues when the options and code are the same, and a segment that runs again gets its
+share less what it spent in that try, never below F; a finished run or one with other options or code starts afresh, so ids ending
 in `__S<n>` / `__P<n>` are refused). When it passed the cap or anything was left out, `result["budget"]` gives the cap,
 the spend, how far over, SAM calls billed with no answer (stream broke), and the split into first-pass SAM, later SAM
 and Spark. `--resume` keeps a finished segment when its clip, options and code match (`resume.json`) and nothing was

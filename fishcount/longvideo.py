@@ -45,6 +45,11 @@ CAP_PER_HOUR_SKIP_EMPTY = 4  # --skip-empty default whole-video cap (11/11)
 CAP_MIN_USD = 1              # a long video's default cap is never below this (not --skip-empty: as before)
 
 
+def _up(usd):
+    """usd rounded up to the cent, for "give ... or more" (0.15 * 100 is 15.000000000000002, not 16 cents)."""
+    return math.ceil(round(usd * 100, 6)) / 100
+
+
 def first_pass_floor(n, prompts):
     """F: the --prompts words' first pass on n frames as if nothing were cached, the least a segment is given."""
     return len(dict.fromkeys(prompts or ["fish"])) * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
@@ -58,7 +63,7 @@ def video_cap(floors, given, default, offline=False):
     if given is not None:
         if given + 1e-9 < need and not offline:
             raise api.BudgetExceeded(f"video cap ${given:.2f} is below the first pass of the --prompts words on every "
-                                     f"segment, ${need:.2f}: give --max-usd-video {math.ceil(need * 100) / 100:.2f} or more")
+                                     f"segment, ${need:.2f}: give --max-usd-video {_up(need):.2f} or more")
         return given, None
     if default + 1e-9 < need:
         return need, (f"video cap raised from the default ${default:.2f} to ${need:.2f}, the first pass of the --prompts "
@@ -66,24 +71,32 @@ def video_cap(floors, given, default, offline=False):
     return default, None
 
 
-def short_cap(max_usd, max_usd_video, floor):
+def short_cap(max_usd, max_usd_video, floor, offline=False):
     """A short video's cap: --max-usd, else --max-usd-video, else $1 raised to its first pass F when below it (as a
-    long video's default is) -> (cap, note or None)."""
-    if max_usd is not None:
-        return max_usd, None
-    if max_usd_video is not None:
-        return max_usd_video, None
+    long video's default is) -> (cap, note or None). A cap set below F stops before anything is paid (else the
+    scout / discover Spark calls were paid and then the --prompts words stopped the run with no result)."""
+    given = max_usd if max_usd is not None else max_usd_video
+    if given is not None:
+        if given + 1e-9 < floor and not offline:
+            raise api.BudgetExceeded(f"cap ${given:.2f} is below the first pass of the --prompts words, ${floor:.2f}: "
+                                     f"give --max-usd {_up(floor):.2f} or more")
+        return given, None
     if floor > 1.0 + 1e-9:
         return floor, f"cap raised from the default $1.00 to ${floor:.2f}, the first pass of the --prompts words"
     return 1.0, None
 
 
-def shares(floors, cap, ceiling=None):
-    """Each segment's cap: an equal share of the video cap (at most ceiling, --max-usd), never below its floor F_k.
-    Fixed: the same whatever order or how many at once the segments run, and a segment that spends less passes
-    nothing on (before: what was left of the cap, so early segments got all of it or late ones none)."""
-    even = cap / len(floors) if ceiling is None else min(cap / len(floors), ceiling)
-    return [round(max(f, even), 4) for f in floors]
+def shares(floors, cap, ceiling=None, offline=False):
+    """Each segment's cap: its floor F_k plus an equal part of what the video cap has over the floors, so the shares
+    add up to max(cap, sum F) even when the floors differ (a short last segment); at most ceiling (--max-usd). A
+    ceiling set below a segment's F stops before anything is paid (offline: F). Fixed: the same whatever order or how
+    many at once the segments run, and a segment that spends less passes nothing on."""
+    if ceiling is not None and ceiling + 1e-9 < max(floors) and not offline:
+        raise api.BudgetExceeded(f"per-segment cap --max-usd ${ceiling:.2f} is below the first pass of the --prompts "
+                                 f"words on a segment, ${max(floors):.2f}: give --max-usd {_up(max(floors)):.2f} or more, "
+                                 "or leave it out")
+    extra = max(0.0, cap - sum(floors)) / len(floors)
+    return [round(max(f, f + extra if ceiling is None else min(ceiling, f + extra)), 4) for f in floors]
 
 
 def video_spent(rid, t0, path=None):
@@ -310,13 +323,13 @@ def _fingerprint(seg_clip, kw):
     """What a finished segment's result depends on: its clip's bytes, the run options (except offline: a replay from
     cache gives the same result as the live run that filled it; nor the cap, which _kept compares on its own) and the
     code (every fishcount/*.py file)."""
-    h = __import__("hashlib").sha256()
+    h = __import__("hashlib").sha256()      # seg_clip None: options and code only (budget.json, the whole video)
     here = os.path.dirname(os.path.abspath(__file__))
     for f in sorted(os.listdir(here)):
         if f.endswith(".py"):
             h.update(f.encode() + open(os.path.join(here, f), "rb").read())
     opts = {k: v for k, v in kw.items() if k not in ("offline", "max_usd")}     # the cap: resume.json, _kept
-    return dict(clip=api.file_sha(seg_clip), options=json.loads(json.dumps(opts, sort_keys=True, default=repr)),
+    return dict(clip=api.file_sha(seg_clip) if seg_clip else None, options=json.loads(json.dumps(opts, sort_keys=True, default=repr)),
                 code=h.hexdigest()[:24])
 
 
@@ -465,15 +478,15 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     floors = [first_pass_floor(n, kw.get("prompts")) for _, n in segs]
     default = max(CAP_MIN_USD, round(inf["n_frames"] / inf["fps"] / 3600 * CAP_PER_HOUR_SPLIT, 2))
     cap, raised = video_cap(floors, max_usd_video, default, kw.get("offline"))
-    share = shares(floors, cap, kw.pop("max_usd", None))
-    bp = os.path.join(d, "budget.json")
-    try:
+    share = shares(floors, cap, kw.pop("max_usd", None), kw.get("offline"))
+    bp, vfp = os.path.join(d, "budget.json"), _fingerprint(None, kw)
+    try:    # t0 carries over only from a try that died half-way with the same options and code (H3)
         old = json.load(open(bp)) if resume and prev not in (None, "done") else {}
-        bt0 = float(old["t0"])
+        bt0 = float(old["t0"]) if old.get("fp") == vfp else t0
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         bt0 = t0
     with open(bp, "w") as f:
-        json.dump(dict(t0=bt0, cap=cap), f)
+        json.dump(dict(t0=bt0, cap=cap, fp=vfp), f)
     st["log"].append(f"{time.strftime('%H:%M:%S')} video cap ${cap:.2f} "
                      + ("(--max-usd-video)" if max_usd_video is not None else f"(default ${CAP_PER_HOUR_SPLIT} an hour)")
                      + f", each segment ${share[0]:.2f}" + (f"; {raised}" if raised else "")
@@ -540,8 +553,11 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
         if not kept:
             if os.path.exists(rp):      # a run that dies half-way must not leave an older fingerprint on its result
                 os.remove(rp)
+            mu = share[k]
+            if bt0 != t0:   # a try that died half-way: what this segment spent in it is taken from its share (F kept)
+                mu = round(max(floors[k], share[k] - video_spent(srid, bt0)[0]), 4)
             try:
-                pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=share[k]))
+                pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=mu))
             except api.BudgetExceeded as e:
                 failed.set()
                 if "FISH_BUDGET" in str(e):
@@ -607,10 +623,6 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     R["video"]["lowlight"] = light
     if inf.get("source_warnings"):
         R["video"]["source_warnings"] = inf["source_warnings"]
-    if not tally["kept"] and bt0 != t0:     # every segment ran again (other options or code): this try's own budget
-        bt0 = t0
-        with open(bp, "w") as f:
-            json.dump(dict(t0=bt0, cap=cap), f)
     bud = None if kw.get("offline") else _budget(rid, bt0, cap, parts, R.get("capped"))
     if bud:
         R["budget"] = bud
@@ -695,10 +707,13 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
     wins = screen.scan(full, fps, **({} if probe_every_s is None else dict(probe_every_s=probe_every_s)))
     hard = cap is not None
     per = kw.pop("max_usd", None)
+    floors = [first_pass_floor(w["n"], kw.get("prompts")) for w in wins] or [0.0]
+    if not hard and per is not None and per + 1e-9 < max(floors) and not kw.get("offline"):
+        raise api.BudgetExceeded(f"per-segment cap --max-usd ${per:.2f} is below the first pass of the --prompts words "
+                                 f"on a stretch, ${max(floors):.2f}: give --max-usd {_up(max(floors)):.2f} or more, or leave it out")
     if hard:        # each run gets what is left of the video cap (a $1 per-run cap stops a 600 s run at its first estimate)
         note = f"video cap ${cap:.2f} (--max-usd-video: a hard stop; per-segment --max-usd {per} not used)"
     else:
-        floors = [first_pass_floor(w["n"], kw.get("prompts")) for w in wins] or [0.0]
         cap, raised = video_cap(floors, None, round(N / fps / 3600 * CAP_PER_HOUR_SKIP_EMPTY, 2), kw.get("offline"))
         even = cap / max(1, len(wins)) if per is None else min(cap / max(1, len(wins)), per)
         note = (f"video cap ${cap:.2f} (default ${CAP_PER_HOUR_SKIP_EMPTY} an hour), each send ${even:.2f}"
@@ -707,15 +722,23 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
     log(f"--skip-empty: {len(wins)} stretch(es) to send, {n_send} of {N} frames ({100 * n_send / max(1, N):.1f}%) + "
         f"{sum(1 for w in wins if w['kind'] == 'probe')} probe(s): " + ", ".join(f"{w['kind']} {w['start']}+{w['n']}" for w in wins)
         + f"; {note}", video=inf)
+    if not kw.get("offline"):
+        warn = api.budget_warning(sum(floors))
+        if warn:
+            print(f"WARNING: {warn}", file=sys.stderr)
+            log(f"WARNING: {warn}")
     done, probes, k, unsent = [], [], 0, None
     acc = dict(spent=0.0, live=0, cached=0, at=0)
     parts = dict(first_sam=0.0, later_sam=0.0, spark=0.0)
 
     def send(start, n, tag):
+        srid, acc["at"] = f"{rid}__{tag}", start
+        fl = first_pass_floor(n, kw.get("prompts"))
+        if not hard and per is not None and per + 1e-9 < fl and not kw.get("offline"):     # a re-send: not paid
+            raise api.BudgetExceeded(f"{tag}: per-segment cap --max-usd ${per:.2f} is below its first pass ${fl:.2f}")
         sp = os.path.join(d, f"{tag}.mp4")
         cut(full, sp, start, n)
-        srid, acc["at"] = f"{rid}__{tag}", start
-        mu = max(0.0, cap - acc["spent"]) if hard else round(max(first_pass_floor(n, kw.get("prompts")), even), 4)
+        mu = max(0.0, cap - acc["spent"]) if hard else round(max(fl, even), 4)
         try:
             pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=mu))
             _drop_cut(sp)

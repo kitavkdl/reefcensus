@@ -145,7 +145,19 @@ class Shares(unittest.TestCase):
     def test_equal_share_never_below_the_floor(self):
         self.assertEqual(longvideo.shares([0.6] * 6, 6.0), [1.0] * 6)
         self.assertEqual(longvideo.shares([0.6] * 6, 6.0, ceiling=0.8), [0.8] * 6)
-        self.assertEqual(longvideo.shares([0.6] * 6, 6.0, ceiling=0.1), [0.6] * 6)
+        with self.assertRaises(api.BudgetExceeded) as e:                        # --max-usd below F: stop before paying
+            longvideo.shares([0.6] * 6, 6.0, ceiling=0.1)
+        self.assertIn("--max-usd 0.60", str(e.exception))
+        self.assertEqual(longvideo.shares([0.6] * 6, 6.0, ceiling=0.1, offline=True), [0.6] * 6)
+
+    def test_unequal_floors_share_exactly_the_cap(self):
+        # Codex P1: max(F_k, cap/n) gave [2, 1, 1] = $4 of a $3 cap; now F_k + what the cap has over the floors / n
+        s = longvideo.shares([2, 0.1, 0.1], 3.0)
+        self.assertAlmostEqual(sum(s), 3.0, places=3)
+        self.assertTrue(all(x >= f for x, f in zip(s, [2, 0.1, 0.1])))
+        self.assertEqual(sorted(longvideo.shares([0.1, 2, 0.1], 3.0)), sorted(s))       # whatever the order
+        self.assertEqual(longvideo.shares([2, 0.1, 0.1], 1.0), [2, 0.1, 0.1])            # a cap below the floors: F each
+        self.assertEqual(longvideo.shares([2, 0.1, 0.1], 3.0, ceiling=2.1), [2.1, 0.3667, 0.3667])
 
     def test_a_cap_set_below_the_first_passes_stops_before_paying(self):
         with self.assertRaises(api.BudgetExceeded) as e:
@@ -164,8 +176,16 @@ class Shares(unittest.TestCase):
         cap, note = longvideo.short_cap(None, None, 1.2)
         self.assertEqual(cap, 1.2)
         self.assertIn("raised", note)
-        self.assertEqual(longvideo.short_cap(0.5, 3.0, 1.2), (0.5, None))     # a cap set is kept (the run errors before paying)
+        self.assertEqual(longvideo.short_cap(1.5, 3.0, 1.2), (1.5, None))     # a cap set is kept
         self.assertEqual(longvideo.short_cap(None, 3.0, 1.2), (3.0, None))
+
+    def test_short_video_cap_set_below_its_first_pass_stops_before_paying(self):
+        # Codex P1: the scout / discover Spark calls were paid first, then the --prompts words raised with no result
+        for given in [(0.5, None), (None, 0.5), (0.0, None)]:
+            with self.assertRaises(api.BudgetExceeded) as e:
+                longvideo.short_cap(*given, 1.2)
+            self.assertIn("1.20 or more", str(e.exception))
+        self.assertEqual(longvideo.short_cap(0.5, None, 1.2, offline=True), (0.5, None))
 
     def test_floor_counts_the_prompts_words(self):
         self.assertAlmostEqual(longvideo.first_pass_floor(3000, None), 0.6)
@@ -261,6 +281,39 @@ class LongRun(unittest.TestCase):
         self.assertIn("--max-usd-video 7.20", str(e.exception))
         self.assertEqual(self.calls, [])                                         # nothing was sent
 
+    def test_a_ceiling_below_a_segments_first_pass_stops_before_paying(self):
+        with self.assertRaises(api.BudgetExceeded) as e:                        # F = 750 x $0.0002 = $0.15 a segment
+            self.run_long(max_usd_video=1.0, max_usd=0.1)
+        self.assertIn("--max-usd 0.15", str(e.exception))
+        self.assertEqual(self.calls, [])
+
+    def test_resume_after_a_crash_gives_the_segment_what_its_share_has_left(self):
+        # Codex P1: the segment that died half-way was given its whole share again on --resume
+        self.usd, self.fail_at = 0.2, 1500
+        with self.assertRaises(api.BudgetExceeded):
+            self.run_long(max_usd_video=2.0)                                     # shares $0.50; S3 spent $0.20, died
+        self.fail_at, self.calls[:] = None, []
+        self.run_long(max_usd_video=2.0, resume=True)
+        self.assertEqual(self.calls, [(1500, 0.3), (2250, 0.5)])
+        self.usd, self.fail_at = 0.45, 1500                                      # its share all but spent: F ($0.15) still
+        with self.assertRaises(api.BudgetExceeded):
+            self.run_long("w", max_usd_video=2.0)
+        self.fail_at, self.calls[:] = None, []
+        self.run_long("w", max_usd_video=2.0, resume=True)
+        self.assertEqual(self.calls, [(1500, 0.15), (2250, 0.5)])
+        self.assertEqual(json.load(open(os.path.join(self.tmp, "w__S3", "resume.json")))["cap"], 0.5)
+
+    def test_resume_after_a_crash_in_the_first_segment_counts_on(self):
+        # nothing finished, so nothing is kept: the try still died half-way and its t0 carries over (H3)
+        self.usd, self.fail_at = 0.5, 0
+        with self.assertRaises(api.BudgetExceeded):
+            self.run_long(max_usd_video=1.0)
+        t0 = self.budget()["t0"]
+        self.fail_at = None
+        R, _ = self.run_long(max_usd_video=1.0, resume=True)
+        self.assertEqual(self.budget()["t0"], t0)
+        self.assertEqual(R["budget"]["spent"], 2.5)                              # S1 (failed), then S1-S4
+
     def test_same_share_with_two_workers_and_a_ceiling(self):
         self.run_long(max_usd_video=2.0, segment_workers=2)
         self.assertEqual(sorted(u for _, u in self.calls), [0.5] * 4)
@@ -352,7 +405,7 @@ class LongRun(unittest.TestCase):
             self.run_long(max_usd_video=2.0)
         self.fail_at, self.calls[:] = None, []
         self.run_long(max_usd_video=2.0, resume=True)
-        self.assertEqual(self.calls, [(1500, 0.5), (2250, 0.5)])
+        self.assertEqual(self.calls, [(1500, 0.25), (2250, 0.5)])                # S3 spent $0.25 before it died
 
     def test_a_segment_fish_budget_cut_runs_again_whatever_the_cap(self):
         self.capped = {750: [dict(stage="motion", msg="motion look skipped: BudgetExceeded", reason="fish")]}
@@ -424,6 +477,28 @@ class SkipEmptyDefault(unittest.TestCase):
         self.assertNotIn("budget", R)
         self.assertEqual(R["skip_empty"]["video_cap_usd"], 4.0)
 
+    def test_a_ceiling_below_a_sends_first_pass_stops_before_paying(self):
+        self.wins = [dict(start=0, n=300, kind="head"), dict(start=5000, n=300, kind="change", triggers=[5100])]
+        with self.assertRaises(api.BudgetExceeded) as e:                        # F = 300 x $0.0002 = $0.06
+            longvideo.run_long("v.mp4", "s", skip_empty=True, max_usd=0.05)
+        self.assertIn("--max-usd 0.06", str(e.exception))
+        self.assertEqual(self.calls, [])
+
+    def test_a_re_send_over_the_ceiling_is_left_unsent(self):
+        self.wins = [dict(start=0, n=300, kind="head"), dict(start=1000, n=50, kind="probe")]
+        self.results = {0: [(10, 10, 30, 30)], 1000: []}                        # disagrees: 300-1000 (F $0.14) re-sent
+        R = longvideo.run_long("v.mp4", "s", skip_empty=True, max_usd=0.1)
+        self.assertEqual([s for s, _, _ in self.calls], [0, 1000])
+        self.assertEqual(R["unsent"][0]["start_frame"], 300)
+
+    def test_fish_budget_warning_before_the_first_send(self):
+        self.wins = [dict(start=0, n=300, kind="head")]
+        with mock.patch.dict(os.environ, {"FISH_BUDGET": "0.01"}), mock.patch.object(api, "spent", lambda: 0.0):
+            longvideo.run_long("v.mp4", "s", skip_empty=True)
+        st = json.load(open(os.path.join(self.tmp, "s", "status.json")))
+        self.assertTrue(any("WARNING: FISH_BUDGET has" in l for l in st["log"]))
+        self.assertEqual(len(self.calls), 1)
+
     def test_spending_past_the_default_cap_is_shown_not_stopped(self):
         self.usd = 1.5
         self.wins = [dict(start=0, n=300, kind="head"), dict(start=5000, n=300, kind="change", triggers=[5100]),
@@ -487,6 +562,35 @@ class IdsAndBatch(unittest.TestCase):
             with mock.patch.object(server, "effective", lambda rid: None):
                 r, _ = batch.row("v.mp4", "v", dict(status="done"), {})
         self.assertEqual(r["capped"], "S2; S5")
+
+    def test_capped_column_names_what_skip_empty_left_unsent(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(pipeline, "RUNS", tmp):
+            d = os.path.join(tmp, "v")
+            os.makedirs(d)
+            json.dump(dict(stage="done"), open(os.path.join(d, "status.json"), "w"))
+            json.dump(dict(video=dict(n_frames=10, fps=5), capped=[dict(segment="S2")],
+                           unsent=[dict(start_frame=600, end_frame=18000, start_s=120.0, end_s=3600.0)]),
+                      open(os.path.join(d, "result.json"), "w"))
+            sys.path.insert(0, os.path.join(ROOT, "web"))
+            import server
+            with mock.patch.object(server, "effective", lambda rid: None):
+                r, _ = batch.row("v.mp4", "v", dict(status="done"), {})
+        self.assertEqual(r["capped"], "S2; unsent 120.0-3600.0 s")
+
+    def test_cli_short_video_cap_below_its_first_pass_stops_before_any_call(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        rid = f"test_shortcap_{os.getpid()}"
+        run = os.path.join(ROOT, "runs", rid)
+        self.addCleanup(shutil.rmtree, run, True)
+        led = os.path.join(d, "ledger.jsonl")       # a bad key: should the check fail, nothing could be billed
+        env = dict(os.environ, FISH_CACHE_DIR=d, FISH_LEDGER=led, META_API_KEY="invalid-test-key")
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), CLIP, "--id", rid,
+                            "--max-usd", "0.005"], capture_output=True, text=True, env=env, timeout=300)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("0.02 or more", p.stderr)                                  # F = 60 frames x $0.0002 = $0.012
+        self.assertFalse(os.path.exists(led) and open(led).read().strip())
+        self.assertIn("BudgetExceeded", json.load(open(os.path.join(run, "provenance.json")))["runs"][-1]["error"])
 
 
 class ProbeWindowDefault(unittest.TestCase):

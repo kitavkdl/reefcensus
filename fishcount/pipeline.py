@@ -2646,21 +2646,21 @@ if __name__ == "__main__":
     if enc_warn:
         print(f"WARNING: {enc_warn}", file=sys.stderr)
     provenance.start(run_dir, sys.argv, a.video, probe=probe, encoder_warning=enc_warn)   # <run>/provenance.json
-    src_info = video.info(a.video)
-    long_path = longvideo.needs_split(src_info, a.segment, a.skip_empty)
-    # K2: long videos probe discovered words by default; the options a run really used go into provenance and status
-    probe_window = a.probe_window if a.probe_window is not None or a.no_probe_window or not long_path else PROBE_WINDOW
-    short_floor = 0.0 if long_path else longvideo.first_pass_floor(round(src_info["n_frames"] / src_info["fps"] * 5), a.prompts)
-    short_cap, raised = longvideo.short_cap(a.max_usd, a.max_usd_video, short_floor)
-    if raised:
-        print(raised, file=sys.stderr)
-    effective = dict(probe_window=probe_window, max_usd=a.max_usd if long_path else short_cap, max_usd_video=a.max_usd_video)
-    provenance.effective(run_dir, effective)
-    if not long_path and not a.offline:     # a warning only: cached calls are free (a long video warns in run_long)
-        warn = api.budget_warning(short_floor)
-        if warn:
-            print(f"WARNING: {warn}", file=sys.stderr)
-    try:
+    try:     # from here an error closes provenance.json with it (video.info, a cap below the first pass)
+        src_info = video.info(a.video)
+        long_path = longvideo.needs_split(src_info, a.segment, a.skip_empty)
+        # K2: long videos probe discovered words by default; the options a run really used go into provenance and status
+        probe_window = a.probe_window if a.probe_window is not None or a.no_probe_window or not long_path else PROBE_WINDOW
+        short_floor = 0.0 if long_path else longvideo.first_pass_floor(round(src_info["n_frames"] / src_info["fps"] * 5), a.prompts)
+        short_cap, raised = longvideo.short_cap(a.max_usd, a.max_usd_video, short_floor, a.offline)
+        if raised:
+            print(raised, file=sys.stderr)
+        effective = dict(probe_window=probe_window, max_usd=a.max_usd if long_path else short_cap, max_usd_video=a.max_usd_video)
+        provenance.effective(run_dir, effective)
+        if not long_path and not a.offline:     # a warning only: cached calls are free (a long video warns in run_long)
+            warn = api.budget_warning(short_floor)
+            if warn:
+                print(f"WARNING: {warn}", file=sys.stderr)
         if long_path:
             r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                    offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,

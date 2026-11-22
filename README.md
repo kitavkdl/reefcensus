@@ -124,8 +124,9 @@ offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
 ([details](report/details.md#long-videos)). One cap covers the whole video: `--max-usd-video`, default $6 an hour of
-video (at least $1), split evenly over the segments; each segment always gets at least the first pass of the
-`--prompts` words, and `--max-usd` is a ceiling on that share. A segment whose analysis would pass its share leaves
+video (at least $1); each segment gets the first pass of the `--prompts` words on it plus an even part of the rest,
+and `--max-usd` is a ceiling on that share (a cap or ceiling you set below a first pass stops before anything is
+paid). A segment whose analysis would pass its share leaves
 stages out instead of stopping the video, and lists them in `capped` (the result, and the `capped` column of
 `batch.py`'s videos.csv). The default does not pay for a full analysis of a busy video (a cold 53-minute NOAA drop's
 10-minute segments cost $1.63 to $5.88 each): to finish one, raise `--max-usd-video` and run the same command with
