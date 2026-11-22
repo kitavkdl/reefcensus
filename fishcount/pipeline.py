@@ -170,7 +170,11 @@ def _live_cap(run, stage, item, offline, over, msg):
     """True when this stage (or job: item) is skipped at the per-video cap; it is listed in capped with its item.
     Live: when `over`. Offline: exactly when the live run in this folder skipped it (run.live_capped, its message
     kept), so a replay neither tries what was never cached nor runs what the live run left out (D-NIGHT3-F1; before,
-    only the first pass did this and a replay ran the later stage and gave another result)."""
+    only the first pass did this and a replay ran the later stage and gave another result).
+    In the --crowd-peak second pass an item the first pass did not skip gets "@peak", so a replay's first pass does
+    not skip what only the second pass skipped (D-NIGHT3-F1b)."""
+    if getattr(run, "peak_pass", False) and not any(c.get("item") == item for c in getattr(run, "capped", [])):
+        item += "@peak"
     if offline:
         msg = getattr(run, "live_capped", {}).get(item)
         over = msg is not None
@@ -903,6 +907,7 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
     run = _run or Run(rid)
     unsent_before = _left_unsent(run) if offline else {}     # read before this run writes its own result
     run.live_capped = unsent_before
+    run.peak_pass = _peak is not None
     clip = run.path("clip.mp4")
     # 11/3: identical clip copies of finished runs are hard links to each other (disk full); writing into one would
     # rewrite them all, so a run starts from fresh files.

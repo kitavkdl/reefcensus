@@ -151,6 +151,96 @@ class LaterStages(unittest.TestCase):
         self.assertEqual(r.capped[-1], dict(stage="miss", msg="skipped miss (live)", item="miss"))
 
 
+class EveryLaterStage(unittest.TestCase):
+    """D-NIGHT3-F1b: each later stage the live run skips at its cap (16-id refill, site memory, second and closer
+    looks, crowd-peak tiles, missed-animal and camouflage looks) is skipped by an offline replay of that folder too,
+    and the replay's result is the live one byte for byte. The real _run_pipeline on the 12-s clip; the fakes bill
+    like the real calls (SAM $0.012 a call on the clip, Spark $0.01), so the cap trips where it would; the motion look
+    is off (its fake Spark reply is not a sheet answer) and the crowd check is a stub that records what was capped
+    when it ran (once per pass)."""
+    SIXTEEN = "<5f>" + "".join(f"{i}<|box;x1={4 * i};y1=1;x2={4 * i + 3};y2=5;c=0.9|>" for i in range(16))
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.cache, self.seen, self.saturate = set(), [], False
+
+        def bill(key, usd, offline):
+            if key not in self.cache:
+                if offline:
+                    raise FileNotFoundError(f"not cached: {key}")
+                self.cache.add(key)
+                api._tl.usd = api.thread_spent() + usd
+
+        def spark(prompt, images=(), offline=False, check=None, **k):
+            bill((prompt, len(images)), 0.01, offline)
+            return json.dumps(dict(others=[dict(what="crab", search_words=["crab", "shell"], approx_max_count=1,
+                                                cells=["center"], frames=[0])], signs=[]))
+
+        def sam_video(path, prompt, n, offline=False):
+            key = (os.path.basename(path), prompt)
+            bill(key, CALL, offline)
+            return self.SIXTEEN if self.saturate and key == ("clip.mp4", "fish") else ""     # 16 ids by frame 5
+
+        def crowd_check(run, *a, **k):
+            self.seen.append([c["item"] for c in run.capped])
+            return []
+
+        site = [dict(noun="eel", label="eel", words=["eel", "moray"], n=2, runs=[]), dict(noun="ray", label="ray", words=["ray"], n=1, runs=[])]
+        from fishcount import sitememory
+        for p in (mock.patch.object(pipeline, "RUNS", self.tmp), mock.patch.object(api, "LEDGER", os.path.join(self.tmp, "l.jsonl")),
+                  mock.patch.object(api, "CACHE", self.tmp), mock.patch.object(sitememory, "DIR", self.tmp),
+                  mock.patch.object(sitememory, "plan", lambda s, skip_words=(): [dict(e) for e in site]),     # site_look pops
+                  mock.patch.object(api, "spark", spark), mock.patch.object(api, "sam_video", sam_video),
+                  mock.patch.object(api, "sam_cached", lambda path, prompt: (os.path.basename(path), prompt) in self.cache),
+                  mock.patch.object(pipeline, "crowd_check", crowd_check),
+                  mock.patch.object(pipeline, "peak_windows", lambda *a: [(0, 20)])):
+            p.start()
+        self.addCleanup(mock.patch.stopall)
+
+    def live_then_offline(self, cap, **kw):
+        go = lambda offline: pipeline.run_pipeline(CLIP, "m", offline, False, prompts=["fish"], max_usd=cap, do_discover=True,
+                                                   **dict(dict(do_audit=True, do_motion=False), **kw))
+        L = go(False)
+        seen, self.seen = self.seen, []
+        O = go(True)
+        self.assertEqual(self.seen, seen)       # each pass of the replay had skipped what the live pass had
+        self.assertEqual(json.dumps(O, sort_keys=True), json.dumps(L, sort_keys=True))
+        return [c["item"] for c in L.get("capped", [])]
+
+    def test_refill(self):
+        self.saturate = True
+        self.assertEqual(self.live_then_offline(0.05, do_audit=False), ["refill:p0+5", "recover:second"])
+
+    def test_site_memory(self):
+        self.assertEqual(self.live_then_offline(0.12, site="reef1"), ["site:ray"])
+
+    def test_site_memory_two_entries(self):
+        self.assertEqual(self.live_then_offline(0.11, site="reef1"), ["site:ray", "site:eel"])
+
+    def test_second_look(self):
+        self.assertEqual(self.live_then_offline(0.05), ["recover:second"])
+
+    def test_closer_look(self):
+        self.assertEqual(self.live_then_offline(0.08), ["recover:closer"])
+
+    def test_missed_animal_look(self):
+        self.assertEqual(self.live_then_offline(0.11, misslook=True), ["miss"])
+
+    def test_camouflage_look(self):
+        self.assertEqual(self.live_then_offline(0.12, camo=True), ["camo"])
+
+    def test_crowd_peak_tiles(self):
+        self.assertEqual(self.live_then_offline(0.05, crowd_peak=5), ["recover:second"] + [f"peak:peak+0-{c}@peak" for c in ("r0c0", "r0c1", "r0c2", "r1c0", "r1c1", "r1c2")])
+
+    def test_reproduction_a_stage_capped_only_in_the_crowd_peak_second_pass(self):
+        # $0.16: the first pass skips only camo; the second pass (spent more by then) also skips the closer look and
+        # site 'ray'. Before: those two were listed as in a first pass, so the replay's first pass skipped them too
+        # (its crowd check saw other tracks; capped came out in another order). Now they carry "@peak".
+        self.assertEqual(self.live_then_offline(0.16, crowd_peak=5, camo=True, site="reef1"),
+                         ["camo", "recover:closer@peak", "site:ray@peak"])
+
+
 class Trim(unittest.TestCase):
     jobs = [("p0", "crab", "crab", "clip.mp4", None), ("p1", "fish", "fish", "clip.mp4", None),
             ("zoom-r1c1", "fish", "fish", "tile_r1c1.mp4", (0, 0, 1, 1)), ("crowd-a", "fish", "fish", "tile_crowd-a.mp4", (0, 0, 1, 1))]
