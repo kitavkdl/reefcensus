@@ -726,7 +726,44 @@ def first_estimate(jobs, others, clip, n_frames):
     return n * max(api.SAM_MIN_FRAMES, n_frames) * api.SAM_PER_FRAME
 
 
-def run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
+def mark_error(d, e):
+    """Write a run's failure into <d>/status.json: stage "error", error "<Type>: <message>", the time, and a log line;
+    the rest of the status (log, calls, billed) is kept. Before (round 3), only the web screen did this: a CLI or batch
+    run that raised left its last stage ("audit", "segments"), so a crashed run looked like one still going. A status
+    already marked (an inner run_pipeline) is left as it is; this never raises (the original error is what matters)."""
+    p = os.path.join(d, "status.json")
+    try:
+        try:
+            with open(p) as fh:
+                st = json.load(fh)
+        except (OSError, ValueError):
+            st = None
+        if not isinstance(st, dict):
+            st = dict(id=os.path.basename(d), log=[])
+        if st.get("stage") == "error":
+            return
+        msg = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+        st.update(stage="error", error=msg[:1000], failed=time.time())
+        st.setdefault("log", []).append(f"{time.strftime('%H:%M:%S')} stopped: {msg[:300]}")
+        os.makedirs(d, exist_ok=True)
+        with open(p + ".err.tmp", "w") as fh:
+            json.dump(st, fh)
+        os.replace(p + ".err.tmp", p)
+    except OSError:
+        pass
+
+
+def run_pipeline(src, rid=None, *a, **kw):
+    """_run_pipeline (below: every option), and on any exception the run's status.json says "error" (mark_error)."""
+    rid = rid or time.strftime("%m%d-%H%M%S")
+    try:
+        return _run_pipeline(src, rid, *a, **kw)
+    except BaseException as e:
+        mark_error(os.path.join(RUNS, rid), e)
+        raise
+
+
+def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
                  misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1,
                  crowd_peak=None, _peak=None, _run=None, haze="off"):

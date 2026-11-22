@@ -232,7 +232,8 @@ def _upload(clip_path, key, fresh=False, sha=None):
         got = _uploads.get(sha)
         if got and not fresh and time.time() - got[1] < UPLOAD_REUSE_S:
             return got[0], True
-        for attempt in range(UPLOAD_TRIES):
+        attempt, outage = 0, _Outage()      # an upload that never connected waits out the outage too (round 3)
+        while True:
             try:
                 with open(clip_path, "rb") as fh:
                     r = requests.post(f"{BASE}/files", headers={"Authorization": f"Bearer {key}"},
@@ -244,10 +245,13 @@ def _upload(clip_path, key, fresh=False, sha=None):
                     break
                 err = requests.HTTPError(f"upload HTTP {r.status_code}: {r.text[:200]}")
             except (requests.ConnectionError, requests.Timeout) as e:
+                if outage.wait(e):
+                    continue
                 err = e
             if attempt == UPLOAD_TRIES - 1:
                 raise err
             time.sleep(5 * 3 ** attempt)
+            attempt += 1
         fid = r.json()["id"]
         _uploads[sha] = (fid, time.time())
         return fid, False
@@ -255,25 +259,60 @@ def _upload(clip_path, key, fresh=False, sha=None):
 
 CALL_TRIES = 3                          # a SAM or Spark request is sent at most this many times (round 2, 11/21)
 RETRY_STATUS = (429, 500, 502, 503, 504)
+CONNECT_WAIT_S = 600    # pauses spent on requests that never connected before giving up (round 3, 11/21c)
+
+
+def _never_connected(e):
+    """True when requests could not open a connection at all (DNS failure, refused, unreachable, connect timeout):
+    nothing was sent, so sending again cannot make the server do or bill the work twice."""
+    import urllib3
+    if isinstance(e, requests.ConnectTimeout):
+        return True
+    reason = getattr(e.args[0], "reason", None) if e.args else None
+    return isinstance(reason, urllib3.exceptions.ConnectTimeoutError)     # NewConnectionError, NameResolutionError
+
+
+class _Outage:
+    """Pauses for requests that never connected: 5, 15, 45, then 60 s each, until CONNECT_WAIT_S has been waited.
+    Before this a request got 20 s (two pauses) and an unattended batch died on the first router restart or
+    uplink drop longer than that (LONG1_cr9 died on one DNS failure)."""
+
+    def __init__(self):
+        self.waited, self.k = 0.0, 0
+
+    def wait(self, e):
+        """Sleep and return True if e never connected and the wait is not used up, else False."""
+        if not _never_connected(e) or self.waited >= CONNECT_WAIT_S:
+            return False
+        pause = min(60, 5 * 3 ** self.k)
+        self.k, self.waited = self.k + 1, self.waited + pause
+        time.sleep(pause)
+        return True
 
 
 def _post(url, **kw):
-    """requests.post, sent again (after 5 s, then 15 s) when the connection fails before a reply arrives (DNS failure,
-    refused, reset, connect timeout) or the server answers 429/5xx. Before this, Spark had no retry at all: a DNS
-    failure killed LONG1_cr9 mid-segment and the run had to be started again (a 600-s segment's replay takes ~5 min
-    even when every call is cached). A read timeout is not retried: the server may have done (and billed) the work.
-    The last answer is returned as it is (the caller raises on its status)."""
-    for attempt in range(CALL_TRIES):
+    """requests.post, sent again (after 5 s, then 15 s) when the connection fails before a reply arrives (reset after
+    connecting) or the server answers 429/5xx. Before this, Spark had no retry at all: a DNS failure killed
+    LONG1_cr9 mid-segment and the run had to be started again (a 600-s segment's replay takes ~5 min even when
+    every call is cached). A request that never connected (DNS failure, refused, connect timeout) is sent again
+    for about CONNECT_WAIT_S of pauses (_Outage) and does not use up those tries. A read timeout is not retried:
+    the server may have done (and billed) the work. The last answer is returned as it is (the caller raises on
+    its status)."""
+    attempt, outage = 0, _Outage()
+    while True:
         try:
             r = requests.post(url, **kw)
-        except requests.ConnectionError:
-            if attempt == CALL_TRIES - 1:
+        except requests.ConnectionError as e:
+            if outage.wait(e):
+                continue
+            if _never_connected(e) or attempt == CALL_TRIES - 1:
                 raise
         else:
             if r.status_code not in RETRY_STATUS or attempt == CALL_TRIES - 1:
                 return r
             r.close()
         time.sleep(5 * 3 ** attempt)
+        attempt += 1
 
 
 def _sam_live(clip_path, prompt, n_frames, payload, cp):

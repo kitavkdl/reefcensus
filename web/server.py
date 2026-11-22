@@ -204,8 +204,12 @@ def start_run(body):
             msg = str(e) if isinstance(e, (api.BudgetExceeded, FileNotFoundError, KeyError)) else f"{type(e).__name__}: {e}"
             if not live and isinstance(e, (FileNotFoundError, KeyError, RuntimeError)):
                 msg += " (free replay only reuses saved answers, and this step has none; allow paid API calls to run it live)"
+            marked = st.get("stage") == "error"     # run_pipeline already wrote the plain reason (pipeline.mark_error)
             st.update(stage="error", error=msg)
-            st["log"].append(f"{time.strftime('%H:%M:%S')} stopped: {msg}")
+            if marked and st.get("log") and "stopped: " in st["log"][-1]:
+                st["log"][-1] = f"{time.strftime('%H:%M:%S')} stopped: {msg}"     # this screen's wording, one line
+            else:
+                st.setdefault("log", []).append(f"{time.strftime('%H:%M:%S')} stopped: {msg}")
             with open(p + ".tmp", "w") as f:
                 json.dump(st, f)
             os.replace(p + ".tmp", p)

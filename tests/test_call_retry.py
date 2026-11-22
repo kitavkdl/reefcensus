@@ -112,20 +112,93 @@ class Retry(unittest.TestCase):
             self.spark()
         self.assertEqual(s.chats, 1)
 
-    def test_connection_refused_is_retried_then_raised(self):
+    def refused_addr(self):
         port = socket.socket()
         port.bind(("127.0.0.1", 0))
         addr = port.getsockname()[1]
         port.close()                                    # nothing listens there: every connect is refused
+        return f"http://127.0.0.1:{addr}"
+
+    def test_connection_refused_is_retried_for_the_wait_then_raised(self):
+        # round 3: a request that never connected (refused, DNS, connect timeout) never reached the server, so it is
+        # sent again for about CONNECT_WAIT_S of pauses (a router or uplink drop overnight), not given up after 20 s
         seen, post = [], requests.post
         def spy(*a, **k):
             seen.append(a[0])
             return post(*a, **k)
-        with mock.patch.object(api, "BASE", f"http://127.0.0.1:{addr}"), mock.patch.object(api.requests, "post", spy):
+        with mock.patch.object(api, "BASE", self.refused_addr()), mock.patch.object(api.requests, "post", spy):
             with self.assertRaises(requests.ConnectionError):
                 self.spark()
-        self.assertEqual(len(seen), api.CALL_TRIES)
+        self.assertEqual(self.sleeps[:4], [5, 15, 45, 60])
+        self.assertTrue(all(s <= 60 for s in self.sleeps))
+        self.assertGreaterEqual(sum(self.sleeps), api.CONNECT_WAIT_S)
+        self.assertLess(sum(self.sleeps) - self.sleeps[-1], api.CONNECT_WAIT_S)    # stops once the wait is used
+        self.assertEqual(len(seen), len(self.sleeps) + 1)
+
+    def test_long_outage_then_up(self):
+        s = self.serve()
+        up, calls, post = s.base, [], requests.post
+        down = self.refused_addr()
+        def flaky(url, *a, **k):
+            calls.append(1)
+            return post(url.replace(up, down) if len(calls) <= 8 else url, *a, **k)    # 8 refusals: ~6 min down
+        with mock.patch.object(api.requests, "post", flaky):
+            self.assertEqual(self.spark(), "ok")
+        self.assertEqual(s.chats, 1)
+        self.assertEqual(len(self.sleeps), 8)
+        self.assertEqual(len(self.rows()), 1)
+
+    def test_connect_timeout_counts_as_never_connected(self):
+        s = self.serve()
+        calls, post = [], requests.post
+        def flaky(*a, **k):
+            calls.append(1)
+            if len(calls) <= 4:
+                raise requests.ConnectTimeout("connect timed out")
+            return post(*a, **k)
+        with mock.patch.object(api.requests, "post", flaky):
+            self.assertEqual(self.spark(), "ok")
+        self.assertEqual(self.sleeps, [5, 15, 45, 60])
+
+    def test_drop_after_connecting_keeps_three_tries(self):
+        # the connection broke after the request may have reached the server: the old CALL_TRIES policy, unchanged
+        import urllib3
+        calls = []
+        def dropped(*a, **k):
+            calls.append(1)
+            raise requests.ConnectionError(urllib3.exceptions.ProtocolError("Connection aborted.", ConnectionResetError()))
+        with mock.patch.object(api.requests, "post", dropped):
+            with self.assertRaises(requests.ConnectionError):
+                self.spark()
+        self.assertEqual(len(calls), api.CALL_TRIES)
         self.assertEqual(self.sleeps, [5, 15])
+
+    def test_read_timeout_is_not_sent_again(self):
+        calls = []
+        def slow(*a, **k):
+            calls.append(1)
+            raise requests.ReadTimeout("read timed out")
+        with mock.patch.object(api.requests, "post", slow):
+            with self.assertRaises(requests.ReadTimeout):
+                self.spark()
+        self.assertEqual(calls, [1])
+        self.assertEqual(self.sleeps, [])
+
+    def test_upload_waits_out_an_outage(self):
+        s = self.serve()
+        up, calls, post = s.base, [], requests.post
+        down = self.refused_addr()
+        def flaky(url, *a, **k):
+            if url.endswith("/files"):
+                calls.append(1)
+                if len(calls) <= 6:
+                    url = url.replace(up, down)
+            return post(url, *a, **k)
+        payload = {"clip": api.file_sha(self.clip), "prompt": "fish"}
+        with mock.patch.object(api.requests, "post", flaky):
+            self.assertEqual(api._sam_live(self.clip, "fish", 120, payload, api._cache_path("sam", payload)), "frame=0: none")
+        self.assertEqual(len(calls), 7)
+        self.assertEqual(s.responses, 1)
 
     def test_connection_refused_then_up(self):
         s = self.serve()

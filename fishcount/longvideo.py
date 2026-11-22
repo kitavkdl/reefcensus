@@ -276,8 +276,19 @@ def forecast(costs, secs, left, workers=1):
                 s=[round(min(secs) * left / w), round(max(secs) * math.ceil(left / w))])
 
 
-def run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
-             segment_workers=1, resume=False, **kw):
+def run_long(src, rid=None, *a, **kw):
+    """_run_long (below: every option), and on any exception the video's status.json says "error" (pipeline.mark_error;
+    a segment that raised has its own folder marked by run_pipeline too)."""
+    rid = rid or time.strftime("%m%d-%H%M%S")
+    try:
+        return _run_long(src, rid, *a, **kw)
+    except BaseException as e:
+        pipeline.mark_error(os.path.join(pipeline.RUNS, rid), e)
+        raise
+
+
+def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
+              segment_workers=1, resume=False, **kw):
     """Split `src` into segments of at most seg_s seconds, run the pipeline on each, merge. kw -> run_pipeline.
     skip_empty: only the stretches screen.scan picks are sent (_run_skipping); max_usd_video caps the whole video
     (default $4 an hour), probe_every_s overrides screen.PROBE_EVERY_S.
