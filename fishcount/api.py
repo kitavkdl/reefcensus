@@ -146,6 +146,27 @@ def _cache_path(kind, payload):
     return os.path.join(CACHE, f"{kind}_{h}.json")
 
 
+def _read_cache(cp):
+    """The cached answer at `cp` as a dict, or None when there is none or it cannot be read. A file cut short (the
+    process killed while writing it: OOM, power) was read with json.load and raised, so the segment died before any
+    call, and --resume died at the same file every time until someone deleted it (round 3, 11/21c). Now such a file
+    is a miss: a live run calls again and replaces it, an offline replay says "not cached"."""
+    try:
+        with open(cp) as fh:
+            got = json.load(fh)
+    except (ValueError, OSError):     # missing, unreadable, or cut short (JSONDecodeError, UnicodeDecodeError)
+        return None
+    return got if isinstance(got, dict) else None
+
+
+def _write_cache(cp, obj):
+    """Write `obj` to `cp` through a temporary file and os.replace, so a reader never sees half a file."""
+    tmp = f"{cp}.{os.getpid()}.{threading.get_ident()}.tmp"     # CLI and web server may share cache/
+    with open(tmp, "w") as fh:
+        json.dump(obj, fh)
+    os.replace(tmp, cp)
+
+
 def file_sha(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -156,8 +177,9 @@ def file_sha(path):
 
 # ---------------- SAM 3.1 ----------------
 def sam_cached(clip_path, prompt):
-    """True when sam_video(clip_path, prompt) would be answered from cache (free)."""
-    return os.path.exists(_cache_path("sam", {"clip": file_sha(clip_path), "prompt": prompt}))
+    """True when sam_video(clip_path, prompt) would be answered from cache (free); an unreadable file is not."""
+    got = _read_cache(_cache_path("sam", {"clip": file_sha(clip_path), "prompt": prompt}))
+    return got is not None and isinstance(got.get("output_text"), str)
 
 
 def sam_video(clip_path, prompt, n_frames, offline=False):
@@ -165,8 +187,9 @@ def sam_video(clip_path, prompt, n_frames, offline=False):
     Cached by (clip content hash, prompt). offline=True never calls the network (raises if not cached)."""
     payload = {"clip": file_sha(clip_path), "prompt": prompt}
     cp = _cache_path("sam", payload)
-    if os.path.exists(cp):
-        return json.load(open(cp))["output_text"]
+    got = _read_cache(cp)
+    if got is not None and isinstance(got.get("output_text"), str):
+        return got["output_text"]
     if offline:
         raise FileNotFoundError(f"not cached: SAM {prompt!r} on {clip_path}")
     est = max(SAM_MIN_FRAMES, n_frames) * SAM_PER_FRAME
@@ -289,7 +312,7 @@ def _sam_live(clip_path, prompt, n_frames, payload, cp):
     if status != "completed":
         raise RuntimeError(f"SAM status {status}")
     out = "".join(text)
-    json.dump({"payload": payload, "output_text": out, "usage": usage}, open(cp, "w"))
+    _write_cache(cp, {"payload": payload, "output_text": out, "usage": usage})
     return out
 
 
@@ -318,8 +341,8 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
     if effort:
         payload["reasoning_effort"] = effort
     cp = _cache_path("spark", payload)
-    if os.path.exists(cp):
-        cj = json.load(open(cp))
+    cj = _read_cache(cp)
+    if cj is not None and isinstance(cj.get("text"), str):
         text = cj["text"]
         if check is None or _valid(check, text):
             _tl.last_usage = cj.get("usage") or {}
@@ -330,10 +353,7 @@ def spark(prompt, images=(), max_tokens=6000, effort="low", offline=False, check
         with reserve(0.02 if model == SPARK_MODEL else 0.15):     # largest logged: Spark $0.015, Wonder $0.096
             text, u = _spark_live(payload, model)
         if check is None or _valid(check, text):
-            tmp = f"{cp}.{os.getpid()}.{threading.get_ident()}.tmp"     # CLI and web server may share cache/
-            with open(tmp, "w") as fh:
-                json.dump({"text": text, "usage": u}, fh)
-            os.replace(tmp, cp)
+            _write_cache(cp, {"text": text, "usage": u})
             _tl.last_usage = u
             return text
     raise ValueError(f"Spark sent an unreadable reply twice: {text[:120]!r}")
