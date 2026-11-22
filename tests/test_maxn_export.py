@@ -57,6 +57,19 @@ class GlobalArchiveExport(unittest.TestCase):
                  if not r["label"].startswith("all ") and r["maxn"] != "0"}
         self.assertEqual(after, plain)
 
+    def test_both_ends_of_the_range_as_in_the_plain_csv(self):
+        # maxn_confirmed (queue left out) and maxn_upper (queue accepted) are the plain CSV's range; the upper end was
+        # missing from this layout. It is the last column, so every earlier column keeps its position.
+        self.assertEqual(maxn_export.COLUMNS[-1], "maxn_upper")
+        t = self.table()
+        plain = {r["label"]: r for r in csv.DictReader(io.StringIO(self.server.export_csv("r1")))}
+        for r in t:
+            p = plain[r["spark_common_name"]]
+            self.assertEqual((r["maxn_confirmed"], r["MaxN"], r["maxn_upper"]), (p["maxn_confirmed"], p["maxn"], p["maxn_upper"]))
+            self.assertLessEqual(int(r["maxn_confirmed"]), int(r["MaxN"]))
+            self.assertLessEqual(int(r["MaxN"]), int(r["maxn_upper"]))
+        self.assertTrue(any(r["maxn_upper"] != r["MaxN"] or r["maxn_confirmed"] != r["MaxN"] for r in t))
+
     def test_model_text_cannot_start_a_formula(self):
         e = dict(id="x", source="a.mp4", n_reviewed=0, origin={}, metrics={
             "=cmd()": dict(maxn=1, maxn_confirmed=1, maxn_time=1.0, maxn_frame=5)})

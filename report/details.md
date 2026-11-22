@@ -77,7 +77,9 @@ or `GET /api/runs/<id>/export_globalarchive.csv?opcode=CODE`. It re-lays-out the
 renames and removals apply), one row per label with MaxN > 0, no group rows:
 
 `OpCode, Family, Genus, Species, MaxN, Frame, Time_mins` then our own columns `spark_common_name, maxn_confirmed, origin,
-taxonomy_status, source_file, run_id, human_edits, maxn_lower_bound` (filled when the crowd check marks the count as a lower bound).
+taxonomy_status, source_file, run_id, human_edits, maxn_lower_bound` (filled when the crowd check marks the count as a lower bound)`, maxn_upper`
+(added 11/21: with `maxn_confirmed` the two ends of the plain CSV's MaxN range: every track still waiting for review left
+out / accepted under the name its "Yes" gives; reviewing the queue closes the range).
 
 **Family, Genus and Species are left for a person**: Muse Spark gives common names, not verified taxonomy, so the name is in `spark_common_name` (a reviewer's rename too) and `taxonomy_status` says it is unverified; a
 person adds the taxonomy. `OpCode` defaults to the video's file name (we know no deployment code; pass `--opcode`).

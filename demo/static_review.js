@@ -223,7 +223,8 @@
       if (m.maxn <= 0) continue;
       rows.push([noFormula(S.opcode), "", "", "", m.maxn, m.maxn_frame, m.maxn_frame == null ? null : S.mins_str[m.maxn_frame],
         noFormula(name), has(m, "maxn_confirmed") ? m.maxn_confirmed : m.maxn, e.origin[name] || "",
-        "not verified: common name from Muse Spark or a reviewer", noFormula(e.source || ""), e.id || "", e.n_reviewed || 0, lower(name, m)]);
+        "not verified: common name from Muse Spark or a reviewer", noFormula(e.source || ""), e.id || "", e.n_reviewed || 0, lower(name, m),
+        has(m, "maxn_upper") ? m.maxn_upper : m.maxn]);
     }
     return csv(rows, "\n");
   }

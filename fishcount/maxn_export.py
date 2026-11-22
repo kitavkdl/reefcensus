@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 COLUMNS = ["OpCode", "Family", "Genus", "Species", "MaxN", "Frame", "Time_mins",
            "spark_common_name", "maxn_confirmed", "origin", "taxonomy_status", "source_file", "run_id", "human_edits",
-           "maxn_lower_bound"]
+           "maxn_lower_bound", "maxn_upper"]
 
 
 def default_opcode(e):
@@ -40,7 +40,7 @@ def rows(e, opcode=None):
         out.append([_cell(opcode), "", "", "", m["maxn"], m["maxn_frame"], mins,
                     _cell(name), m.get("maxn_confirmed", m["maxn"]), e.get("origin", {}).get(name, ""),
                     "not verified: common name from Muse Spark or a reviewer", _cell(e.get("source") or ""), e.get("id", ""),
-                    e.get("n_reviewed", 0), _lower_bound(e, name, m)])
+                    e.get("n_reviewed", 0), _lower_bound(e, name, m), m.get("maxn_upper", m["maxn"])])
     return out
 
 
