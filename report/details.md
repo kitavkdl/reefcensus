@@ -41,6 +41,24 @@ segment start plus the time inside it, and no frame is counted twice. A name is 
 both segments; names sharing a head noun are listed for the reviewer to rename (`fishcount/longvideo.py`,
 measurements in `report/long_video.md`).
 
+Budget (added after the evaluation, no paper number uses it). The whole video has one cap, `--max-usd-video`, by
+default $6 an hour of video and at least $1. Each segment gets a fixed equal share of it, never less than F, the first
+pass of the `--prompts` words on that segment (SAM's price for its frames, as if nothing were cached), and at most
+`--max-usd`. A default cap below the sum of the F's is raised to it (said in the log); a cap you set below it stops
+before anything is paid. The share does not depend on the order or how many segments run at once
+(`--segment-workers`), and money a segment does not use is not passed on. Inside a segment the stages check their own
+estimate against the share as before; the first pass leaves things out rather than stopping: discovery words from the
+last, then the zoom / crowd tiles, then the scout's words (last, since without them a crab or shrimp would be counted
+as "fish"). The --prompts words are always sent. What was left out is in `result["capped"]` (an offline replay of the
+same folder leaves the same items out; any other cache miss stops the replay, as before). The video's spend is read
+from the ledger (rows of this run id and its `__S<n>` / `__P<n>` runs since the try started; `--resume` after a crash
+counts on from the try it continues, a finished run or one whose segments all run again starts afresh, so ids ending
+in `__S<n>` / `__P<n>` are refused). When it passed the cap or anything was left out, `result["budget"]` gives the cap,
+the spend, how far over, SAM calls billed with no answer (stream broke), and the split into first-pass SAM, later SAM
+and Spark. `--resume` keeps a finished segment when its clip, options and code match (`resume.json`) and nothing was
+left out of it, or the cap is no higher than it ran with; a segment `FISH_BUDGET` cut always runs again. `FISH_BUDGET`
+is checked before a long run starts (a warning, since cached calls are free) and is the only hard stop.
+
 `--skip-empty` (opt-in, added after the evaluation, no paper number uses it): every 5 fps frame is read at 480x270
 ($0) and compared with the last frame the models saw, after matching brightness; a blob of 12 px or more that stands
 out from the rest of the frame is a change, and so is a quarter of the frame differing (camera knocked, an animal
@@ -53,9 +71,11 @@ sent. Stretches with no change are not sent and get the last analysed frame's bo
 `result["skipped"]`). A sent stretch starts 10 s before a change and ends after 10 s without one; close stretches
 join, each lasts at least 60 s, the first 60 s always go. A 10 s probe goes every 10 minutes of skipped footage, and if its counted boxes do not pair
 with the carried ones the stretch before it is sent once, up to the probe, whose own run is kept. Each run gets what
-is left of the whole-video cap (`--max-usd-video`, default $4 an hour; the per-segment `--max-usd` is not used); at
+is left of the whole-video cap (`--max-usd-video`; the per-segment `--max-usd` is not used); at
 the first run a cap or `FISH_BUDGET` stops, nothing from there to the end is analysed or carried (animals there count
-0) and that span is `result["unsent"]`. Stages a run skipped at the cap are listed in `result["capped"]`, by any run
+0) and that span is `result["unsent"]`. That is with a cap you set; with the default ($4 an hour, raised to the first
+pass of every planned send when below it) every send, re-sends included, gets an equal share of it as a long video's
+segments do, and spending past it is shown in `result["budget"]`, not stopped. Stages a run skipped at the cap are listed in `result["capped"]`, by any run
 with or without `--skip-empty` (`fishcount/screen.py`, `fishcount/longvideo.py`).
 
 ## The review screen

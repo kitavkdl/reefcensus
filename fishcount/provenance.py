@@ -116,6 +116,19 @@ def start(run_dir, argv, src, probe=None, encoder_warning=None):
         return None
 
 
+def effective(run_dir, opts):
+    """Add to the last entry the options the run really used where the command left a default (probe_window, the
+    caps), so a later reader need not know which defaults this code had."""
+    try:
+        p = os.path.join(run_dir, "provenance.json")
+        d = _load(p)
+        if d["runs"]:
+            d["runs"][-1]["effective"] = opts
+            _save(p, d)
+    except Exception as ex:     # never stops the run
+        print(f"provenance not written: {type(ex).__name__}: {ex}", file=sys.stderr)
+
+
 def finish(run_dir, error=None):
     """Close the last entry: finished time and result.json's sha256, or the error."""
     try:

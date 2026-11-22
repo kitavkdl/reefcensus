@@ -152,19 +152,27 @@ def drop_temp(d):
     return gone
 
 
-def _capped(run, stage, msg):
+def _capped(run, stage, msg, **extra):
     """A stage skipped because it would pass the per-video cap: logged as before and listed in result["capped"], so a
-    half-analysed segment is marked (longvideo --skip-empty gives each segment what is left of the video cap)."""
+    half-analysed segment is marked (a long video gives each segment its share of the video cap). extra: item (the
+    first-pass job a cap left unsent: an offline replay leaves it out too), reason "fish" (FISH_BUDGET, not the cap:
+    --resume runs that segment again whatever the cap). The --crowd-peak second pass makes the first pass's skips
+    again in the same run: an entry already listed is not listed twice."""
     if not hasattr(run, "capped"):      # stand-in runs (tests) built without Run.__init__
         run.capped = []
-    run.capped.append(dict(stage=stage, msg=msg))
+    c = dict(stage=stage, msg=msg, **extra)
+    if c not in run.capped:
+        run.capped.append(c)
     run.stage(stage, msg)
 
 
 def _skip_stage(run, stage, msg, e):
     """A stage given up on error e: a FISH_BUDGET stop (BudgetExceeded is a RuntimeError) is a stage skipped at a cap
-    too, so it is listed in result["capped"]; any other error is only logged."""
-    (_capped if isinstance(e, api.BudgetExceeded) else Run.stage)(run, stage, msg)
+    too, so it is listed in result["capped"] (reason "fish"); any other error is only logged."""
+    if isinstance(e, api.BudgetExceeded):
+        _capped(run, stage, msg, reason="fish")
+    else:
+        Run.stage(run, stage, msg)
 
 
 def _counted(run, fn, *a, **k):
@@ -182,6 +190,8 @@ def _counted(run, fn, *a, **k):
         with run._lock:
             run.status["live_calls" if d > 0 else "cached_calls"] += 1
             run.status["billed_usd"] += d
+            if d > 0 and fn is api.spark:       # a long video's budget warning splits SAM from Spark
+                run.status["spark_usd"] = run.status.get("spark_usd", 0.0) + d
 
 
 def cell_box(cell, W, H, pad=0.15):
@@ -269,7 +279,14 @@ def _probe(run, path, word, windows, offline):
     for s, m in windows:
         seg = run.path(f"probe_{base}+{s}.mp4")
         video.segment(path, seg, s, length=m)
-        if any(tracks.parse_boxes(_counted(run, api.sam_video, seg, word, m, offline=offline)).values()):
+        try:
+            txt = _counted(run, api.sam_video, seg, word, m, offline=offline)
+        except FileNotFoundError as e:
+            if offline:     # long videos probe by default since D-NIGHT3: a cache filled before has no windows
+                raise FileNotFoundError(f"{e} (a probe window: a run made without --probe-window replays with "
+                                        "--no-probe-window)") from e
+            raise
+        if any(tracks.parse_boxes(txt).values()):
             return True
     return False
 
@@ -716,14 +733,74 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
     return extra
 
 
-def first_estimate(jobs, others, clip, n_frames):
-    """Worst-case $ of the first pass's SAM calls: each prompt / tile job and each discovery word as a whole-clip call
-    (the word ladder may try them all). Calls already in the cache are free and do not count: a rerun of a 600-s
-    segment whose calls were all cached stopped at the default $1 cap before ("estimate $2.13 > per-video cap $1.00",
-    LONG1 S2, 11/21c), with nothing to pay."""
-    n = (sum(1 for j in jobs if not api.sam_cached(j[3], j[2]))
-         + sum(1 for _, ws in others for w in ws if not api.sam_cached(clip, w)))
-    return n * max(api.SAM_MIN_FRAMES, n_frames) * api.SAM_PER_FRAME
+def _sam_cost(path, prompt, n_frames):
+    """A whole-clip SAM call's worst case: 0 when it is in the cache."""
+    return 0.0 if api.sam_cached(path, prompt) else max(api.SAM_MIN_FRAMES, n_frames) * api.SAM_PER_FRAME
+
+
+def ladder_estimate(path, words, n_frames, probe=None):
+    """Worst-case $ of word_ladder(path, words): every word on the whole clip (cached calls free); with probe windows
+    (R9) at most every word on its windows plus one whole-clip call, never more than without them.
+    ponytail: a window is counted as paid even when cached (looking it up means cutting it first); what was really
+    paid is in the ledger, which the next segment's share does not depend on."""
+    whole = [_sam_cost(path, w, n_frames) for w in words]
+    if not probe or not whole:
+        return sum(whole)
+    return min(sum(whole), len(words) * _window_cost(probe) + max(whole))
+
+
+def _window_cost(windows):
+    """$ of one word on every probe window."""
+    return sum(max(api.SAM_MIN_FRAMES, m) for _, m in windows) * api.SAM_PER_FRAME
+
+
+def first_estimate(jobs, others, clip, n_frames, probes=None):
+    """Worst-case $ of the first pass's SAM calls: each prompt / tile job as a whole-clip call and each discovery
+    ladder as ladder_estimate (probes: its windows, aligned with others). Calls already in the cache are free and do
+    not count: a rerun of a 600-s segment whose calls were all cached stopped at the default $1 cap before
+    ("estimate $2.13 > per-video cap $1.00", LONG1 S2, 11/21c), with nothing to pay."""
+    probes = probes or [None] * len(others)
+    return (sum(_sam_cost(j[3], j[2], n_frames) for j in jobs)
+            + sum(ladder_estimate(clip, ws, n_frames, p) for (_, ws), p in zip(others, probes)))
+
+
+def first_pass_trim(jobs, others, clip, n_frames, max_usd, required, probes=None):
+    """What of the first pass fits under max_usd: -> (est of what is sent, [(item, what)] left unsent).
+    Items are left out, last first, until the estimate fits: the discovery ladders (d<i>), then the zoom / crowd tiles,
+    then the scout's words (last: without them a crab or shrimp is counted under "fish"). The --prompts jobs
+    (`required`) are never left out: when they alone pass max_usd, BudgetExceeded (the run stops before paying, as
+    every first pass did before D-NIGHT3). A cached item costs nothing and is never left out. Deterministic: the
+    same inputs and cache give the same list. Before, any overshoot stopped the run: a long video with discovery
+    stopped at its first segment's estimate."""
+    probes = probes or [None] * len(others)
+    lad = [ladder_estimate(clip, ws, n_frames, p) for (_, ws), p in zip(others, probes)]
+    job = {j[0]: _sam_cost(j[3], j[2], n_frames) for j in jobs}
+    est = sum(lad) + sum(job.values())
+    order = ([(f"d{i}", lad[i], f"discovered '{o.get('what')}' ({', '.join(ws)})")
+              for i, (o, ws) in reversed(list(enumerate(others))) if ws]
+             + [(j[0], job[j[0]], f"tile {j[0]}") for j in reversed(jobs) if j[4] is not None]
+             + [(j[0], job[j[0]], f"scout word '{j[2]}'") for j in reversed(jobs) if j[4] is None and j[2] not in required])
+    out = []
+    for item, cost, what in order:
+        if est <= max_usd + 1e-9:
+            break
+        if cost > 0:
+            est -= cost
+            out.append((item, what))
+    if est > max_usd + 1e-9:
+        raise api.BudgetExceeded(f"estimate ${est:.2f} for the --prompts words alone > per-video cap ${max_usd:.2f}")
+    return est, out
+
+
+def _left_unsent(run):
+    """Items the live run in this folder left unsent at the cap (result["capped"] item): an offline replay of it
+    leaves them out too. Any other cache miss raises, as it always did."""
+    try:
+        with open(run.path("result.json")) as f:
+            res = json.load(f)
+        return {c["item"] for c in res.get("capped", []) if isinstance(c, dict) and c.get("item")}
+    except (OSError, ValueError, AttributeError, TypeError):
+        return set()
 
 
 def mark_error(d, e):
@@ -809,6 +886,7 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
     do_motion = (do_discover and do_audit) if do_motion is None else do_motion
     rid = rid or time.strftime("%m%d-%H%M%S")
     run = _run or Run(rid)
+    unsent_before = _left_unsent(run) if offline else set()     # read before this run writes its own result
     clip = run.path("clip.mp4")
     # 11/3: identical clip copies of finished runs are hard links to each other (disk full); writing into one would
     # rewrite them all, so a run starts from fresh files.
@@ -906,10 +984,23 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
             tp = run.path(f"tile_crowd-{name}.mp4")
             video.crop_tile(clip, tp, box, scale=2)
             jobs.append((f"crowd-{name}", plist[-1][0], "fish", tp, box))
-    est = first_estimate(jobs, others, clip, inf["n_frames"])
+    probes = [_probe_windows(o.get("frames"), inf["n_frames"], probe_window) if probe_window else None for o, _ in others]
+    if _peak is not None and hasattr(run, "first_unsent"):
+        # --crowd-peak second pass: what the first pass sent is cached now, so what it left out would fit; it stays
+        # out, so the second pass sees the inputs the first had and capped stays true
+        est, unsent = first_estimate(jobs, others, clip, inf["n_frames"], probes), run.first_unsent
+    elif offline:
+        est = first_estimate(jobs, others, clip, inf["n_frames"], probes)
+        unsent = [(x, "left unsent by the live run") for x in [j[0] for j in jobs] + [f"d{i}" for i in range(len(others))]
+                  if x in unsent_before]
+    else:
+        est, unsent = first_pass_trim(jobs, others, clip, inf["n_frames"], max_usd, set(prompts or ["fish"]), probes)
+    run.first_unsent = unsent
+    for item, what in unsent:
+        _capped(run, "first_pass", f"first pass: {what} not sent: would pass the per-video cap ${max_usd:.2f}", item=item)
+    skip = {x for x, _ in unsent}
+    jobs = [j for j in jobs if j[0] not in skip]
     run.stage("track", f"SAM 3.1 tracking {len(jobs)} prompt(s)/tile(s) in parallel: {[(j[2], j[0]) for j in jobs]} (est ${est:.2f} for the calls not cached)")
-    if est > max_usd and not offline:
-        raise api.BudgetExceeded(f"estimate ${est:.2f} > per-video cap ${max_usd:.2f}")
 
     def one(job):
         name, label, prompt, path, box = job
@@ -918,17 +1009,22 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
         return name, label, (tracks.from_tile(d, box, 2) if box else d), txt, box
 
     with cf.ThreadPoolExecutor(4) as ex:
-        ladders = [ex.submit(word_ladder, run, clip, inf["n_frames"], words, offline,
-                             _probe_windows(o.get("frames"), inf["n_frames"], probe_window) if probe_window else None)
-                   for o, words in others]
+        ladders = [None if f"d{i}" in skip else ex.submit(word_ladder, run, clip, inf["n_frames"], words, offline, probes[i])
+                   for i, (o, words) in enumerate(others)]
         results = list(ex.map(one, jobs))
         for i, ((o, _), fu) in enumerate(zip(others, ladders)):
+            if fu is None:      # left unsent at the cap: named (audit context, motion sheet) but never searched
+                found.append(dict(what=o["what"], why=o.get("why_notable"), word=None, tried=[], maxn_full=0,
+                                  expected=o.get("approx_max_count"), not_sent=True))
+                continue
             word, txt, tried = fu.result()
             found.append(dict(what=o["what"], why=o.get("why_notable"), word=word, tried=tried,
                               maxn_full=tracks.max_per_frame(tracks.parse_boxes(txt)), expected=o.get("approx_max_count")))
             run.stage("discover", f"{o['what']}: " + ", ".join(f"'{t['word']}' {t['frames']} frames" for t in tried))
             if word:
                 results.append((f"d{i}", word, tracks.parse_boxes(txt), txt, None))
+    if _peak is None:   # what the first pass's SAM calls cost (the --crowd-peak second pass finds them cached)
+        run.status["first_pass_sam_usd"] = run.status["billed_usd"] - run.status.get("spark_usd", 0.0)
     if refill:
         results += refill_saturated(run, jobs, results, inf["n_frames"], offline, max_usd=max_usd, ahead=refill_ahead)
     signs = [sg for sg in disc.get("signs", []) if not (skip_people and isinstance(sg, dict)
@@ -1226,7 +1322,7 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
     n, W, H = inf["n_frames"], inf["width"], inf["height"]
     jobs, log = [], []
     for i, ((o, words), f) in enumerate(zip(others, found)):
-        if not words:       # --skip-people
+        if not words or f.get("not_sent"):       # --skip-people / left unsent at the cap
             continue
         if f["word"]:
             jobs.append(dict(kind="backfill", name=f"d{i}rev", what=o["what"], words=[f["word"]], cell=None))
@@ -1251,9 +1347,15 @@ def recover(run, clip, inf, others, found, signs, results, max_usd, offline, max
             continue
         seen.add(key)
         todo.append(jb)
-    est = sum(len(jb["words"]) for jb in todo) * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
     if not todo:
         return log
+    # R9: a zoom ladder with probe windows is priced as word_ladder will run it (ladder_estimate, never more than before)
+    whole = max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+    est = 0.0
+    for jb in todo:
+        k = len(jb["words"])
+        pw = _probe_windows(jb.get("spark_frames"), n, probe_window) if probe_window and jb["kind"] == "zoom" else []
+        est += min(k * whole, k * _window_cost(pw) + whole) if pw else k * whole
     if run.status["billed_usd"] + est > max_usd and not offline:
         _capped(run, "recover", f"skipped second look: est ${est:.2f} would pass the per-video cap ${max_usd:.2f}")
         return log
@@ -2486,7 +2588,10 @@ if __name__ == "__main__":
                     help=f"long clips: a motion box prompt sends SAM only the frames within FRAMES (default {BOX_WINDOW}) of its spot")
     ap.add_argument("--probe-window", type=int, nargs="?", const=PROBE_WINDOW, metavar="FRAMES",
                     help=f"clips of {PROBE_MIN_FRAMES}+ frames: a discovered word is tried on FRAMES (default {PROBE_WINDOW}) around "
-                         "every frame Spark named before the whole clip")
+                         "every frame Spark named before the whole clip (long videos: on by default, --no-probe-window)")
+    ap.add_argument("--no-probe-window", action="store_true",
+                    help="long videos: every discovered word goes straight to the whole segment (needed to replay "
+                         "offline a long video whose cache was filled without --probe-window)")
     ap.add_argument("--skip-people", action="store_true",
                     help="a discovery that names people or a boat and no animal (camera still on deck) is not searched for")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
@@ -2497,7 +2602,8 @@ if __name__ == "__main__":
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
-    ap.add_argument("--max-usd", type=float, default=1.0, help="per-video cap (per segment when the video is split)")
+    ap.add_argument("--max-usd", type=float, help="short video: its cap (default $1). Long video: a ceiling on each "
+                    "segment's share of the video cap (--max-usd-video)")
     ap.add_argument("--lowlight", choices=("auto", "on", "off"), default="auto", help="brighten dark clips (auto: by the brightness test)")
     ap.add_argument("--haze", choices=("auto", "on", "off"), default="off",
                     help="washed-out clips: CLAHE on L before the analysis (auto: when L p95-p5 is below video.HAZE_WIDTH)")
@@ -2505,7 +2611,10 @@ if __name__ == "__main__":
                     "(automatic at 600 s, the SAM 3.1 per-file limit, for longer videos)")
     ap.add_argument("--skip-empty", action="store_true", help="long videos: stretches where the picture does not change from "
                     "the last analysed frame are not sent; their boxes are carried (fishcount/screen.py). Uses --max-usd-video, not --max-usd")
-    ap.add_argument("--max-usd-video", type=float, help="with --skip-empty: cap for the whole video (default $4 an hour)")
+    ap.add_argument("--max-usd-video", type=float,
+                    help="cap for the whole video: long videos default $6 an hour (at least $1), with --skip-empty $4 an "
+                         "hour; a short video uses it when --max-usd is not given. Each segment gets an equal share, at "
+                         "least the first pass of the --prompts words; what a segment leaves out is listed in capped")
     ap.add_argument("--probe-every", type=float, help="with --skip-empty: seconds between probes of a skipped stretch (default 600)")
     ap.add_argument("--segment-workers", type=int, default=1, metavar="N",
                     help="long videos: run N segments at once (same result, sooner; two fit a 4 GB memory cap, each "
@@ -2519,8 +2628,12 @@ if __name__ == "__main__":
     a = ap.parse_args()
     if a.resume and a.skip_empty:
         ap.error("--resume is not used with --skip-empty")
-    if not a.skip_empty and (a.max_usd_video is not None or a.probe_every is not None):
-        ap.error("--max-usd-video and --probe-every need --skip-empty (without it each segment uses --max-usd)")
+    if not a.skip_empty and a.probe_every is not None:
+        ap.error("--probe-every needs --skip-empty")
+    if a.probe_window is not None and a.no_probe_window:
+        ap.error("--probe-window and --no-probe-window together")
+    if a.id and re.search(r"__[SP]\d+$", a.id):
+        ap.error("--id may not end in __S<n> or __P<n>: those name a long video's segments and probes")
     if a.crowd_peak is not None and (a.crowd or a.crowd_peak < 1 or a.no_audit or a.no_crowd_look):
         ap.error("--crowd-peak needs a number >= 1, the audit and the crowd check, and not --crowd (which tiles the whole clip)")
     if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
@@ -2533,21 +2646,32 @@ if __name__ == "__main__":
     if enc_warn:
         print(f"WARNING: {enc_warn}", file=sys.stderr)
     provenance.start(run_dir, sys.argv, a.video, probe=probe, encoder_warning=enc_warn)   # <run>/provenance.json
+    src_info = video.info(a.video)
+    long_path = longvideo.needs_split(src_info, a.segment, a.skip_empty)
+    # K2: long videos probe discovered words by default; the options a run really used go into provenance and status
+    probe_window = a.probe_window if a.probe_window is not None or a.no_probe_window or not long_path else PROBE_WINDOW
+    short_cap = a.max_usd if a.max_usd is not None else a.max_usd_video if a.max_usd_video is not None else 1.0
+    effective = dict(probe_window=probe_window, max_usd=a.max_usd if long_path else short_cap, max_usd_video=a.max_usd_video)
+    provenance.effective(run_dir, effective)
+    if not long_path and not a.offline:     # a warning only: cached calls are free (a long video warns in run_long)
+        warn = api.budget_warning(longvideo.first_pass_floor(round(src_info["n_frames"] / src_info["fps"] * 5), a.prompts))
+        if warn:
+            print(f"WARNING: {warn}", file=sys.stderr)
     try:
-        if longvideo.needs_split(video.info(a.video), a.segment, a.skip_empty):
+        if long_path:
             r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                    offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
                                    prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
                                    crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                    misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                                   probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
+                                   probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
                                    segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume,
                                    upload_ahead=not a.no_upload_ahead)
         else:
-            r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
+            r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, short_cap, a.discover,
                              lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                              camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                             probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
+                             probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
                              crowd_peak=a.crowd_peak, haze=a.haze)
     except BaseException as e:
         provenance.finish(run_dir, error=f"{type(e).__name__}: {e}")

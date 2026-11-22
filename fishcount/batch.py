@@ -16,7 +16,9 @@ gives on its own (long videos split as usual).
   source_file, run_id, status (done / kept / error / pending), error, analysed_s, source_warnings, labels_counted,
   maxn_by_label ("fish 14; crab 2", after any human review), maxn_lower_bound (labels the crowd check marks a lower
   bound), review_queue (tracks waiting for a person), live_calls, cached_calls, billed_usd (that run's status),
-  ledger_usd (every ledger row tagged with this run id or its segments: earlier failed tries too), wall_s.
+  ledger_usd (every ledger row tagged with this run id or its segments and probes: earlier failed tries too), wall_s,
+  capped (the segments where stages were left out at the video cap, "S2; S5", or "run" for a short video; empty when
+  nothing was: raise --max-usd-video and run again to finish them).
   A video that counted nothing is a line with labels_counted 0; one that failed says why (status.json "error").
 <out>/maxn_all.csv: every finished video's standard MaxN rows (maxn_export.py, the GlobalArchive / CheckEM layout)
   under one header. OpCode is the video's file name as in maxn_export.py; two inputs with the same file name take
@@ -33,13 +35,18 @@ import csv, json, os, re, signal, subprocess, sys, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "web"))
-from fishcount import api, maxn_export, pipeline
+from fishcount import api, longvideo, maxn_export, pipeline
 
 PIPELINE = os.path.join(ROOT, "fishcount", "pipeline.py")
 VIDEO_EXT = (".mp4", ".mov", ".avi", ".mkv", ".m4v", ".mts", ".mpg", ".mpeg", ".wmv", ".h264", ".264")
 COLUMNS = ["source_file", "run_id", "status", "error", "analysed_s", "source_warnings", "labels_counted",
            "maxn_by_label", "maxn_lower_bound", "review_queue", "live_calls", "cached_calls", "billed_usd",
-           "ledger_usd", "wall_s"]
+           "ledger_usd", "wall_s", "capped"]
+# the defaults a run's options leave to the code: a finished video is kept only while they hold (a stamp written
+# before D-NIGHT3 has none and is kept as before, so finished videos are not run again on upgrade)
+DEFAULTS = dict(probe_window=pipeline.PROBE_WINDOW, cap_per_hour=longvideo.CAP_PER_HOUR_SPLIT,
+                cap_per_hour_skip_empty=longvideo.CAP_PER_HOUR_SKIP_EMPTY, cap_min=longvideo.CAP_MIN_USD)
+SEGMENT_ID = re.compile(r"__[SP]\d+$")     # a long video's segment / probe runs: rid__S<n>, rid__P<n>
 
 
 def videos(args):
@@ -82,14 +89,16 @@ def _json(p, default=None):
 def stamp(path, opts):
     """What a finished run is kept against: the source file (path, size, mtime) and the options."""
     s = os.stat(path)
-    return dict(source=path, size=s.st_size, mtime=round(s.st_mtime, 3), options=list(opts))
+    return dict(source=path, size=s.st_size, mtime=round(s.st_mtime, 3), options=list(opts), defaults=DEFAULTS)
 
 
 def is_kept(rid, path, opts):
     d = os.path.join(pipeline.RUNS, rid)
+    old, now = _json(os.path.join(d, "batch.json")), stamp(path, opts)
+    if isinstance(old, dict) and "defaults" not in old:
+        now.pop("defaults")
     return ((_json(os.path.join(d, "status.json")) or {}).get("stage") == "done"
-            and os.path.exists(os.path.join(d, "result.json"))
-            and _json(os.path.join(d, "batch.json")) == stamp(path, opts))
+            and os.path.exists(os.path.join(d, "result.json")) and old == now)
 
 
 def command(path, rid, opts):
@@ -146,7 +155,7 @@ def ledger_by_run(path=None):
                 continue
             rid = r.get("run")
             if rid:
-                rid = re.sub(r"__S\d+$", "", rid)
+                rid = SEGMENT_ID.sub("", rid)
                 out[rid] = out.get(rid, 0.0) + float(r.get("usd") or 0)
     return out
 
@@ -167,7 +176,8 @@ def row(path, rid, state, ledger, opcodes=None):
              source_warnings="; ".join(warn), labels_counted="", maxn_by_label="", maxn_lower_bound="",
              review_queue="", live_calls=st.get("live_calls", ""), cached_calls=st.get("cached_calls", ""),
              billed_usd=round(st["billed_usd"], 4) if isinstance(st.get("billed_usd"), (int, float)) else "",
-             ledger_usd=round(ledger.get(rid, 0.0), 4), wall_s=state.get("wall_s", ""))
+             ledger_usd=round(ledger.get(rid, 0.0), 4), wall_s=state.get("wall_s", ""),
+             capped="; ".join(dict.fromkeys(c.get("segment", "run") for c in (res or {}).get("capped", []) if isinstance(c, dict))))
     e = server.effective(rid) if res else None
     if e:
         counted = sorted(((n, m) for n, m in e["metrics"].items() if m["maxn"] > 0), key=lambda kv: (-kv[1]["maxn"], kv[0]))
@@ -244,7 +254,11 @@ def main(argv=None):
 
 def run_all(out, paths, rids, opts, states):
     for i, (p, rid) in enumerate(zip(paths, rids)):
-        if is_kept(rid, p, opts):
+        if SEGMENT_ID.search(rid):      # its segments' folders and ledger rows would be another video's
+            states[rid] = dict(status="error", error=f"run id {rid} ends in __S<n> / __P<n>, which names a long video's "
+                               "segment: rename the file or use --prefix")
+            print(f"[{i + 1}/{len(paths)}] {rid}: {states[rid]['error']}", flush=True)
+        elif is_kept(rid, p, opts):
             states[rid] = dict(status="kept")
             print(f"[{i + 1}/{len(paths)}] {rid}: kept (finished earlier with these options)", flush=True)
         else:

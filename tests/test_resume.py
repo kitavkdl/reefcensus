@@ -18,6 +18,7 @@ class Resume(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.cuts, self.started, self.fail_at = {}, [], None
+        self.ledger = os.path.join(self.tmp, "ledger.jsonl")
 
         def ingest(src, dst, **k):
             open(dst, "w").close()
@@ -30,6 +31,8 @@ class Resume(unittest.TestCase):
         def run_pipeline(sp, srid, **kw):
             start, n = self.cuts[sp]
             self.started.append(start)
+            with open(self.ledger, "a") as f:       # what a run pays goes to the ledger, as the real one does
+                f.write(json.dumps(dict(t=__import__("time").time(), kind="sam", usd=0.25, note="", run=srid)) + "\n")
             if self.fail_at == start:
                 raise api.BudgetExceeded("FISH_BUDGET")
             d = os.path.join(self.tmp, srid)
@@ -37,6 +40,7 @@ class Resume(unittest.TestCase):
             json.dump(dict(live_calls=2, cached_calls=1, billed_usd=0.25), open(os.path.join(d, "status.json"), "w"))
 
         for p in (mock.patch.object(pipeline, "RUNS", self.tmp), mock.patch.object(video, "ingest", ingest),
+                  mock.patch.object(api, "LEDGER", self.ledger),
                   mock.patch.object(video, "info", lambda p: dict(n_frames=self.N, fps=5.0, width=100, height=100)),
                   mock.patch.object(video, "light_stats", lambda p: dict(median_l=100, mean_l=100)),
                   mock.patch.object(longvideo, "cut", cut), mock.patch.object(pipeline, "run_pipeline", run_pipeline)):
@@ -59,8 +63,11 @@ class Resume(unittest.TestCase):
         self.fail_at, self.started[:] = None, []
         R, st = self.run_long(resume=True)
         self.assertEqual(self.started, [1500, 2250])                    # S1, S2 kept
-        strip = lambda R: json.loads(json.dumps({k: v for k, v in R.items() if k != "id"}).replace("whole__S", "v__S"))
+        # budget: the crashed try paid S1-S3 ($0.75) and this one S3, S4 ($0.50): $1.25 of the $1 video cap, said
+        strip = lambda R: json.loads(json.dumps({k: v for k, v in R.items() if k not in ("id", "budget")}).replace("whole__S", "v__S"))
         self.assertEqual(strip(R), strip(R0))
+        self.assertNotIn("budget", R0)
+        self.assertEqual((R["budget"]["cap"], R["budget"]["spent"]), (1, 1.25))
         self.assertEqual(sum("kept from the earlier run" in line for line in st["log"]), 2)
         self.assertEqual((st["live_calls"], st["cached_calls"], st["billed_usd"]), (4, 2, 0.5))   # only S3, S4 spent
 
@@ -79,8 +86,15 @@ class Resume(unittest.TestCase):
     def test_another_option_runs_again(self):
         self.run_long()
         self.started.clear()
-        self.run_long(resume=True, max_usd=2.0)
+        self.run_long(resume=True, prompts=["crab"])
         self.assertEqual(self.started, [0, 750, 1500, 2250])
+
+    def test_another_cap_keeps_a_segment_nothing_was_left_out_of(self):
+        """The cap is not in the fingerprint (resume.json "cap", _kept): a segment that ran in full holds at any cap."""
+        self.run_long()
+        self.started.clear()
+        self.run_long(resume=True, max_usd=2.0, max_usd_video=9.0)
+        self.assertEqual(self.started, [])
 
     def test_changed_code_runs_again(self):
         self.run_long()
@@ -94,7 +108,7 @@ class Resume(unittest.TestCase):
         self.started.clear()
         fp = os.path.join(self.tmp, "v__S2", "resume.json")
         j = json.load(open(fp))
-        j["clip"] = "0" * 24                                            # as if S2's cut came out different
+        j["fp"]["clip"] = "0" * 24                                      # as if S2's cut came out different
         json.dump(j, open(fp, "w"))
         self.run_long(resume=True)
         self.assertEqual(self.started, [750])
@@ -104,7 +118,8 @@ class Resume(unittest.TestCase):
         open(sp, "w").write("x")
         a = longvideo._fingerprint(sp, dict(max_usd=1.0, offline=True))
         self.assertEqual(a, longvideo._fingerprint(sp, dict(max_usd=1.0, offline=False)))
-        self.assertNotEqual(a, longvideo._fingerprint(sp, dict(max_usd=1.5)))
+        self.assertEqual(a, longvideo._fingerprint(sp, dict(max_usd=1.5)))       # the cap: resume.json, compared apart
+        self.assertNotEqual(a, longvideo._fingerprint(sp, dict(max_usd=1.0, prompts=["crab"])))
         real = open
         def other_code(p, *k, **kw):
             f = real(p, *k, **kw)

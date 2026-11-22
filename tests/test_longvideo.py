@@ -228,7 +228,8 @@ class SkipEmptyRun(unittest.TestCase):
                         mock.patch.object(video, "light_stats", lambda p: dict(median_l=100, mean_l=100)),
                         mock.patch.object(longvideo, "cut", cut), mock.patch.object(longvideo, "_filler", lambda full, d, a, *k: os.path.join(d, f"skip{a}")),
                         mock.patch.object(pipeline, "run_pipeline", run_pipeline),
-                        mock.patch.object(screen, "scan", lambda clip, fps, **k: self.wins)]
+                        mock.patch.object(screen, "scan", lambda clip, fps, **k: self.wins),
+                        mock.patch.object(api, "LEDGER", os.path.join(self.tmp, "ledger.jsonl"))]
         for p in self.patches:
             p.start()
 
@@ -292,23 +293,26 @@ class SkipEmptyRun(unittest.TestCase):
 
 
 class SkipEmptyFlags(unittest.TestCase):
-    def test_video_cap_and_probe_flags_need_skip_empty(self):
-        """--max-usd-video / --probe-every without --skip-empty would be ignored, so the CLI refuses them."""
-        for flag in (["--max-usd-video", "3"], ["--probe-every", "90"]):
-            p = subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), "missing.mp4"] + flag,
-                               capture_output=True, text=True, timeout=120)
-            self.assertEqual(p.returncode, 2, p.stderr)
-            self.assertIn("need --skip-empty", p.stderr)
+    def test_probe_flag_needs_skip_empty(self):
+        """--probe-every without --skip-empty would be ignored, so the CLI refuses it. --max-usd-video is the whole
+        video's cap on every long video since D-NIGHT3 (and a short video's when --max-usd is not given)."""
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), "missing.mp4", "--probe-every", "90"],
+                           capture_output=True, text=True, timeout=120)
+        self.assertEqual(p.returncode, 2, p.stderr)
+        self.assertIn("needs --skip-empty", p.stderr)
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), "missing.mp4", "--probe-window",
+                            "--no-probe-window"], capture_output=True, text=True, timeout=120)
+        self.assertEqual(p.returncode, 2, p.stderr)
 
 
 class CappedStages(unittest.TestCase):
     def test_every_cap_skip_is_recorded(self):
-        """The eight stages that skip quietly at the per-video cap go through pipeline._capped (the eighth: the
-        --crowd-peak tiles, 11/21)."""
+        """The nine stages that skip quietly at the per-video cap go through pipeline._capped (the eighth: the
+        --crowd-peak tiles, 11/21; the ninth: first-pass items left unsent, D-NIGHT3)."""
         import re
         src = open(os.path.join(ROOT, "fishcount", "pipeline.py")).read()
         lines = [l for l in src.splitlines() if "would pass the per-video cap ${" in l]
-        self.assertEqual(len(lines), 8)
+        self.assertEqual(len(lines), 9)
         self.assertTrue(all("_capped(" in l for l in lines), [l for l in lines if "_capped(" not in l])
 
     def test_capped_logs_and_records(self):

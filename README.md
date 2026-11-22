@@ -123,13 +123,30 @@ python3 web/server.py                    # review screen on http://127.0.0.1:879
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
-([details](report/details.md#long-videos)). `--skip-empty` (opt-in): stretches where the picture does not change from
-the last analysed frame are not sent; empty water stays empty and a resting animal keeps its box (marked carried). The
-full analysis runs wherever something appears or moves (`fishcount/screen.py`; whole-video cap `--max-usd-video`,
-default $4 an hour, in place of the per-segment `--max-usd`; `--max-usd-video` and `--probe-every` need
-`--skip-empty`). The result lists the stretches carried (`skipped`) and the span a cap left unanalysed to the end
-(`unsent`, counted 0). Any run, with or without `--skip-empty`, lists the stages it skipped at its cap in `capped`
-(absent when none, so a run under its cap keeps its exact bytes).
+([details](report/details.md#long-videos)). One cap covers the whole video: `--max-usd-video`, default $6 an hour of
+video (at least $1), split evenly over the segments; each segment always gets at least the first pass of the
+`--prompts` words, and `--max-usd` is a ceiling on that share. A segment whose analysis would pass its share leaves
+stages out instead of stopping the video, and lists them in `capped` (the result, and the `capped` column of
+`batch.py`'s videos.csv). The default does not pay for a full analysis of a busy video (a cold 53-minute NOAA drop's
+10-minute segments cost $1.63 to $5.88 each): to finish one, raise `--max-usd-video` and run the same command with
+`--resume`, and only the segments that left something out run again. Spending past the cap (a stage's estimate is not
+a bill) and what was left out show in `result["budget"]` and a WARNING line. The only hard stop is `FISH_BUDGET`
+(a cap you set on `--skip-empty` stops too); a run it stops says so, and `--resume` goes on. A run with a new `--id`, or
+the same command without `--resume`, has a new budget. Long videos also try each discovered word on short windows
+around the frames Spark named before the whole segment (`--probe-window`, on by default there; `--no-probe-window`).
+`--skip-empty` (opt-in): stretches where the picture does not change from the last analysed frame are not sent; empty
+water stays empty and a resting animal keeps its box (marked carried). The full analysis runs wherever something
+appears or moves (`fishcount/screen.py`; default cap $4 an hour; `--probe-every` needs `--skip-empty`). The result
+lists the stretches carried (`skipped`) and the span a cap left unanalysed to the end (`unsent`, counted 0). Any run
+lists the stages it skipped at its cap in `capped` (absent when none, so a run under its cap keeps its exact bytes).
+
+*Changed in D-NIGHT3 (after the evaluation; no paper number uses it):* a long video's cap was $1 per segment
+(`--max-usd`), and any first pass over it stopped the video (a segment with discovery on stopped at once); a short
+clip over its cap stopped too, on the command line and on the web screen, and now leaves the discovery words out
+first. `--max-usd N` on a long video meant each segment's total and is now a ceiling on its share. With probe windows
+on by default, replaying offline a long video whose cache was filled without them needs `--no-probe-window`; a
+segment's `resume.json` from before this change no longer matches (the code changed), so it runs again once. Short
+clips under their cap and every offline replay give the same bytes as before.
 
 **Fresh runs.** Spark's answers are not fixed, so a run with an empty cache can differ from the cached one. In four
 empty-cache rehearsals DH11's amphipod was counted once and queued once & s003 counted 3 nautiluses in one take and 1

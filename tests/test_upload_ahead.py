@@ -83,6 +83,7 @@ class UploadAhead(unittest.TestCase):
                   mock.patch.object(video, "light_stats", light),
                   mock.patch.object(longvideo, "cut", cut), mock.patch.object(pipeline, "run_pipeline", run_pipeline),
                   mock.patch.object(api, "_key", lambda: "k"), mock.patch.object(api.requests, "post", post),
+                  mock.patch.object(api, "LEDGER", os.path.join(self.tmp, "ledger.jsonl")),
                   mock.patch.dict(api._uploads, clear=True)):
             p.start()
         self.addCleanup(mock.patch.stopall)

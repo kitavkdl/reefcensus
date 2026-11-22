@@ -62,6 +62,7 @@ class SegmentWorkers(unittest.TestCase):
                 json.dump(dict(live_calls=2, cached_calls=1, billed_usd=0.25), open(os.path.join(d, "status.json"), "w"))
 
         self.patches = [mock.patch.object(pipeline, "RUNS", self.tmp), mock.patch.object(video, "ingest", ingest),
+                        mock.patch.object(api, "LEDGER", os.path.join(self.tmp, "ledger.jsonl")),
                         mock.patch.object(video, "info", lambda p: dict(n_frames=self.N, fps=5.0, width=100, height=100)),
                         mock.patch.object(video, "light_stats", lambda p: dict(median_l=100, mean_l=100)),
                         mock.patch.object(longvideo, "cut", cut), mock.patch.object(pipeline, "run_pipeline", run_pipeline)]

@@ -167,7 +167,8 @@ class Tables(BatchCase):
 
     def test_segments_and_earlier_tries_add_to_the_ledger_column(self):
         with open(self.ledger, "w") as f:
-            for rid, usd in (("v__S1", 0.5), ("v__S2", 0.25), ("v", 0.125), ("vv", 9.0), (None, 7.0)):
+            # every try of a video counts here (t is not filtered: the video's budget, longvideo.video_spent, is)
+            for rid, usd in (("v__S1", 0.5), ("v__P2", 0.25), ("v", 0.125), ("vv", 9.0), (None, 7.0)):
                 f.write(json.dumps(dict(t=1, kind="sam", usd=usd, note="", **({"run": rid} if rid else {}))) + "\n")
             f.write("not json\n")
         self.assertEqual(batch.ledger_by_run(self.ledger), {"v": 0.875, "vv": 9.0})

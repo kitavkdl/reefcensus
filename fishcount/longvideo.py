@@ -22,7 +22,7 @@ Boundary design (why the merge is exact for the survey numbers):
   pair is added to name_variants for the reviewer. Counts are unchanged.
 - Evidence frames, the annotated video and the queue thumbnails come from the segment runs (an evidence image is
   labelled with the frame number inside its segment; result["segments"] gives each segment's start)."""
-import concurrent.futures as cf, json, math, os, shutil, subprocess, sys, threading, time
+import concurrent.futures as cf, json, math, os, re, shutil, subprocess, sys, threading, time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, pipeline, render, screen, tracks, video
@@ -40,7 +40,79 @@ def needs_split(inf, segment=None, skip_empty=False):
     if not inf.get("fps") or not 0 < inf.get("n_frames", 0) < 10 ** 9:
         return True
     return inf["n_frames"] / inf["fps"] > MAX_SEGMENT_S
-VIDEO_CAP_USD_PER_HOUR = 4   # --skip-empty default whole-video cap
+CAP_PER_HOUR_SPLIT = 6       # long video default whole-video cap, $ an hour (user, 11/21 22:01)
+CAP_PER_HOUR_SKIP_EMPTY = 4  # --skip-empty default whole-video cap (11/11)
+CAP_MIN_USD = 1              # a long video's default cap is never below this (not --skip-empty: as before)
+
+
+def first_pass_floor(n, prompts):
+    """F: the --prompts words' first pass on n frames as if nothing were cached, the least a segment is given."""
+    return len(dict.fromkeys(prompts or ["fish"])) * max(api.SAM_MIN_FRAMES, n) * api.SAM_PER_FRAME
+
+
+def video_cap(floors, given, default, offline=False):
+    """-> (the video cap used, a note when the default was raised). given: the cap a person set (None: default).
+    A cap set below the first pass of every segment stops the run before anything is paid (it could not be kept);
+    a default below it is raised to it and said. Offline nothing is paid: the cap is only recorded."""
+    need = sum(floors)
+    if given is not None:
+        if given + 1e-9 < need and not offline:
+            raise api.BudgetExceeded(f"video cap ${given:.2f} is below the first pass of the --prompts words on every "
+                                     f"segment, ${need:.2f}: give --max-usd-video {math.ceil(need * 100) / 100:.2f} or more")
+        return given, None
+    if default + 1e-9 < need:
+        return need, (f"video cap raised from the default ${default:.2f} to ${need:.2f}, the first pass of the --prompts "
+                      "words on every segment")
+    return default, None
+
+
+def shares(floors, cap, ceiling=None):
+    """Each segment's cap: an equal share of the video cap (at most ceiling, --max-usd), never below its floor F_k.
+    Fixed: the same whatever order or how many at once the segments run, and a segment that spends less passes
+    nothing on (before: what was left of the cap, so early segments got all of it or late ones none)."""
+    even = cap / len(floors) if ceiling is None else min(cap / len(floors), ceiling)
+    return [round(max(f, even), 4) for f in floors]
+
+
+def video_spent(rid, t0, path=None):
+    """(usd, billed_no_result) of the ledger rows from t0 on whose run is rid or one of its segments / probes
+    (rid__S<n>, rid__P<n>). billed_no_result: SAM calls whose stream broke after SAM took them (logged as billed,
+    api._sam_live; nothing came back). Broken lines and lines without usd are skipped."""
+    pat = re.compile(re.escape(rid) + r"(__[SP]\d+)?")
+    usd, broke = 0.0, 0
+    try:
+        f = open(path or api.LEDGER)
+    except OSError:
+        return 0.0, 0
+    with f:
+        for line in f:
+            try:
+                r = json.loads(line)
+                u, t = float(r["usd"]), float(r.get("t", 0))
+            except (ValueError, KeyError, TypeError, AttributeError):
+                continue
+            if t >= t0 and isinstance(r.get("run"), str) and pat.fullmatch(r["run"]):
+                usd += u
+                broke += str(r.get("note", "")).endswith("(stream broke)")
+    return usd, broke
+
+
+def _budget(rid, t0, cap, parts, capped):
+    """result["budget"] when the video spent more than its cap or anything was left out, else None. parts: what this
+    try's runs spent on the first pass's SAM calls, later SAM calls and Spark (their status.json)."""
+    spent, broke = video_spent(rid, t0)
+    if spent <= cap + 1e-9 and not capped:
+        return None
+    return dict(cap=round(cap, 4), spent=round(spent, 4), over=round(max(0.0, spent - cap), 4), billed_no_result=broke,
+                parts={k: round(v, 4) for k, v in parts.items()})
+
+
+def _parts(parts, sst):
+    """Add one run's status.json to the budget parts."""
+    first, spark = sst.get("first_pass_sam_usd", 0.0), sst.get("spark_usd", 0.0)
+    parts["first_sam"] += first
+    parts["spark"] += spark
+    parts["later_sam"] += sst.get("billed_usd", 0.0) - first - spark
 
 
 def plan(n_frames, fps, seg_s):
@@ -224,13 +296,14 @@ def _review_videos(d, dirs):
 
 def _fingerprint(seg_clip, kw):
     """What a finished segment's result depends on: its clip's bytes, the run options (except offline: a replay from
-    cache gives the same result as the live run that filled it) and the code (every fishcount/*.py file)."""
+    cache gives the same result as the live run that filled it; nor the cap, which _kept compares on its own) and the
+    code (every fishcount/*.py file)."""
     h = __import__("hashlib").sha256()
     here = os.path.dirname(os.path.abspath(__file__))
     for f in sorted(os.listdir(here)):
         if f.endswith(".py"):
             h.update(f.encode() + open(os.path.join(here, f), "rb").read())
-    opts = {k: v for k, v in kw.items() if k != "offline"}
+    opts = {k: v for k, v in kw.items() if k not in ("offline", "max_usd")}     # the cap: resume.json, _kept
     return dict(clip=api.file_sha(seg_clip), options=json.loads(json.dumps(opts, sort_keys=True, default=repr)),
                 code=h.hexdigest()[:24])
 
@@ -299,15 +372,23 @@ def run_long(src, rid=None, *a, **kw):
         raise
 
 
-def _kept(sd, fp, resume):
-    """True when --resume finds a finished run of this segment with the same fingerprint (_fingerprint)."""
-    rp = os.path.join(sd, "resume.json")
-    if not (resume and os.path.exists(rp) and os.path.exists(os.path.join(sd, "result.json"))):
+def _kept(sd, fp, resume, cap=None):
+    """True when --resume finds a finished run of this segment with the same fingerprint (_fingerprint) and its result
+    holds: nothing left out at its cap, or this cap is no higher than the one it ran with (raising the cap runs only
+    the cut segments again). A segment FISH_BUDGET cut (capped reason "fish") always runs again. resume.json =
+    {"fp", "cap"}; the old form (the fingerprint alone) has no cap."""
+    rp, res = os.path.join(sd, "resume.json"), os.path.join(sd, "result.json")
+    if not (resume and os.path.exists(rp) and os.path.exists(res)):
         return False
     try:
-        return json.load(open(rp)) == fp
-    except ValueError:
+        j = json.load(open(rp))
+        capped = json.load(open(res)).get("capped") or []
+    except (ValueError, AttributeError):
         return False
+    old_fp, old_cap = (j.get("fp"), j.get("cap")) if isinstance(j, dict) and "fp" in j else (j, None)
+    if old_fp != fp or any(isinstance(c, dict) and c.get("reason") == "fish" for c in capped):
+        return False
+    return not capped or (old_cap is not None and cap is not None and cap <= old_cap + 1e-9)
 
 
 def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
@@ -337,6 +418,10 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     d = os.path.join(pipeline.RUNS, rid)
     os.makedirs(d, exist_ok=True)
     t0 = time.time()
+    try:        # the try before this one: only one that died half-way is continued on the same budget (--resume)
+        prev = json.load(open(os.path.join(d, "status.json"))).get("stage")
+    except (OSError, ValueError, AttributeError):
+        prev = None
     st = _status(d, id=rid, stage="ingest", started=t0, log=[f"{time.strftime('%H:%M:%S')} re-encoding to 5 fps (whole video)"])
     full = os.path.join(d, "full_5fps.mp4")
     src_warn = (video.ingest(src, full, max_seconds=10 ** 7) or {}).get("source_warnings") or []
@@ -365,10 +450,32 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
         return _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, max_usd_video, probe_every_s, kw)
     segs = plan(inf["n_frames"], inf["fps"], seg_s)
     workers = max(1, min(int(segment_workers or 1), len(segs)))
+    floors = [first_pass_floor(n, kw.get("prompts")) for _, n in segs]
+    default = max(CAP_MIN_USD, round(inf["n_frames"] / inf["fps"] / 3600 * CAP_PER_HOUR_SPLIT, 2))
+    cap, raised = video_cap(floors, max_usd_video, default, kw.get("offline"))
+    share = shares(floors, cap, kw.pop("max_usd", None))
+    bp = os.path.join(d, "budget.json")
+    try:
+        old = json.load(open(bp)) if resume and prev not in (None, "done") else {}
+        bt0 = float(old["t0"])
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        bt0 = t0
+    with open(bp, "w") as f:
+        json.dump(dict(t0=bt0, cap=cap), f)
+    st["log"].append(f"{time.strftime('%H:%M:%S')} video cap ${cap:.2f} "
+                     + ("(--max-usd-video)" if max_usd_video is not None else f"(default ${CAP_PER_HOUR_SPLIT} an hour)")
+                     + f", each segment ${share[0]:.2f}" + (f"; {raised}" if raised else "")
+                     + (f"; discovered words probed on +-{kw['probe_window']} frames first" if kw.get("probe_window") else ""))
+    if not kw.get("offline"):
+        warn = api.budget_warning(sum(floors))
+        if warn:
+            print(f"WARNING: {warn}", file=sys.stderr)
+            st["log"].append(f"{time.strftime('%H:%M:%S')} WARNING: {warn}")
     st["log"].append(f"{time.strftime('%H:%M:%S')} {inf['n_frames']} frames -> {len(segs)} segment(s) of <= {seg_s:g} s: "
                      + ", ".join(f"{s}+{n}" for s, n in segs) + (f"; {workers} at once" if workers > 1 else ""))
     _status(d, stage="segments", log=st["log"], video=inf)
-    tally, lock, failed = dict(live=0, cached=0, billed=0.0), threading.Lock(), threading.Event()
+    tally, lock, failed = dict(live=0, cached=0, billed=0.0, kept=0), threading.Lock(), threading.Event()
+    parts = dict(first_sam=0.0, later_sam=0.0, spark=0.0)
     ran = dict(usd=[], s=[], finished=0)     # segments run (not kept) this time: their spend and wall time
     room = dict(seg=[], review=[], warned=False)    # every finished segment's folder bytes, for disk_need
     ahead = {}      # k -> dict(ev=Event set once the look-ahead has cut segment k, ok=whether that cut worked)
@@ -392,7 +499,7 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
         finally:
             a["ev"].set()
         try:
-            if failed.is_set() or _kept(os.path.join(pipeline.RUNS, f"{rid}__S{k + 1}"), _fingerprint(sp, kw), resume):
+            if failed.is_set() or _kept(os.path.join(pipeline.RUNS, f"{rid}__S{k + 1}"), _fingerprint(sp, kw), resume, share[k]):
                 return
             t = time.time()
             api._upload(sp, api._key())
@@ -417,22 +524,30 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
         sd = os.path.join(pipeline.RUNS, srid)
         fp = _fingerprint(sp, kw)
         rp = os.path.join(sd, "resume.json")
-        kept = _kept(sd, fp, resume)
+        kept = _kept(sd, fp, resume, share[k])
         if not kept:
             if os.path.exists(rp):      # a run that dies half-way must not leave an older fingerprint on its result
                 os.remove(rp)
             try:
-                pipeline.run_pipeline(sp, srid, **kw)
+                pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=share[k]))
+            except api.BudgetExceeded as e:
+                failed.set()
+                if "FISH_BUDGET" in str(e):
+                    raise api.BudgetExceeded(f"FISH_BUDGET reached at S{k + 1}: raise it, then the same command with "
+                                             f"--resume ({e})") from e
+                raise
             except BaseException:
                 failed.set()
                 raise
             with open(rp, "w") as f:     # written on every run, so a run started without --resume can be resumed
-                json.dump(fp, f)
+                json.dump(dict(fp=fp, cap=share[k]), f)
         _drop_cut(sp)
         sst = json.load(open(os.path.join(sd, "status.json")))
         maxn = ", ".join(f"{m} {v['maxn']}" for m, v in json.load(open(os.path.join(sd, "result.json")))["metrics"].items())
         with lock:      # workers finish in any order; the log says which segment, the merge goes by segment order
+            tally["kept"] += kept
             if not kept:    # a kept segment spent nothing this time
+                _parts(parts, sst)
                 tally["live"] += sst["live_calls"]
                 tally["cached"] += sst["cached_calls"]
                 tally["billed"] += sst["billed_usd"]
@@ -480,6 +595,14 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     R["video"]["lowlight"] = light
     if inf.get("source_warnings"):
         R["video"]["source_warnings"] = inf["source_warnings"]
+    if not tally["kept"] and bt0 != t0:     # every segment ran again (other options or code): this try's own budget
+        bt0 = t0
+        with open(bp, "w") as f:
+            json.dump(dict(t0=bt0, cap=cap), f)
+    bud = None if kw.get("offline") else _budget(rid, bt0, cap, parts, R.get("capped"))
+    if bud:
+        R["budget"] = bud
+        st["log"].append(_budget_line(bud, R))
     with open(os.path.join(d, "result.json"), "w") as f:
         json.dump(R, f)
     os.remove(full)
@@ -487,8 +610,20 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     st["log"].append(f"{time.strftime('%H:%M:%S')} merged {len(segs)} segment(s): "
                      + ", ".join(f"{m} MaxN {v['maxn']} at {v['maxn_time']} s" for m, v in R["metrics"].items())
                      + f"; finished in {t1 - t0:.0f}s; live calls {live}, cached {cached}, billed ${billed:.3f}")
-    _status(d, stage="done", done=t1, log=st["log"], live_calls=live, cached_calls=cached, billed_usd=billed, video=R["video"])
+    _status(d, stage="done", done=t1, log=st["log"], live_calls=live, cached_calls=cached, billed_usd=billed, video=R["video"],
+            **(dict(budget=bud) if bud else {}))
     return R
+
+
+def _budget_line(bud, R):
+    segs = sorted({c.get("segment", "?") for c in R.get("capped", [])}, key=lambda x: (len(x), x))
+    p = bud["parts"]
+    return (f"{time.strftime('%H:%M:%S')} WARNING: budget: spent ${bud['spent']:.2f} of the ${bud['cap']:.2f} video cap"
+            + (f" (${bud['over']:.2f} over)" if bud["over"] else "")
+            + f"; first-pass SAM ${p['first_sam']:.2f}, later SAM ${p['later_sam']:.2f}, Spark ${p['spark']:.2f}"
+            + (f"; {bud['billed_no_result']} SAM call(s) billed with no answer (stream broke)" if bud["billed_no_result"] else "")
+            + (f"; stages left out in {', '.join(segs)} (result capped; raise --max-usd-video and run again with "
+               "--resume: only those segments run)" if segs else ""))
 
 
 def _agree(probe_dir, src_dir, src_frame, thr=BOUNDARY_IOU):
@@ -533,9 +668,12 @@ def _filler(full, d, a, b, R, brightened):
 
 
 def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every_s, kw):
-    """run_long with --skip-empty: send what screen.scan picks, each run capped at what is left of the video cap;
-    probes that disagree with the carried boxes re-send the stretch before them once; a cap or FISH_BUDGET stop keeps
-    what was done and lists the rest as unsent."""
+    """run_long with --skip-empty: send what screen.scan picks; probes that disagree with the carried boxes re-send the
+    stretch before them once. A cap set with --max-usd-video is a hard stop: each run gets what is left of it, and a
+    cap or FISH_BUDGET stop keeps what was done and lists the rest as unsent. The default cap ($4 an hour, raised to
+    the first pass of every planned send when below it) is paid out as run_long's: each send, re-sends included, an
+    equal share of it (at least its own first pass, at most --max-usd); spending past it shows in result["budget"].
+    FISH_BUDGET stops either."""
     fps, N = inf["fps"], inf["n_frames"]
 
     def log(msg, **fields):
@@ -543,26 +681,37 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
         _status(d, stage="segments", log=st["log"], **fields)
 
     wins = screen.scan(full, fps, **({} if probe_every_s is None else dict(probe_every_s=probe_every_s)))
-    cap = round(N / fps / 3600 * VIDEO_CAP_USD_PER_HOUR, 2) if cap is None else cap
-    per = kw.pop("max_usd", None)    # each run gets what is left of the video cap instead (a $1 per-run cap stops a 600 s run at its first estimate)
+    hard = cap is not None
+    per = kw.pop("max_usd", None)
+    if hard:        # each run gets what is left of the video cap (a $1 per-run cap stops a 600 s run at its first estimate)
+        note = f"video cap ${cap:.2f} (--max-usd-video: a hard stop; per-segment --max-usd {per} not used)"
+    else:
+        floors = [first_pass_floor(w["n"], kw.get("prompts")) for w in wins] or [0.0]
+        cap, raised = video_cap(floors, None, round(N / fps / 3600 * CAP_PER_HOUR_SKIP_EMPTY, 2), kw.get("offline"))
+        even = cap / max(1, len(wins)) if per is None else min(cap / max(1, len(wins)), per)
+        note = (f"video cap ${cap:.2f} (default ${CAP_PER_HOUR_SKIP_EMPTY} an hour), each send ${even:.2f}"
+                + (f"; {raised}" if raised else ""))
     n_send = sum(w["n"] for w in wins if w["kind"] != "probe")
     log(f"--skip-empty: {len(wins)} stretch(es) to send, {n_send} of {N} frames ({100 * n_send / max(1, N):.1f}%) + "
         f"{sum(1 for w in wins if w['kind'] == 'probe')} probe(s): " + ", ".join(f"{w['kind']} {w['start']}+{w['n']}" for w in wins)
-        + f"; video cap ${cap:.2f} (per-segment --max-usd {per} not used)", video=inf)
+        + f"; {note}", video=inf)
     done, probes, k, unsent = [], [], 0, None
     acc = dict(spent=0.0, live=0, cached=0, at=0)
+    parts = dict(first_sam=0.0, later_sam=0.0, spark=0.0)
 
     def send(start, n, tag):
         sp = os.path.join(d, f"{tag}.mp4")
         cut(full, sp, start, n)
         srid, acc["at"] = f"{rid}__{tag}", start
+        mu = max(0.0, cap - acc["spent"]) if hard else round(max(first_pass_floor(n, kw.get("prompts")), even), 4)
         try:
-            pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=max(0.0, cap - acc["spent"])))
+            pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=mu))
             _drop_cut(sp)
         finally:
             p = os.path.join(pipeline.RUNS, srid, "status.json")
             if os.path.exists(p):
                 sst = json.load(open(p))
+                _parts(parts, sst)
                 acc.update(spent=acc["spent"] + sst.get("billed_usd", 0.0), live=acc["live"] + sst.get("live_calls", 0),
                            cached=acc["cached"] + sst.get("cached_calls", 0))
         log(f"{tag} ({start / fps:.1f}-{(start + n) / fps:.1f} s) done; video spend ${acc['spent']:.3f} of ${cap:.2f}",
@@ -612,6 +761,10 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
     R["video"]["lowlight"] = light
     if inf.get("source_warnings"):
         R["video"]["source_warnings"] = inf["source_warnings"]
+    bud = None if kw.get("offline") else _budget(rid, t0, cap, parts, R.get("capped") or R["unsent"])
+    if bud:
+        R["budget"] = bud
+        st["log"].append(_budget_line(bud, R))
     pieces = [(s, sd) for sd, s, _ in done]
     for a, b in gaps + [(u["start_frame"], u["end_frame"]) for u in R["unsent"]]:
         pieces.append((a, _filler(full, d, a, b, R, light["brightened"])))
@@ -626,5 +779,6 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
                      + ", ".join(f"{m} MaxN {v['maxn']} at {v['maxn_time']} s" for m, v in R["metrics"].items())
                      + f"; cap: {len(R['unsent'])} stretch(es) not sent, {n_cap} segment(s) with stages skipped"
                      + f"; finished in {t1 - t0:.0f}s; live calls {acc['live']}, cached {acc['cached']}, billed ${acc['spent']:.3f}")
-    _status(d, stage="done", done=t1, log=st["log"], live_calls=acc["live"], cached_calls=acc["cached"], billed_usd=acc["spent"], video=R["video"])
+    _status(d, stage="done", done=t1, log=st["log"], live_calls=acc["live"], cached_calls=acc["cached"], billed_usd=acc["spent"], video=R["video"],
+            **(dict(budget=bud) if bud else {}))
     return R

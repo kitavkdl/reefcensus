@@ -15,7 +15,7 @@ import test_longvideo, test_resume
 from test_core import replay_or_skip
 
 KEPT = {"clip.mp4", "clip_original.mp4", "annotated.mp4", "result.json", "status.json", "evidence_fish.jpg",
-        "motion_sheet.jpg", "discover.json", "resume.json"}
+        "motion_sheet.jpg", "discover.json", "resume.json", "budget.json"}
 TEMP = {"clip_rev.mp4", "tile_r1c2.mp4", "tile_d0_rev.mp4", "tile_crowd-fish.mp4", "tile_peak+40-fish.mp4",
         "seg_fish+150.mp4", "probe_fish+0.mp4", "peak+40.mp4", "box_m1+12.mp4"}
 

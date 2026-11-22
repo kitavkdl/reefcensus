@@ -116,6 +116,20 @@ class _Reservation:
         return False
 
 
+def budget_warning(need):
+    """A line when FISH_BUDGET has less left than `need` (a first pass with nothing cached), else None. A warning
+    only: a rerun whose calls are cached pays nothing; a run that does reach the budget stops there."""
+    try:
+        left = float(os.environ.get("FISH_BUDGET", "1.0")) - spent()
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if left + 1e-9 >= need:
+        return None
+    return (f"FISH_BUDGET has ${max(0.0, left):.2f} left; the first pass of the --prompts words needs up to ${need:.2f} "
+            "when nothing is cached. Calls in the cache are free; a run that reaches the budget stops there (raise "
+            "FISH_BUDGET, then the same command, with --resume for a long video)")
+
+
 def reserve(est):
     """`with reserve(est): <paid call, then _log>` holds `est` against FISH_BUDGET until the call is logged."""
     return _Reservation(est)
