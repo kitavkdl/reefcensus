@@ -2526,21 +2526,28 @@ if __name__ == "__main__":
     if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
         ap.error("--segment-workers needs a number >= 1, and only 1 with --skip-empty (its video cap is paid segment by segment)")
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
-    from fishcount import longvideo
-    if longvideo.needs_split(video.info(a.video), a.segment, a.skip_empty):
-        r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
-                               offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
-                               prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
-                               crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
-                               misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                               probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
-                               segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume,
-                               upload_ahead=not a.no_upload_ahead)
-    else:
-        r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
-                         lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
-                         camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
-                         probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
-                         crowd_peak=a.crowd_peak, haze=a.haze)
+    from fishcount import longvideo, provenance
+    run_dir = os.path.join(RUNS, a.id)
+    provenance.start(run_dir, sys.argv, a.video)    # code, options, models, encoder: <run>/provenance.json
+    try:
+        if longvideo.needs_split(video.info(a.video), a.segment, a.skip_empty):
+            r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
+                                   offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
+                                   prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
+                                   crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
+                                   misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
+                                   probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
+                                   segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume,
+                                   upload_ahead=not a.no_upload_ahead)
+        else:
+            r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
+                             lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
+                             camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
+                             probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
+                             crowd_peak=a.crowd_peak, haze=a.haze)
+    except BaseException as e:
+        provenance.finish(run_dir, error=f"{type(e).__name__}: {e}")
+        raise
+    provenance.finish(run_dir)
     print(json.dumps({k: {x: y for x, y in v.items() if x != "curve"} for k, v in r["metrics"].items()}, indent=1))
-    print(f"run folder: {os.path.relpath(os.path.join(RUNS, a.id))}/", file=sys.stderr)
+    print(f"run folder: {os.path.relpath(run_dir)}/", file=sys.stderr)

@@ -34,6 +34,7 @@ SAM_MIN_FRAMES = 50
 SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
 PRICES = {"muse-wonder-1.0": (4.0e-6, 20.0e-6)}   # $/token (in, out); everything else is priced as Spark
 SPARK_MODEL = os.environ.get("FISH_SPARK_MODEL", "muse-spark-1.3")
+SAM_MODEL = "sam-3.1"
 
 
 class BudgetExceeded(RuntimeError):
@@ -319,7 +320,7 @@ def _sam_live(clip_path, prompt, n_frames, payload, cp):
     key = _key()
     fid, reused = _upload(clip_path, key, sha=payload["clip"])
     for attempt in range(2):
-        body = {"model": "sam-3.1", "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
+        body = {"model": SAM_MODEL, "stream": True, "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
                 "input": [{"type": "message", "role": "user", "content": [
                     {"type": "input_text", "text": prompt}, {"type": "input_video", "file_id": fid}]}]}
         r = _post(f"{BASE}/responses", headers={"Authorization": f"Bearer {key}", "Accept": "text/event-stream"},
