@@ -28,6 +28,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, pipeline, render, screen, tracks, video
 
 MAX_SEGMENT_S = 600          # one SAM 3.1 video call takes up to 10 minutes
+
+
+def needs_split(inf, segment=None, skip_empty=False):
+    """Whether the CLI runs a video through run_long (segments) rather than run_pipeline: asked for (segment,
+    skip_empty), longer than MAX_SEGMENT_S, or of unknown length. A raw .h264 stream has no frame count (OpenCV
+    gives a negative one), so it took the short path and run_pipeline analysed its first 600 s only (round 3,
+    11/21c); run_long re-encodes the whole file first and splits by the frames it actually got."""
+    if segment or skip_empty:
+        return True
+    if not inf.get("fps") or not 0 < inf.get("n_frames", 0) < 10 ** 9:
+        return True
+    return inf["n_frames"] / inf["fps"] > MAX_SEGMENT_S
 VIDEO_CAP_USD_PER_HOUR = 4   # --skip-empty default whole-video cap
 
 
@@ -308,8 +320,14 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     t0 = time.time()
     st = _status(d, id=rid, stage="ingest", started=t0, log=[f"{time.strftime('%H:%M:%S')} re-encoding to 5 fps (whole video)"])
     full = os.path.join(d, "full_5fps.mp4")
-    video.ingest(src, full, max_seconds=10 ** 7)
+    src_warn = (video.ingest(src, full, max_seconds=10 ** 7) or {}).get("source_warnings") or []
+    for w in src_warn:      # cut short or damaged source (round 3): said once for the whole video
+        st["log"].append(f"{time.strftime('%H:%M:%S')} WARNING: {w}")
+    if src_warn:
+        st = _status(d, log=st["log"], source_warnings=src_warn)
     inf = video.info(full)
+    if src_warn:
+        inf["source_warnings"] = src_warn       # into the merged result's "video" (both paths), only when there are any
     # low-light is decided once for the whole video, so every segment gets the same treatment
     light = video.light_stats(full)
     mode = kw.get("lowlight", "auto")
@@ -411,6 +429,8 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     live, cached, billed = tally["live"], tally["cached"], tally["billed"]
     R = merge(rid, os.path.basename(src), done, inf["fps"])
     R["video"]["lowlight"] = light
+    if inf.get("source_warnings"):
+        R["video"]["source_warnings"] = inf["source_warnings"]
     with open(os.path.join(d, "result.json"), "w") as f:
         json.dump(R, f)
     os.remove(full)
@@ -541,6 +561,8 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
     R["skip_empty"] = dict(video_cap_usd=cap, billed_usd=round(acc["spent"], 4), sent_frames=sent,
                            probe_frames=sum(p["n_frames"] for p in probes), n_frames=N, sent_share=round(sent / max(1, N), 4))
     R["video"]["lowlight"] = light
+    if inf.get("source_warnings"):
+        R["video"]["source_warnings"] = inf["source_warnings"]
     pieces = [(s, sd) for sd, s, _ in done]
     for a, b in gaps + [(u["start_frame"], u["end_frame"]) for u in R["unsent"]]:
         pieces.append((a, _filler(full, d, a, b, R, light["brightened"])))

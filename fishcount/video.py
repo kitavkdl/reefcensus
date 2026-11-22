@@ -31,12 +31,51 @@ X264_ARGS = ["-threads", X264_THREADS] + _x264_asm_cap()
 
 
 def ingest(src, dst, fps=5, max_w=1920, max_seconds=600):
-    """Re-encode `src` to H.264 at `fps`, width <= max_w, no audio. Returns dict(n_frames, fps, width, height)."""
+    """Re-encode `src` to H.264 at `fps`, width <= max_w, no audio. Returns dict(n_frames, fps, width, height,
+    source_warnings): the list source_warnings() makes, empty for an intact file. The output bytes are as before."""
     vf = f"fps={fps},scale='min({max_w},iw)':-2"
-    subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-t", str(max_seconds),
-                    "-vf", vf, "-an", "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst],
-                   check=True)
-    return info(dst)
+    cmd = [FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-t", str(max_seconds),
+           "-vf", vf, "-an", "-c:v", "libx264", *X264_ARGS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst]
+    p = subprocess.run(cmd, stderr=subprocess.PIPE, text=True, errors="replace")
+    if p.stderr:        # still shown, as before, but a damaged file's thousands of lines are cut to the first 20
+        lines = p.stderr.splitlines()
+        sys.stderr.write("\n".join(lines[:20]) + (f"\n... {len(lines) - 20} more ffmpeg lines" if len(lines) > 20 else "") + "\n")
+    if p.returncode:
+        raise subprocess.CalledProcessError(p.returncode, cmd, stderr=p.stderr)
+    d = info(dst)
+    d["source_warnings"] = source_warnings(src, d, fps, max_seconds, p.stderr)
+    return d
+
+
+def source_warnings(src, got, fps, max_seconds, err=""):
+    """What may be wrong with a source file, from its re-encode `got` (info of the output) and ffmpeg's error lines
+    `err`; [] for an intact file. ffmpeg returns 0 on a file cut short or damaged in the middle and writes what it
+    could decode, so before (round 3, 11/21c) such a file was analysed short in silence:
+      - "ends early": the header's length (up to max_seconds) is over 1 s and 2 % longer than what was decoded;
+      - "only the first": the source is longer than max_seconds (run_pipeline called directly on a long video);
+      - "length is unknown": no usable frame count (a raw .h264 stream: OpenCV says -1.9e14) and the re-encode
+        stopped at max_seconds, so the rest was not analysed;
+      - "decoder error": ffmpeg printed error lines (a damaged stretch: those frames may be grey or repeated).
+    On 12 intact real clips from 6+ cameras (11/21c) the header and the decode agreed to 0.0 s with no error line."""
+    out = []
+    head = info(src)
+    secs = got["n_frames"] / fps
+    if head["fps"] and 0 < head["n_frames"] < 10 ** 9:
+        want = min(head["n_frames"] / head["fps"], max_seconds)
+        if want - secs > max(1.0, 0.02 * want):
+            out.append(f"source ends early: its header says {head['n_frames'] / head['fps']:.0f} s, only {secs:.0f} s "
+                       f"could be decoded and analysed (file cut short or damaged?)")
+        elif head["n_frames"] / head["fps"] > max_seconds + 1.0:
+            out.append(f"source is {head['n_frames'] / head['fps']:.0f} s: only the first {max_seconds:.0f} s were "
+                       f"analysed (longer videos go through longvideo.run_long, as the CLI does)")
+    elif secs >= max_seconds - 1.0 / fps:
+        out.append(f"source length is unknown (no frame count in the file, e.g. a raw stream): only the first "
+                   f"{max_seconds:.0f} s were analysed")
+    errs = [l for l in (err or "").splitlines() if l.strip()]
+    if errs:
+        out.append(f"{len(errs)} decoder error line(s) while reading the source (a damaged stretch? frames there may "
+                   f"be grey or repeated); first: {errs[0].strip()[:120]}")
+    return out
 
 
 # Low-light correction (11/2, fixes branch). Night BRUV footage (s001, a wire trap lit by a lamp) is mostly black:

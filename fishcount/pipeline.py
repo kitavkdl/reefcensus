@@ -816,10 +816,13 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
         if os.path.lexists(run.path(f)):
             os.unlink(run.path(f))
     run.stage("ingest", f"re-encoding {os.path.basename(src)} to 5 fps")
+    src_warn = []       # video.source_warnings: cut short, damaged, unknown length (round 3); [] for an intact file
     if src.endswith(".mp4") and video.info(src)["fps"] == 5.0:
         shutil.copy(src, clip)      # already analysis-ready (keeps the cache key stable)
     else:
-        video.ingest(src, clip)
+        src_warn = (video.ingest(src, clip) or {}).get("source_warnings") or []
+    for w in src_warn:
+        run.stage("ingest", f"WARNING: {w}")
     light = video.light_stats(clip)
     light.update(mode=lowlight, brightened=lowlight == "on" or (lowlight == "auto" and video.is_dark(light)))
     if light["brightened"]:
@@ -836,6 +839,8 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
             run.stage("ingest", f"washed-out clip (L p95-p5 {hz['l_width']}): CLAHE on L")
     inf = video.info(clip)
     inf["lowlight"] = light
+    if src_warn:        # only then, so an intact clip's result is byte for byte what it was
+        inf["source_warnings"] = src_warn
     run.status["video"] = inf
     run.stage("ingest", f"{inf['n_frames']} frames {inf['width']}x{inf['height']}")
 
@@ -2519,9 +2524,7 @@ if __name__ == "__main__":
         ap.error("--segment-workers needs a number >= 1, and only 1 with --skip-empty (its video cap is paid segment by segment)")
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
     from fishcount import longvideo
-    inf0 = video.info(a.video)
-    secs = inf0["n_frames"] / inf0["fps"] if inf0["fps"] else 0
-    if a.segment or a.skip_empty or secs > longvideo.MAX_SEGMENT_S:
+    if longvideo.needs_split(video.info(a.video), a.segment, a.skip_empty):
         r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),
                                offline=a.offline, do_scout=not (a.no_scout or a.discover), do_audit=not a.no_audit, do_zoom=a.zoom,
                                prompts=a.prompts, max_usd=a.max_usd, do_discover=a.discover, lowlight=a.lowlight, site=a.site,
