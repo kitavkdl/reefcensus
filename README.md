@@ -44,7 +44,7 @@ boxes and follows each animal through the video.
   can still change a number settles every MaxN and first arrival after 24 to 84 answers (about 5 to 18 minutes on a phone
   estimated from the 13 s a track measured on 9 queued tracks) with exactly the numbers of answering all 1,082
   (checked with three simulated answer rules: accept all / reject all / follow the auditor).
-  Since 11/22 a counted mid-confidence yes (0.5 to 0.7) is no longer queued, which leaves 497 there: a blind sheet of
+  Since 11/22 a counted mid-confidence yes (0.5 to 0.7) is no longer queued, which leaves 498 there: a blind sheet of
   60 of them had 1 that was not a fish (`--queue-conf`, [details](report/details.md#the-review-screen)).
 - Reviewed counts download as a CSV & in GlobalArchive column order ([details](report/details.md#standard-maxn-export-globalarchive-layout)).
 
@@ -156,8 +156,9 @@ off). `--box-window`, `--resume`, `--skip-empty`, `--haze` and `--skip-people` s
 *Changed in D-H1APPLY (11/22, after the evaluation; no paper number uses it):* a counted yes of 0.5 to 0.7 from a
 request or discovered word is not put in the human queue (`--queue-conf`, default 0.5 on the command line and the web
 screen; 0.7 queues every one, as before). The 0.5 rests on one video's blind sheet of 60 such tracks (1 not a fish,
-upper 95% bound 9.9%); measure your own footage before relying on it ([details](report/details.md#the-review-screen),
-which also says how to check the tracks it leaves out).
+upper 95% bound 9.9%); measure your own footage before relying on it ([details](report/details.md#the-review-screen)).
+The web screen lists queued tracks only: to check the ones left out, replay the run for free under a new id with
+`--offline --queue-conf 0.7` (same counts, every mid-confidence yes queued).
 
 *Changed in D-DEFAULTS (11/22, after the evaluation; no paper number uses it):* `--segment-workers` was 1 and
 `--refill-ahead` 1. An offline replay sends the 16-id re-runs one at a time whatever `--refill-ahead` says (cached

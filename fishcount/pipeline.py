@@ -2589,7 +2589,8 @@ def needs_review(v):
 # that was not a fish (1.9%, 95% upper 9.9%; none of the 50 request/discovered-word tracks; the one was a motion
 # track). One video only: measure your own (a sheet like report/details.md says) and set --queue-conf.
 QUEUE_CONF = 0.5                    # the command line's and the review screen's --queue-conf
-UNQUEUE_SOURCE = re.compile(r"[pd]\d")      # request words (p0, p0+177 refill) and discovered words (d0): the tracks the sheet measured
+UNQUEUE_SOURCE = re.compile(r"[pd]\d+(\+\d+)?")    # whole source: request words (p0, p0+177 refill) and discovered words (d0),
+# the tracks the sheet measured; not a discovered word's zoom, cell or backfill jobs (d0z-center, d0c-bottom, d0rev)
 
 
 def unqueue(trk, verdicts, labels, conf):
@@ -2600,7 +2601,7 @@ def unqueue(trk, verdicts, labels, conf):
     Never a track with another reason to ask (shadow, a later look's other name, a second look, a relabel)."""
     out = []
     for t, v in verdicts.items():
-        if (labels.get(t) and UNQUEUE_SOURCE.match(trk[t]["source"]) and v.get("is_target") is True
+        if (labels.get(t) and UNQUEUE_SOURCE.fullmatch(trk[t]["source"]) and v.get("is_target") is True
                 and conf <= _conf(v) < 0.7 and v.get("confirm") is None and not v.get("relabelled")
                 and not (v.get("shadow") or v.get("peak_doubt") or v.get("name_disagrees"))):
             v["unqueued"] = True

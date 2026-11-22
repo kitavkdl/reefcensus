@@ -36,8 +36,10 @@ class Unqueue(unittest.TestCase):
     def test_motion_and_other_sources_stay_queued(self):
         """Explicit source rule (review 1, condition 1): a motion track is counted only on a confident yes, so the
         queue is where a person can restore it; even a motion track counted after confirm_2 stays. Camo, crowd tiles,
-        crowd-peak tiles, site memory, zoom and the missed-animal look were not measured: they stay too."""
-        for src in ("m0", "m12", "camo0", "crowd-r1c2", "peak+p0", "s0", "zoom-top", "x0", "k0"):
+        crowd-peak tiles, site memory, zoom, a discovered word's zoom / cell / backfill jobs (d0z-, d0c-, d0rev; 2-axis
+        review at wrap) and the missed-animal look were not measured: they stay too."""
+        for src in ("m0", "m12", "camo0", "crowd-r1c2", "peak+p0", "s0", "zoom-top", "x0", "k0",
+                    "d0rev", "d1z-center", "d0c-bottom", "d0c-bottomrev", "p0x", "d0+3rev"):
             left, v = self.case(src, yes(0.6))
             self.assertFalse(left, src)
             self.assertNotIn("unqueued", v)

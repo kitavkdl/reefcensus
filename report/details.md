@@ -91,12 +91,13 @@ is checked, a count that depends on it is shown as a range, from confident answe
 **Which tracks are queued (`--queue-conf`, D-H1APPLY, 11/22; no paper number uses it).** A track counted under a
 label from a request word or a discovered word whose audit said yes with confidence `--queue-conf` to 0.7 (default 0.5
 on the command line and the web screen) is counted as before but not queued; its verdict says `"unqueued": true` and the
-result `"queue_conf"`. Motion, camouflage, crowd-tile, site-memory, zoom and missed-animal tracks, a track the shadow
+result `"queue_conf"`. Motion, camouflage, crowd-tile, site-memory, zoom and missed-animal tracks, a discovered word's zoom, cell and backfill
+tracks, a track the shadow
 look took out, one a later look named otherwise and one a second look decided stay queued, and so does a yes below
 `--queue-conf`. Why 0.5: a blind sheet of 60 tracks drawn from that band of one video (the 53-minute deployment, 613
 tracks) had 52 fish, 7 unsure and 1 not a fish, 1.9% (95% Wilson interval 0.3-9.9%); the one was a motion track, which
-stays queued, and the 50 request-word tracks answered had none. On that video it takes 585 tracks out of the queue
-(1,082 -> 497) and changes no count; the screen's low end "before the queue is checked" can
+stays queued, and the 50 request-word tracks answered had none. On that video it takes 584 tracks out of the queue
+(1,082 -> 498) and changes no count; the screen's low end "before the queue is checked" can
 rise, as those tracks are no longer open. That is one site and one camera: before relying on it elsewhere, answer such a sheet
 for your own footage (60 random tracks from that band, each crop shown without its label, are enough)
 and set `--queue-conf` to what it supports; 0.7 queues every one, as before.
