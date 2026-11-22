@@ -111,7 +111,7 @@ class Ahead(unittest.TestCase):
     def tearDown(self):
         pipeline._counted, video.segment = self._c, self._s
 
-    def refill(self, n, first_used_up, ahead, run=None, offline=True, max_usd=None):
+    def refill(self, n, first_used_up, ahead, run=None, offline=False, max_usd=None):
         self.sent = []
         res = [("p0", "fish", {}, sam_text(n, first_used_up), None)]
         return pipeline.refill_saturated(run or Run(), [("p0", "fish", "fish", "clip.mp4", None)], res, n, offline,
@@ -135,6 +135,15 @@ class Ahead(unittest.TestCase):
         serial_sent, sent = self.same_as_serial(1000, 78, 4)
         self.assertEqual(serial_sent[:6], [78, 108, 206, 256, 354, 452])
         self.assertGreater(len(sent), len(serial_sent))     # windows on the old grid past 78 and 206 were dropped
+
+    def test_offline_replay_sends_only_the_serial_windows(self):
+        """Cached calls do not wait, and a window off the path is not in a cache the serial chain filled: offline,
+        ahead (on by default in the CLI) asks for exactly the serial chain's windows, so no miss inflates cached_calls."""
+        self.used_up.update({78: 30, 206: 50, 354: 0})
+        serial = self.refill(1000, 78, 1, offline=True)
+        serial_sent = list(self.sent)
+        self.assertEqual(self.refill(1000, 78, 4, offline=True), serial)
+        self.assertEqual(self.sent, serial_sent)
 
     def test_short_clip_one_call(self):
         serial_sent, sent = self.same_as_serial(60, 22, 4)

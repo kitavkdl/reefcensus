@@ -640,7 +640,7 @@ def _refill_capped(run, name, s, max_usd, offline, over):
 
 
 def _refill_chain_ahead(run, job, s, n, offline, ahead, window, overlap, cap, max_usd):
-    """refill_saturated's chain for one pass with up to `ahead` windows in flight (opt-in, --refill-ahead).
+    """refill_saturated's chain for one pass with up to `ahead` windows in flight (--refill-ahead, 4 by default on the command line).
     The chain goes window by window: the next starts `window - overlap` frames on unless this one ran out of ids at r
     (then at r). That is known only when the answer is back, so the serial chain waits for every call (LONG1_cr9:
     141 calls, all one after another). Here the windows on the no-run-out grid (s, s+98, s+196, ...) are sent at
@@ -716,8 +716,10 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
     every call. At most `max_segments` calls per window's worth of frames.
     max_usd: a window that is not cached and would take the run past the per-video cap is not sent, and that pass
     stops there (cached windows are free and always used, so a replay is unchanged).
-    ahead: opt-in (--refill-ahead N): up to N windows of a chain in flight at once (_refill_chain_ahead); same
-    sources as the serial chain, sooner, for the calls it sends past a run-out. 1 (default): one at a time.
+    ahead: --refill-ahead N (4 by default on the command line, 1 here): up to N windows of a chain in flight at once
+    (_refill_chain_ahead); same sources as the serial chain, sooner, for the calls it sends past a run-out. 1: one at
+    a time. Offline it is always one at a time: cached calls do not wait, and a window off the path is not in a cache
+    the serial chain filled (it would only be counted as a cached call).
     Returns extra sources (name "<pass>+<start>", frames renumbered to the clip) to merge after all others."""
     out_res = {r[0]: r for r in results}
 
@@ -726,7 +728,7 @@ def refill_saturated(run, jobs, results, n, offline, max_segments=4, window=REFI
         s = tracks.saturation_frame(tracks.parse_boxes(out_res[name][3]))
         out = []
         cap = max_segments * -(-(n - s) // (window - overlap)) if s is not None else 0
-        if ahead > 1:
+        if ahead > 1 and not offline:
             return _refill_chain_ahead(run, job, s, n, offline, ahead, window, overlap, cap, max_usd)
         while s is not None and s < n - 2 and len(out) < cap:
             e = min(n, s + window)
@@ -888,8 +890,8 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
     refill (refill_saturated): a SAM call that used all 16 of its object ids is run again from the frame it
     ran out, so animals arriving later get ids. Extra passes merge last (lowest priority), so every existing track keeps
     its number. On by default since 11/3 (refill=False reproduces the evaluations made before that).
-    refill_ahead: opt-in (--refill-ahead N): those re-sends go up to N windows at a time (same result, sooner, and a
-    few calls paid for and dropped where a window runs out of ids). 1 (default): one after another, as before.
+    refill_ahead: --refill-ahead N (4 by default on the command line, 1 here): those re-sends go up to N windows at a time (same result, sooner, and a
+    few calls paid for and dropped where a window runs out of ids). 1: one after another, as before.
     clean: track hygiene (11/3 TF_52): tracks.repair_ids() gives back the ids SAM shuffled for a frame (boxes that
     hopped between fish, a fish's id on its shadow), tracks.split_jumps() cuts IDs SAM reused for another object, and the
     audit's "largest box" moment skips boxes cut by the frame edge. On by default since 11/3 (clean=False: the old runs).
@@ -2621,9 +2623,10 @@ if __name__ == "__main__":
                     help="a discovery that names people or a boat and no animal (camera still on deck) is not searched for")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
-    ap.add_argument("--refill-ahead", type=int, default=1, metavar="N",
-                    help="send up to N of those re-run windows at once (same result, sooner; a few calls past a window "
-                         "that runs out of ids are paid for and dropped: LONG1 about $0.40 an hour at N=4)")
+    ap.add_argument("--refill-ahead", type=int, default=4, metavar="N",
+                    help="send up to N of those re-run windows at once (default 4; same result, sooner; a few calls past "
+                         "a window that runs out of ids are paid for and dropped: LONG1 about $0.40 an hour at N=4; "
+                         "1 = one at a time, as before 11/22)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
@@ -2641,15 +2644,17 @@ if __name__ == "__main__":
                          "hour; a short video uses it when --max-usd is not given. Each segment gets an equal share, at "
                          "least the first pass of the --prompts words; what a segment leaves out is listed in capped")
     ap.add_argument("--probe-every", type=float, help="with --skip-empty: seconds between probes of a skipped stretch (default 600)")
-    ap.add_argument("--segment-workers", type=int, default=1, metavar="N",
-                    help="long videos: run N segments at once (same result, sooner; two fit a 4 GB memory cap, each "
-                         "more needs ~1.2 GB; not with --skip-empty)")
+    ap.add_argument("--segment-workers", type=int, metavar="N",
+                    help="long videos: run N segments at once (default 2, 1 with --skip-empty; same result, sooner; "
+                         "two fit a 4 GB memory cap, each more needs ~1.2 GB; 1 = one after another, which also "
+                         "brings back the upload ahead)")
     ap.add_argument("--resume", action="store_true",
                     help="long videos: segments an earlier run with this --id finished (same clip, options and code) "
                          "are not run again (after a crash, only the rest runs; not with --skip-empty)")
     ap.add_argument("--no-upload-ahead", action="store_true",
                     help="long videos: do not cut and upload the next segment while one runs (the default saves its "
-                         "first SAM call the ~360 MB upload; same result either way)")
+                         "first SAM call the ~360 MB upload; same result either way). Only with --segment-workers 1: "
+                         "with two at once the other segment keeps running while one uploads")
     a = ap.parse_args()
     if a.resume and a.skip_empty:
         ap.error("--resume is not used with --skip-empty")
@@ -2661,6 +2666,8 @@ if __name__ == "__main__":
         ap.error("--id may not end in __S<n> or __P<n>: those name a long video's segments and probes")
     if a.crowd_peak is not None and (a.crowd or a.crowd_peak < 1 or a.no_audit or a.no_crowd_look):
         ap.error("--crowd-peak needs a number >= 1, the audit and the crowd check, and not --crowd (which tiles the whole clip)")
+    if a.segment_workers is None:   # D-DEFAULTS: two at once (overnight T7: same result, 1.26-1.44x, <= 3.3 GB)
+        a.segment_workers = 1 if a.skip_empty else 2
     if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
         ap.error("--segment-workers needs a number >= 1, and only 1 with --skip-empty (its video cap is paid segment by segment)")
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end

@@ -506,6 +506,9 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     ahead = {}      # k -> dict(ev=Event set once the look-ahead has cut segment k, ok=whether that cut worked)
     look = (upload_ahead and workers == 1 and not kw.get("offline") and kw.get("lowlight") == "off"
             and kw.get("haze", "off") == "off")
+    if upload_ahead and workers > 1 and not kw.get("offline"):     # the CLI asks for both by default (D-DEFAULTS)
+        st["log"].append(f"{time.strftime('%H:%M:%S')} upload ahead not used with {workers} segments at once (the "
+                         "other segment keeps running while one uploads); --segment-workers 1 for it")
 
     def note(msg):
         with lock:      # written to status.json with the next segment's line

@@ -124,6 +124,39 @@ class SegmentWorkersFlag(unittest.TestCase):
             self.assertEqual(p.returncode, 2, p.stderr)
             self.assertIn("--segment-workers", p.stderr)
 
+    def cli(self, *extra):
+        """pipeline.py's command line, in this process, up to run_long: the options it hands a long video."""
+        import runpy
+        from fishcount import provenance
+        got = {}
+
+        class Stop(Exception):
+            pass
+
+        def run_long(*a, **k):
+            got.update(k)
+            raise Stop
+        with mock.patch.object(sys, "argv", ["pipeline.py", "v.mp4", "--id", "cli"] + list(extra)), \
+                mock.patch.object(video, "encoder_probe", lambda: {}), \
+                mock.patch.object(api, "encoder_check", lambda probe, write=True: None), \
+                mock.patch.object(provenance, "start", lambda *a, **k: None), \
+                mock.patch.object(provenance, "effective", lambda *a, **k: None), \
+                mock.patch.object(provenance, "finish", lambda *a, **k: None), \
+                mock.patch.object(video, "info", lambda p: dict(n_frames=18000, fps=5.0)), \
+                mock.patch.object(longvideo, "needs_split", lambda *a: True), \
+                mock.patch.object(longvideo, "run_long", run_long), self.assertRaises(Stop):
+            runpy.run_path(os.path.join(ROOT, "fishcount", "pipeline.py"), run_name="__main__")
+        return got
+
+    def test_defaults_two_segments_at_once_and_refill_ahead_four(self):
+        """D-DEFAULTS (owner's 11/22 answer to the overnight questions): T7 and T4 on by default on the command line;
+        --skip-empty, which pays its cap segment by segment, gets one segment at a time instead of an error."""
+        k = self.cli()
+        self.assertEqual((k["segment_workers"], k["refill_ahead"], k["upload_ahead"]), (2, 4, True))
+        self.assertEqual(self.cli("--skip-empty")["segment_workers"], 1)
+        k = self.cli("--segment-workers", "1", "--refill-ahead", "1")
+        self.assertEqual((k["segment_workers"], k["refill_ahead"]), (1, 1))
+
 
 class ReverseSlot(unittest.TestCase):
     def test_one_reverse_filter_at_a_time(self):

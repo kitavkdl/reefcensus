@@ -141,9 +141,11 @@ class UploadAhead(unittest.TestCase):
         self.assertEqual(len(self.waits), 4)
 
     def test_segment_workers_do_not_look_ahead(self):
-        self.run_long("pair", upload_ahead=True, segment_workers=2)
+        _, st = self.run_long("pair", upload_ahead=True, segment_workers=2)
         self.assertEqual(len(self.posts), 4)
         self.assertTrue(all(self.waits[s] > UP * 0.8 for s in self.waits))
+        # said once, since the CLI asks for both by default (D-DEFAULTS)
+        self.assertEqual(sum("upload ahead not used with 2 segments at once" in l for l in st["log"]), 1)
 
 
 if __name__ == "__main__":

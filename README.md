@@ -119,7 +119,7 @@ python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full p
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 147 tests including an exact
+**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 410 tests including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
@@ -140,6 +140,20 @@ water stays empty and a resting animal keeps its box (marked carried). The full 
 appears or moves (`fishcount/screen.py`; default cap $4 an hour; `--probe-every` needs `--skip-empty`). The result
 lists the stretches carried (`skipped`) and the span a cap left unanalysed to the end (`unsent`, counted 0). Any run
 lists the stages it skipped at its cap in `capped` (absent when none, so a run under its cap keeps its exact bytes).
+
+**Running many hours.** If a long run stops (a crash, a kill, a full disk, the network), run the same command again
+with `--resume`: the segments it finished are kept and only the rest runs (`batch.py` adds `--resume` itself). Keep
+`runs/` on a large disk: a finished long video keeps about 4.9 GB per hour of video (300 hours is about 1.46 TB), and a
+run warns before a segment when the disk looks too small for the rest. `runs/` sits in the repository folder; to put it
+elsewhere, make it a link before the first run (`ln -s /big/disk/runs runs`). Two segments run at once by default
+(`--segment-workers`, 1 with `--skip-empty`; two fit a 4 GB memory cap) and the 16-id re-runs send up to 4 windows at
+once (`--refill-ahead`, about $0.40 more an hour of busy video); both give the same result as one at a time, sooner.
+With `--segment-workers 1` the next segment's clip is uploaded while one runs instead (`--no-upload-ahead` turns that
+off). `--box-window`, `--resume`, `--skip-empty`, `--haze` and `--skip-people` stay opt-in.
+
+*Changed in D-DEFAULTS (11/22, after the evaluation; no paper number uses it):* `--segment-workers` was 1 and
+`--refill-ahead` 1. An offline replay sends the 16-id re-runs one at a time whatever `--refill-ahead` says (cached
+calls do not wait), so its result and call counts are as before.
 
 *Changed in D-NIGHT3 (after the evaluation; no paper number uses it):* a long video's cap was $1 per segment
 (`--max-usd`), and any first pass over it stopped the video (a segment with discovery on stopped at once); a short
