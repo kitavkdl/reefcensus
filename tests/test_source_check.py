@@ -23,7 +23,7 @@ def ff(*a):
 class SourceCheck(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.mkdtemp()
+        cls.tmp = cls.enterClassContext(tempfile.TemporaryDirectory())
         cls.full = cls.p("full.mp4")
         ff("-f", "lavfi", "-i", "testsrc2=size=192x108:rate=10", "-t", "40", "-c:v", "libx264", "-preset", "ultrafast",
            "-g", "20", "-movflags", "+faststart", "-pix_fmt", "yuv420p", cls.full)

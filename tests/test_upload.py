@@ -62,7 +62,7 @@ class Server:
 
 class Upload(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp()
+        self.d = self.enterContext(tempfile.TemporaryDirectory())
         self.clip = os.path.join(self.d, "c.mp4")
         with open(self.clip, "wb") as fh:
             fh.write(os.urandom(200_000))

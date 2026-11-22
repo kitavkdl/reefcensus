@@ -19,7 +19,7 @@ def enc(dst, crf, fps=5):
 class SeekCut(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.mkdtemp()
+        cls.tmp = cls.enterClassContext(tempfile.TemporaryDirectory())
         cls.src = os.path.join(cls.tmp, "src.mp4")
         # keyframes every 25 frames, so most cuts start between keyframes (the case a seek can get wrong)
         subprocess.run([video.FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i",

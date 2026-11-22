@@ -16,7 +16,7 @@ def status(d):
 
 class ErrorStatus(unittest.TestCase):
     def setUp(self):
-        self.runs = tempfile.mkdtemp()
+        self.runs = self.enterContext(tempfile.TemporaryDirectory())
         p = mock.patch.object(pipeline, "RUNS", self.runs)
         p.start()
         self.addCleanup(p.stop)

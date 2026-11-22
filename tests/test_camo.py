@@ -25,7 +25,7 @@ class CamoCandidates(unittest.TestCase):
         rock = cv2.normalize(rock, None, 50, 200, cv2.NORM_MINMAX)          # rock-like blotches, not flat grey
         bg = rock[:H, :W].copy()
         patch = rock[H:H + 40, W:W + 64].copy()                 # same texture and colours, another place
-        d = tempfile.mkdtemp()
+        d = self.enterContext(tempfile.TemporaryDirectory())
         clip = os.path.join(d, "c.mp4")
         vw = cv2.VideoWriter(clip, cv2.VideoWriter_fourcc(*"mp4v"), 5, (W, H))
         for t in range(n):

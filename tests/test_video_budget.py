@@ -731,6 +731,8 @@ class IdsAndBatch(unittest.TestCase):
         rid = f"test_shortcap_{os.getpid()}"
         run = os.path.join(ROOT, "runs", rid)
         self.addCleanup(shutil.rmtree, run, True)
+        runs = os.path.join(ROOT, "runs")       # --segment makes <rid>__S<n> next to it
+        self.addCleanup(lambda: [shutil.rmtree(os.path.join(runs, p), True) for p in os.listdir(runs) if p.startswith(rid + "__")])
         led = os.path.join(d, "ledger.jsonl")       # a bad key: should the check fail, nothing could be billed
         env = dict(os.environ, FISH_CACHE_DIR=d, FISH_LEDGER=led, META_API_KEY="invalid-test-key")
         p = subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), CLIP, "--id", rid,
@@ -751,6 +753,8 @@ class ProbeWindowDefault(unittest.TestCase):
         rid = f"test_k2_{os.getpid()}_{len(flags)}_{'_'.join(f.strip('-') for f in flags)}"
         run = os.path.join(ROOT, "runs", rid)
         self.addCleanup(shutil.rmtree, run, True)
+        runs = os.path.join(ROOT, "runs")       # --segment makes <rid>__S<n> next to it
+        self.addCleanup(lambda: [shutil.rmtree(os.path.join(runs, p), True) for p in os.listdir(runs) if p.startswith(rid + "__")])
         env = dict(os.environ, FISH_CACHE_DIR=d, FISH_LEDGER=os.path.join(d, "ledger.jsonl"))
         subprocess.run([sys.executable, os.path.join(ROOT, "fishcount", "pipeline.py"), CLIP, "--id", rid, "--offline",
                         "--discover", *flags], capture_output=True, text=True, env=env, timeout=300)

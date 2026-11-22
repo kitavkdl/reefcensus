@@ -62,7 +62,7 @@ class Server:
 
 class Retry(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp()
+        self.d = self.enterContext(tempfile.TemporaryDirectory())
         self.ledger = os.path.join(self.d, "ledger.jsonl")
         self.clip = os.path.join(self.d, "c.mp4")
         with open(self.clip, "wb") as fh:

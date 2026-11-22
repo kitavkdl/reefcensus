@@ -53,7 +53,7 @@ class GapFind(unittest.TestCase):
 
     def test_roundtrip_format(self):
         import json, tempfile
-        d = tempfile.mkdtemp()
+        d = self.enterContext(tempfile.TemporaryDirectory())
         p = os.path.join(d, "gt.json")
         json.dump(dict(frames={"0": [[1, 2, 3, 4, "x"]]}, n_frames=5), open(p, "w"))
         gt = g.load_gt(p)

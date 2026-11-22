@@ -11,7 +11,7 @@ class WholeBox(unittest.TestCase):
     def setUp(self):
         self.W, self.H, self.n = 640, 360, 30
         rng = np.random.default_rng(1)
-        self.clip = os.path.join(tempfile.mkdtemp(), "c.mp4")
+        self.clip = os.path.join(self.enterContext(tempfile.TemporaryDirectory()), "c.mp4")
         vw = cv2.VideoWriter(self.clip, cv2.VideoWriter_fourcc(*"mp4v"), 5, (self.W, self.H))
         for t in range(self.n):        # dark noisy water, a pale 80x50 oval moving 8 px a frame down-left
             f = rng.integers(0, 25, (self.H, self.W, 3), dtype=np.uint8)

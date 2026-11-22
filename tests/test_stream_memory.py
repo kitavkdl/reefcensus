@@ -11,11 +11,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 S004 = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")
 
 
+_TMP = tempfile.TemporaryDirectory()     # removed when the tests end (synthetic() is not a TestCase method)
+
+
 def synthetic(n, W=320, H=180, seed=0):
     """A still textured background with a dark square drifting right and a bright one drifting down."""
     rng = np.random.default_rng(seed)
     bg = cv2.GaussianBlur(rng.integers(60, 200, (H, W, 3), dtype=np.uint8), (0, 0), 2)
-    d = tempfile.mkdtemp()
+    d = tempfile.mkdtemp(dir=_TMP.name)
     clip = os.path.join(d, "c.mp4")
     vw = cv2.VideoWriter(clip, cv2.VideoWriter_fourcc(*"mp4v"), 5, (W, H))
     for t in range(n):

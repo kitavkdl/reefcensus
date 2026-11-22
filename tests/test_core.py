@@ -229,7 +229,7 @@ class LowLight(unittest.TestCase):
         import cv2
         import numpy as np
         from fishcount import video
-        clip = os.path.join(tempfile.mkdtemp(), "l.mp4")
+        clip = os.path.join(self.enterContext(tempfile.TemporaryDirectory()), "l.mp4")
         vw = cv2.VideoWriter(clip, cv2.VideoWriter_fourcc(*"mp4v"), 5, (320, 180))
         rng = np.random.default_rng(1)
         for i in range(23):

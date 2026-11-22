@@ -31,7 +31,7 @@ def refill_stage(run, usd):
 
 class LedgerTags(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp()
+        self.d = self.enterContext(tempfile.TemporaryDirectory())
         self.led = os.path.join(self.d, "ledger.jsonl")
         self.p = [mock.patch.object(api, "LEDGER", self.led), mock.patch.object(api, "CACHE", self.d)]
         [p.start() for p in self.p]

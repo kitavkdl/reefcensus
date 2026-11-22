@@ -10,7 +10,7 @@ from test_call_retry import Server
 
 class CacheFile(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp()
+        self.d = self.enterContext(tempfile.TemporaryDirectory())
         self.clip = os.path.join(self.d, "c.mp4")
         with open(self.clip, "wb") as fh:
             fh.write(os.urandom(10_000))

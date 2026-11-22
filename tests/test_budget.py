@@ -19,7 +19,7 @@ class FakeResp:
 
 class BudgetUnderParallelCalls(unittest.TestCase):
     def test_parallel_spark_calls_never_pass_the_cap(self):
-        d = tempfile.mkdtemp()
+        d = self.enterContext(tempfile.TemporaryDirectory())
         with mock.patch.object(api, "LEDGER", os.path.join(d, "ledger.jsonl")), \
                 mock.patch.object(api, "CACHE", os.path.join(d, "cache")), \
                 mock.patch.object(api.requests, "post", lambda *a, **k: FakeResp()), \
@@ -42,7 +42,7 @@ class BudgetUnderParallelCalls(unittest.TestCase):
             self.assertEqual(open(api.LEDGER + ".resv").read(), "")   # nothing left held
 
     def test_a_dead_process_does_not_hold_budget(self):
-        d = tempfile.mkdtemp()
+        d = self.enterContext(tempfile.TemporaryDirectory())
         led = os.path.join(d, "ledger.jsonl")
         with open(led + ".resv", "w") as f:
             f.write(json.dumps(dict(id="x", pid=2 ** 22 + 12345, usd=5.0)) + "\n")
