@@ -2513,6 +2513,9 @@ if __name__ == "__main__":
     ap.add_argument("--resume", action="store_true",
                     help="long videos: segments an earlier run with this --id finished (same clip, options and code) "
                          "are not run again (after a crash, only the rest runs; not with --skip-empty)")
+    ap.add_argument("--no-upload-ahead", action="store_true",
+                    help="long videos: do not cut and upload the next segment while one runs (the default saves its "
+                         "first SAM call the ~360 MB upload; same result either way)")
     a = ap.parse_args()
     if a.resume and a.skip_empty:
         ap.error("--resume is not used with --skip-empty")
@@ -2531,7 +2534,8 @@ if __name__ == "__main__":
                                crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                                probe_window=a.probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
-                               segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume)
+                               segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume,
+                               upload_ahead=not a.no_upload_ahead)
     else:
         r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, a.max_usd, a.discover,
                          lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,

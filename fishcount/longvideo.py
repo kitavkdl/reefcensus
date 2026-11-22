@@ -299,8 +299,19 @@ def run_long(src, rid=None, *a, **kw):
         raise
 
 
+def _kept(sd, fp, resume):
+    """True when --resume finds a finished run of this segment with the same fingerprint (_fingerprint)."""
+    rp = os.path.join(sd, "resume.json")
+    if not (resume and os.path.exists(rp) and os.path.exists(os.path.join(sd, "result.json"))):
+        return False
+    try:
+        return json.load(open(rp)) == fp
+    except ValueError:
+        return False
+
+
 def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
-              segment_workers=1, resume=False, **kw):
+              segment_workers=1, resume=False, upload_ahead=False, **kw):
     """Split `src` into segments of at most seg_s seconds, run the pipeline on each, merge. kw -> run_pipeline.
     skip_empty: only the stretches screen.scan picks are sent (_run_skipping); max_usd_video caps the whole video
     (default $4 an hour), probe_every_s overrides screen.PROBE_EVERY_S.
@@ -313,7 +324,15 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     resume: a segment whose folder already holds a finished run of the same clip bytes, options and code
     (resume.json, written whenever a segment finishes) is not run again; the merge reads its saved result. After a crash
     (OOM, network, a bug in the merge) only the unfinished segments run: a fully cached 600-s segment still takes about
-    5 minutes to replay. Not used with skip_empty."""
+    5 minutes to replay. Not used with skip_empty.
+    upload_ahead (on in the CLI, --no-upload-ahead; off here so library callers and tests never upload unasked): while
+    segment k runs, segment k+1 is cut and its clip uploaded in a background thread, so its first SAM call finds the
+    file id waiting instead of sending ~360 MB first (round 3, 11/21c: 4.5-11 min a segment on this server's 0.53-1.3
+    MB/s uplink, against 27-43 min for a live LONG1 segment). The upload only gives SAM a file id for the same bytes
+    (api._upload, keyed by content; a call for a clip still going up waits for that upload), so answers, cache keys
+    and the merge are unchanged. Only one segment at a time, live, and when the segment's clip.mp4 is the cut's bytes
+    (not brightened, not --haze); a segment --resume keeps is not uploaded; a failed upload ahead is logged and left
+    to the segment's own first call. A fully cached live rerun uploads clips it does not need (free, uplink only)."""
     rid = rid or time.strftime("%m%d-%H%M%S")
     d = os.path.join(pipeline.RUNS, rid)
     os.makedirs(d, exist_ok=True)
@@ -352,23 +371,53 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     tally, lock, failed = dict(live=0, cached=0, billed=0.0), threading.Lock(), threading.Event()
     ran = dict(usd=[], s=[], finished=0)     # segments run (not kept) this time: their spend and wall time
     room = dict(seg=[], review=[], warned=False)    # every finished segment's folder bytes, for disk_need
+    ahead = {}      # k -> dict(ev=Event set once the look-ahead has cut segment k, ok=whether that cut worked)
+    look = (upload_ahead and workers == 1 and not kw.get("offline") and kw.get("lowlight") == "off"
+            and kw.get("haze", "off") == "off")
+
+    def note(msg):
+        with lock:      # written to status.json with the next segment's line
+            st["log"].append(f"{time.strftime('%H:%M:%S')} {msg}")
+
+    def look_ahead(k):
+        """Cut segment k and upload its clip while k-1 runs (upload_ahead). Never raises."""
+        start, n = segs[k]
+        sp, a = os.path.join(d, f"seg{k + 1}.mp4"), ahead[k]
+        try:
+            cut(full, sp, start, n)
+            a["ok"] = True
+        except Exception as e:
+            note(f"segment S{k + 1} cut ahead failed ({type(e).__name__}: {e}); it is cut when it starts")
+            return
+        finally:
+            a["ev"].set()
+        try:
+            if failed.is_set() or _kept(os.path.join(pipeline.RUNS, f"{rid}__S{k + 1}"), _fingerprint(sp, kw), resume):
+                return
+            t = time.time()
+            api._upload(sp, api._key())
+            note(f"segment S{k + 1} uploaded ahead in {time.time() - t:.0f}s")
+        except Exception as e:
+            note(f"segment S{k + 1} upload ahead failed ({type(e).__name__}: {str(e)[:120]}); "
+                 "its first SAM call uploads it")
 
     def one(k, start, n):
         if failed.is_set():     # another segment raised: what has not started is not sent
             return None
         t_seg = time.time()
         sp = os.path.join(d, f"seg{k + 1}.mp4")
-        cut(full, sp, start, n)
+        if k in ahead:
+            ahead[k]["ev"].wait()
+        if not (k in ahead and ahead[k]["ok"]):
+            cut(full, sp, start, n)
+        if look and k + 1 < len(segs):
+            ahead[k + 1] = dict(ev=threading.Event(), ok=False)
+            threading.Thread(target=look_ahead, args=(k + 1,), daemon=True).start()
         srid = f"{rid}__S{k + 1}"
         sd = os.path.join(pipeline.RUNS, srid)
         fp = _fingerprint(sp, kw)
         rp = os.path.join(sd, "resume.json")
-        kept = False
-        if resume and os.path.exists(rp) and os.path.exists(os.path.join(sd, "result.json")):
-            try:
-                kept = json.load(open(rp)) == fp
-            except ValueError:
-                kept = False
+        kept = _kept(sd, fp, resume)
         if not kept:
             if os.path.exists(rp):      # a run that dies half-way must not leave an older fingerprint on its result
                 os.remove(rp)
