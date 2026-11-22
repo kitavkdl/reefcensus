@@ -159,6 +159,14 @@ class Shares(unittest.TestCase):
         self.assertIn("raised", note)
         self.assertEqual(longvideo.video_cap([0.6] * 6, None, 6.0), (6.0, None))
 
+    def test_short_video_cap_default_is_raised_to_its_first_pass(self):
+        self.assertEqual(longvideo.short_cap(None, None, 0.6), (1.0, None))
+        cap, note = longvideo.short_cap(None, None, 1.2)
+        self.assertEqual(cap, 1.2)
+        self.assertIn("raised", note)
+        self.assertEqual(longvideo.short_cap(0.5, 3.0, 1.2), (0.5, None))     # a cap set is kept (the run errors before paying)
+        self.assertEqual(longvideo.short_cap(None, 3.0, 1.2), (3.0, None))
+
     def test_floor_counts_the_prompts_words(self):
         self.assertAlmostEqual(longvideo.first_pass_floor(3000, None), 0.6)
         self.assertAlmostEqual(longvideo.first_pass_floor(3000, ["fish", "crab", "fish"]), 1.2)

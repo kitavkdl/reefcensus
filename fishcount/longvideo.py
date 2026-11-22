@@ -66,6 +66,18 @@ def video_cap(floors, given, default, offline=False):
     return default, None
 
 
+def short_cap(max_usd, max_usd_video, floor):
+    """A short video's cap: --max-usd, else --max-usd-video, else $1 raised to its first pass F when below it (as a
+    long video's default is) -> (cap, note or None)."""
+    if max_usd is not None:
+        return max_usd, None
+    if max_usd_video is not None:
+        return max_usd_video, None
+    if floor > 1.0 + 1e-9:
+        return floor, f"cap raised from the default $1.00 to ${floor:.2f}, the first pass of the --prompts words"
+    return 1.0, None
+
+
 def shares(floors, cap, ceiling=None):
     """Each segment's cap: an equal share of the video cap (at most ceiling, --max-usd), never below its floor F_k.
     Fixed: the same whatever order or how many at once the segments run, and a segment that spends less passes

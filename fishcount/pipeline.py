@@ -2650,11 +2650,14 @@ if __name__ == "__main__":
     long_path = longvideo.needs_split(src_info, a.segment, a.skip_empty)
     # K2: long videos probe discovered words by default; the options a run really used go into provenance and status
     probe_window = a.probe_window if a.probe_window is not None or a.no_probe_window or not long_path else PROBE_WINDOW
-    short_cap = a.max_usd if a.max_usd is not None else a.max_usd_video if a.max_usd_video is not None else 1.0
+    short_floor = 0.0 if long_path else longvideo.first_pass_floor(round(src_info["n_frames"] / src_info["fps"] * 5), a.prompts)
+    short_cap, raised = longvideo.short_cap(a.max_usd, a.max_usd_video, short_floor)
+    if raised:
+        print(raised, file=sys.stderr)
     effective = dict(probe_window=probe_window, max_usd=a.max_usd if long_path else short_cap, max_usd_video=a.max_usd_video)
     provenance.effective(run_dir, effective)
     if not long_path and not a.offline:     # a warning only: cached calls are free (a long video warns in run_long)
-        warn = api.budget_warning(longvideo.first_pass_floor(round(src_info["n_frames"] / src_info["fps"] * 5), a.prompts))
+        warn = api.budget_warning(short_floor)
         if warn:
             print(f"WARNING: {warn}", file=sys.stderr)
     try:
