@@ -197,7 +197,8 @@ def start_run(body):
             # discovery already has Spark look at the clip; the scout look only runs when discovery is off
             disc = bool(body.get("discover", True))
             pipeline.run_pipeline(src, rid, offline=not live, do_scout=not disc, do_audit=True, do_zoom=False, prompts=prompts,
-                                  max_usd=cap, do_discover=disc, site=site)
+                                  max_usd=cap, do_discover=disc, site=site,
+                                  queue_conf=pipeline.QUEUE_CONF)
         except Exception as e:      # surface the reason in status.json so the UI can show it
             p = os.path.join(RUNS, rid, "status.json")
             st = _json(p, dict(id=rid, log=[]))

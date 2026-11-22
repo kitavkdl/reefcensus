@@ -245,6 +245,8 @@ def merge(rid, src_name, segs, fps, out_dir=None, n_total=None, carry=None, vide
                 if os.path.exists(a):
                     shutil.copy(a, os.path.join(d, "thumbs", f"{nm}{suffix}"))
         R["auto_labels"].update({p + t: l for t, l in res.get("auto_labels", {}).items()})
+        if "queue_conf" in res:     # --queue-conf (pipeline.unqueue): only when not 0.7, as in a segment's result
+            R["queue_conf"] = res["queue_conf"]
         for key in ("discovered", "signs", "recovered"):
             R[key] += [dict(x, segment=tag) if isinstance(x, dict) else x for x in res.get(key, [])]
         R["peak_checks"] += [dict(c, frame=c["frame"] + start, segment=tag) for c in res.get("peak_checks", [])]

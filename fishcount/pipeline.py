@@ -864,11 +864,14 @@ def run_pipeline(src, rid=None, *a, **kw):
 def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
                  misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1,
-                 crowd_peak=None, _peak=None, _run=None, haze="off"):
+                 crowd_peak=None, _peak=None, _run=None, haze="off", queue_conf=0.7):
     """haze: opt-in "auto" / "on" (video.is_hazy, video.clahe_frame): a clip that is not dark but washed out (median
     L p95-p5 below video.HAZE_WIDTH) is analysed after CLAHE on L alone; the original is kept as clip_original.mp4 and
     the numbers go into result["video"]["lowlight"]["haze"]. A dark clip's brightening already includes CLAHE.
     "off" (default): nothing changes.
+    queue_conf: a counted yes from a request or discovered word (UNQUEUE_SOURCE) with queue_conf <= confidence < 0.7
+    and no other reason to ask a person leaves the human queue (unqueue). QUEUE_CONF (0.5) on the command line and
+    the review screen; 0.7 (default here): every one is queued, as before.
     crowd_peak: opt-in half width in frames (CROWD_PEAK). After the crowd check, every row it marks a lower bound has
     the frames within crowd_peak of its peak frame sent as the 3x2 crowd tiles (peak_windows, peak_tiles), and the
     run is made again in the same folder with those tile tracks merged last, so they are audited, peak-checked and
@@ -1270,6 +1273,9 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
             run.stage("verify", f"crowd peak: lower bound(s) at frame(s) {sorted({c['frame'] for c in crowd if c.get('lower_bound')})}; "
                       f"3x2 tiles on frames {', '.join(f'{s}-{e - 1}' for s, e in win)}, then the run again with them")
             return run_pipeline(**dict(args, rid=rid, _peak=dict(windows=win, first=crowd), _run=run))
+    if do_audit and queue_conf < 0.7:
+        left = unqueue(trk, verdicts, labels, queue_conf)
+        run.stage("audit", f"{len(left)} counted track(s) with a yes of {queue_conf:g}-0.7 left out of the human queue (--queue-conf)")
     live = {}       # frames a track still holds after verify_peaks/drop_nested removed boxes (trk keeps the pre-removal list)
     for f, ks in frames.items():
         for k in ks:
@@ -1283,6 +1289,8 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
         result["site"] = dict(name=site, entries=site_entries)
     if _peak:
         result["crowd_peak"] = dict(half=crowd_peak, windows=_peak["windows"], first_pass=_peak["first"])
+    if queue_conf != 0.7:      # only then, so other results keep their exact bytes
+        result["queue_conf"] = queue_conf
     if run.capped:      # only when a stage was skipped at the cap, so other results keep their exact bytes
         result["capped"] = run.capped
     run.save("result.json", result)
@@ -2572,7 +2580,32 @@ def needs_review(v):
         return not (c.get("is_animal") is True and _conf(c) >= 0.5) or _conf(v) < 0.7
     if v.get("relabelled"):
         return False
+    if v.get("unqueued"):       # a counted mid-confidence yes (unqueue, --queue-conf)
+        return False
     return _conf(v) < 0.7 or v.get("is_target") is False
+
+
+# D-H1APPLY (owner 11/22): a blind sheet of 60 tracks from the 0.5-0.7 band of one video (LONG1, 613 tracks) had 1
+# that was not a fish (1.9%, 95% upper 9.9%; none of the 50 request/discovered-word tracks; the one was a motion
+# track). One video only: measure your own (a sheet like report/details.md says) and set --queue-conf.
+QUEUE_CONF = 0.5                    # the command line's and the review screen's --queue-conf
+UNQUEUE_SOURCE = re.compile(r"[pd]\d")      # request words (p0, p0+177 refill) and discovered words (d0): the tracks the sheet measured
+
+
+def unqueue(trk, verdicts, labels, conf):
+    """Mark the counted mid-confidence yes tracks that leave the human queue (needs_review is then False) and return
+    them. Only tracks counted under a label (left out of the queue, an uncounted one would be lost to everyone), only
+    from UNQUEUE_SOURCE: a motion track is counted only on a confident yes and the queue is where a person restores
+    it, and camo, crowd tiles, crowd-peak tiles, site memory, zoom and the missed-animal look were not measured.
+    Never a track with another reason to ask (shadow, a later look's other name, a second look, a relabel)."""
+    out = []
+    for t, v in verdicts.items():
+        if (labels.get(t) and UNQUEUE_SOURCE.match(trk[t]["source"]) and v.get("is_target") is True
+                and conf <= _conf(v) < 0.7 and v.get("confirm") is None and not v.get("relabelled")
+                and not (v.get("shadow") or v.get("peak_doubt") or v.get("name_disagrees"))):
+            v["unqueued"] = True
+            out.append(t)
+    return out
 
 
 def auto_labels(trk, verdicts):
@@ -2623,6 +2656,10 @@ if __name__ == "__main__":
                     help="a discovery that names people or a boat and no animal (camera still on deck) is not searched for")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
+    ap.add_argument("--queue-conf", type=float, default=QUEUE_CONF, metavar="C",
+                    help=f"a counted yes from a request or discovered word with confidence C-0.7 is not put in the human "
+                         f"queue (default {QUEUE_CONF}: one video's sheet found 1 of 53 not a fish; 0.7 = queue every one, "
+                         "as before 11/22)")
     ap.add_argument("--refill-ahead", type=int, default=4, metavar="N",
                     help="send up to N of those re-run windows at once (default 4; same result, sooner; a few calls past "
                          "a window that runs out of ids are paid for and dropped: LONG1 about $0.40 an hour at N=4; "
@@ -2666,6 +2703,8 @@ if __name__ == "__main__":
         ap.error("--id may not end in __S<n> or __P<n>: those name a long video's segments and probes")
     if a.crowd_peak is not None and (a.crowd or a.crowd_peak < 1 or a.no_audit or a.no_crowd_look):
         ap.error("--crowd-peak needs a number >= 1, the audit and the crowd check, and not --crowd (which tiles the whole clip)")
+    if not 0 <= a.queue_conf <= 1:
+        ap.error("--queue-conf needs a confidence from 0 to 1 (0.7 = queue every mid-confidence yes, as before)")
     if a.segment_workers is None:   # D-DEFAULTS: two at once (overnight T7: same result, 1.26-1.44x, <= 3.3 GB)
         a.segment_workers = 1 if a.skip_empty else 2
     if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
@@ -2700,14 +2739,14 @@ if __name__ == "__main__":
                                    crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                    misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                                    probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
-                                   segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume,
+                                   segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume, queue_conf=a.queue_conf,
                                    upload_ahead=not a.no_upload_ahead)
         else:
             r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, short_cap, a.discover,
                              lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                              camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                              probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
-                             crowd_peak=a.crowd_peak, haze=a.haze)
+                             crowd_peak=a.crowd_peak, haze=a.haze, queue_conf=a.queue_conf)
     except BaseException as e:
         provenance.finish(run_dir, error=f"{type(e).__name__}: {e}")
         raise
