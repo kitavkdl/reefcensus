@@ -222,6 +222,9 @@ def main(argv=None):
     if not paths:
         ap.error("no video files in the inputs")
     rids = run_ids(paths, a.prefix)
+    enc_warn = pipeline.api.encoder_check(pipeline.video.encoder_probe(), write=False)   # once here, not only in logs/
+    if enc_warn:
+        print(f"WARNING: {enc_warn}", flush=True)
     os.makedirs(os.path.join(a.out, "logs"), exist_ok=True)
     states = {}
     write_tables(a.out, paths, rids, states)

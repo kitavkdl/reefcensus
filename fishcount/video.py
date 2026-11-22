@@ -30,6 +30,32 @@ def _x264_asm_cap():
 X264_ARGS = ["-threads", X264_THREADS] + _x264_asm_cap()
 
 
+def encoder_probe():
+    """sha256 (24 hex) of a 4 s synthetic clip (ffmpeg's testsrc2, 640x360, 5 fps) encoded exactly as ingest encodes
+    (libx264 X264_ARGS veryfast crf 20 yuv420p, mp4), or None if ffmpeg fails. It changes when this machine would
+    re-encode a video to other bytes, and so miss the cache (keyed by clip content): checked 11/21c on three real
+    sources (TNC 29.97 fps, GoPro 29.97 fps, DH11) with x264 at 4 and 12 threads and ffmpeg 9.0.2 instead of 7.0.2:
+    each change moved all three clips' bytes and this probe's; asm SSE4.2 and the uncapped AVX-512 code moved
+    neither. Rare clip-specific changes (DH3's reversed zoom cell under AVX-512, above) it may not see. ~0.05 s."""
+    import hashlib, tempfile
+    fd, dst = tempfile.mkstemp(suffix=".mp4")
+    os.close(fd)
+    try:
+        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
+                        "-i", "testsrc2=size=640x360:rate=5:duration=4", "-vf", "fps=5,scale='min(1920,iw)':-2", "-an", "-c:v", "libx264", *X264_ARGS,
+                        "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", dst],
+                       check=True, capture_output=True, timeout=60)
+        with open(dst, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()[:24]
+    except (OSError, subprocess.SubprocessError):
+        return None
+    finally:
+        try:
+            os.remove(dst)
+        except OSError:
+            pass
+
+
 def ingest(src, dst, fps=5, max_w=1920, max_seconds=600):
     """Re-encode `src` to H.264 at `fps`, width <= max_w, no audio. Returns dict(n_frames, fps, width, height,
     source_warnings): the list source_warnings() makes, empty for an intact file. The output bytes are as before."""

@@ -93,15 +93,21 @@ def _save(p, d):
     os.replace(tmp, p)
 
 
-def start(run_dir, argv, src):
-    """Add this start's entry to <run_dir>/provenance.json. Returns the entry (or None if it could not be written)."""
+def start(run_dir, argv, src, probe=None, encoder_warning=None):
+    """Add this start's entry to <run_dir>/provenance.json. Returns the entry (or None if it could not be written).
+    probe: video.encoder_probe()'s sha, kept as encoder.probe; encoder_warning: api.encoder_check's warning, if any."""
     try:
         os.makedirs(run_dir, exist_ok=True)
         p = os.path.join(run_dir, "provenance.json")
         d = _load(p)
-        e = dict(started=_now(), command=list(argv), code=code(), models=models(), encoder=encoder(),
+        enc = encoder()
+        if probe:
+            enc["probe"] = probe
+        e = dict(started=_now(), command=list(argv), code=code(), models=models(), encoder=enc,
                  machine=machine(), environment={k: os.environ[k] for k in ENV_KEYS if k in os.environ},
                  source=source(src))
+        if encoder_warning:
+            e["encoder_warning"] = encoder_warning
         d["runs"].append(e)
         _save(p, d)
         return e

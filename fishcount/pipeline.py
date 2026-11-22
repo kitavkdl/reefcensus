@@ -2528,7 +2528,11 @@ if __name__ == "__main__":
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
     from fishcount import longvideo, provenance
     run_dir = os.path.join(RUNS, a.id)
-    provenance.start(run_dir, sys.argv, a.video)    # code, options, models, encoder: <run>/provenance.json
+    probe = video.encoder_probe()        # would this machine re-encode to the bytes the cache was filled with?
+    enc_warn = api.encoder_check(probe, write=not a.offline)
+    if enc_warn:
+        print(f"WARNING: {enc_warn}", file=sys.stderr)
+    provenance.start(run_dir, sys.argv, a.video, probe=probe, encoder_warning=enc_warn)   # <run>/provenance.json
     try:
         if longvideo.needs_split(video.info(a.video), a.segment, a.skip_empty):
             r = longvideo.run_long(a.video, a.id, min(a.segment or longvideo.MAX_SEGMENT_S, longvideo.MAX_SEGMENT_S),

@@ -178,6 +178,36 @@ def _write_cache(cp, obj):
     os.replace(tmp, cp)
 
 
+ENCODER_FILE = "encoder_probe.json"
+
+
+def encoder_check(probe, write=True):
+    """Compare this machine's video.encoder_probe() sha `probe` with the one recorded in <CACHE>/encoder_probe.json.
+    Returns a warning (str) when they differ, else None; never raises. With no record yet and write=True (a live run,
+    which fills the cache) the probe is recorded. A different probe means this machine re-encodes videos to other
+    bytes than the one that filled the cache, so cached answers for re-encoded clips are missed and called (billed)
+    again, and an offline replay says "not cached" (round 3, 11/21c: four customer views asked for a warning before
+    paying twice; the first estimate already counts the misses, but did not say why). The record is not replaced."""
+    if not probe:
+        return None
+    p = os.path.join(CACHE, ENCODER_FILE)
+    try:
+        got = _read_cache(p)
+        if got is None or not isinstance(got.get("probe"), str):
+            if write:
+                os.makedirs(CACHE, exist_ok=True)
+                _write_cache(p, {"probe": probe, "recorded": time.strftime("%Y-%m-%dT%H:%M:%S%z")})
+            return None
+        if got["probe"] == probe:
+            return None
+        return (f"this machine's video encoder makes other clip bytes than the one that filled {CACHE} (encoder probe "
+                f"{probe} vs {got['probe']} recorded {got.get('recorded', '?')}): cached answers for re-encoded clips "
+                f"will be missed and paid for again (offline: 'not cached'). Usual causes: another ffmpeg / "
+                f"imageio-ffmpeg version, or video.X264_ARGS changed. If the old cache is not needed, remove {p}.")
+    except Exception:     # a warning helper never stops a run
+        return None
+
+
 def file_sha(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
