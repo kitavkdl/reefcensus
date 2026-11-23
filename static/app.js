@@ -148,10 +148,16 @@ function drawStrip() {
     ...[0, 0.25, 0.5, 0.75, 1].map((p) => el("span", {}, `${(dur * p).toFixed(0)} s`))), el("span"));
   const head = el("div", { class: "head" });
   fill(strip, ...(lanes.length ? lanes : [el("p", { class: "empty", style: "padding:0 12px" }, "Nothing was counted in this clip.")]), axis, head);
-  const reviewed = run.n_reviewed;
+  const reviewed = run.n_reviewed + (run.n_renames || 0), rules = run.renames || [];
   $("strip").nextElementSibling?.classList?.contains("stale") && $("strip").nextElementSibling.remove();
-  if (reviewed) strip.after(el("p", { class: "stale" },
-    `The video shows the automatic labels. Counts, lanes and the table include your ${reviewed} edit${reviewed > 1 ? "s" : ""}.`));
+  if (reviewed) strip.after(el("div", { class: "stale" },
+    el("p", {}, `The video shows the automatic labels. Counts, lanes and the table include your ${reviewed} edit${reviewed > 1 ? "s" : ""}.`)));
+  // the group renames in force, one line each above the count tables (server: effective() gives each rule's track count)
+  $("renames")?.remove();
+  if (rules.length) $("askedPanel").before(el("section", { class: "panel renames", id: "renames", "aria-label": "Group renames" },
+    ...rules.map((r) => { const k = (r.accept || []).length; return el("p", {}, `${r.from} → ${r.to} (${r.tracks} track${r.tracks === 1 ? "" : "s"}`,
+      k ? `, ${k} marked reviewed` : "", ") ", el("button", { class: "btn ghost small", onclick: () => renameGroup({ undo: r.id }) }, "Undo")); }),
+    el("p", { class: "why" }, "While a group rename is on, a single track of that group cannot go back to the old name; Undo the rename instead.")));
   movePlayhead();
 }
 
@@ -206,7 +212,22 @@ function countRow(name, m, origin, extra = []) {
         ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
       : null,
     crowdNote(m),
-    ...extra);
+    ...extra,
+    renameAll(name, m));
+}
+
+// rename a whole row (server: rename_group). Its still-queued tracks stay in the queue unless the box is ticked.
+function renameAll(name, m) {
+  const run = state.run, k = run.queue.filter((q) => !q.reviewed && q.label === name).length;
+  const back = (run.renames || []).find((r) => r.to === name);
+  const input = el("input", { value: name, required: true, pattern: ".*\\S.*", "aria-label": `New name for every ${name}` });
+  const box = k ? el("input", { type: "checkbox" }) : null;
+  const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); renameGroup({ from: name, to: input.value, accept: !!box?.checked }); } },
+    el("div", {}, `Rename all ${m.tracks} track${m.tracks === 1 ? "" : "s"} of ${name} to:`), el("div", { class: "row" }, input, el("button", { class: "btn small" }, "Rename all")),
+    box ? el("label", {}, box, ` ${k} of them ${k === 1 ? "is" : "are"} still waiting for review: mark ${k === 1 ? "it" : "them"} reviewed too`) : null,
+    back ? el("div", { class: "why" }, `This row was renamed from ${back.from}; to go back, Undo that rename instead.`) : null);
+  return el("div", { class: "renameall" },
+    el("button", { class: "btn ghost small", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); } }, "Rename all"), form);
 }
 
 function drawAsked() {
@@ -216,7 +237,7 @@ function drawAsked() {
   fill($("askedPanel"), 
     el("h2", {}, `You asked for ${words.join(", ")}`, el("small", {}, "SAM 3.1 tracks only the words it is given. MaxN is the most seen in one frame.")),
     ...(rows.length ? rows.map(([n, m]) => countRow(n, m, "asked"))
-      : [el("p", { class: "empty" }, `No ${words.join(" or ")} in this clip.`)]));
+      : [el("p", { class: "empty" }, `SAM tracked nothing as ${words.map((w) => `“${w}”`).join(" or ")} in this clip.` + (Object.values(run.origin || {}).includes("found") ? " What it did find is under Found without being asked." : ""))]));
 }
 
 function drawFound() {
@@ -302,7 +323,9 @@ function groupTotal(rows, name) {
 
 const labelOf = (run, t) => {
   const r = run.review || {}, a = run.auto_labels || {};
-  return t in r ? r[t] : t in a ? a[t] : run.tracks[t].label;
+  let l = t in r ? r[t] : t in a ? a[t] : run.tracks[t].label;
+  for (const x of run.renames || []) if (l != null && l === x.from) l = x.to;     // group renames, in order (server: settle.renamed)
+  return l;
 };
 const KIND = { backfill: "Played backwards", zoom: "Zoomed in", cell: "Closer look", sign: "Checked a sign", motion: "Motion look", "motion-scan": "Motion look" };
 function motionStep(run, r) {
@@ -360,7 +383,11 @@ function drawQueue() {
       it.confidence != null ? [", ", el("span", { class: "num" }, `${Math.round(it.confidence * 100)}%`), " sure"] : null);
     const body = [said, it.from_site ? el("div", { class: "why" }, `Found because site memory asked SAM for '${it.from_site}'.`) : null,
       it.reason ? el("div", { class: "why" }, it.reason) : null];
-    if (it.reviewed) {
+    if (it.reviewed && !(it.track in (run.review || {}))) {    // marked reviewed by a group rename's check box
+      body.push(el("div", { class: "set" }, `Marked reviewed with the group rename to ${it.label}`),
+        el("div", { class: "why" }, "Undo that rename to put it back in the queue, or answer it below."),
+        el("div", { class: "acts" }, el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")));
+    } else if (it.reviewed) {
       body.push(el("div", { class: "set" }, it.label ? `You set: ${it.label}` : "You removed it from the counts"),
         it.remembered ? el("div", { class: "why" }, `Remembered for site ${run.site.name}: '${it.remembered}' is tried first on its next video.`) : null,
         el("div", { class: "acts" }, el("button", { class: "btn ghost small", onclick: () => review(it.track, "__undo__") }, "Undo")));
@@ -395,6 +422,11 @@ function drawQueue() {
 async function review(track, label) {
   state.run = StaticReview.review(state.run, track, label);
   drawRun(false);
+}
+
+async function renameGroup(body) {
+  try { state.run = StaticReview.renameGroup(state.run, body); drawRun(false); }
+  catch (e) { alert(`Could not rename: ${e.message}`); }
 }
 
 function zoom(src, cap) {
@@ -466,3 +498,10 @@ $("lbClose").onclick = () => $("lightbox").close();
 loadRuns();
 for (const [b, f, n] of [["exportBtn", StaticReview.exportCsv, "_maxn.csv"], ["exportGaBtn", StaticReview.globalArchiveCsv, "_globalarchive_maxn.csv"]])
   $(b).addEventListener("click", (e) => { if (!state.run) return; e.preventDefault(); StaticReview.download(state.id + n, f(state.run)); });
+/* static-shot hook */ { const drawApp = drawRun; drawRun = function (w) { drawApp(w); StaticShot.draw(state.run); }; }
+StaticShot.show = {"cr11_s002": "small red crab", "cr11_s004": "caridean shrimp", "cr11_s003": "chambered nautilus", "cr11_s001": "chambered nautilus"};
+$("runSel").addEventListener("change", () => { if (!state.run) StaticShot.draw(null); });   // a new clip is loading
+document.querySelectorAll(".chip[data-run]").forEach((c) => c.addEventListener("click", () => {
+  $("runSel").value = c.dataset.run; $("runSel").dispatchEvent(new Event("change")); }));
+$("shotCsv").addEventListener("click", () => $("exportBtn").click());
+$("shotGa").addEventListener("click", () => $("exportGaBtn").click());
