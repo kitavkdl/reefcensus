@@ -183,12 +183,13 @@ def effective(rid):
     # tracks whose answer can still change a MaxN or a first arrival (fishcount/settle.py), ranked; asked first
     # a track the check box marked reviewed counts under its row's name (as in the metrics), not under its "Yes" name
     rank = settle.decisive(res, {**{t: before.get(t) for t in accepted}, **review}, rules)
-    queue = []
+    queue, doubt = [], pipeline.doubt_marks(res)     # D-UNID-F1: "check needed, may be real" marks; no count changes
     for t, vd in res.get("verdicts", {}).items():
         if pipeline.needs_review(vd) or t in review or t in accepted:
             queue.append(dict(track=t, name=vd.get("name"), thumb=f"thumbs/{vd.get('name')}.jpg", trio=f"thumbs/{vd.get('name')}_trio.jpg",
                               has_trio=os.path.exists(os.path.join(d, "thumbs", f"{vd.get('name')}_trio.jpg")), species=vd.get("species"),
-                              confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=(f"Name in doubt: audit and the unprimed second look disagree ({vd['name_disagrees']}). " if vd.get("name_disagrees") else "")
+                              confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=doubt.get(t, ((), ""))[1]
+                              + (f"Name in doubt: audit and the unprimed second look disagree ({vd['name_disagrees']}). " if vd.get("name_disagrees") else "")
                               + (f"Peak check saw another animal ({vd['peak_doubt']}). " if vd.get("peak_doubt") else "") + (vd.get("reason") or ""),
                               category=res["tracks"][t]["label"], auto=res["auto_labels"].get(t),
                               reviewed=t in review or t in accepted, label=labels.get(t), rank=rank.get(t), yes_label=yes(t)))

@@ -178,6 +178,12 @@ upper 95% bound 9.9%); measure your own footage before relying on it ([details](
 The web screen lists queued tracks only: to check the ones left out, replay the run for free under a new id with
 `--offline --queue-conf 0.7` (same counts, every mid-confidence yes queued).
 
+*Added in D-UNID-F1 (11/24, after the evaluation; changes no number):* a queued track counted under an unidentified
+row gets a "Check needed, may be a real ..." line on its review card when the peak check called its box no animal,
+when Spark said no with under 0.7, or when a fish, crab or other moving kind hardly moves near the picture's edge
+while Spark was unsure. It asks for a second look only: such tracks were often real animals, so there is no
+remove-all button, and counts, ranges and the queue are as without it.
+
 *Changed in D-DEFAULTS (11/22, after the evaluation; no paper number uses it):* `--segment-workers` was 1 and
 `--refill-ahead` 1. An offline replay sends the 16-id re-runs one at a time whatever `--refill-ahead` says (cached
 calls do not wait), so its result and call counts are as before.

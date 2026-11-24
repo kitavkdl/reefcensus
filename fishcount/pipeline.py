@@ -2684,6 +2684,62 @@ def unid_base(name):
     return UNID_RE.sub(" (unidentified)", name) if name else name
 
 
+# D-UNID-F1 (owner 11-24): the review screen marks queued unidentified tracks a later look or the track itself puts in
+# doubt, so a person looks twice. Marks only: no count, range or queue changes (needs_review decides the queue). On a
+# partner's video several such tracks were not animals; on the held-out clips leaving them out of the count lost real
+# fish, so they are only marked, and the text says the animal may be real.
+DOUBT_MOVING = {"fish", "crustacean", "cephalopod"}     # groups that swim or walk: a still one may be a rock
+DOUBT_STILL_MIN = 10            # live boxes, ...
+DOUBT_STILL_TRAVEL = 0.06       # ... all within this share of the picture of the first one, ...
+DOUBT_STILL_EDGE = 0.10         # ... the centre's median distance to the nearest picture edge below this share
+# ponytail: the still thresholds come from one partner clip; they mark only. Measure on hand counts before counting by them.
+
+
+def doubt_marks(res):
+    """{track: (kinds, text)} for the review cards; kinds from "peak" (the peak check called the box no animal),
+    "unsure_no" (Spark said no, under 0.7), "still" (a moving kind that hardly moves near the edge, Spark unsure).
+    Only tracks counted under an unidentified row and already queued. A long video's merged result keeps each
+    segment's peak-check track ids unprefixed (longvideo.merge): the segment tag is put back here."""
+    v, al, trk = res.get("verdicts", {}), res.get("auto_labels", {}), res.get("tracks", {})
+    ok = lambda t: t in v and t in trk and is_unidentified(al.get(t)) and needs_review(v[t])
+    out = {}
+
+    def add(t, kind, text):
+        kinds, texts = out.setdefault(t, ([], []))
+        kinds.append(kind)
+        texts.append(text)
+    for c in res.get("peak_checks", []):
+        if not is_unidentified(c.get("label")):
+            continue
+        pre = f"{c['segment']}:" if c.get("segment") else ""
+        for r in c.get("rejected", []):
+            t, said = pre + r["track"], r.get("said")
+            if ok(t) and name_group(said or "") is None and "peak" not in out.get(t, ([],))[0]:
+                add(t, "peak", f"Check needed, may be a real {trk[t]['label']}: in peak frame {c['frame']} Spark called this box "
+                               + (f'"{said}", not an animal. ' if said else "not an animal. "))
+    for t, vd in v.items():
+        if ok(t) and vd.get("is_target") is False and _conf(vd) < 0.7 and t not in out:
+            add(t, "unsure_no", f"Check needed, may be a real {trk[t]['label']}: Spark said it is not one, but was unsure "
+                                f"({round(_conf(vd) * 100)}% sure). ")
+    vi = res.get("video") or {}
+    W, H, fps = vi.get("width"), vi.get("height"), vi.get("fps")
+    path = {}
+    for f, ks in res.get("frames", {}).items() if W and H and fps else ():     # a test's bare result has no picture size
+        for k in ks:
+            if not k.get("carried"):        # a long video's skipped stretch repeats the last boxes
+                path.setdefault(k["track"], []).append((int(f), k["box"]))
+    for t, p in path.items():
+        if not ok(t) or _conf(v[t]) >= 0.7 or len(p) < DOUBT_STILL_MIN or name_group(trk[t]["label"]) not in DOUBT_MOVING:
+            continue
+        p.sort()
+        cx = [((b[0] + b[2]) / 2 / W, (b[1] + b[3]) / 2 / H) for _, b in p]
+        edge = sorted(min(x, 1 - x, y, 1 - y) for x, y in cx)[len(cx) // 2]
+        if max(math.dist(cx[0], c) for c in cx) < DOUBT_STILL_TRAVEL and edge < DOUBT_STILL_EDGE:
+            add(t, "still", f"Check needed, may be a real {trk[t]['label']} resting: the box hardly moves for "
+                            f"{(p[-1][0] - p[0][0]) / fps:.1f} s near the edge of the picture and Spark was unsure. ")
+    return {t: (kinds, "".join(texts)) for t, (kinds, texts) in out.items()}
+
+
 def peak_checked(name, frame, checked):
     """checked = {(label, frame)} of the peak checks."""
     return (name, frame) in checked or (unid_base(name), frame) in checked
