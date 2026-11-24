@@ -78,6 +78,13 @@ SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
 PRICES = {"muse-wonder-1.0": (4.0e-6, 20.0e-6)}   # $/token (in, out); everything else is priced as Spark
 SPARK_MODEL = os.environ.get("FISH_SPARK_MODEL", "muse-spark-1.3")
 SAM_MODEL = "sam-3.1"
+# shown wherever a run's SAM was local (provenance.json, the web result, the command line, docs/local-sam.md): the
+# public checkpoint is not the API's model, and it did not agree with it closely enough on public clips (D-LOCALSAM E1)
+LOCAL_SAM_NOTE = ("SAM ran on this machine (the public sam3.1 checkpoint), not on the Meta API, so it is a different "
+                  "model. In an agreement test against the API's SAM on public clips (401 SAM calls) it did not meet "
+                  "our bar: the median call's boxes matched the API's with F1 0.51, and the object count was the same "
+                  "on 49% of frames. Agreement is not accuracy; its accuracy against human counts has not been "
+                  "measured. Do not mix its counts with API runs.")
 
 
 class BudgetExceeded(RuntimeError):

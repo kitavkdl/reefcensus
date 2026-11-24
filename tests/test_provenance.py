@@ -1,10 +1,11 @@
 """<run>/provenance.json (fishcount/provenance.py): what made a run, one entry per start, never stopping the run.
 No network, $0."""
-import hashlib, json, os, shutil, subprocess, sys, tempfile, unittest
+import hashlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "web"))
 from fishcount import _pylib  # noqa: F401
 from fishcount import api, provenance, video
 
@@ -47,6 +48,30 @@ class Provenance(unittest.TestCase):
             provenance.start(self.run, ["x"], self.src)
         env = self.entries()[0]["environment"]
         self.assertEqual((env["FISH_SAM_BATCH"], env["FISH_SAM_OFFLOAD"]), ("2", "0"))
+
+    def test_local_sam_is_marked_as_another_model(self):
+        """D-LOCALSAM-F4: a local run's provenance and web result say SAM was not the API's; an API run's do not."""
+        import server
+        with mock.patch.object(api, "sam_backend", lambda: "local"), \
+                mock.patch.object(api, "local_tag", lambda: "sam3.1-local:0123456789ab:31cb7e6:b1"), \
+                mock.patch.object(api, "local_preflight", lambda offline=False: {}):
+            provenance.start(self.run, ["a"], self.src)
+        self.assertEqual(self.entries()[0]["models"]["sam_note"], api.LOCAL_SAM_NOTE)
+        self.assertEqual(server.sam_note(self.run), api.LOCAL_SAM_NOTE)
+        for s in ("different model", "0.51", "49%", "not accuracy"):
+            self.assertIn(s, api.LOCAL_SAM_NOTE)
+        api_run = os.path.join(self.tmp, "r2")
+        with mock.patch.object(api, "sam_backend", lambda: "api"):
+            provenance.start(api_run, ["a"], self.src)
+        with open(os.path.join(api_run, "provenance.json")) as f:
+            self.assertNotIn("sam_note", json.load(f)["runs"][0]["models"])
+        self.assertIsNone(server.sam_note(api_run))
+        self.assertIsNone(server.sam_note(os.path.join(self.tmp, "no_such_run")))   # demo / old runs: none, quietly
+        with open(os.path.join(api_run, "provenance.json"), "w") as f:
+            f.write('{"runs": [half')           # cut short: no note, and the server log says so
+        with mock.patch.object(sys, "stderr", new=io.StringIO()) as err:
+            self.assertIsNone(server.sam_note(api_run))
+        self.assertIn("cannot read", err.getvalue())
 
     def test_finish_adds_the_result_hash_or_the_error(self):
         provenance.start(self.run, ["a"], self.src)

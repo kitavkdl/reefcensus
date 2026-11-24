@@ -128,11 +128,15 @@ python3 web/server.py                    # review screen on http://127.0.0.1:879
 **SAM on your own GPU (optional):** `FISH_SAM=local` runs SAM 3.1 on an NVIDIA GPU instead of the Meta API, in its own
 virtual environment; the video then never leaves the machine (only Spark's pictures do), SAM costs nothing, so
 `--max-usd`, `--max-usd-video`, the `--skip-empty` cap and `FISH_BUDGET` count Spark only, and a local failure stops
-the run (`--resume` goes on). A local segment is at most 120 s (the desktop's RAM; the API's is 600 s). Setup and
-the known differences: [docs/local-sam.md](docs/local-sam.md).
+the run (`--resume` goes on). A local segment is at most 120 s (the desktop's RAM; the API's is 600 s). The public
+sam3.1 checkpoint is a different model from the API's SAM and did not meet our agreement bar against it on public
+clips (median F1 0.51, object count the same on 49% of frames; accuracy against human counts not measured), so a
+local run says so in `provenance.json`, the web result and the command line. Setup and the known differences:
+[docs/local-sam.md](docs/local-sam.md).
 
 **Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 488 tests including an exact
-offline replay of the s004 demo run and the long-video merge.
+offline replay of the s004 demo run and the long-video merge. On a machine marked private (docs/local-sam.md) it
+stops at once and says so.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run
 ([details](report/details.md#long-videos)). One cap covers the whole video: `--max-usd-video`, default $6 an hour of

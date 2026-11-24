@@ -152,6 +152,10 @@ function drawStrip() {
   $("strip").nextElementSibling?.classList?.contains("stale") && $("strip").nextElementSibling.remove();
   if (reviewed) strip.after(el("div", { class: "stale" },
     el("p", {}, `The video shows the automatic labels. Counts, lanes and the table include your ${reviewed} edit${reviewed > 1 ? "s" : ""}.`)));
+  // local SAM: not the API's model (server: effective() sam_note from provenance.json), above the count tables
+  $("samNote")?.remove();
+  if (run.sam_note) $("askedPanel").before(el("section", { class: "panel renames", id: "samNote", role: "note", "aria-label": "Local SAM" },
+    el("p", {}, run.sam_note)));
   // the group renames in force, one line each above the count tables (server: effective() gives each rule's track count)
   $("renames")?.remove();
   if (rules.length) $("askedPanel").before(el("section", { class: "panel renames", id: "renames", "aria-label": "Group renames" },

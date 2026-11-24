@@ -2733,6 +2733,8 @@ if __name__ == "__main__":
         local = api.sam_backend() == "local"     # FISH_SAM / FISH_PRIVATE checked before anything runs
     except api.LocalSamError as e:
         ap.error(str(e))
+    if local:
+        print(api.LOCAL_SAM_NOTE, file=sys.stderr)
     if local and ((a.segment_workers or 1) > 1 or (a.refill_ahead or 1) > 1):
         ap.error("FISH_SAM=local runs one SAM call at a time on one GPU: --segment-workers and --refill-ahead take only 1")
     if a.refill_ahead is None:      # D-DEFAULTS: four windows at once (overnight T4)

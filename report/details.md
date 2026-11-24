@@ -135,9 +135,13 @@ by first appearance and at most 16 per call for a word, the prompt's ids tracked
 (checkpoint sha and sam3 commit), the command line runs one SAM call at a time, and a local failure is an error that no
 stage swallows (`local_failures` in status.json and in `batch.py`'s videos.csv). sam3 keeps every past frame's
 tracking output on the GPU, which fills an 8 GB card at ~150 frames; the worker moves outputs older than the tracker
-reads to RAM (output bytes unchanged), and a local segment is 120 s, what a 24 GB desktop's RAM holds. Whether local and API counts agree is
-measured on public videos (one SAM call against another, then whole runs) before any private footage is run this
-way. Setup: [docs/local-sam.md](../docs/local-sam.md).
+reads to RAM (output bytes unchanged), and a local segment is 120 s, what a 24 GB desktop's RAM holds. The public
+sam3.1 checkpoint is not the API's model. Replaying 401 SAM calls cached from public runs, call against call, it did
+not meet the agreement bar set beforehand: the median call's boxes matched the API's with F1 0.51 (bar 0.85) and the
+number of objects was the same on 49% of frames (bar 80%), whatever the batch size. Agreement is not accuracy, and
+its accuracy against human counts has not been measured, so a local run is marked as another model wherever it is
+read (`provenance.json`, the web result, the command line) and its counts are not mixed with the API pipeline's.
+Setup: [docs/local-sam.md](../docs/local-sam.md).
 
 ## Standard MaxN export (GlobalArchive layout)
 Added after the evaluation (not used in any paper number). Next to the plain CSV, the review screen offers

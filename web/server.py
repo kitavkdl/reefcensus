@@ -97,6 +97,23 @@ def reviewed_evidence(d, res, labels, name, f):
     return ev
 
 
+def sam_note(d):
+    """api.LOCAL_SAM_NOTE when any start of the run in folder d had local SAM (provenance.json models.sam), else None.
+    A run with no provenance.json (demo runs, runs made before it) gets none; one whose file cannot be read is logged,
+    since a local run's note would then be missing."""
+    p = os.path.join(d, "provenance.json")
+    try:
+        with open(p) as f:
+            runs = json.load(f)["runs"]
+        local = any(str((r.get("models") or {}).get("sam") or "").startswith("sam3.1-local:") for r in runs)
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+        sys.stderr.write(f"{time.strftime('%H:%M:%S')} {p}: cannot read ({type(e).__name__}); no local-SAM note shown\n")
+        return None
+    return api.LOCAL_SAM_NOTE if local else None
+
+
 def effective(rid):
     """result.json joined with the human review: metrics recomputed from the stored (post-peak-check) frames."""
     d = os.path.join(RUNS, rid)
@@ -193,7 +210,7 @@ def effective(rid):
     out = {k: v for k, v in res.items() if k != "frames"}
     out.update(site_rows=site_rows, metrics=m, group_metrics=gm, origin=origins(res, labels), queue=queue, review=review,
                annotated=os.path.exists(os.path.join(d, "annotated.mp4")),
-               renames=[dict(r, tracks=k) for r, k in zip(rules, settle.renamed_counts(before.values(), rules))], n_renames=len(rules), n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]), n_decisive=len(rank))
+               renames=[dict(r, tracks=k) for r, k in zip(rules, settle.renamed_counts(before.values(), rules))], n_renames=len(rules), n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]), n_decisive=len(rank), sam_note=sam_note(d))
     return out
 
 

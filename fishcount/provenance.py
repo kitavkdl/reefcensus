@@ -67,14 +67,16 @@ def encoder():
 
 def models():
     """SAM and Spark models; with local SAM (FISH_SAM=local) sam is its backend name (api.local_tag) and sam_local
-    what its worker reported: torch, CUDA, GPU, sam3 commit, checkpoint and its sha256."""
+    what its worker reported: torch, CUDA, GPU, sam3 commit, checkpoint and its sha256; sam_note says it is not the
+    API's model (api.LOCAL_SAM_NOTE)."""
     from fishcount import api
     try:
         backend = api.sam_backend()
     except api.LocalSamError as e:      # the run stops at its first SAM call; the entry still says why
         return dict(sam=None, sam_error=str(e), spark=api.SPARK_MODEL)
     if backend == "local":
-        return dict(sam=api.local_tag(), sam_local=api.local_preflight(offline=True), spark=api.SPARK_MODEL)
+        return dict(sam=api.local_tag(), sam_local=api.local_preflight(offline=True), sam_note=api.LOCAL_SAM_NOTE,
+                    spark=api.SPARK_MODEL)
     return dict(sam=api.SAM_MODEL, spark=api.SPARK_MODEL)
 
 

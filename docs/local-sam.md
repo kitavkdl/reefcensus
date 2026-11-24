@@ -4,6 +4,27 @@ SAM 3.1 can run on your own NVIDIA GPU instead of the Meta API. Only the SAM cal
 its Spark calls are the same, and the output has the API's text format, so everything after SAM reads it as before.
 Unset, nothing changes (the API, its cache keys and its command-line defaults).
 
+## Not the API's model
+The worker runs the public `sam3.1` checkpoint, and the Meta API's SAM 3.1 is not that model: the same clip and prompt
+give other answers. We replayed 401 SAM calls that public runs had cached (word, tile and box prompts; all but 3 of
+100 frames or fewer) on the local worker and compared each with the API's answer. It did not meet the bar set before the test:
+
+| Measure | Bar | Local vs API |
+|---|---|---|
+| boxes matched, F1 of the median call | ≥ 0.85 | 0.51 |
+| F1, worst tenth of calls | ≥ 0.6 | 0.0 |
+| frames with any object where the number of objects is the same | ≥ 80% | 49% |
+| calls where one side is empty and the other is not | ≤ 5% | 7.0% |
+| mean difference in objects per frame (local − API) | within ±0.1 | −0.34 |
+| saturation (16 ids) on the same calls | ≥ 90% | 96.5% |
+
+The batch size (`FISH_SAM_BATCH` 1, 4 and 16) gives the same result, so it is the model, not a setting.
+**Agreement is not accuracy**: a local answer that differs from the API's may be closer to the truth, or further from
+it, and its accuracy against human counts has not been measured (that needs clips with human counts).
+So a run with local SAM says so wherever it is read: `provenance.json` (`models.sam_note`), the web app's result (a
+note above the counts) and the command line (one line at the start), all `api.LOCAL_SAM_NOTE`. Do not mix its counts
+with API runs, and do not report them as the API pipeline's. We do not run partners' footage this way.
+
 ## What leaves the machine
 - **The video does not.** With `FISH_SAM=local`, or `FISH_PRIVATE=1` whatever `FISH_SAM` says, the code refuses
   every request that would carry a clip (an upload to `/files`, a SAM call to `/responses`, any request body with an
@@ -22,7 +43,10 @@ Unset, nothing changes (the API, its cache keys and its command-line defaults).
   private. `provenance.json` records whether a run was private and why (`env`, `home-marker`, `etc-marker`, `no-home`).
 - **A marked machine does not replay API answers either**: with SAM on the API the run stops at its first SAM call,
   cached or not, and so does a run started from the web app (finished runs still open). Replay cached API runs on a
-  machine without the marker (the server), and never put the marker there.
+  machine without the marker (the server), and never put the marker there. The test run stops at once with that
+  message on a marked machine (`tests/test__private_machine.py`); on a private desktop set `FISH_TEST_ON_PRIVATE=1`
+  to run them anyway (SAM replay tests then fail), or run one test file directly
+  (`python -m unittest tests/test_samlocal.py`).
 - **Keep the Meta key in the repo's `.env` only** all the same: do not `export META_API_KEY` in the shell of a
   private machine, and do not create `~/.config/meta-api/key` there (the code reads that file when no key is set).
 
