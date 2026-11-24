@@ -141,6 +141,12 @@ button, input, select { font: inherit; color: inherit; }
 details.rest summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: var(--s3) 0; }
 .qitem .rename { display: flex; gap: 4px; margin-top: 6px; }
 .qitem .rename input { flex: 1; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 3px; min-width: 0; }
+.panel.renames p { margin: 0 0 var(--s2); font-size: 14px; }
+.panel.renames .why { margin: 0; font-size: 13px; color: var(--ink-2); }
+.renameall { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); }
+.renameall form { display: grid; gap: 4px; margin-top: 6px; }
+.renameall .row { display: flex; gap: 4px; }
+.renameall .row input { flex: 1; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 3px; min-width: 0; }
 .export { align-self: flex-start; color: var(--graphite); }
 
 dialog { border: 0; border-radius: 6px; padding: var(--s3); max-width: min(96vw, 1400px); background: var(--board); }

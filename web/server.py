@@ -91,7 +91,8 @@ def reviewed_evidence(d, res, labels, name, f):
     if f is None or not os.path.exists(clip):
         return None
     out = os.path.join(d, ev)
-    if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(os.path.join(d, "review.json")):
+    edits = [p for p in (os.path.join(d, "review.json"), os.path.join(d, "renames.json")) if os.path.exists(p)]
+    if not os.path.exists(out) or os.path.getmtime(out) < max(map(os.path.getmtime, edits), default=0):
         render.evidence(clip, {}, dict(res, auto_labels=labels), f, out, name)
     return ev
 
@@ -103,27 +104,47 @@ def effective(rid):
     if not res:
         return None
     review = _json(os.path.join(d, "review.json"), {})
+    # group renames (rename_group): every track's final name goes through them; the queued tracks a rename marked
+    # reviewed (its check box) count as reviewed until it is undone, unless a person reviewed the track itself
+    rules = _json(os.path.join(d, "renames.json"), [])
+    accepted = {t for r in rules for t in r.get("accept", []) if t not in review}
     labels = labels_for(res, review)
+    before = {t: labels.get(t, tv["label"]) for t, tv in res["tracks"].items()}     # each track's name before the rules
+    if rules:
+        labels = {t: settle.renamed(before[t], rules) for t in before}
+    yes = lambda t: settle.renamed(settle.accept_label(res, t), rules)
+    edited = bool(review or rules)
     frames = {int(f): ks for f, ks in res["frames"].items()}
     v = res["video"]
-    m = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], labels) if review else res["metrics"]
+    m = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], labels) if edited else res["metrics"]
     # MaxN as a range: the lower end drops every queued track no person has looked at yet (only confident Spark
     # answers and human edits remain); the upper end accepts every one under the name its "Yes" gives (settle.py), so
     # a track Spark left uncounted is in it too. Reviewing the queue closes the range.
-    open_q = {t for t, vd in res.get("verdicts", {}).items() if pipeline.needs_review(vd) and t not in review}
+    open_q = {t for t, vd in res.get("verdicts", {}).items() if pipeline.needs_review(vd) and t not in review and t not in accepted}
     lo = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"], {**labels, **{t: None for t in open_q}}) if open_q else {}
     hi = tracks.metrics(frames, res["tracks"], v["n_frames"], v["fps"],
-                        {**labels, **{t: settle.accept_label(res, t) for t in open_q}}) if open_q else {}
+                        {**labels, **{t: yes(t) for t in open_q}}) if open_q else {}
     checked = {(c["label"], c["frame"]) for c in res.get("peak_checks", [])}
+    # a box whose one SAM mask fell into n separate blobs nobody split (fishcount/split.py "blobs") is n in the upper end
+    wide = {}
+    if any("blobs" in k for ks in frames.values() for k in ks):
+        up = {**labels, **{t: yes(t) for t in open_q}}
+        for ks in frames.values():
+            c = {}
+            for k in ks:
+                if (l := up.get(k["track"], res["tracks"].get(k["track"], {}).get("label"))):
+                    c[l] = c.get(l, 0) + k.get("blobs", 1)
+            for l, n in c.items():
+                wide[l] = max(wide.get(l, 0), n)
     for name, mm in m.items():
         mm["maxn_confirmed"] = lo.get(name, {}).get("maxn", 0) if open_q else mm["maxn"]
-        mm["maxn_upper"] = max(mm["maxn"], hi.get(name, {}).get("maxn", 0)) if open_q else mm["maxn"]
+        mm["maxn_upper"] = max(mm["maxn"], hi.get(name, {}).get("maxn", 0), wide.get(name, 0)) if open_q or wide else mm["maxn"]
         if open_q and lo.get(name, {}).get("curve") != mm["curve"]:
             mm["curve_confirmed"] = lo[name]["curve"] if name in lo else [0] * len(mm["curve"])
         mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
         ev = f"evidence_{pipeline.api_safe(name)}.jpg"
         run_m = res["metrics"].get(name, {})
-        if review and (run_m.get("maxn"), run_m.get("maxn_frame")) != (mm["maxn"], mm["maxn_frame"]):
+        if edited and (run_m.get("maxn"), run_m.get("maxn_frame")) != (mm["maxn"], mm["maxn_frame"]):
             new = reviewed_evidence(d, res, labels, name, mm["maxn_frame"])   # the run's image shows the old count
             mm["evidence_stale"] = new is None      # no clip to redraw from (packed demo runs): the caption says so
             ev = new or ev
@@ -137,20 +158,23 @@ def effective(rid):
     for c in res.get("crowd_checks", []):
         if not c.get("lower_bound"):
             continue
-        row = gm.get(c["row"]) or (m.get(c["labels"][0]) if len(c["labels"]) == 1 else None)
+        # after a group rename the checked labels go by their new names: a row only renamed keeps its mark
+        names = sorted({settle.renamed(l, rules) for l in c["labels"]}) if rules else c["labels"]
+        row = gm.get(c["row"]) or (m.get(names[0]) if len(names) == 1 else None)
         if row is not None and row.get("maxn") == c["maxn"]:      # a person's edit since the run changes the count: drop the mark
             row.update(lower_bound=True, crowd_total=c["total"], crowd_frame=c["frame"])
     # tracks whose answer can still change a MaxN or a first arrival (fishcount/settle.py), ranked; asked first
-    rank = settle.decisive(res, review)
+    # a track the check box marked reviewed counts under its row's name (as in the metrics), not under its "Yes" name
+    rank = settle.decisive(res, {**{t: before.get(t) for t in accepted}, **review}, rules)
     queue = []
     for t, vd in res.get("verdicts", {}).items():
-        if pipeline.needs_review(vd) or t in review:
+        if pipeline.needs_review(vd) or t in review or t in accepted:
             queue.append(dict(track=t, name=vd.get("name"), thumb=f"thumbs/{vd.get('name')}.jpg", trio=f"thumbs/{vd.get('name')}_trio.jpg",
                               has_trio=os.path.exists(os.path.join(d, "thumbs", f"{vd.get('name')}_trio.jpg")), species=vd.get("species"),
                               confidence=vd.get("confidence"), is_target=vd.get("is_target"), reason=(f"Name in doubt: audit and the unprimed second look disagree ({vd['name_disagrees']}). " if vd.get("name_disagrees") else "")
                               + (f"Peak check saw another animal ({vd['peak_doubt']}). " if vd.get("peak_doubt") else "") + (vd.get("reason") or ""),
                               category=res["tracks"][t]["label"], auto=res["auto_labels"].get(t),
-                              reviewed=t in review, label=labels.get(t), rank=rank.get(t), yes_label=settle.accept_label(res, t)))
+                              reviewed=t in review or t in accepted, label=labels.get(t), rank=rank.get(t), yes_label=yes(t)))
     queue.sort(key=lambda q: (q["reviewed"], q["rank"] is None, q["rank"] or 0))
     site = res.get("site")
     site_src = {e["source"]: e for e in (site or {}).get("entries", []) if e.get("source") and e.get("word")}
@@ -163,12 +187,13 @@ def effective(rid):
     for q in queue:
         ent = site_src.get(res["tracks"][q["track"]]["source"])
         q["from_site"] = ent["label"] if ent else None
-        if site and q["reviewed"] and q["label"] and q["label"] != q["auto"]:
-            q["remembered"] = sitememory.noun_for(q["label"])
+        own = review.get(q["track"])         # a person's own edit of this track; a group rename is not remembered
+        if site and own and own != q["auto"]:
+            q["remembered"] = sitememory.noun_for(own)
     out = {k: v for k, v in res.items() if k != "frames"}
     out.update(site_rows=site_rows, metrics=m, group_metrics=gm, origin=origins(res, labels), queue=queue, review=review,
                annotated=os.path.exists(os.path.join(d, "annotated.mp4")),
-               n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]), n_decisive=len(rank))
+               renames=[dict(r, tracks=k) for r, k in zip(rules, settle.renamed_counts(before.values(), rules))], n_renames=len(rules), n_reviewed=len(review), n_flagged=sum(1 for q in queue if not q["reviewed"]), n_decisive=len(rank))
     return out
 
 
@@ -237,9 +262,16 @@ def _save_review(rid, body):
     if not res:
         raise ValueError("no finished result for this run")
     review = _json(os.path.join(d, "review.json"), {})
-    for t, l in body.items():
+    for t in body:
         if t not in res["tracks"]:
             raise ValueError(f"unknown track {t}")
+    # a split child (fishcount/split.py, "<track>~2") follows its parent's review unless it is reviewed itself: one
+    # with no review, or the parent's, follows; one with a review of its own keeps it (its own Undo makes it follow again).
+    # review.json keeps values, not who set them: a child the person gave the parent's own value by hand looks like one
+    # that follows, so it follows the parent's next change too
+    follows = lambda c, p: c not in review or (p in review and review[c] == review[p])
+    kin = {c: body[p] for c in res["tracks"] if "~" in c for p in [c.split("~")[0]] if p in body and follows(c, p)}
+    for t, l in {**kin, **body}.items():
         if l == "__undo__":
             review.pop(t, None)
         else:
@@ -249,6 +281,36 @@ def _save_review(rid, body):
     os.replace(os.path.join(d, "review.json.tmp"), os.path.join(d, "review.json"))
     _remember(rid, res, review, body)
     return effective(rid)
+
+
+def rename_group(rid, body):
+    """A person renames a whole table row: {"from", "to", "accept"} adds a rule to the run's renames.json (every track
+    named `from` is counted as `to`, MaxN frame by frame); accept also marks the row's still-queued tracks reviewed.
+    {"undo": id} removes that rule and what it marked. review.json is left as it is."""
+    if not isinstance(body, dict) or not all(isinstance(body.get(k, ""), str) for k in ("from", "to", "undo")):
+        raise ValueError("send {from, to, accept} or {undo}")
+    with _review_lock:
+        d = os.path.join(RUNS, rid)
+        e = effective(rid)
+        if not e:
+            raise ValueError("no finished result for this run")
+        rules = _json(os.path.join(d, "renames.json"), [])      # as stored (effective adds each rule's track count)
+        if "undo" in body:
+            if not any(r.get("id") == body["undo"] for r in rules):
+                raise ValueError("no such rename")
+            rules = [r for r in rules if r.get("id") != body["undo"]]
+        else:
+            frm, to = body.get("from"), (str(body.get("to") or "").strip().lower()[:60])
+            if frm not in e["metrics"]:
+                raise ValueError(f"no row named {frm!r}")
+            if not to or to == frm:
+                raise ValueError("give a new name")
+            acc = sorted(q["track"] for q in e["queue"] if not q["reviewed"] and q["label"] == frm) if body.get("accept") else []
+            rules = rules + [dict(id=os.urandom(4).hex(), at=round(time.time()), accept=acc, **{"from": frm, "to": to})]
+        with open(os.path.join(d, "renames.json.tmp"), "w") as f:
+            json.dump(rules, f)
+        os.replace(os.path.join(d, "renames.json.tmp"), os.path.join(d, "renames.json"))
+        return effective(rid)
 
 
 def _remember(rid, res, review, body):
@@ -282,11 +344,11 @@ def export_csv(rid):
         if m["maxn"] == 0 and name.endswith(" (unidentified)"):     # empty "(unidentified)" rows are hidden on screen too
             continue
         w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_upper"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
-                    m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"]])
+                    m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"] + e.get("n_renames", 0)])
     # group rows: same-frame totals over the labels listed in origin (e.g. "group: caridean shrimp + shrimp (unidentified)")
     for g, m in sorted(e.get("group_metrics", {}).items(), key=lambda kv: -kv[1]["maxn"]):
         w.writerow([cell(f"all {g}" + ("" if g == "fish" else "s")), "group: " + " + ".join(m["labels"]), m["maxn"], m["maxn_confirmed"], "", m["maxn_time"], m["maxn_frame"],
-                    m["first_time"], m["tracks"], "", "", e["source"], e["n_reviewed"]])
+                    m["first_time"], m["tracks"], "", "", e["source"], e["n_reviewed"] + e.get("n_renames", 0)])
     return buf.getvalue()
 
 
@@ -416,9 +478,9 @@ class H(BaseHTTPRequestHandler):
         try:
             if path == "/api/run":
                 return self.send(200, start_run(self.body()))
-            m = re.fullmatch(r"/api/runs/([^/]+)/review", path)
+            m = re.fullmatch(r"/api/runs/([^/]+)/(review|rename-group)", path)
             if m and SAFE.match(m.group(1)):
-                return self.send(200, save_review(m.group(1), self.body()))
+                return self.send(200, (save_review if m.group(2) == "review" else rename_group)(m.group(1), self.body()))
             self.send(404, {"error": "not found"})
         except (ValueError, RuntimeError) as e:
             self.send(400, {"error": str(e)})

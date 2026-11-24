@@ -47,6 +47,10 @@ boxes and follows each animal through the video.
   Since 11/22 a counted mid-confidence yes (0.5 to 0.7) is no longer queued, which leaves 498 there: a blind sheet of
   60 of them had 1 that was not a fish (`--queue-conf`, [details](report/details.md#the-review-screen)).
 - Reviewed counts download as a CSV & in GlobalArchive column order ([details](report/details.md#standard-maxn-export-globalarchive-layout)).
+- A whole row can be renamed at once ("Rename all": every "fish (unidentified)" is a rockfish): every track of the row
+  takes the new name and MaxN is counted again frame by frame, so 5 rockfish and 3 unidentified that peak in different
+  frames can make 7, not 8. Its queued tracks stay in the queue unless a box is ticked; Undo takes the rename back
+  (the rule is kept in the run folder's `renames.json`; `review.json` is not touched).
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord is first author of the 2014 nautilus
 survey whose videos S1 to S4 we used (Barord et al., *PLOS ONE* e100799). He wrote back the same afternoon he saw the results:
@@ -121,7 +125,12 @@ python3 fishcount/evaluate_pipeline.py --tag cr7   # the same next to the full p
 python3 web/server.py                    # review screen on http://127.0.0.1:8793
 ```
 
-**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 410 tests including an exact
+**SAM on your own GPU (optional):** `FISH_SAM=local` runs SAM 3.1 on an NVIDIA GPU instead of the Meta API, in its own
+virtual environment; the video then never leaves the machine (only Spark's pictures do), SAM costs nothing, so
+`--max-usd`, `--max-usd-video`, the `--skip-empty` cap and `FISH_BUDGET` count Spark only, and a local failure stops
+the run (`--resume` goes on). Setup and the known differences: [docs/local-sam.md](docs/local-sam.md).
+
+**Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 488 tests including an exact
 offline replay of the s004 demo run and the long-video merge.
 
 **Long videos** over 10 minutes are cut into segments of at most 600 s and merged into one ordinary run

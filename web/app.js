@@ -148,10 +148,16 @@ function drawStrip() {
     ...[0, 0.25, 0.5, 0.75, 1].map((p) => el("span", {}, `${(dur * p).toFixed(0)} s`))), el("span"));
   const head = el("div", { class: "head" });
   fill(strip, ...(lanes.length ? lanes : [el("p", { class: "empty", style: "padding:0 12px" }, "Nothing was counted in this clip.")]), axis, head);
-  const reviewed = run.n_reviewed;
+  const reviewed = run.n_reviewed + (run.n_renames || 0), rules = run.renames || [];
   $("strip").nextElementSibling?.classList?.contains("stale") && $("strip").nextElementSibling.remove();
-  if (reviewed) strip.after(el("p", { class: "stale" },
-    `The video shows the automatic labels. Counts, lanes and the table include your ${reviewed} edit${reviewed > 1 ? "s" : ""}.`));
+  if (reviewed) strip.after(el("div", { class: "stale" },
+    el("p", {}, `The video shows the automatic labels. Counts, lanes and the table include your ${reviewed} edit${reviewed > 1 ? "s" : ""}.`)));
+  // the group renames in force, one line each above the count tables (server: effective() gives each rule's track count)
+  $("renames")?.remove();
+  if (rules.length) $("askedPanel").before(el("section", { class: "panel renames", id: "renames", "aria-label": "Group renames" },
+    ...rules.map((r) => { const k = (r.accept || []).length; return el("p", {}, `${r.from} → ${r.to} (${r.tracks} track${r.tracks === 1 ? "" : "s"}`,
+      k ? `, ${k} marked reviewed` : "", ") ", el("button", { class: "btn ghost small", onclick: () => renameGroup({ undo: r.id }) }, "Undo")); }),
+    el("p", { class: "why" }, "While a group rename is on, a single track of that group cannot go back to the old name; Undo the rename instead.")));
   movePlayhead();
 }
 
@@ -206,7 +212,22 @@ function countRow(name, m, origin, extra = []) {
         ` (${m.maxn_confirmed} counts only what Spark was sure of)`)
       : null,
     crowdNote(m),
-    ...extra);
+    ...extra,
+    renameAll(name, m));
+}
+
+// rename a whole row (server: rename_group). Its still-queued tracks stay in the queue unless the box is ticked.
+function renameAll(name, m) {
+  const run = state.run, k = run.queue.filter((q) => !q.reviewed && q.label === name).length;
+  const back = (run.renames || []).find((r) => r.to === name);
+  const input = el("input", { value: name, required: true, pattern: ".*\\S.*", "aria-label": `New name for every ${name}` });
+  const box = k ? el("input", { type: "checkbox" }) : null;
+  const form = el("form", { class: "rename", hidden: true, onsubmit: (e) => { e.preventDefault(); renameGroup({ from: name, to: input.value, accept: !!box?.checked }); } },
+    el("div", {}, `Rename all ${m.tracks} track${m.tracks === 1 ? "" : "s"} of ${name} to:`), el("div", { class: "row" }, input, el("button", { class: "btn small" }, "Rename all")),
+    box ? el("label", {}, box, ` ${k} of them ${k === 1 ? "is" : "are"} still waiting for review: mark ${k === 1 ? "it" : "them"} reviewed too`) : null,
+    back ? el("div", { class: "why" }, `This row was renamed from ${back.from}; to go back, Undo that rename instead.`) : null);
+  return el("div", { class: "renameall" },
+    el("button", { class: "btn ghost small", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); } }, "Rename all"), form);
 }
 
 function drawAsked() {
@@ -302,7 +323,9 @@ function groupTotal(rows, name) {
 
 const labelOf = (run, t) => {
   const r = run.review || {}, a = run.auto_labels || {};
-  return t in r ? r[t] : t in a ? a[t] : run.tracks[t].label;
+  let l = t in r ? r[t] : t in a ? a[t] : run.tracks[t].label;
+  for (const x of run.renames || []) if (l != null && l === x.from) l = x.to;     // group renames, in order (server: settle.renamed)
+  return l;
 };
 const KIND = { backfill: "Played backwards", zoom: "Zoomed in", cell: "Closer look", sign: "Checked a sign", motion: "Motion look", "motion-scan": "Motion look" };
 function motionStep(run, r) {
@@ -360,7 +383,11 @@ function drawQueue() {
       it.confidence != null ? [", ", el("span", { class: "num" }, `${Math.round(it.confidence * 100)}%`), " sure"] : null);
     const body = [said, it.from_site ? el("div", { class: "why" }, `Found because site memory asked SAM for '${it.from_site}'.`) : null,
       it.reason ? el("div", { class: "why" }, it.reason) : null];
-    if (it.reviewed) {
+    if (it.reviewed && !(it.track in (run.review || {}))) {    // marked reviewed by a group rename's check box
+      body.push(el("div", { class: "set" }, `Marked reviewed with the group rename to ${it.label}`),
+        el("div", { class: "why" }, "Undo that rename to put it back in the queue, or answer it below."),
+        el("div", { class: "acts" }, el("button", { class: "btn ghost small", onclick: () => review(it.track, null) }, "Not an animal")));
+    } else if (it.reviewed) {
       body.push(el("div", { class: "set" }, it.label ? `You set: ${it.label}` : "You removed it from the counts"),
         it.remembered ? el("div", { class: "why" }, `Remembered for site ${run.site.name}: '${it.remembered}' is tried first on its next video.`) : null,
         el("div", { class: "acts" }, el("button", { class: "btn ghost small", onclick: () => review(it.track, "__undo__") }, "Undo")));
@@ -396,6 +423,15 @@ async function review(track, label) {
   try {
     state.run = await api(`/api/runs/${encodeURIComponent(state.id)}/review`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [track]: label }),
+    });
+    drawRun(false);
+  } catch (e) { alert(`Could not save: ${e.message}`); }
+}
+
+async function renameGroup(body) {
+  try {
+    state.run = await api(`/api/runs/${encodeURIComponent(state.id)}/rename-group`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
     drawRun(false);
   } catch (e) { alert(`Could not save: ${e.message}`); }

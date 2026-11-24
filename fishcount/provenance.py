@@ -14,7 +14,7 @@ never stopped by its own record keeping."""
 import datetime, hashlib, json, os, platform, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENV_KEYS = ("FISH_CACHE_DIR", "FISH_LEDGER", "FISH_BUDGET", "FISH_SPARK_MODEL")
+ENV_KEYS = ("FISH_CACHE_DIR", "FISH_LEDGER", "FISH_BUDGET", "FISH_SPARK_MODEL", "FISH_SAM", "FISH_PRIVATE")
 
 
 def _now():
@@ -64,7 +64,11 @@ def encoder():
 
 
 def models():
+    """SAM and Spark models; with local SAM (FISH_SAM=local) sam is its backend name (api.local_tag) and sam_local
+    what its worker reported: torch, CUDA, GPU, sam3 commit, checkpoint and its sha256."""
     from fishcount import api
+    if api.sam_backend() == "local":
+        return dict(sam=api.local_tag(), sam_local=api.local_preflight(offline=True), spark=api.SPARK_MODEL)
     return dict(sam=api.SAM_MODEL, spark=api.SPARK_MODEL)
 
 

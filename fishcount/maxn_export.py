@@ -40,7 +40,7 @@ def rows(e, opcode=None):
         out.append([_cell(opcode), "", "", "", m["maxn"], m["maxn_frame"], mins,
                     _cell(name), m.get("maxn_confirmed", m["maxn"]), e.get("origin", {}).get(name, ""),
                     "not verified: common name from Muse Spark or a reviewer", _cell(e.get("source") or ""), e.get("id", ""),
-                    e.get("n_reviewed", 0), _lower_bound(e, name, m), m.get("maxn_upper", m["maxn"])])
+                    e.get("n_reviewed", 0) + e.get("n_renames", 0), _lower_bound(e, name, m), m.get("maxn_upper", m["maxn"])])
     return out
 
 

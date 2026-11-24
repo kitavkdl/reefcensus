@@ -1,7 +1,7 @@
 """Shadow and confirm sheets split when they hold too many tracks (no network, no spend).
 
-11/21 verify: a 2-minute TNC clip (rockfish crowd, 600 frames) had about 226 dark tracks; shadow_look put them all on
-one 46,992 x 1,228 sheet and Spark refused it ("image decode limit exceeded"), so the run died after the audit with
+11/21 verify: a crowded clip had a few hundred dark tracks; shadow_look put them all on
+one very wide sheet and Spark refused it ("image decode limit exceeded"), so the run died after the audit with
 no result. The largest sheet that ever went through (LONG1_cr9 S1) held 32 tracks, so a sheet of up to
 SHADOW_PER_SHEET tracks is sent exactly as before and only a longer list is cut into sheets of that size."""
 import json, os, re, sys, tempfile, threading, unittest

@@ -41,7 +41,7 @@ PIPELINE = os.path.join(ROOT, "fishcount", "pipeline.py")
 VIDEO_EXT = (".mp4", ".mov", ".avi", ".mkv", ".m4v", ".mts", ".mpg", ".mpeg", ".wmv", ".h264", ".264")
 COLUMNS = ["source_file", "run_id", "status", "error", "analysed_s", "source_warnings", "labels_counted",
            "maxn_by_label", "maxn_lower_bound", "review_queue", "live_calls", "cached_calls", "billed_usd",
-           "ledger_usd", "wall_s", "capped"]
+           "ledger_usd", "wall_s", "local_failures", "capped"]   # capped stays last (test_video_budget)
 # the defaults a run's options leave to the code: a finished video is kept only while they hold (a stamp written
 # before D-NIGHT3 has none and is kept as before, so finished videos are not run again on upgrade)
 DEFAULTS = dict(probe_window=pipeline.PROBE_WINDOW, cap_per_hour=longvideo.CAP_PER_HOUR_SPLIT,
@@ -160,6 +160,19 @@ def ledger_by_run(path=None):
     return out
 
 
+def local_failures(rid):
+    """Local SAM failures (FISH_SAM=local) of a run and its segments / probes (rid__S<n>, rid__P<n>: a long video's
+    failure is in the segment's status.json), or "" when none of them counted any (the API, or nothing ran)."""
+    n, seen = 0, False
+    mine = re.compile(re.escape(rid) + r"__[SP]\d+")
+    for d in [rid] + sorted(x for x in os.listdir(pipeline.RUNS) if mine.fullmatch(x)) if os.path.isdir(pipeline.RUNS) else []:
+        st = _json(os.path.join(pipeline.RUNS, d, "status.json"))
+        v = st.get("local_failures") if isinstance(st, dict) else None
+        if isinstance(v, int):
+            n, seen = n + v, True
+    return n if seen else ""
+
+
 def row(path, rid, state, ledger, opcodes=None):
     """One videos.csv line from the run folder (state: dict(status, error, wall_s)), and its maxn_all.csv rows.
     opcodes: run id -> OpCode for videos whose file names clash (else maxn_export's default, the file name)."""
@@ -178,7 +191,8 @@ def row(path, rid, state, ledger, opcodes=None):
              billed_usd=round(st["billed_usd"], 4) if isinstance(st.get("billed_usd"), (int, float)) else "",
              ledger_usd=round(ledger.get(rid, 0.0), 4), wall_s=state.get("wall_s", ""),
              capped="; ".join(list(dict.fromkeys(c.get("segment", "run") for c in (res or {}).get("capped", []) if isinstance(c, dict)))
-                              + [f"unsent {u.get('start_s')}-{u.get('end_s')} s" for u in (res or {}).get("unsent", []) if isinstance(u, dict)]))
+                              + [f"unsent {u.get('start_s')}-{u.get('end_s')} s" for u in (res or {}).get("unsent", []) if isinstance(u, dict)]),
+             local_failures=local_failures(rid) if state["status"] != "pending" else "")
     e = server.effective(rid) if res else None
     if e:
         counted = sorted(((n, m) for n, m in e["metrics"].items() if m["maxn"] > 0), key=lambda kv: (-kv[1]["maxn"], kv[0]))

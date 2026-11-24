@@ -92,8 +92,15 @@
     return out;
   }
 
-  function decisive(run, review) {     // settle.decisive
-    const S = run._static, labels = { ...run.auto_labels, ...review };
+  function renamed(name, rules) {      // settle.renamed: group renames in order (a -> b then b -> c makes a c)
+    for (const r of rules || []) if (name != null && name === r.from) name = r.to;
+    return name;
+  }
+
+  function decisive(run, review, rules) {     // settle.decisive
+    const S = run._static;
+    let labels = { ...run.auto_labels, ...review };
+    if (rules && rules.length) labels = Object.fromEntries(Object.entries(labels).map(([t, l]) => [t, renamed(l, rules)]));
     const openQ = new Set(S.queued.filter((t) => !has(review, t)));
     const sure = {}, maybe = {}, firstSure = {}, firstTrack = {};
     for (const [fk, ks] of Object.entries(S.frames)) {
@@ -101,7 +108,7 @@
       for (const k of ks) {
         const t = k.track;
         if (openQ.has(t)) {
-          const L = S.accept[t];
+          const L = renamed(S.accept[t], rules);
           ((maybe[L] = maybe[L] || {})[f] = maybe[L][f] || new Set()).add(t);
           firstTrack[t] = Math.min(has(firstTrack, t) ? firstTrack[t] : f, f);
         } else if (labels[t]) {
@@ -130,49 +137,79 @@
     return out;
   }
 
-  function effective(run, review) {    // web/server.py effective(), for a run with no site memory
-    const S = run._static, labels = { ...run.auto_labels, ...review };
-    const nRev = Object.keys(review).length;
-    const m = nRev ? metrics(S, run.tracks, labels) : JSON.parse(JSON.stringify(S.base_metrics));
-    const openQ = S.queued.filter((t) => !has(review, t));
+  function effective(run, review, rules = run.renames || []) {    // web/server.py effective(), for a run with no site memory
+    const S = run._static;
+    let labels = { ...run.auto_labels, ...review };
+    // group renames (renameGroup): every track's final name goes through them; the queued tracks a rename marked
+    // reviewed count as reviewed until it is undone, unless the track was reviewed itself
+    const accepted = new Set(rules.flatMap((r) => r.accept || []).filter((t) => !has(review, t)));
+    const before = Object.fromEntries(Object.entries(run.tracks).map(([t, v]) => [t, has(labels, t) ? labels[t] : v.label]));
+    if (rules.length) labels = Object.fromEntries(Object.entries(before).map(([t, l]) => [t, renamed(l, rules)]));
+    const yes = (t) => renamed(S.accept[t], rules);
+    const nRev = Object.keys(review).length, edited = nRev > 0 || rules.length > 0;
+    const m = edited ? metrics(S, run.tracks, labels) : JSON.parse(JSON.stringify(S.base_metrics));
+    const openQ = S.queued.filter((t) => !has(review, t) && !accepted.has(t));
     let lo = {}, hi = {};
     if (openQ.length) {
       const l2 = { ...labels }, l3 = { ...labels };
-      for (const t of openQ) { l2[t] = null; l3[t] = S.accept[t]; }
+      for (const t of openQ) { l2[t] = null; l3[t] = yes(t); }
       lo = metrics(S, run.tracks, l2);
       hi = metrics(S, run.tracks, l3);
     }
     const checked = new Set((run.peak_checks || []).map((c) => `${c.label}\u0000${c.frame}`));
+    // a box whose one SAM mask fell into n separate blobs nobody split (fishcount/split.py "blobs") is n in the upper end
+    const wide = {};
+    if (Object.values(S.frames).some((ks) => ks.some((k) => has(k, "blobs")))) {
+      const up = { ...labels };
+      for (const t of openQ) up[t] = yes(t);
+      for (const ks of Object.values(S.frames)) {
+        const c = {};
+        for (const k of ks) {
+          const l = has(up, k.track) ? up[k.track] : (has(run.tracks, k.track) ? run.tracks[k.track].label : null);
+          if (l) c[l] = (c[l] || 0) + (has(k, "blobs") ? k.blobs : 1);
+        }
+        for (const [l, n] of Object.entries(c)) wide[l] = Math.max(wide[l] || 0, n);
+      }
+    }
+    const anyWide = Object.keys(wide).length > 0;
     for (const [name, mm] of Object.entries(m)) {
       mm.maxn_confirmed = openQ.length ? (has(lo, name) ? lo[name].maxn : 0) : mm.maxn;
-      mm.maxn_upper = openQ.length ? Math.max(mm.maxn, has(hi, name) ? hi[name].maxn : 0) : mm.maxn;
+      mm.maxn_upper = openQ.length || anyWide
+        ? Math.max(mm.maxn, has(hi, name) ? hi[name].maxn : 0, wide[name] || 0) : mm.maxn;
       if (openQ.length && JSON.stringify(has(lo, name) ? lo[name].curve : null) !== JSON.stringify(mm.curve))
         mm.curve_confirmed = has(lo, name) ? lo[name].curve : new Array(mm.curve.length).fill(0);
       mm.peak_checked = checked.has(`${name}\u0000${mm.maxn_frame}`);
       const ev = `evidence_${apiSafe(name)}.jpg`, runM = S.base_metrics[name] || {};
-      if (nRev && (runM.maxn !== mm.maxn || runM.maxn_frame !== mm.maxn_frame)) mm.evidence_stale = true;  // no clip here to redraw from
+      if (edited && (runM.maxn !== mm.maxn || runM.maxn_frame !== mm.maxn_frame)) mm.evidence_stale = true;  // no clip here to redraw from
       mm.evidence = S.evidence.includes(ev) ? ev : null;
     }
     const gm = groupMetrics(S, m, 2), glo = openQ.length ? groupMetrics(S, lo, 1) : {};
     for (const [g, gg] of Object.entries(gm)) gg.maxn_confirmed = openQ.length ? (has(glo, g) ? glo[g].maxn : 0) : gg.maxn;
     for (const c of run.crowd_checks || []) {
       if (!c.lower_bound) continue;
-      const row = gm[c.row] || (c.labels.length === 1 ? m[c.labels[0]] : null);
+      // after a group rename the checked labels go by their new names: a row only renamed keeps its mark
+      const names = rules.length ? [...new Set(c.labels.map((l) => renamed(l, rules)))].sort() : c.labels;
+      const row = gm[c.row] || (names.length === 1 ? m[names[0]] : null);
       if (row && row.maxn === c.maxn) Object.assign(row, { lower_bound: true, crowd_total: c.total, crowd_frame: c.frame });
     }
-    const rank = decisive(run, review), queued = new Set(S.queued), queue = [];
+    const acc = {};
+    for (const t of accepted) acc[t] = has(before, t) ? before[t] : null;   // counted under its row's name, not its "Yes" name
+    const rank = decisive(run, { ...acc, ...review }, rules), queued = new Set(S.queued), queue = [];
     for (const t of S.verdict_order) {
       if (!queued.has(t) && !has(review, t)) continue;
-      queue.push({ ...S.cards[t], reviewed: has(review, t), label: has(labels, t) ? labels[t] : null,
-        rank: has(rank, t) ? rank[t] : null });
+      queue.push({ ...S.cards[t], reviewed: has(review, t) || accepted.has(t), label: has(labels, t) ? labels[t] : null,
+        rank: has(rank, t) ? rank[t] : null, yes_label: yes(t) });
     }
     queue.sort((a, b) => (a.reviewed - b.reviewed) || ((a.rank == null) - (b.rank == null)) || ((a.rank || 0) - (b.rank || 0)));
     const asked = new Set((run.jobs || []).map((j) => j.name)), origin = {};
+    const counts = rules.map(() => 0);              // settle.renamed_counts: tracks each rule renamed, in order
+    for (let l of Object.values(before))
+      rules.forEach((r, i) => { if (l != null && l === r.from) { l = r.to; counts[i]++; } });
     for (const [t, v] of Object.entries(run.tracks)) {
       const l = has(labels, t) ? labels[t] : v.label;
       if (l) origin[l] = asked.has(v.source) || origin[l] === "asked" ? "asked" : "found";
     }
-    return { ...run, metrics: m, group_metrics: gm, origin, queue, review, n_reviewed: nRev,
+    return { ...run, metrics: m, group_metrics: gm, origin, queue, review, renames: rules.map((r, i) => ({ ...r, tracks: counts[i] })), n_renames: rules.length, n_reviewed: nRev,
       n_flagged: queue.filter((q) => !q.reviewed).length, n_decisive: Object.keys(rank).length };
   }
 
@@ -183,6 +220,22 @@
     if (label === "__undo__") delete r[track];
     else r[track] = label == null ? null : (Array.from(String(label).trim().toLowerCase()).slice(0, 60).join("") || null);
     return effective(run, r);
+  }
+
+  // web/server.py rename_group: {from, to, accept} adds a rule, {undo: id} removes one; the review is left as it is
+  function renameGroup(run, body) {
+    let rules = run.renames || [];
+    if (has(body, "undo")) {
+      if (!rules.some((r) => r.id === body.undo)) throw new Error("no such rename");
+      rules = rules.filter((r) => r.id !== body.undo);
+    } else {
+      const frm = body.from, to = Array.from(String(body.to || "").trim().toLowerCase()).slice(0, 60).join("");
+      if (!has(run.metrics, frm)) throw new Error(`no row named ${frm}`);
+      if (!to || to === frm) throw new Error("give a new name");
+      const accept = body.accept ? run.queue.filter((q) => !q.reviewed && q.label === frm).map((q) => q.track).sort() : [];
+      rules = [...rules, { id: Math.random().toString(16).slice(2, 10), at: Math.round(Date.now() / 1000), accept, from: frm, to }];
+    }
+    return effective(run, run.review || {}, rules);
   }
 
   // Python csv.writer (QUOTE_MINIMAL) cells: None -> "", True/False as Python prints them; floats come as Python strings
@@ -202,11 +255,11 @@
     for (const [name, m] of byMaxn(e.metrics)) {
       if (m.maxn === 0 && name.endsWith(" (unidentified)")) continue;
       rows.push([noFormula(name), e.origin[name] || "", m.maxn, m.maxn_confirmed, m.maxn_upper, tstr(S, m.maxn_frame), m.maxn_frame,
-        tstr(S, m.first_frame), m.tracks, m.peak_checked, m.evidence || "", e.source, e.n_reviewed]);
+        tstr(S, m.first_frame), m.tracks, m.peak_checked, m.evidence || "", e.source, e.n_reviewed + (e.n_renames || 0)]);
     }
     for (const [g, m] of byMaxn(e.group_metrics || {}))
       rows.push([noFormula(`all ${g}` + (g === "fish" ? "" : "s")), "group: " + m.labels.join(" + "), m.maxn, m.maxn_confirmed, "",
-        tstr(S, m.maxn_frame), m.maxn_frame, tstr(S, m.first_frame), m.tracks, "", "", e.source, e.n_reviewed]);
+        tstr(S, m.maxn_frame), m.maxn_frame, tstr(S, m.first_frame), m.tracks, "", "", e.source, e.n_reviewed + (e.n_renames || 0)]);
     return csv(rows, "\r\n");
   }
 
@@ -223,7 +276,7 @@
       if (m.maxn <= 0) continue;
       rows.push([noFormula(S.opcode), "", "", "", m.maxn, m.maxn_frame, m.maxn_frame == null ? null : S.mins_str[m.maxn_frame],
         noFormula(name), has(m, "maxn_confirmed") ? m.maxn_confirmed : m.maxn, e.origin[name] || "",
-        "not verified: common name from Muse Spark or a reviewer", noFormula(e.source || ""), e.id || "", e.n_reviewed || 0, lower(name, m),
+        "not verified: common name from Muse Spark or a reviewer", noFormula(e.source || ""), e.id || "", (e.n_reviewed || 0) + (e.n_renames || 0), lower(name, m),
         has(m, "maxn_upper") ? m.maxn_upper : m.maxn]);
     }
     return csv(rows, "\n");
@@ -242,6 +295,7 @@
   const api = {
     open: (run) => kept[run.id] || run,
     review: (run, track, label) => (kept[run.id] = review(run, track, label)),
+    renameGroup: (run, body) => (kept[run.id] = renameGroup(run, body)),
     effective, exportCsv, globalArchiveCsv, download, nameGroup,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

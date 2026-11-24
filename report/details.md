@@ -88,6 +88,19 @@ count strip on the same timeline, shows each MaxN as a tally with its evidence f
 of low-confidence tracks to confirm, rename or remove (counts and the CSV are recomputed from your edits). Until the queue
 is checked, a count that depends on it is shown as a range, from confident answers only to every queued track answered "Yes".
 
+**Renaming a whole row ("Rename all", D-GROUPRENAME, 11/23; no paper number uses it).** Each row of the count tables
+can be renamed at once, e.g. when an expert sees that every "fish (unidentified)" is a rockfish. Every track of the row
+takes the new name, queued or not, and MaxN is counted again frame by frame from the stored boxes, so two rows that peak
+in different frames do not add up. The rule goes into the run folder's `renames.json` (in order; `POST
+/api/runs/<id>/rename-group` with `{"from", "to", "accept"}`, or `{"undo": "<id>"}` to remove any one of them); `review.json`
+is not touched. The row's queued tracks stay in the queue unless the check box is ticked (`accept`), which marks them
+reviewed under the new name until that rule is undone. A track a person reviews on its own still wins over the check
+box; if that review gives the old name back, the rule renames it again, so to go back, Undo the rule. The rules in force
+are listed above the count tables, each with the number of tracks it renamed and its Undo button. In both CSVs
+`human_edits` counts a rule once, however many tracks it renamed or marked. A crowd-check lower bound ("≥") stays on a
+row that was only renamed and is dropped from a row whose MaxN the merge changed, as that is no longer the count Spark
+checked. Renames are not saved to site memory. The static demo applies the same rules in the page.
+
 **Which tracks are queued (`--queue-conf`, D-H1APPLY, 11/22; no paper number uses it).** A track counted under a
 label from a request word or a discovered word whose audit said yes with confidence `--queue-conf` to 0.7 (default 0.5
 on the command line and the web screen) is counted as before but not queued; its verdict says `"unqueued": true` and the
@@ -111,6 +124,18 @@ New runs replay saved API answers for free unless "Allow paid API calls" is tick
 ## Free replays on another machine
 
 A free replay needs answers cached by the current code (`cache/`, included: every SAM and Spark reply our runs used). The cache is keyed by the exact bytes sent, so the code pins what changes those bytes between machines (x264 thread count, OpenCV IPP path, and on AVX-512 CPUs x264's AVX2 code, since its AVX-512 code encodes some clips to other bytes); moved from a 6-core SSE4.2 CPU to a 12-core AVX-512 one, the demo runs, all tests and 14 of the 15 discovery re-runs replay for $0 (the 15th, DH11, asks SAM a word the final word ladder adds; `report/paper/scripts/compare_tags.py` lists what moved). The brightened night clip (s001) comes out slightly different on the two CPUs, so its answers are cached for both; on a third CPU its re-run may call the API (about $0.20).
+
+## SAM on your own GPU (`FISH_SAM=local`, added after the evaluation)
+
+`fishcount/samworker.py` runs SAM 3.1 in its own virtual environment (sam3 needs numpy<2; the pipeline pins numpy 2.5.4
+for the cache bytes) and answers in the API's text format: one line per frame with objects, the mask cut to its box and
+encoded with the API's one_bit codec (real API records rebuilt byte for byte in `tests/test_samlocal.py`), ids from 0
+by first appearance and at most 16 per call for a word, the prompt's ids tracked both ways for a box. With local SAM or
+`FISH_PRIVATE` no request carrying a clip is sent (fail-closed), local answers are cached under their own backend name
+(checkpoint sha and sam3 commit), the command line runs one SAM call at a time, and a local failure is an error that no
+stage swallows (`local_failures` in status.json and in `batch.py`'s videos.csv). Whether local and API counts agree is
+measured on public videos (one SAM call against another, then whole runs) before any private footage is run this
+way. Setup: [docs/local-sam.md](../docs/local-sam.md).
 
 ## Standard MaxN export (GlobalArchive layout)
 Added after the evaluation (not used in any paper number). Next to the plain CSV, the review screen offers

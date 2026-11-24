@@ -4,7 +4,7 @@ which the web UI polls.
   python3 fishcount/pipeline.py <video> [--offline] [--no-scout] [--no-audit] [--zoom] [--prompts fish ...]"""
 import argparse, concurrent.futures as cf, hashlib, json, math, os, re, shutil, sys, threading, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fishcount import api, tracks, video, render, maskdedupe, motion
+from fishcount import api, tracks, video, render, maskdedupe, motion, split
 import requests
 import cv2, numpy as np   # render set up the optional FISH_PYLIB path
 
@@ -195,18 +195,30 @@ def _skip_stage(run, stage, msg, e):
 def _counted(run, fn, *a, **k):
     """Call an api function and record whether it hit the network (this thread logged spend) or the cache. A paid
     call's ledger line names the run and the stage (the function that called _counted: scout, refill, ...), so a
-    ledger shared by many videos can be split by video and stage (round 3); the line's other keys are unchanged."""
-    before = api.thread_spent()
+    ledger shared by many videos can be split by video and stage (round 3); the line's other keys are unchanged.
+    Local SAM (FISH_SAM=local) is free, so a call that ran there is told by api.thread_real: it is a live call and
+    a local_calls one; a local failure is counted in local_failures and stops the run (api.LocalSamError)."""
+    before, real = api.thread_spent(), api.thread_real()
     rid = getattr(run, "id", None)
     prev = api.set_tag(dict(run=rid, stage=sys._getframe(1).f_code.co_qualname.split(".")[0]) if rid else None)
     try:
         return fn(*a, **k)
+    except api.LocalSamError as e:
+        with run._lock:
+            run.status["local_failures"] = run.status.get("local_failures", 0) + 1
+        try:    # on disk now: mark_error, which closes the failed run, reads status.json, not this Run
+            run.stage(run.status.get("stage", ""), f"local SAM failed: {str(e)[:300]}")
+        except OSError:
+            pass
+        raise
     finally:    # a call that raises after paying (Spark's retry of a broken reply) still counts toward the cap
         api.set_tag(prev)
-        d = api.thread_spent() - before
+        d, ran_here = api.thread_spent() - before, api.thread_real() - real
         with run._lock:
-            run.status["live_calls" if d > 0 else "cached_calls"] += 1
+            run.status["live_calls" if d > 0 or ran_here else "cached_calls"] += 1
             run.status["billed_usd"] += d
+            if ran_here:
+                run.status["local_calls"] = run.status.get("local_calls", 0) + ran_here
             if d > 0 and fn is api.spark:       # a long video's budget warning splits SAM from Spark
                 run.status["spark_usd"] = run.status.get("spark_usd", 0.0) + d
 
@@ -433,7 +445,7 @@ def audit(run, clip, frames, trk, label, context, offline, per_sheet=12, start=0
     return {t: dict(out.get(names[t], {}), name=names[t], frame=best[t][1], box=best[t][2]) for t in ids}
 
 
-# Tracks per shadow / confirm sheet. 11/21: ~226 dark tracks of a 2-min TNC rockfish clip on one 46,992 x 1,228 sheet
+# Tracks per shadow / confirm sheet. 11/21: a few hundred dark tracks of a crowded clip on one sheet
 # made Spark refuse it ("image decode limit exceeded") and the run died with no result. The largest shadow sheet that
 # went through held 32 tracks (LONG1_cr9 S1, 6,640 px tall), so up to this many the sheet is exactly as before and a
 # longer list goes on more sheets of this size (confirm rows are half as tall, so the same count is well inside).
@@ -1245,9 +1257,16 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
         if mv.get("source"):
             mine_t = [t for t, v in trk.items() if v["source"] == mv["source"]]
             mv["counted"] = any(labels.get(t, trk[t]["label"]) for t in mine_t)
-    dups = []
+    dups, splits = [], []
     if do_audit:
         dec = maskdedupe.decode_sources(raw, inf["width"], inf["height"])
+        # one SAM mask over two animals apart (11/23): split where another pass saw a part on its own,
+        # else mark the box with "blobs" for the review screen's upper end (fishcount/split.py)
+        splits = split.apply(frames, trk, labels, verdicts, split.find(frames, labels, trk, dec, sources, inf["width"], inf["height"]),
+                             thumbs=run.path("thumbs"))
+        if splits:
+            run.stage("verify", f"{len(splits)} box(es) held animals apart that another pass boxed on their own: split into "
+                      + ", ".join(sorted({c for s in splits for c in s["into"][1:]})))
         dups = same_animal_pairs(run, clip, frames, trk, labels, dec, offline)
         if dups:
             run.stage("verify", f"Muse Spark looks at {len(dups)} pairs of nested outlines: {sum(d['same'] for d in dups)} are one animal counted twice"
@@ -1284,13 +1303,16 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
                   tracks={t: dict(v, n=len(fs), first=min(fs, default=None), last=max(fs, default=None), frames=None) for t, v in trk.items() for fs in [live.get(t, [])]},
                   verdicts=verdicts, auto_labels=labels, metrics=m, group_metrics=group_metrics(m, inf["fps"]),
                   discovered=found, signs=disc.get("signs", []), recovered=recovered, peak_checks=checks, duplicates=dups,
-                  crowd_checks=crowd, frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]]) for k in ks] for f, ks in frames.items()})
+                  crowd_checks=crowd, frames={str(f): [dict(track=k["track"], box=[round(x, 1) for x in k["box"]], **({"blobs": k["blobs"]} if "blobs" in k else {}))
+                                               for k in ks] for f, ks in frames.items()})
     if site:
         result["site"] = dict(name=site, entries=site_entries)
     if _peak:
         result["crowd_peak"] = dict(half=crowd_peak, windows=_peak["windows"], first_pass=_peak["first"])
     if queue_conf != 0.7:      # only then, so other results keep their exact bytes
         result["queue_conf"] = queue_conf
+    if splits:          # only when a box was split (fishcount/split.py), so other results keep their exact bytes
+        result["splits"] = splits
     if run.capped:      # only when a stage was skipped at the cap, so other results keep their exact bytes
         result["capped"] = run.capped
     run.save("result.json", result)
@@ -2490,7 +2512,7 @@ def same_animal_pairs(run, clip, frames, trk, labels, dec, offline, contain=0.8,
         for i in range(len(ks)):
             for j in range(i + 1, len(ks)):
                 a, b = ks[i]["track"], ks[j]["track"]
-                if a == b or not (lab(a) and lab(b)) or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
+                if split.family(a) == split.family(b) or not (lab(a) and lab(b)) or tracks.overlap(ks[i]["box"], ks[j]["box"]) <= 0:
                     continue
                 c = maskdedupe.containment(ms[i], ms[j])
                 same_word = trk[a]["label"] == trk[b]["label"]
@@ -2630,7 +2652,8 @@ def api_safe(s):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(epilog="FISH_SAM=local / FISH_PRIVATE=1 (docs/local-sam.md): the video file is never "
+                                        "uploaded, but Spark still gets whole frames and crops.")
     ap.add_argument("video")
     ap.add_argument("--id")
     ap.add_argument("--offline", action="store_true", help="cache only, never call the API")
@@ -2661,10 +2684,10 @@ if __name__ == "__main__":
                     help=f"a counted yes from a request or discovered word with confidence C-0.7 is not put in the human "
                          f"queue (default {QUEUE_CONF}: one video's sheet found 1 of 53 not a fish; 0.7 = queue every one, "
                          "as before 11/22)")
-    ap.add_argument("--refill-ahead", type=int, default=4, metavar="N",
+    ap.add_argument("--refill-ahead", type=int, metavar="N",
                     help="send up to N of those re-run windows at once (default 4; same result, sooner; a few calls past "
                          "a window that runs out of ids are paid for and dropped: LONG1 about $0.40 an hour at N=4; "
-                         "1 = one at a time, as before 11/22)")
+                         "1 = one at a time, as before 11/22; FISH_SAM=local: 1 only)")
     ap.add_argument("--discover", action="store_true", help="Spark names what was not asked for; SAM word ladder")
     ap.add_argument("--prompts", nargs="*")
     ap.add_argument("--site", help="site memory: add words reviewers gave to earlier videos of this site (docs/site_memory.md)")
@@ -2683,9 +2706,9 @@ if __name__ == "__main__":
                          "least the first pass of the --prompts words; what a segment leaves out is listed in capped")
     ap.add_argument("--probe-every", type=float, help="with --skip-empty: seconds between probes of a skipped stretch (default 600)")
     ap.add_argument("--segment-workers", type=int, metavar="N",
-                    help="long videos: run N segments at once (default 2, 1 with --skip-empty; same result, sooner; "
-                         "two fit a 4 GB memory cap, each more needs ~1.2 GB; 1 = one after another, which also "
-                         "brings back the upload ahead)")
+                    help="long videos: run N segments at once (default 2, 1 with --skip-empty or FISH_SAM=local; same "
+                         "result, sooner; two fit a 4 GB memory cap, each more needs ~1.2 GB; 1 = one after another, "
+                         "which also brings back the upload ahead)")
     ap.add_argument("--resume", action="store_true",
                     help="long videos: segments an earlier run with this --id finished (same clip, options and code) "
                          "are not run again (after a crash, only the rest runs; not with --skip-empty)")
@@ -2706,10 +2729,24 @@ if __name__ == "__main__":
         ap.error("--crowd-peak needs a number >= 1, the audit and the crowd check, and not --crowd (which tiles the whole clip)")
     if not 0 <= a.queue_conf <= 1:
         ap.error("--queue-conf needs a confidence from 0 to 1 (0.7 = queue every mid-confidence yes, as before)")
+    try:
+        local = api.sam_backend() == "local"     # FISH_SAM / FISH_PRIVATE checked before anything runs
+    except api.LocalSamError as e:
+        ap.error(str(e))
+    if local and ((a.segment_workers or 1) > 1 or (a.refill_ahead or 1) > 1):
+        ap.error("FISH_SAM=local runs one SAM call at a time on one GPU: --segment-workers and --refill-ahead take only 1")
+    if a.refill_ahead is None:      # D-DEFAULTS: four windows at once (overnight T4)
+        a.refill_ahead = 1 if local else 4
     if a.segment_workers is None:   # D-DEFAULTS: two at once (overnight T7: same result, 1.26-1.44x, <= 3.3 GB)
-        a.segment_workers = 1 if a.skip_empty else 2
+        a.segment_workers = 1 if a.skip_empty or local else 2
     if a.segment_workers < 1 or (a.segment_workers > 1 and a.skip_empty):
         ap.error("--segment-workers needs a number >= 1, and only 1 with --skip-empty (its video cap is paid segment by segment)")
+    if local:   # the worker (its own virtualenv, the GPU, the checkpoint) is checked before any Spark call is paid
+        try:
+            api.local_preflight(offline=a.offline)
+        except api.LocalSamError as e:
+            print(f"local SAM: {e}", file=sys.stderr)
+            sys.exit(1)
     a.id = a.id or time.strftime("%m%d-%H%M%S")   # named here so the run folder can be printed at the end
     from fishcount import longvideo, provenance
     run_dir = os.path.join(RUNS, a.id)
@@ -2741,7 +2778,7 @@ if __name__ == "__main__":
                                    misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                                    probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
                                    segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume, queue_conf=a.queue_conf,
-                                   upload_ahead=not a.no_upload_ahead)
+                                   upload_ahead=not (a.no_upload_ahead or local))
         else:
             r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, short_cap, a.discover,
                              lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,

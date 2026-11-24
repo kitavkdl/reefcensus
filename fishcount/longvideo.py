@@ -331,6 +331,8 @@ def _fingerprint(seg_clip, kw):
         if f.endswith(".py"):
             h.update(f.encode() + open(os.path.join(here, f), "rb").read())
     opts = {k: v for k, v in kw.items() if k not in ("offline", "max_usd")}     # the cap: resume.json, _kept
+    if api.sam_backend() == "local":    # an API segment is not kept for a local run, nor one of another checkpoint
+        opts["sam_backend"] = api.local_tag()
     return dict(clip=api.file_sha(seg_clip) if seg_clip else None, options=json.loads(json.dumps(opts, sort_keys=True, default=repr)),
                 code=h.hexdigest()[:24])
 
@@ -507,7 +509,7 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     room = dict(seg=[], review=[], warned=False)    # every finished segment's folder bytes, for disk_need
     ahead = {}      # k -> dict(ev=Event set once the look-ahead has cut segment k, ok=whether that cut worked)
     look = (upload_ahead and workers == 1 and not kw.get("offline") and kw.get("lowlight") == "off"
-            and kw.get("haze", "off") == "off")
+            and kw.get("haze", "off") == "off" and api.sam_backend() == "api" and not api.PRIVATE)   # local SAM: never
     if upload_ahead and workers > 1 and not kw.get("offline"):     # the CLI asks for both by default (D-DEFAULTS)
         st["log"].append(f"{time.strftime('%H:%M:%S')} upload ahead not used with {workers} segments at once (the "
                          "other segment keeps running while one uploads); --segment-workers 1 for it")

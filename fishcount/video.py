@@ -33,9 +33,9 @@ X264_ARGS = ["-threads", X264_THREADS] + _x264_asm_cap()
 def encoder_probe():
     """sha256 (24 hex) of a 4 s synthetic clip (ffmpeg's testsrc2, 640x360, 5 fps) encoded exactly as ingest encodes
     (libx264 X264_ARGS veryfast crf 20 yuv420p, mp4), or None if ffmpeg fails. It changes when this machine would
-    re-encode a video to other bytes, and so miss the cache (keyed by clip content): checked 11/21c on three real
-    sources (TNC 29.97 fps, GoPro 29.97 fps, DH11) with x264 at 4 and 12 threads and ffmpeg 9.0.2 instead of 7.0.2:
-    each change moved all three clips' bytes and this probe's; asm SSE4.2 and the uncapped AVX-512 code moved
+    re-encode a video to other bytes, and so miss the cache (keyed by clip content): checked 11/21c on real
+    sources (GoPro 29.97 fps and DH11 among them) with x264 at 4 and 12 threads and ffmpeg 9.0.2 instead of 7.0.2:
+    each change moved every clip's bytes and this probe's; asm SSE4.2 and the uncapped AVX-512 code moved
     neither. Rare clip-specific changes (DH3's reversed zoom cell under AVX-512, above) it may not see. ~0.05 s."""
     import hashlib, tempfile
     fd, dst = tempfile.mkstemp(suffix=".mp4")
@@ -153,7 +153,7 @@ def is_dark(st):
 # the six luderick development clips: median L p95-p5 of 80, 90, 97, 108, 127, 131; the one at 80 (fish_20190710_4)
 # is the one whose second fish the pipeline misses (recall 82%). The bound was set from those widths before any run.
 # It does not carry over: the two 53-minute SEFSC videos (bright, median L 160-175, not dark) measure 28-37 and 66, so
-# "auto" would CLAHE every frame of them, while DH1-11, the nautilus clips, TF and TNC measure 113-249. One dataset's
+# "auto" would CLAHE every frame of them, while DH1-11, the nautilus clips and TF measure above 110. One dataset's
 # bound, so "auto" is not a default candidate; "on" is for a person who has looked at the footage.
 HAZE_WIDTH = 85
 

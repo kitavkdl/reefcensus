@@ -8,7 +8,8 @@ MaxN and first arrival as they are. The review screen asks the deciding tracks f
 possible count, and recomputes after each answer, so accepting a track raises the lower end and drops tracks that can
 no longer matter. Group rows (all fish, all crabs) are not used for this ordering; they follow from the labels.
 
-decisive(res, review) -> {track: rank} (1 = ask first) for the unreviewed queued tracks that can change a count."""
+decisive(res, review, rules) -> {track: rank} (1 = ask first) for the unreviewed queued tracks that can change a count;
+rules = the run's group renames (renames.json, web/server.py rename_group), applied to every name that comes out."""
 from collections import defaultdict
 
 from fishcount import pipeline
@@ -25,9 +26,29 @@ def accept_label(res, t):
     return sp.lower() if sp and sp != "unknown" else f"{res['tracks'][t]['label']} (unidentified)"
 
 
-def decisive(res, review=None):
+def renamed(name, rules):
+    """A label after the run's group renames, applied in order (a -> b then b -> c makes a c). None stays None."""
+    for r in rules or ():
+        if name is not None and name == r.get("from"):
+            name = r["to"]
+    return name
+
+
+def renamed_counts(names, rules):
+    """How many of these names each rule changes, applied in order as renamed() does (a -> b then b -> c: both count)."""
+    n = [0] * len(rules or ())
+    for name in names:
+        for i, r in enumerate(rules or ()):
+            if name is not None and name == r.get("from"):
+                name, n[i] = r["to"], n[i] + 1
+    return n
+
+
+def decisive(res, review=None, rules=None):
     review = review or {}
     labels = dict(res.get("auto_labels", {})); labels.update(review)
+    if rules:
+        labels = {t: renamed(l, rules) for t, l in labels.items()}
     open_q = {t for t, v in res.get("verdicts", {}).items() if pipeline.needs_review(v) and t not in review}
     sure = defaultdict(lambda: defaultdict(int))        # label -> frame -> boxes that stay whatever the queue says
     maybe = defaultdict(lambda: defaultdict(set))       # label -> frame -> open queued tracks that would add a box
@@ -37,7 +58,7 @@ def decisive(res, review=None):
         for k in ks:
             t = k["track"]
             if t in open_q:
-                L = accept_label(res, t)
+                L = renamed(accept_label(res, t), rules)
                 maybe[L][f].add(t)
                 first_track[t] = min(first_track.get(t, f), f)
             elif labels.get(t):

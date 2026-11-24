@@ -2,7 +2,7 @@
 Every paid call runs inside `reserve(est)`, which refuses to exceed FISH_BUDGET (default $1) for the lifetime of the
 ledger file; the check and the hold are atomic across threads and processes, so parallel calls cannot overshoot it. The API key comes from META_API_KEY (environment or a .env file in the repo root,
 see .env.example) or else ~/.config/meta-api/key, and is never printed."""
-import base64, hashlib, json, os, sys, threading, time
+import atexit, base64, hashlib, json, os, select, signal, subprocess, sys, threading, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -29,7 +29,12 @@ CACHE = os.environ.get("FISH_CACHE_DIR") or os.path.join(ROOT, "cache")   # FISH
 # one spend ledger whatever the cache; FISH_LEDGER points a git worktree (its own ROOT) at the main checkout's ledger,
 # so a branch's spend is not split into a second copy that FISH_BUDGET never sees
 LEDGER = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache", "ledger.jsonl")
-SAM_PER_FRAME = 0.20 / 1000
+# FISH_SAM: "" or "api" = the Meta API (as before), "local" = this machine's GPU (samworker.py, docs/local-sam.md);
+# anything else is refused at the first SAM call. FISH_PRIVATE (any value but "" / "0"): SAM must be local, and no
+# request that carries a clip goes out whatever FISH_SAM says (the desktop .env sets both, D-LOCALSAM).
+SAM_BACKEND = os.environ.get("FISH_SAM", "")
+PRIVATE = os.environ.get("FISH_PRIVATE", "") not in ("", "0")
+SAM_PER_FRAME = 0.0 if SAM_BACKEND == "local" else 0.20 / 1000    # local SAM costs nothing: caps count Spark only
 SAM_MIN_FRAMES = 50
 SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
 PRICES = {"muse-wonder-1.0": (4.0e-6, 20.0e-6)}   # $/token (in, out); everything else is priced as Spark
@@ -39,6 +44,32 @@ SAM_MODEL = "sam-3.1"
 
 class BudgetExceeded(RuntimeError):
     pass
+
+
+class LocalSamError(Exception):
+    """Local SAM could not answer (worker died twice, timed out, out of memory) or the SAM settings refuse a call.
+    On purpose not a RuntimeError / ValueError: pipeline.MOTION_ERRORS catches those, and a stage that loses its
+    SAM call would quietly count nothing. This stops the run; --resume runs the segment again."""
+
+
+def sam_backend():
+    """"api" or "local"; LocalSamError for any other FISH_SAM, or for FISH_PRIVATE with the API."""
+    b = SAM_BACKEND or "api"
+    if b not in ("api", "local"):
+        raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r}: use api or local (unset = api)")
+    if PRIVATE and b != "local":
+        raise LocalSamError("FISH_PRIVATE is set, so SAM must run here (FISH_SAM=local): clips are not sent to the Meta API")
+    return b
+
+
+def _no_clip_out(url, body=None, raw=False):
+    """Raise before a request that would carry a clip leaves this machine (an upload, a SAM call, any body with an
+    input_video, any raw body or file: raw) unless SAM is the API and FISH_PRIVATE is not set. Fail-closed: a
+    misspelt FISH_SAM blocks too."""
+    if SAM_BACKEND in ("", "api") and not PRIVATE:
+        return
+    if raw or url.rstrip("/").endswith(("/files", "/responses")) or "input_video" in json.dumps(body, default=str):
+        raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r} FISH_PRIVATE={PRIVATE}: refusing to send a clip to {url}")
 
 
 def _key():
@@ -148,6 +179,12 @@ def thread_spent():
     return getattr(_tl, "usd", 0.0)
 
 
+def thread_real():
+    """Calls this thread made that really ran rather than came from the cache, though free (local SAM): the
+    pipeline counts them as live calls (it went by spend alone, and local SAM spends nothing)."""
+    return getattr(_tl, "real", 0)
+
+
 def set_tag(tag):
     """Name what this thread's next paid calls belong to ({"run": id, "stage": name}, or None); -> the previous tag.
     pipeline._counted sets it around each call, so a shared ledger can say which video and which stage spent what."""
@@ -231,22 +268,33 @@ def file_sha(path):
 
 
 # ---------------- SAM 3.1 ----------------
+def _sam_payload(clip_path, prompt):
+    """The cache key of a SAM answer: (clip bytes, prompt), as always for the API; local SAM adds its backend
+    (checkpoint and sam3 commit, local_tag), so its answers never stand in for the API's or another model's."""
+    payload = {"clip": file_sha(clip_path), "prompt": prompt}
+    if sam_backend() == "local":
+        payload["backend"] = local_tag()
+    return payload
+
+
 def sam_cached(clip_path, prompt):
     """True when sam_video(clip_path, prompt) would be answered from cache (free); an unreadable file is not."""
-    got = _read_cache(_cache_path("sam", {"clip": file_sha(clip_path), "prompt": prompt}))
+    got = _read_cache(_cache_path("sam", _sam_payload(clip_path, prompt)))
     return got is not None and isinstance(got.get("output_text"), str)
 
 
 def sam_video(clip_path, prompt, n_frames, offline=False):
     """Track `prompt` through the clip. Returns the raw output_text (one line per frame with objects).
-    Cached by (clip content hash, prompt). offline=True never calls the network (raises if not cached)."""
-    payload = {"clip": file_sha(clip_path), "prompt": prompt}
+    Cached by (clip content hash, prompt[, local backend]). offline=True never calls SAM (raises if not cached)."""
+    payload = _sam_payload(clip_path, prompt)
     cp = _cache_path("sam", payload)
     got = _read_cache(cp)
     if got is not None and isinstance(got.get("output_text"), str):
         return got["output_text"]
     if offline:
         raise FileNotFoundError(f"not cached: SAM {prompt!r} on {clip_path}")
+    if "backend" in payload:
+        return _sam_local(clip_path, prompt, n_frames, payload, cp)
     est = max(SAM_MIN_FRAMES, n_frames) * SAM_PER_FRAME
     with reserve(est):
         return _sam_live(clip_path, prompt, n_frames, payload, cp)
@@ -270,6 +318,7 @@ def _upload(clip_path, key, fresh=False, sha=None):
     UPLOAD_REUSE_S), and threads asking for the same clip wait for that one upload. A failed upload (dropped
     connection, timeout, 5xx) is sent again. Uploading is free; SAM sees the same file either way, so answers and
     cache keys do not change. fresh=True uploads again even when an id is held (the server no longer had it)."""
+    _no_clip_out(f"{BASE}/files")
     sha = sha or file_sha(clip_path)
     with _uploads_lock:
         lock = _upload_locks.setdefault(sha, threading.Lock())
@@ -343,6 +392,7 @@ def _post(url, **kw):
     for about CONNECT_WAIT_S of pauses (_Outage) and does not use up those tries. A read timeout is not retried:
     the server may have done (and billed) the work. The last answer is returned as it is (the caller raises on
     its status)."""
+    _no_clip_out(url, kw.get("json"), raw="files" in kw or "data" in kw)
     attempt, outage = 0, _Outage()
     while True:
         try:
@@ -361,6 +411,7 @@ def _post(url, **kw):
 
 
 def _sam_live(clip_path, prompt, n_frames, payload, cp):
+    sam_backend()
     key = _key()
     fid, reused = _upload(clip_path, key, sha=payload["clip"])
     for attempt in range(2):
@@ -407,6 +458,219 @@ def _sam_live(clip_path, prompt, n_frames, payload, cp):
         raise RuntimeError(f"SAM status {status}")
     out = "".join(text)
     _write_cache(cp, {"payload": payload, "output_text": out, "usage": usage})
+    return out
+
+
+# ---------------- local SAM 3.1 (FISH_SAM=local) ----------------
+WORKER = os.path.join(ROOT, "fishcount", "samworker.py")
+# ponytail: 2 frames/s is a placeholder until step 0 measures the desktop GPU (FISH_SAM_FPS overrides)
+SAM_FPS = float(os.environ.get("FISH_SAM_FPS", "2"))
+LOCAL_MIN_TIMEOUT = 120.0   # a call may take n_frames / SAM_FPS x 3 + 60 s, at least this
+LOCAL_LOAD_S = 600.0        # extra for the first call of a worker, which loads the model
+# one worker per machine (per user): not under CACHE, which FISH_CACHE_DIR moves
+LOCAL_LOCK = os.path.expanduser("~/.cache/fishcount/sam_local.lock")
+
+
+class _Died(Exception):
+    pass
+
+
+class _LocalWorker:
+    """The one samworker.py process of this pipeline process (design-v3 B1). Started at the first local SAM call
+    with FISH_SAM_PYTHON (its own virtualenv) and `-I`; holds an flock on LOCAL_LOCK (with the worker) while it lives, so a
+    second process on the machine (the web server, another CLI) stops at once instead of loading a second model
+    into the GPU's 8 GB. Threads take turns (one call at a time: a single GPU is not faster with more). A worker
+    that dies is started once more and the call sent again; a second death, a timeout (the worker and its encoder
+    pool are killed) or an error reply is a LocalSamError."""
+
+    def __init__(self):
+        self.lock, self.proc, self.lockfh, self.info, self.buf, self.n, self.loaded = threading.Lock(), None, None, None, b"", 0, False
+
+    def _start(self):
+        py = os.environ.get("FISH_SAM_PYTHON", "")
+        if not py or not os.path.exists(py):
+            raise LocalSamError("FISH_SAM=local needs FISH_SAM_PYTHON=<venv-sam>/bin/python (docs/local-sam.md)")
+        if self.lockfh is None:
+            import fcntl
+            try:
+                os.makedirs(os.path.dirname(LOCAL_LOCK), exist_ok=True)
+                fh = open(LOCAL_LOCK, "a")
+            except OSError as e:
+                raise LocalSamError(f"cannot open the local SAM lock {LOCAL_LOCK}: {e}")
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                fh.close()
+                raise LocalSamError("another process holds the local SAM worker (one model per GPU): wait for it to end")
+            self.lockfh = fh
+        try:    # the worker holds the lock too (pass_fds): if this process is killed, a worker still on the GPU keeps it
+            os.makedirs(CACHE, exist_ok=True)
+            with open(os.path.join(CACHE, "sam_local.log"), "ab") as log:
+                self.proc = subprocess.Popen([py, "-I", WORKER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
+                                             start_new_session=True, pass_fds=(self.lockfh.fileno(),))
+        except OSError as e:    # FileNotFoundError / PermissionError would read as "nothing found" (MOTION_ERRORS)
+            raise LocalSamError(f"cannot start the local SAM worker with {py}: {e}")
+        self.buf, self.loaded = b"", False
+        try:
+            info = self._ask({"cmd": "version"}, LOCAL_LOAD_S)
+            info.pop("ok", None)
+            info.pop("id", None)
+            if self.info is not None and info != self.info:
+                raise LocalSamError(f"the local SAM worker changed while running: {self.info} -> {info}")
+            if not (str(info.get("checkpoint_sha256") or "") and str(info.get("sam3_commit") or "")):
+                raise LocalSamError(f"the local SAM worker cannot name its checkpoint and sam3 commit: {info}")
+        except BaseException:
+            self._kill()        # a worker that is refused does not keep the GPU
+            raise
+        self.info = info
+
+    def _ask(self, req, timeout):
+        self.n += 1
+        req = dict(req, id=self.n)
+        try:
+            self.proc.stdin.write((json.dumps(req) + "\n").encode())
+            self.proc.stdin.flush()
+        except (BrokenPipeError, OSError) as e:
+            raise _Died(f"worker gone ({e})")
+        end, fd = time.time() + timeout, self.proc.stdout.fileno()
+        while b"\n" not in self.buf:
+            left = end - time.time()
+            if left <= 0:
+                self._kill()
+                raise LocalSamError(f"local SAM timed out after {timeout:.0f} s ({req.get('cmd')} {req.get('prompt', '')!r} "
+                                    f"on {req.get('clip', '')}): the worker was stopped; see {CACHE}/sam_local.log")
+            if select.select([fd], [], [], min(left, 5.0))[0]:
+                chunk = os.read(fd, 1 << 20)
+                if not chunk:
+                    raise _Died(f"worker exited ({self.proc.poll()})")
+                self.buf += chunk
+        line, self.buf = self.buf.split(b"\n", 1)
+        try:
+            got = json.loads(line)
+        except ValueError:
+            self._kill()
+            raise LocalSamError(f"local SAM worker sent an unreadable line: {line[:200]!r}")
+        if not isinstance(got, dict) or got.get("id") != req["id"]:
+            self._kill()
+            raise LocalSamError(f"local SAM worker answered out of turn: {str(got)[:200]}")
+        if not got.get("ok"):
+            raise LocalSamError(f"local SAM failed ({req.get('prompt', req['cmd'])!r} on {req.get('clip', '')}): {got.get('error')}")
+        return got
+
+    def _kill(self):
+        if self.proc is not None:
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)       # its encoder pool too (start_new_session)
+            except (ProcessLookupError, PermissionError):
+                pass
+            self.proc.wait()
+            for f in (self.proc.stdin, self.proc.stdout):
+                try:
+                    f.close()
+                except OSError:
+                    pass
+        self.proc = None
+
+    def call(self, req, timeout):
+        with self.lock:
+            for attempt in (0, 1):
+                try:
+                    if self.proc is None or self.proc.poll() is not None:
+                        self._kill()        # a worker dead between calls: its pipes and encoder pool
+                        self._start()
+                    extra = 0.0 if self.loaded or req["cmd"] != "track" else LOCAL_LOAD_S
+                    got = self._ask(req, timeout + extra)
+                    self.loaded = self.loaded or req["cmd"] == "track"
+                    return got
+                except _Died as e:
+                    self._kill()
+                    if attempt:
+                        raise LocalSamError(f"the local SAM worker died twice ({e}); see {CACHE}/sam_local.log")
+
+    def version(self):
+        with self.lock:
+            if self.info is None:
+                try:
+                    self._start()
+                except _Died as e:
+                    raise LocalSamError(f"the local SAM worker died before naming itself ({e}); see {CACHE}/sam_local.log")
+            return self.info
+
+    def close(self):
+        """Stop the worker: stdin closed (it ends after the call in hand), killed if still there 5 s later."""
+        p, self.proc = self.proc, None
+        if p is not None and p.poll() is None:
+            try:
+                p.stdin.close()
+                p.wait(5)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            if p.poll() is None:
+                try:
+                    os.killpg(p.pid, signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    pass
+                p.wait()
+        if p is not None:
+            for f in (p.stdin, p.stdout):
+                try:
+                    f.close()
+                except OSError:
+                    pass
+        if self.lockfh is not None:
+            self.lockfh.close()
+            self.lockfh = None
+
+
+_local, _local_init = None, threading.Lock()
+
+
+def _worker():
+    global _local
+    with _local_init:
+        if _local is None:
+            _local = _LocalWorker()
+        return _local
+
+
+def _local_reset():
+    """Stop the worker and forget it (tests; the end of the process)."""
+    global _local
+    with _local_init:
+        w, _local = _local, None
+    if w is not None:
+        w.close()
+
+
+atexit.register(_local_reset)
+
+
+def local_preflight(offline=False):
+    """Start the worker and check it before anything is paid (the CLI calls this): -> its version dict. A live run
+    also needs CUDA. Raises LocalSamError."""
+    info = _worker().version()
+    if not offline and not info.get("cuda"):
+        raise LocalSamError(f"local SAM: torch sees no CUDA GPU ({info.get('torch')}); nvidia-smi in WSL, docs/local-sam.md")
+    return info
+
+
+def local_tag():
+    """The local backend's name in cache keys, fingerprints and provenance: sam3.1-local:<checkpoint sha 12>:<sam3
+    commit 7>. Another checkpoint or sam3 version makes new cache entries."""
+    i = _worker().version()
+    return f"sam3.1-local:{i['checkpoint_sha256'][:12]}:{i['sam3_commit'][:7]}"
+
+
+def _sam_local(clip_path, prompt, n_frames, payload, cp):
+    t = time.time()
+    timeout = max(LOCAL_MIN_TIMEOUT, n_frames / SAM_FPS * 3 + 60)
+    out = _worker().call({"cmd": "track", "clip": os.path.abspath(clip_path), "prompt": prompt}, timeout)["text"]
+    if not isinstance(out, str):
+        raise LocalSamError(f"local SAM sent no text for {prompt!r} on {clip_path}")
+    _write_cache(cp, {"payload": payload, "output_text": out,
+                      "usage": {"video_frames_processed": n_frames, "local_seconds": round(time.time() - t, 1)}})
+    _log("sam", 0.0, f"{os.path.basename(clip_path)}:{prompt} (local)")
+    _tl.real = thread_real() + 1
     return out
 
 
