@@ -80,8 +80,8 @@ the run there.
 | `FISH_SAM_CHECKPOINT` | Hugging Face download | a checkpoint file to use instead |
 | `FISH_SAM_FPS` | 2 | frames a second the GPU tracks; sets each call's time limit (frames / fps x 3 + 60 s, at least 120 s, +600 s for the model load) |
 | `FISH_SAM_ENCODERS` | 4 | processes that encode masks (CPU) |
-| `FISH_SAM_OFFLOAD` | unset | `1` keeps the video frames in RAM instead of GPU memory |
-| `FISH_SAM_BATCH` | 1 | frames sam3 detects and post-processes together (its own 16 needs ~21 GB); raise it only on a bigger GPU |
+| `FISH_SAM_OFFLOAD` | unset | `1` keeps the video frames in RAM instead of GPU memory (same output bytes) |
+| `FISH_SAM_BATCH` | 1 | frames sam3 detects and post-processes together (its own 16 needs ~21 GB); raise it only on a bigger GPU. It changes a word call's output bytes, so it is part of the cache key; not a whole number of 1 or more stops the worker |
 
 ## How it behaves
 - **One SAM call at a time.** The worker (`fishcount/samworker.py`, run with the sam venv's `python -I`) is one
@@ -95,8 +95,8 @@ the run there.
   limit or an error (e.g. CUDA out of memory) raises `LocalSamError`, which no stage swallows: the run ends with the
   error, `status.json` counts it in `local_failures` (a long video: the segment's), `batch.py`'s `videos.csv` has a
   `local_failures` column, and `--resume` runs that segment again. It is never sent to the API instead.
-- **Cache.** A local answer's key adds `backend: sam3.1-local:<checkpoint sha 12>:<sam3 commit 7>`, so it never stands in
-  for an API answer or another checkpoint's, and an API answer is not reused by a local run. The same backend goes into
+- **Cache.** A local answer's key adds `backend: sam3.1-local:<checkpoint sha 12>:<sam3 commit 7>:b<FISH_SAM_BATCH>`, so it never stands in
+  for an API answer or another checkpoint's or batch's, and an API answer is not reused by a local run. The same backend goes into
   `--resume` fingerprints and `provenance.json` (`models.sam`, `models.sam_local`). An `--offline` replay of a local
   run needs the same backend name, so it starts the worker (no GPU needed) on the machine that holds the videos.
 - `status.json` counts local calls as live calls and in `local_calls`.

@@ -567,8 +567,9 @@ class _LocalWorker:
             info.pop("id", None)
             if self.info is not None and info != self.info:
                 raise LocalSamError(f"the local SAM worker changed while running: {self.info} -> {info}")
-            if not (str(info.get("checkpoint_sha256") or "") and str(info.get("sam3_commit") or "")):
-                raise LocalSamError(f"the local SAM worker cannot name its checkpoint and sam3 commit: {info}")
+            if not (str(info.get("checkpoint_sha256") or "") and str(info.get("sam3_commit") or "")
+                    and isinstance(info.get("batch"), int)):
+                raise LocalSamError(f"the local SAM worker cannot name its checkpoint, sam3 commit and batch: {info}")
         except BaseException:
             self._kill()        # a worker that is refused does not keep the GPU
             raise
@@ -706,9 +707,9 @@ def local_preflight(offline=False):
 
 def local_tag():
     """The local backend's name in cache keys, fingerprints and provenance: sam3.1-local:<checkpoint sha 12>:<sam3
-    commit 7>. Another checkpoint or sam3 version makes new cache entries."""
+    commit 7>:b<FISH_SAM_BATCH>. Another checkpoint, sam3 version or batch makes new cache entries."""
     i = _worker().version()
-    return f"sam3.1-local:{i['checkpoint_sha256'][:12]}:{i['sam3_commit'][:7]}"
+    return f"sam3.1-local:{i['checkpoint_sha256'][:12]}:{i['sam3_commit'][:7]}:b{i['batch']}"
 
 
 def _sam_local(clip_path, prompt, n_frames, payload, cp):

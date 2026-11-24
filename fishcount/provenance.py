@@ -15,7 +15,8 @@ never stopped by its own record keeping."""
 import datetime, hashlib, json, os, platform, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENV_KEYS = ("FISH_CACHE_DIR", "FISH_LEDGER", "FISH_BUDGET", "FISH_SPARK_MODEL", "FISH_SAM", "FISH_PRIVATE")
+ENV_KEYS = ("FISH_CACHE_DIR", "FISH_LEDGER", "FISH_BUDGET", "FISH_SPARK_MODEL", "FISH_SAM", "FISH_PRIVATE",
+            "FISH_SAM_BATCH", "FISH_SAM_OFFLOAD")
 
 
 def _now():

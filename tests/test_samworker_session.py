@@ -118,6 +118,12 @@ class BuildBatch(unittest.TestCase):
             self.build(m, **env)
             self.assertEqual((m.batched_grounding_batch_size, m.postprocess_batch_size), (want, want))
 
+    def test_bad_batch_is_a_plain_error(self):
+        for v in ("0", "-2", "two", "1.5", "", "²"):
+            m = types.SimpleNamespace(batched_grounding_batch_size=16, postprocess_batch_size=16)
+            with self.assertRaisesRegex(RuntimeError, "FISH_SAM_BATCH"):
+                self.build(m, FISH_SAM_BATCH=v)
+
     def test_other_sam3_shape_is_a_plain_error(self):
         with self.assertRaisesRegex(RuntimeError, "docs/local-sam.md"):
             self.build(types.SimpleNamespace(postprocess_batch_size=16))

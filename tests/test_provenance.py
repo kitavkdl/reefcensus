@@ -1,6 +1,7 @@
 """<run>/provenance.json (fishcount/provenance.py): what made a run, one entry per start, never stopping the run.
 No network, $0."""
 import hashlib, json, os, shutil, subprocess, sys, tempfile, unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -40,6 +41,12 @@ class Provenance(unittest.TestCase):
         self.assertIn("python", e["machine"])
         self.assertEqual(e["private"], {"on": api.PRIVATE, "by": list(api.PRIVATE_BY)})
         self.assertNotIn("finished", e)
+
+    def test_local_sam_settings_are_recorded(self):
+        with mock.patch.dict(os.environ, FISH_SAM_BATCH="2", FISH_SAM_OFFLOAD="0"):
+            provenance.start(self.run, ["x"], self.src)
+        env = self.entries()[0]["environment"]
+        self.assertEqual((env["FISH_SAM_BATCH"], env["FISH_SAM_OFFLOAD"]), ("2", "0"))
 
     def test_finish_adds_the_result_hash_or_the_error(self):
         provenance.start(self.run, ["a"], self.src)

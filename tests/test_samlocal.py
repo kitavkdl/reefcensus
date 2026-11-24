@@ -5,7 +5,7 @@ What must hold: (1) with local SAM or FISH_PRIVATE no clip ever goes to the Meta
 value is refused), (2) with FISH_SAM unset nothing changes (cache keys, CLI defaults, provenance), (3) a local
 failure stops the run instead of being counted as "nothing found", (4) the worker's text has the API's format.
 Run: python3 -m unittest discover -s tests -v"""
-import csv, fcntl, json, os, subprocess, sys, tempfile, textwrap, threading, time, unittest
+import csv, fcntl, json, os, subprocess, sys, tempfile, textwrap, threading, time, types, unittest
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,12 +16,12 @@ import numpy as np
 
 CLIP = os.path.join(ROOT, "tests", "data", "nautilus_s004_0_12.mp4")
 INFO = dict(torch="2.9.0", cuda=True, gpu="NVIDIA GeForce RTX 4060 Ti", vram_mb=8188, sam3_commit="31cb7e6abcdef",
-            checkpoint="/hf/sam3.1_multiplex.pt", checkpoint_sha256="0123456789abcdef" * 4, meta_sam_parser="0.1.0")
-TAG = "sam3.1-local:0123456789ab:31cb7e6"
+            checkpoint="/hf/sam3.1_multiplex.pt", checkpoint_sha256="0123456789abcdef" * 4, meta_sam_parser="0.1.0", batch=1)
+TAG = "sam3.1-local:0123456789ab:31cb7e6:b1"
 
 # The fake worker: same protocol as fishcount/samworker.py (one JSON object a line each way). FAKE_MODE in its
 # environment: ok | die_once (exits on its first track, a marker file remembers) | die_always | fail | hang |
-# bad_version (cannot name its checkpoint) | version_fails (an error reply to version) | die_at_start.
+# bad_version (cannot name its checkpoint) | no_batch (no FISH_SAM_BATCH in version) | version_fails (an error reply to version) | die_at_start.
 FAKE = textwrap.dedent('''
     import json, os, sys, time
     mode, d = os.environ.get("FAKE_MODE", "ok"), os.environ["FAKE_DIR"]
@@ -34,6 +34,8 @@ FAKE = textwrap.dedent('''
             out = dict(INFO)
             if mode == "bad_version":
                 out["checkpoint_sha256"] = None
+            if mode == "no_batch":
+                out.pop("batch")
             if mode == "version_fails":
                 out = dict(ok=False, error="no GPU")
         else:
@@ -257,6 +259,12 @@ class LocalCalls(_Local):
         self.assertEqual(api.local_preflight(), INFO)
         self.assertEqual(api.local_tag(), TAG)
 
+    def test_another_batch_is_another_backend(self):
+        # FISH_SAM_BATCH changes a word call's bytes on the GPU (step 0): its answers must not stand in for batch 1's
+        w = types.SimpleNamespace(version=lambda: dict(INFO, batch=2))
+        with mock.patch.object(api, "_worker", lambda: w):
+            self.assertEqual(api.local_tag(), "sam3.1-local:0123456789ab:31cb7e6:b2")
+
     def test_without_the_sam_python_it_stops(self):
         with mock.patch.dict(os.environ, FISH_SAM_PYTHON=""):
             with self.assertRaises(api.LocalSamError):
@@ -328,6 +336,15 @@ class WorkerBetweenCalls(_Local):
         old.wait()
         self.assertTrue(api.sam_video(CLIP, "a", 60) == "" and api._local.proc is not old)
         self.assertTrue(old.stdin.closed and old.stdout.closed)
+
+
+class NoBatch(_Local):
+    MODE = "no_batch"
+
+    def test_refused_and_stopped(self):
+        with self.assertRaisesRegex(api.LocalSamError, "batch"):
+            api.local_preflight()
+        self.assertIsNone(api._local.proc)
 
 
 class WorkerBadVersion(_Local):

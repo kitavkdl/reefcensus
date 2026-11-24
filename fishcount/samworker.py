@@ -147,7 +147,16 @@ def version():
     return dict(torch=torch.__version__, cuda=cuda, gpu=torch.cuda.get_device_name(0) if cuda else None,
                 vram_mb=torch.cuda.get_device_properties(0).total_memory // 2 ** 20 if cuda else None,
                 sam3=md.version("sam3"), sam3_commit=commit, checkpoint=ckpt, checkpoint_sha256=sha,
-                meta_sam_parser=md.version("meta-sam-parser"))
+                meta_sam_parser=md.version("meta-sam-parser"), batch=_batch())
+
+
+def _batch():
+    """FISH_SAM_BATCH, checked. It changes a word call's output bytes (1, 2 and 4 differ on the same clip), so
+    version() reports it and it is part of the cache key (api.local_tag)."""
+    raw = os.environ.get("FISH_SAM_BATCH", "1")
+    if not (raw.isascii() and raw.isdigit()) or int(raw) < 1:
+        raise RuntimeError(f"FISH_SAM_BATCH={raw!r}: give a whole number of frames, 1 or more")
+    return int(raw)
 
 
 def build():
@@ -159,8 +168,8 @@ def build():
     p = build_sam3_multiplex_video_predictor(checkpoint_path=ckpt, max_num_objects=MAX_IDS, use_fa3=False)
     # sam3's builder runs the detector and the mask postprocess on 16 frames at once (sized for an 80 GB GPU): on 8 GB
     # that asks for ~21 GB, which WSL spills to system RAM (minutes a frame) and then runs out. The batch is how many
-    # frames go through together, not what is computed for each.
-    batch = int(os.environ.get("FISH_SAM_BATCH", "1"))
+    # frames go through together; a word call's bytes still differ with it (step 0), hence _batch() in the cache key.
+    batch = _batch()
     if not all(hasattr(p.model, a) for a in ("batched_grounding_batch_size", "postprocess_batch_size")):
         raise RuntimeError("this sam3 has no batched_grounding_batch_size / postprocess_batch_size: "
                            "install the sam3 commit in docs/local-sam.md")
