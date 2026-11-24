@@ -23,9 +23,32 @@ Two virtual environments, because sam3 needs `numpy<2` and the pipeline pins `nu
 
 ```bash
 python3 -m venv ~/venv-main && ~/venv-main/bin/pip install -r requirements.txt
-python3 -m venv ~/venv-sam && ~/venv-sam/bin/pip install torch --index-url https://download.pytorch.org/whl/cu128
-~/venv-sam/bin/pip install "git+https://github.com/facebookresearch/sam3.git@31cb7e624e4fe95301b1be1d4e809111593d2e45" meta-sam-parser==0.1.0
+python3 -m venv ~/uvtool && ~/uvtool/bin/pip install uv && UV=~/uvtool/bin/uv
+$UV python install 3.12 && $UV venv -p 3.12 ~/venv-sam
+$UV pip install --python ~/venv-sam/bin/python torch torchvision --index-url https://download.pytorch.org/whl/cu126
+$UV pip install --python ~/venv-sam/bin/python \
+  "git+https://github.com/facebookresearch/sam3.git@31cb7e624e4fe95301b1be1d4e809111593d2e45" meta-sam-parser==0.1.0 \
+  einops pycocotools psutil "opencv-python-headless<4.12" scipy pillow
+~/venv-sam/bin/python -c "import torch, torchvision, sam3.model_builder; print(torch.__version__, torch.cuda.is_available())"
 ```
+
+- **Python 3.12 for venv-sam.** sam3 needs `numpy<2`, which has no wheels for newer Pythons (3.14 fails to build);
+  uv fetches a 3.12 without touching the system Python.
+- **Match the CUDA build to the driver.** `nvidia-smi` prints the driver's CUDA version; pick the torch index at or
+  below it (driver 560 = CUDA 12.6 → `cu126`; a `cu128` build sees no GPU there). Install torchvision from the same
+  index: the PyPI one pulls in another torch and then has no `nms`.
+- **The extra packages** are imported by sam3 31cb7e6 but not listed in its pyproject.
+- **The worker works around three things in sam3 31cb7e6**, on its private names, and stops with an error naming
+  this page when a sam3 does not look like that commit, so install the commit above: `start_session` cannot open a
+  session on the 3.1 model (it passes `offload_state_to_cpu`), so the worker opens it; a box prompt's tracked masks
+  are dropped on every frame without cached detections (all but the prompt's in a box-only call), so the worker gives
+  each frame an empty one; the builder batches 16 frames (`FISH_SAM_BATCH` below). sam3 also marks an object it
+  removes on a frame with the score -1e4; those records are left out, as the API has none.
+- **A box prompt's conf is 1.0** on every frame (sam3 scores an object it was given as certain); the API's is not.
+  Nothing in the count reads it; `evaluate.py`'s conf cut-offs do, so compare those by backend.
+- **ssh or rsync to the GPU machine hangs after connecting** (key exchange stalls, a copy stops at once): the network
+  path may drop large packets without telling the sender. Lower the MTU on that link, or connect through a
+  `ProxyCommand` that sets a small TCP maximum segment size (about 1100 bytes worked).
 
 The checkpoint (`facebook/sam3.1`, `sam3.1_multiplex.pt`) is gated: accept the terms on Hugging Face with your own
 account and put a read token in `~/.cache/huggingface/token`. Then, in the repo's `.env`:
@@ -50,6 +73,7 @@ the run there.
 | `FISH_SAM_FPS` | 2 | frames a second the GPU tracks; sets each call's time limit (frames / fps x 3 + 60 s, at least 120 s, +600 s for the model load) |
 | `FISH_SAM_ENCODERS` | 4 | processes that encode masks (CPU) |
 | `FISH_SAM_OFFLOAD` | unset | `1` keeps the video frames in RAM instead of GPU memory |
+| `FISH_SAM_BATCH` | 1 | frames sam3 detects and post-processes together (its own 16 needs ~21 GB); raise it only on a bigger GPU |
 
 ## How it behaves
 - **One SAM call at a time.** The worker (`fishcount/samworker.py`, run with the sam venv's `python -I`) is one

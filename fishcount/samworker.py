@@ -18,7 +18,7 @@ over the whole call (the API's limit, tracks.py and saturation read it so); a bo
 keeps its ids and is tracked both ways from frame f, as the API does. conf is one number per track (94% of the API's
 tracks have one): here the mean of SAM's per-frame probability, so it may not mean what the API's does; nothing
 in the pipeline gates on it but evaluate.py's cut."""
-import json, os, re, sys
+import inspect, json, os, re, sys, time, uuid
 
 MAX_IDS = 16
 HEAD = re.compile(r"<(\d+)f>")
@@ -46,12 +46,14 @@ def box_points(x1, y1, x2, y2, W, H):
 def crops(ids, probs, masks):
     """One frame's predictor output (obj ids, probabilities, (n, H, W) bool masks) -> [(id, (x1, y1, x2, y2) with
     the last pixel, h, w, packed bits of the mask cut to that box, prob)]; an empty mask is dropped. Only the cut
-    is kept, bit-packed: a whole 3,000-frame call's full masks would not fit in memory."""
+    is kept, bit-packed: a whole 3,000-frame call's full masks would not fit in memory. A negative prob is sam3's
+    mark for an object it removes on that frame (-1e4, still with its mask): dropped, as the API shows no negative
+    conf in 118,835 cached records (11/23)."""
     import numpy as np
     out = []
     for oid, p, m in zip(ids, probs, masks):
         ys, xs = np.nonzero(m.any(axis=1))[0], np.nonzero(m.any(axis=0))[0]
-        if not len(ys):
+        if not len(ys) or p < 0:
             continue
         y1, y2, x1, x2 = int(ys[0]), int(ys[-1]), int(xs[0]), int(xs[-1])
         cut = m[y1:y2 + 1, x1:x2 + 1]
@@ -154,15 +156,57 @@ def build():
     if ckpt not in _SEEN or _SEEN[ckpt] != _stat(ckpt):      # the cache key names the file version() hashed
         raise RuntimeError(f"checkpoint {ckpt} is not the file version() hashed: restart the worker")
     # FA3 kernels are for Hopper GPUs; an RTX 4060 Ti uses the default attention (checked in step 0 of the plan)
-    return build_sam3_multiplex_video_predictor(checkpoint_path=ckpt,
-                                                max_num_objects=MAX_IDS, use_fa3=False)
+    p = build_sam3_multiplex_video_predictor(checkpoint_path=ckpt, max_num_objects=MAX_IDS, use_fa3=False)
+    # sam3's builder runs the detector and the mask postprocess on 16 frames at once (sized for an 80 GB GPU): on 8 GB
+    # that asks for ~21 GB, which WSL spills to system RAM (minutes a frame) and then runs out. The batch is how many
+    # frames go through together, not what is computed for each.
+    batch = int(os.environ.get("FISH_SAM_BATCH", "1"))
+    if not all(hasattr(p.model, a) for a in ("batched_grounding_batch_size", "postprocess_batch_size")):
+        raise RuntimeError("this sam3 has no batched_grounding_batch_size / postprocess_batch_size: "
+                           "install the sam3 commit in docs/local-sam.md")
+    p.model.batched_grounding_batch_size = p.model.postprocess_batch_size = batch
+    return p
+
+
+def _start_session(predictor, clip, offload):
+    """The session start_session would open. sam3's start_session (31cb7e6) hands init_state an
+    offload_state_to_cpu that the multiplex model's init_state does not take, so it always fails; this calls
+    init_state and registers the session as start_session does (sam3_base_predictor.py), on private names."""
+    model, states = getattr(predictor, "model", None), getattr(predictor, "_all_inference_states", None)
+    try:
+        params = inspect.signature(model.init_state).parameters
+    except (AttributeError, TypeError, ValueError):
+        params = {}
+    if not isinstance(states, dict) or not {"resource_path", "offload_video_to_cpu"} <= params.keys():
+        raise RuntimeError("this sam3 has no model.init_state(resource_path, offload_video_to_cpu) and "
+                           "_all_inference_states to open a session with: install the sam3 commit in docs/local-sam.md")
+    kw = dict(resource_path=clip, offload_video_to_cpu=offload)
+    if "async_loading_frames" in params and hasattr(predictor, "async_loading_frames"):
+        kw["async_loading_frames"] = predictor.async_loading_frames
+    state = model.init_state(**kw)
+    sess, now = str(uuid.uuid4()), time.time()
+    states[sess] = dict(state=state, session_id=sess, start_time=now, last_use_time=now)
+    return sess
+
+
+def _open_frames(predictor, sess):
+    """Give every frame an (empty) cached output, so a box prompt's tracked masks are kept. sam3 31cb7e6 builds a
+    tracked frame's output on that frame's cached detections (_build_sam2_output) and returns nothing when there are
+    none, which in a box-only session is every frame but the prompt's: tracking ran, the masks were dropped."""
+    state = predictor._all_inference_states[sess]["state"]
+    cache, n = state.get("cached_frame_outputs"), state.get("num_frames")
+    if not isinstance(cache, dict) or not isinstance(n, int):
+        raise RuntimeError("this sam3 session has no cached_frame_outputs / num_frames: "
+                           "install the sam3 commit in docs/local-sam.md")
+    for i in range(n):
+        cache.setdefault(i, {})
 
 
 def track(predictor, clip, prompt, encode):
     """One API-equivalent SAM call on the clip -> output text."""
     kind = parse_prompt(prompt)
     offload = os.environ.get("FISH_SAM_OFFLOAD", "") == "1"     # frames in RAM instead of VRAM (step 0 decides)
-    sess = predictor.handle_request(dict(type="start_session", resource_path=clip, offload_video_to_cpu=offload))["session_id"]
+    sess = _start_session(predictor, clip, offload)
     W = H = None
     try:
         if kind[0] == "text":
@@ -173,6 +217,7 @@ def track(predictor, clip, prompt, encode):
             for oid, x1, y1, x2, y2 in boxes:     # one tracked object per box, with the prompt's id (as the API)
                 predictor.handle_request(dict(type="add_prompt", session_id=sess, frame_index=f, obj_id=oid,
                                               points=box_points(x1, y1, x2, y2, W, H), point_labels=[2, 3]))
+            _open_frames(predictor, sess)
             req = dict(propagation_direction="both", start_frame_index=f)
         frames = {}
         for r in predictor.handle_stream_request(dict(type="propagate_in_video", session_id=sess,
