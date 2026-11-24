@@ -27,19 +27,24 @@ import concurrent.futures as cf, json, math, os, re, shutil, subprocess, sys, th
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fishcount import api, pipeline, render, screen, tracks, video
 
-MAX_SEGMENT_S = 600          # one SAM 3.1 video call takes up to 10 minutes
+MAX_SEGMENT_S = 600          # one SAM 3.1 video call takes up to 10 minutes (the API; local: api.LOCAL_SEGMENT_S)
+
+
+def max_segment_s():
+    """The longest segment, asked each time (a test or tool may set api.SAM_BACKEND after import)."""
+    return api.LOCAL_SEGMENT_S if api.SAM_BACKEND == "local" else MAX_SEGMENT_S
 
 
 def needs_split(inf, segment=None, skip_empty=False):
     """Whether the CLI runs a video through run_long (segments) rather than run_pipeline: asked for (segment,
-    skip_empty), longer than MAX_SEGMENT_S, or of unknown length. A raw .h264 stream has no frame count (OpenCV
+    skip_empty), longer than max_segment_s(), or of unknown length. A raw .h264 stream has no frame count (OpenCV
     gives a negative one), so it took the short path and run_pipeline analysed its first 600 s only (round 3,
     11/21c); run_long re-encodes the whole file first and splits by the frames it actually got."""
     if segment or skip_empty:
         return True
     if not inf.get("fps") or not 0 < inf.get("n_frames", 0) < 10 ** 9:
         return True
-    return inf["n_frames"] / inf["fps"] > MAX_SEGMENT_S
+    return inf["n_frames"] / inf["fps"] > max_segment_s()
 CAP_PER_HOUR_SPLIT = 6       # long video default whole-video cap, $ an hour (user, 11/21 22:01)
 CAP_PER_HOUR_SKIP_EMPTY = 4  # --skip-empty default whole-video cap (11/11)
 CAP_MIN_USD = 1              # a long video's default cap is never below this (not --skip-empty: as before)
@@ -420,9 +425,10 @@ def _kept(sd, fp, resume, cap=None):
     return not capped or (old_cap is not None and cap is not None and cap <= old_cap + 1e-9)
 
 
-def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_video=None, probe_every_s=None,
+def _run_long(src, rid=None, seg_s=None, skip_empty=False, max_usd_video=None, probe_every_s=None,
               segment_workers=1, resume=False, upload_ahead=False, **kw):
-    """Split `src` into segments of at most seg_s seconds, run the pipeline on each, merge. kw -> run_pipeline.
+    """Split `src` into segments of at most seg_s seconds (default max_segment_s()), run the pipeline on each, merge.
+    kw -> run_pipeline.
     skip_empty: only the stretches screen.scan picks are sent (_run_skipping); max_usd_video caps the whole video
     (default $4 an hour), probe_every_s overrides screen.PROBE_EVERY_S.
     segment_workers: segments run at once (threads in this process; default 1 = one after another). A segment spends
@@ -444,6 +450,7 @@ def _run_long(src, rid=None, seg_s=MAX_SEGMENT_S, skip_empty=False, max_usd_vide
     (not brightened, not --haze); a segment --resume keeps is not uploaded; a failed upload ahead is logged and left
     to the segment's own first call. A fully cached live rerun uploads clips it does not need (free, uplink only)."""
     rid = rid or time.strftime("%m%d-%H%M%S")
+    seg_s = seg_s or max_segment_s()
     d = os.path.join(pipeline.RUNS, rid)
     os.makedirs(d, exist_ok=True)
     t0 = time.time()

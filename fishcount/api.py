@@ -517,6 +517,11 @@ WORKER = os.path.join(ROOT, "fishcount", "samworker.py")
 SAM_FPS = float(os.environ.get("FISH_SAM_FPS", "2"))
 LOCAL_MIN_TIMEOUT = 120.0   # a call may take n_frames / SAM_FPS x 3 + 60 s, at least this
 LOCAL_LOAD_S = 600.0        # extra for the first call of a worker, which loads the model
+# The longest local segment (longvideo.max_segment_s) and so the most frames one local call takes (clips are 5 fps).
+# The worker holds a call's frames and its tracking outputs in RAM, ~30 MB a frame: a 600-frame run of the whole
+# pipeline peaked at 18.1 GB used on a 24 GB WSL desktop (5.9 GB left), and a 1,500-frame call ran it out of memory.
+# A longer call is refused rather than run out of memory.
+LOCAL_SEGMENT_S = 120
 # one worker per machine (per user): not under CACHE, which FISH_CACHE_DIR moves
 LOCAL_LOCK = os.path.expanduser("~/.cache/fishcount/sam_local.lock")
 
@@ -713,6 +718,10 @@ def local_tag():
 
 
 def _sam_local(clip_path, prompt, n_frames, payload, cp):
+    if n_frames > LOCAL_SEGMENT_S * 5:      # a path that does not split (a web upload goes to run_pipeline whole)
+        raise LocalSamError(f"{n_frames} frames in one local SAM call on {clip_path}: local SAM takes at most "
+                            f"{LOCAL_SEGMENT_S * 5} ({LOCAL_SEGMENT_S} s at 5 fps, RAM); run the video with "
+                            f"pipeline.py, which splits it into segments of {LOCAL_SEGMENT_S} s")
     t = time.time()
     timeout = max(LOCAL_MIN_TIMEOUT, n_frames / SAM_FPS * 3 + 60)
     out = _worker().call({"cmd": "track", "clip": os.path.abspath(clip_path), "prompt": prompt}, timeout)["text"]

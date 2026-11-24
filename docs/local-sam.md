@@ -46,11 +46,14 @@ $UV pip install --python ~/venv-sam/bin/python \
   below it (driver 560 = CUDA 12.6 → `cu126`; a `cu128` build sees no GPU there). Install torchvision from the same
   index: the PyPI one pulls in another torch and then has no `nms`.
 - **The extra packages** are imported by sam3 31cb7e6 but not listed in its pyproject.
-- **The worker works around three things in sam3 31cb7e6**, on its private names, and stops with an error naming
+- **The worker works around four things in sam3 31cb7e6**, on its private names, and stops with an error naming
   this page when a sam3 does not look like that commit, so install the commit above: `start_session` cannot open a
   session on the 3.1 model (it passes `offload_state_to_cpu`), so the worker opens it; a box prompt's tracked masks
   are dropped on every frame without cached detections (all but the prompt's in a box-only call), so the worker gives
-  each frame an empty one; the builder batches 16 frames (`FISH_SAM_BATCH` below). sam3 also marks an object it
+  each frame an empty one; the builder batches 16 frames (`FISH_SAM_BATCH` below); and the tracker keeps every past
+  frame's output in GPU memory (~16 MB a frame, so an 8 GB card spills to shared memory from ~150 frames and slows to
+  seconds a frame), so an output further back than the tracker reads (num_maskmem x stride + 2 frames) has its masks
+  and memory moved to RAM and its image features dropped (same output bytes). sam3 also marks an object it
   removes on a frame with the score -1e4; those records are left out, as the API has none.
 - **A box prompt's conf is 1.0** on every frame (sam3 scores an object it was given as certain); the API's is not.
   Nothing in the count reads it; `evaluate.py`'s conf cut-offs do, so compare those by backend.
@@ -80,7 +83,7 @@ the run there.
 | `FISH_SAM_CHECKPOINT` | Hugging Face download | a checkpoint file to use instead |
 | `FISH_SAM_FPS` | 2 | frames a second the GPU tracks; sets each call's time limit (frames / fps x 3 + 60 s, at least 120 s, +600 s for the model load) |
 | `FISH_SAM_ENCODERS` | 4 | processes that encode masks (CPU) |
-| `FISH_SAM_OFFLOAD` | unset | `1` keeps the video frames in RAM instead of GPU memory (same output bytes) |
+| `FISH_SAM_OFFLOAD` | unset (= `1`) | unset or `1` keeps the video frames in RAM; `0` keeps them in GPU memory, which an 8 GB card cannot hold for a 120-s segment (same output bytes either way). `provenance.json` shows the variable as set, so unset there means `1` |
 | `FISH_SAM_BATCH` | 1 | frames sam3 detects and post-processes together (its own 16 needs ~21 GB); raise it only on a bigger GPU. It changes a word call's output bytes, so it is part of the cache key; not a whole number of 1 or more stops the worker |
 
 ## How it behaves
@@ -89,6 +92,12 @@ the run there.
   (whatever `FISH_CACHE_DIR` says, and still if the pipeline process is killed): a second process on the same
   machine (another CLI, the web server) stops at once instead of loading a second model into the GPU. On the command line
   `--segment-workers` and `--refill-ahead` default to 1 and refuse more.
+- **Segments of 120 s.** A local call holds its frames and the tracking outputs moved to RAM, ~30 MB a frame: a run
+  of 600 frames (120 s at 5 fps) peaked at 18.1 GB used on a 24 GB WSL desktop and a 1,500-frame call ran out of
+  memory, so a video longer than 120 s is split into 120-s
+  segments (`api.LOCAL_SEGMENT_S`; the API keeps 600 s, and `--segment` can only go shorter). A call of more frames
+  is refused with `LocalSamError` instead of running out of memory: the web app's upload is not split, so a local
+  upload longer than 120 s ends with that error; run it with `pipeline.py`.
 - **Money.** Local SAM is free: `--max-usd`, `--max-usd-video`, the `--skip-empty` cap and `FISH_BUDGET` count Spark
   only. Each machine has its own `cache/ledger.jsonl`, so `FISH_BUDGET` on this machine is the only cap on its spend.
 - **Failures stop the run.** A worker that dies is started once more and the call sent again; a second death, a time
@@ -98,7 +107,7 @@ the run there.
 - **Cache.** A local answer's key adds `backend: sam3.1-local:<checkpoint sha 12>:<sam3 commit 7>:b<FISH_SAM_BATCH>`, so it never stands in
   for an API answer or another checkpoint's or batch's, and an API answer is not reused by a local run. The same backend goes into
   `--resume` fingerprints and `provenance.json` (`models.sam`, `models.sam_local`). An `--offline` replay of a local
-  run needs the same backend name, so it starts the worker (no GPU needed) on the machine that holds the videos.
+  run needs the same backend name (and so the same `FISH_SAM_BATCH`), so it starts the worker (no GPU needed) on the machine that holds the videos.
 - `status.json` counts local calls as live calls and in `local_calls`.
 
 ## Known differences from the API

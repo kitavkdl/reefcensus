@@ -453,7 +453,7 @@ class CommandLine(unittest.TestCase):
             pass
 
         def run_long(*a, **k):
-            got.update(k)
+            got.update(k, args=a)
             raise Stop
         pre = []
         with mock.patch.object(sys, "argv", ["pipeline.py", "v.mp4", "--id", "cli"] + list(extra)), \
@@ -488,10 +488,56 @@ class CommandLine(unittest.TestCase):
                 self.cli(*extra)
             self.assertEqual(e.exception.code, 2)
 
+    def test_segment_cap_follows_the_backend(self):
+        """Local segments are at most api.LOCAL_SEGMENT_S (RAM on the desktop, D-LOCALSAM-F3); the API keeps 600 s.
+        Asked at call time, not import time: a test or tool that sets SAM_BACKEND later is followed."""
+        for backend, extra, want in (("local", (), api.LOCAL_SEGMENT_S), ("local", ("--segment", "300"), api.LOCAL_SEGMENT_S),
+                                     ("local", ("--segment", "60"), 60), ("", (), 600), ("", ("--segment", "300"), 300)):
+            with self.subTest(backend=backend, extra=extra):
+                self.assertEqual(self.cli(*extra, backend=backend)[0]["args"][2], want)
+
     def test_settings_refused_before_anything_runs(self):
         with self.assertRaises(SystemExit) as e:
             self.cli(backend="lcoal")
         self.assertEqual(e.exception.code, 2)
+
+
+class SegmentCap(_Local):
+    def test_max_segment_s_and_needs_split(self):
+        self.assertEqual(api.LOCAL_SEGMENT_S, 120)
+        self.assertEqual(longvideo.max_segment_s(), 120)
+        self.assertTrue(longvideo.needs_split(dict(n_frames=601, fps=5.0)))
+        self.assertFalse(longvideo.needs_split(dict(n_frames=600, fps=5.0)))
+        with mock.patch.object(api, "SAM_BACKEND", ""):
+            self.assertEqual(longvideo.max_segment_s(), 600)
+            self.assertFalse(longvideo.needs_split(dict(n_frames=3000, fps=5.0)))
+            self.assertTrue(longvideo.needs_split(dict(n_frames=3005, fps=5.0)))
+
+    def test_run_long_default_is_asked_at_call_time(self):
+        class Stop(Exception):
+            pass
+        got = []
+
+        def plan(n, fps, seg_s):
+            got.append(seg_s)
+            raise Stop
+        with mock.patch.object(pipeline, "RUNS", os.path.join(self.tmp, "runs")), \
+                mock.patch.object(video, "ingest", lambda s, o, **k: open(o, "w").close()), \
+                mock.patch.object(video, "info", lambda p: dict(n_frames=3000, fps=5.0, width=100, height=100)), \
+                mock.patch.object(video, "light_stats", lambda p: dict(median_l=100, mean_l=100)), \
+                mock.patch.object(longvideo, "plan", plan):
+            for backend, want in (("local", 120), ("", 600)):
+                with mock.patch.object(api, "SAM_BACKEND", backend), self.assertRaises(Stop):
+                    longvideo.run_long("v.mp4", f"cap{backend}")
+                self.assertEqual(got[-1], want)
+
+    def test_a_call_longer_than_a_local_segment_is_refused(self):
+        """Another path (a web upload goes to run_pipeline whole) must not hand the worker more frames than the
+        desktop holds: past that, WSL runs out of RAM and can drop the whole VM."""
+        with self.assertRaisesRegex(api.LocalSamError, "601 frames"):
+            api.sam_video(CLIP, "fish", 601)
+        self.assertEqual(self.tracks(), [])
+        self.assertTrue(api.sam_video(CLIP, "fish", 600).startswith("<0f>"))
 
 
 class LongVideo(_Local):

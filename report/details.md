@@ -133,7 +133,9 @@ encoded with the API's one_bit codec (real API records rebuilt byte for byte in 
 by first appearance and at most 16 per call for a word, the prompt's ids tracked both ways for a box. With local SAM or
 `FISH_PRIVATE` no request carrying a clip is sent (fail-closed), local answers are cached under their own backend name
 (checkpoint sha and sam3 commit), the command line runs one SAM call at a time, and a local failure is an error that no
-stage swallows (`local_failures` in status.json and in `batch.py`'s videos.csv). Whether local and API counts agree is
+stage swallows (`local_failures` in status.json and in `batch.py`'s videos.csv). sam3 keeps every past frame's
+tracking output on the GPU, which fills an 8 GB card at ~150 frames; the worker moves outputs older than the tracker
+reads to RAM (output bytes unchanged), and a local segment is 120 s, what a 24 GB desktop's RAM holds. Whether local and API counts agree is
 measured on public videos (one SAM call against another, then whole runs) before any private footage is run this
 way. Setup: [docs/local-sam.md](../docs/local-sam.md).
 

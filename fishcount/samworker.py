@@ -211,13 +211,54 @@ def _open_frames(predictor, sess):
         cache.setdefault(i, {})
 
 
+PARK_RAM = ("maskmem_features", "pred_masks", "pred_masks_high_res")     # kept, moved to RAM
+PARK_DROP = ("image_features", "image_pos_enc")       # only read as memory by the next K frames
+
+
+def _reach(predictor, state):
+    """K: no frame reads an output more than K frames back in its direction (backward: forward). sam3 31cb7e6
+    reads num_maskmem - 1 earlier outputs r frames apart, at most (num_maskmem - 1) * r + 2 back
+    (video_tracking_multiplex.py:1384-1407), unless memory selection keeps old "good" frames; K = num_maskmem * r + 2."""
+    try:
+        trk = predictor.model.tracker.model
+        n, r, sel = trk.num_maskmem, trk.memory_temporal_stride_for_eval, trk.use_memory_selection
+    except AttributeError:
+        n = r = sel = None
+    if not (isinstance(n, int) and isinstance(r, int) and sel is False and isinstance(state.get("sam2_inference_states"), list)):
+        raise RuntimeError("this sam3's tracker is not the one old outputs are moved to RAM for (num_maskmem, "
+                           "memory_temporal_stride_for_eval, use_memory_selection=False, sam2_inference_states): "
+                           "install the sam3 commit in docs/local-sam.md")
+    return n * r + 2
+
+
+def _park(state, past):
+    """Move frame `past`'s tracking output off the GPU. sam3 keeps every tracked frame's output in VRAM (~16 MB a
+    frame, with or without objects: an 8 GB card spills to shared memory from ~150 frames and slows to 5-17 s a
+    frame). Its own offload_output_to_cpu_for_eval does not stop that, trim_past_non_cond_mem_for_eval raises
+    KeyError, and a deleted output breaks the object-removal slicing (_slice_state reads every past frame). So the
+    output stays, with masks and memory in RAM (sam3 moves maskmem_features back itself, :1422) and the image
+    features, which only the next K frames read (:1467), dropped. obj_ptr (read much further back) and the
+    maskmem_pos_enc all frames share stay. On the GPU the output bytes were the same, 600 of 600 frames (step 0)."""
+    for s2 in state["sam2_inference_states"]:       # sam3 replaces this list as objects come and go: read it each time
+        for d in [s2["output_dict"], *s2.get("output_dict_per_obj", {}).values()]:
+            nc = d["non_cond_frame_outputs"]
+            o = nc.get(past)
+            if o is not None:
+                nc[past] = {k: v.cpu() if k in PARK_RAM and hasattr(v, "cpu") else v
+                            for k, v in o.items() if k not in PARK_DROP}
+
+
 def track(predictor, clip, prompt, encode):
     """One API-equivalent SAM call on the clip -> output text."""
     kind = parse_prompt(prompt)
-    offload = os.environ.get("FISH_SAM_OFFLOAD", "") == "1"     # frames in RAM instead of VRAM (step 0 decides)
+    # frames in RAM unless FISH_SAM_OFFLOAD=0: in GPU memory 600 frames spill an 8 GB card from the start (step 0);
+    # the output bytes are the same either way
+    offload = os.environ.get("FISH_SAM_OFFLOAD", "1") != "0"
     sess = _start_session(predictor, clip, offload)
     W = H = None
     try:
+        state = predictor._all_inference_states[sess]["state"]
+        k = _reach(predictor, state)
         if kind[0] == "text":
             predictor.handle_request(dict(type="add_prompt", session_id=sess, frame_index=0, text=kind[1]))
             req = dict(propagation_direction="forward", start_frame_index=0)
@@ -228,9 +269,13 @@ def track(predictor, clip, prompt, encode):
                                               points=box_points(x1, y1, x2, y2, W, H), point_labels=[2, 3]))
             _open_frames(predictor, sess)
             req = dict(propagation_direction="both", start_frame_index=f)
-        frames = {}
+        frames, start = {}, req["start_frame_index"]
         for r in predictor.handle_stream_request(dict(type="propagate_in_video", session_id=sess,
                                                       evict_cached_frame_outputs=True, **req)):
+            fi = r["frame_index"]       # a box goes forward from its frame, then back from it over the same state
+            past = fi - k if fi > start else fi + k
+            if fi != start and abs(past - start) > k:   # the way back reads the first K frames forward: kept
+                _park(state, past)
             o = r["outputs"]
             if o is None or r["frame_index"] in frames:     # both ways: the prompt frame comes twice
                 continue

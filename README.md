@@ -128,7 +128,8 @@ python3 web/server.py                    # review screen on http://127.0.0.1:879
 **SAM on your own GPU (optional):** `FISH_SAM=local` runs SAM 3.1 on an NVIDIA GPU instead of the Meta API, in its own
 virtual environment; the video then never leaves the machine (only Spark's pictures do), SAM costs nothing, so
 `--max-usd`, `--max-usd-video`, the `--skip-empty` cap and `FISH_BUDGET` count Spark only, and a local failure stops
-the run (`--resume` goes on). Setup and the known differences: [docs/local-sam.md](docs/local-sam.md).
+the run (`--resume` goes on). A local segment is at most 120 s (the desktop's RAM; the API's is 600 s). Setup and
+the known differences: [docs/local-sam.md](docs/local-sam.md).
 
 **Tests (no network / no key / $0):** `python3 -m unittest discover -s tests -v` runs 488 tests including an exact
 offline replay of the s004 demo run and the long-video merge.

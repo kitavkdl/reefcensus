@@ -15,15 +15,23 @@ from fishcount import samworker
 STUB = lambda items: ["1,1,!A"] * len(items)     # the mask codec is not what this tests
 
 
+def tracker(num_maskmem=7, r=1, selection=False):
+    return types.SimpleNamespace(num_maskmem=num_maskmem, memory_temporal_stride_for_eval=r, use_memory_selection=selection)
+
+
 class FakeModel:
     def __init__(self):
-        self.calls = []
+        self.calls, self.sam2 = [], True
+        self.tracker = types.SimpleNamespace(model=tracker())
 
     def init_state(self, resource_path, offload_video_to_cpu=False, async_loading_frames=False,
                    use_torchcodec=False, use_cv2=False, input_is_mp4=False):
         self.calls.append(dict(resource_path=resource_path, offload_video_to_cpu=offload_video_to_cpu,
                                async_loading_frames=async_loading_frames))
-        return {"clip": resource_path, "num_frames": 3, "cached_frame_outputs": {}}
+        state = {"clip": resource_path, "num_frames": 3, "cached_frame_outputs": {}}
+        if self.sam2:
+            state["sam2_inference_states"] = []
+        return state
 
 
 class FakePredictor:
@@ -66,9 +74,18 @@ class TrackSession(unittest.TestCase):
         self.assertTrue(text)
         self.assertNotIn("start_session", p.types)
         self.assertEqual(p.types, ["add_prompt", "close_session"])
-        self.assertEqual(p.model.calls, [dict(resource_path="c.mp4", offload_video_to_cpu=False,
+        self.assertEqual(p.model.calls, [dict(resource_path="c.mp4", offload_video_to_cpu=True,
                                               async_loading_frames=True)])
         self.assertEqual(p._all_inference_states, {})
+
+    def test_frames_in_ram_unless_offload_is_0(self):
+        for env, want in (({}, True), ({"FISH_SAM_OFFLOAD": "1"}, True), ({"FISH_SAM_OFFLOAD": "0"}, False)):
+            p = FakePredictor()
+            with mock.patch.dict(os.environ, env):
+                if not env:
+                    os.environ.pop("FISH_SAM_OFFLOAD", None)
+                samworker.track(p, "c.mp4", "fish", STUB)
+            self.assertEqual(p.model.calls[0]["offload_video_to_cpu"], want, env)
 
     def test_box_keeps_every_tracked_frame(self):
         p = FakePredictor()
@@ -76,17 +93,119 @@ class TrackSession(unittest.TestCase):
         self.assertEqual([line[:4] for line in text.splitlines()], ["<0f>", "<1f>", "<2f>"])
 
     def test_other_sam3_shape_is_a_plain_error(self):
-        for broken in ("no states", "no init_state", "other args"):
+        for broken in ("no states", "no init_state", "other args", "no tracker", "memory selection", "no sam2 states"):
             p = FakePredictor()
             if broken == "no states":
                 del p._all_inference_states
             elif broken == "no init_state":
                 p.model = object()
-            else:
+            elif broken == "other args":
                 p.model.init_state = lambda **kw: {}
+            elif broken == "no tracker":
+                del p.model.tracker
+            elif broken == "memory selection":       # sam3 would read old "good" frames back: parking them is unsafe
+                p.model.tracker.model.use_memory_selection = True
+            else:
+                p.model.sam2 = False
             with self.subTest(broken), self.assertRaisesRegex(RuntimeError, "docs/local-sam.md"):
                 samworker.track(p, "c.mp4", "fish", STUB)
             self.assertNotIn("start_session", p.types)
+
+
+class FakeT:
+    """A tensor as far as parking looks: where it lives, and .cpu() (a copy in RAM; already there = itself)."""
+    def __init__(self, cuda=True):
+        self.is_cuda = cuda
+
+    def cpu(self):
+        return FakeT(False) if self.is_cuda else self
+
+
+class MemoryPredictor(FakePredictor):
+    """sam3's tracking memory over N frames (31cb7e6, video_tracking_multiplex.py:1384-1407 and :1467): each frame
+    reads the earlier outputs within (num_maskmem-1)*r+2 frames in its direction (backward: later ones), including
+    their image features, then stores its own output in output_dict and in each object's dict. "both" runs
+    forward from the prompt frame, then backward over the same state (sam3_base_predictor.py:343-361)."""
+    def __init__(self, n):
+        super().__init__()
+        self.n, self.lost, self.pos = n, [], FakeT()      # pos: maskmem_pos_enc, one shared copy
+
+    def handle_stream_request(self, req):
+        state = self._all_inference_states[req["session_id"]]["state"]
+        trk, start = self.model.tracker.model, req["start_frame_index"]
+        reach = (trk.num_maskmem - 1) * trk.memory_temporal_stride_for_eval + 2
+        s2 = {"output_dict": {"cond_frame_outputs": {}, "non_cond_frame_outputs": {}},
+              "output_dict_per_obj": {0: {"cond_frame_outputs": {}, "non_cond_frame_outputs": {}}}}
+        m = np.zeros((1, 4, 6), bool)
+        m[0, 1:3, 2:4] = True
+        hit = dict(out_obj_ids=np.array([1]), out_probs=np.array([0.9], np.float32), out_binary_masks=m)
+        order = [(f, 1) for f in range(start, self.n)]
+        if req["propagation_direction"] == "both":
+            order += [(f, -1) for f in range(start, -1, -1)]
+        for f, step in order:
+            state["sam2_inference_states"] = [s2]        # sam3 swaps the list itself as objects come and go
+            dicts = [s2["output_dict"]] + list(s2["output_dict_per_obj"].values())
+            for t in range(1, reach + 1):
+                for d in dicts:
+                    o = d["non_cond_frame_outputs"].get(f - t * step)
+                    if o is not None and not ("image_features" in o and "image_pos_enc" in o):
+                        self.lost.append((f, f - t * step))
+            for d in dicts:
+                out = dict(maskmem_features=FakeT(), pred_masks=FakeT(), pred_masks_high_res=FakeT(),
+                           image_features=FakeT(), image_pos_enc=FakeT(), obj_ptr=FakeT(), maskmem_pos_enc=self.pos)
+                d["cond_frame_outputs" if f == start else "non_cond_frame_outputs"].setdefault(f, out)
+            yield dict(frame_index=f, outputs=hit)
+        self.s2 = s2
+
+
+class Parking(unittest.TestCase):
+    """Old tracking outputs go to RAM (D-LOCALSAM-F3): sam3 keeps every past frame's output on the GPU, so an 8 GB
+    card spills from ~150 frames on. An output further back than sam3 ever reads moves its masks and memory to RAM
+    and drops its image features; nothing sam3 reads again is touched (on the GPU: 600/600 frames byte-identical)."""
+    def run_track(self, prompt, n, **trk):
+        p = MemoryPredictor(n)
+        p.model.tracker.model = tracker(**trk)
+        samworker.track(p, "c.mp4", prompt, STUB)
+        self.assertEqual(p.lost, [], "sam3 read a frame whose image features were dropped")
+        return p
+
+    def check(self, p, start, k):
+        for d in [p.s2["output_dict"]] + list(p.s2["output_dict_per_obj"].values()):
+            for f, o in d["non_cond_frame_outputs"].items():
+                parked = start + k < f <= p.n - 1 - k or k <= f < start - k
+                with self.subTest(frame=f):
+                    self.assertEqual("image_features" in o, not parked)
+                    self.assertEqual("image_pos_enc" in o, not parked)
+                    for key in ("maskmem_features", "pred_masks", "pred_masks_high_res"):
+                        self.assertEqual(o[key].is_cuda, not parked, key)
+                    self.assertTrue(o["obj_ptr"].is_cuda)       # later frames read pointers far back: stays
+                    self.assertIs(o["maskmem_pos_enc"], p.pos)   # shared by all frames: never copied
+            for o in d["cond_frame_outputs"].values():
+                self.assertIn("image_features", o)
+
+    def test_word_call_forward(self):
+        self.check(self.run_track("fish", 60), 0, 9)            # K = 7 * 1 + 2
+
+    def test_box_call_both_ways_keeps_the_prompt_frame_neighbours(self):
+        box = "<30f>1<|box;x1=2;y1=1;x2=3;y2=2;w=6;h=4|>"
+        self.check(self.run_track(box, 60), 30, 9)
+
+    def test_memory_stride(self):
+        box = "<40f>1<|box;x1=2;y1=1;x2=3;y2=2;w=6;h=4|>"
+        self.check(self.run_track(box, 90, num_maskmem=4, r=3), 40, 14)     # K = 4 * 3 + 2
+
+    def test_parking_twice_changes_nothing(self):
+        o = dict(maskmem_features=FakeT(), pred_masks=FakeT(), image_features=FakeT(), obj_ptr=FakeT())
+        state = {"sam2_inference_states": [{"output_dict": {"non_cond_frame_outputs": {3: o}},
+                                            "output_dict_per_obj": {}}]}
+        samworker._park(state, 3)
+        once = state["sam2_inference_states"][0]["output_dict"]["non_cond_frame_outputs"][3]
+        samworker._park(state, 3)
+        twice = state["sam2_inference_states"][0]["output_dict"]["non_cond_frame_outputs"][3]
+        self.assertEqual(sorted(once), ["maskmem_features", "obj_ptr", "pred_masks"])
+        self.assertIs(twice["maskmem_features"], once["maskmem_features"])
+        self.assertIs(twice["obj_ptr"], o["obj_ptr"])
+        samworker._park(state, 99)          # nothing stored there: nothing happens
 
 
 class RemovedMark(unittest.TestCase):
