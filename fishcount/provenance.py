@@ -7,7 +7,8 @@ One entry per time the run id was started (a --resume or a batch rerun adds one;
   uncommitted changes, branch; None outside a git checkout), models (SAM, Spark, FISH_SPARK_MODEL), encoder (ffmpeg
   binary and version line, the x264 arguments that decide the clip bytes and so the cache keys), machine (CPU model,
   whether it has AVX-512, Python and package versions), environment (FISH_CACHE_DIR, FISH_LEDGER, FISH_BUDGET as
-  set), source (path, size, modification time; no hash: hashing hundreds of GB is not free), and when the run ends
+  set), private (on, and what made it so: "env" / "home-marker" / "etc-marker" / "no-home", api.PRIVATE_BY),
+  source (path, size, modification time; no hash: hashing hundreds of GB is not free), and when the run ends
   result_sha256 (of result.json) or the error.
 Written beside status.json; result.json is not touched, so results stay byte-identical. Never raises: a run is
 never stopped by its own record keeping."""
@@ -67,9 +68,18 @@ def models():
     """SAM and Spark models; with local SAM (FISH_SAM=local) sam is its backend name (api.local_tag) and sam_local
     what its worker reported: torch, CUDA, GPU, sam3 commit, checkpoint and its sha256."""
     from fishcount import api
-    if api.sam_backend() == "local":
+    try:
+        backend = api.sam_backend()
+    except api.LocalSamError as e:      # the run stops at its first SAM call; the entry still says why
+        return dict(sam=None, sam_error=str(e), spark=api.SPARK_MODEL)
+    if backend == "local":
         return dict(sam=api.local_tag(), sam_local=api.local_preflight(offline=True), spark=api.SPARK_MODEL)
     return dict(sam=api.SAM_MODEL, spark=api.SPARK_MODEL)
+
+
+def _private():
+    from fishcount import api
+    return {"on": api.PRIVATE, "by": list(api.PRIVATE_BY)}
 
 
 def source(path):
@@ -109,7 +119,7 @@ def start(run_dir, argv, src, probe=None, encoder_warning=None):
             enc["probe"] = probe
         e = dict(started=_now(), command=list(argv), code=code(), models=models(), encoder=enc,
                  machine=machine(), environment={k: os.environ[k] for k in ENV_KEYS if k in os.environ},
-                 source=source(src))
+                 private=_private(), source=source(src))
         if encoder_warning:
             e["encoder_warning"] = encoder_warning
         d["runs"].append(e)

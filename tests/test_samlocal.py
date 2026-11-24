@@ -141,6 +141,76 @@ class FailClosed(unittest.TestCase):
         self.assertEqual(self.posts, [f"{api.BASE}/files"])
 
 
+class PrivateMarker(unittest.TestCase):
+    """D-LOCALSAM-F1: a marker file makes the machine private for every checkout, .env or not, and no environment
+    value turns it off. Paths are arguments here, so the real ~/.config and /etc are never read."""
+
+    def setUp(self):
+        self.tmp = self.enterContext(tempfile.TemporaryDirectory())
+        self.m = os.path.join(self.tmp, "private")
+
+    def on(self, env, path=None):
+        return api._private(env, [("home-marker", path or self.m)])
+
+    def test_marker_and_env_table(self):
+        self.assertEqual(self.on({}), (False, []))
+        self.assertEqual(self.on({"FISH_PRIVATE": "1"}), (True, ["env"]))
+        open(self.m, "w").close()
+        for env in ({}, {"FISH_PRIVATE": ""}, {"FISH_PRIVATE": "0"}):
+            with self.subTest(env=env):
+                self.assertEqual(self.on(env), (True, ["home-marker"]))
+        self.assertEqual(self.on({"FISH_PRIVATE": "1"}), (True, ["env", "home-marker"]))
+
+    def test_what_counts_as_there(self):
+        link = os.path.join(self.tmp, "link")
+        os.symlink(os.path.join(self.tmp, "gone"), link)
+        self.assertEqual(self.on({}, link), (True, ["home-marker"]))            # a broken link is there
+        afile = os.path.join(self.tmp, "afile")
+        open(afile, "w").close()
+        self.assertEqual(self.on({}, os.path.join(afile, "private")), (False, []))     # ENOTDIR: not there
+        if os.geteuid() != 0:                       # root reads anything
+            shut = os.path.join(self.tmp, "shut")
+            os.mkdir(shut)
+            os.chmod(shut, 0)
+            self.addCleanup(os.chmod, shut, 0o700)
+            self.assertEqual(self.on({}, os.path.join(shut, "private")), (True, ["home-marker"]))  # cannot look: there
+
+    def test_markers_looked_at(self):
+        pw = lambda uid: type("pw", (), {"pw_dir": "/home/a"})
+        self.assertEqual(api._markers({"HOME": "/home/a"}, pw),
+                         [("home-marker", "/home/a/.config/fishcount/private"), ("etc-marker", "/etc/fishcount/private")])
+        self.assertEqual(api._markers({"HOME": "/tmp/elsewhere"}, pw)[:2],
+                         [("home-marker", "/home/a/.config/fishcount/private"),
+                          ("home-marker", "/tmp/elsewhere/.config/fishcount/private")])
+
+        def nobody(uid):
+            raise KeyError(uid)
+        for env in ({}, {"HOME": self.tmp}):        # no account: private whatever HOME says
+            with self.subTest(env=env):
+                self.assertIsNone(api._markers(env, nobody))
+                self.assertEqual(api._private(env, None), (True, ["no-home"]))
+
+    def test_errors_say_what_made_it_private(self):
+        for p in (mock.patch.object(api, "SAM_BACKEND", ""), mock.patch.object(api, "PRIVATE", True),
+                  mock.patch.object(api, "PRIVATE_BY", ["etc-marker"])):
+            p.start()
+            self.addCleanup(p.stop)
+        with self.assertRaisesRegex(api.LocalSamError, "/etc/fishcount/private exists.*replay them where"):
+            api.sam_backend()
+        with self.assertRaisesRegex(api.LocalSamError, "/etc/fishcount/private exists: refusing"):
+            api._no_clip_out(f"{api.BASE}/files")
+
+    def test_provenance_keeps_the_labels_and_survives_a_refused_backend(self):
+        for p in (mock.patch.object(api, "SAM_BACKEND", ""), mock.patch.object(api, "PRIVATE", True),
+                  mock.patch.object(api, "PRIVATE_BY", ["home-marker"])):
+            p.start()
+            self.addCleanup(p.stop)
+        e = provenance.start(os.path.join(self.tmp, "run"), ["pipeline.py"], CLIP)
+        self.assertEqual(e["private"], {"on": True, "by": ["home-marker"]})
+        self.assertIsNone(e["models"]["sam"])
+        self.assertIn("FISH_SAM=local", e["models"]["sam_error"])
+
+
 class _Ok:
     status_code = 200
 

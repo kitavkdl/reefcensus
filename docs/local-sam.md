@@ -12,11 +12,19 @@ Unset, nothing changes (the API, its cache keys and its command-line defaults).
   for the checks. Only use the local mode for footage whose owner allows those pictures to go to the Meta API.
 - So `FISH_PRIVATE=1` means **the video file is not uploaded**, not "nothing leaves": Spark's frames and crops do.
   With SAM on the API it stops at the first SAM call.
-- **Keep the Meta key in the repo's `.env` only**, beside `FISH_SAM=local` and `FISH_PRIVATE=1`: do not
-  `export META_API_KEY` in the shell of a private machine, and do not create `~/.config/meta-api/key` there (the code
-  reads that file when no key is set). A checkout without that `.env` then has no key and sends nothing; with the
-  key file it would run in API mode, which uploads clips. The key file is not ignored in local mode instead, because
-  the risky case is a checkout where `FISH_SAM` is not set at all.
+- **Mark the machine private with a file**, so every checkout on it is private, `.env` or not (a new clone or a
+  worktree has no `.env`, and with an exported key or `~/.config/meta-api/key` it would run in API mode and upload):
+  `mkdir -p ~/.config/fishcount && touch ~/.config/fishcount/private` for your account, and
+  `sudo install -D -m 644 /dev/null /etc/fishcount/private` for the whole machine (sudo, root, cron and other
+  accounts). The account file alone covers every checkout run as you; the `/etc` one is for the rest. The marker
+  acts as `FISH_PRIVATE=1`, and no environment value turns it off (`FISH_PRIVATE=` or `=0` does not): delete the
+  file to stop. Your account's real home is looked at whatever `$HOME` says, and an account with no home counts as
+  private. `provenance.json` records whether a run was private and why (`env`, `home-marker`, `etc-marker`, `no-home`).
+- **A marked machine does not replay API answers either**: with SAM on the API the run stops at its first SAM call,
+  cached or not, and so does a run started from the web app (finished runs still open). Replay cached API runs on a
+  machine without the marker (the server), and never put the marker there.
+- **Keep the Meta key in the repo's `.env` only** all the same: do not `export META_API_KEY` in the shell of a
+  private machine, and do not create `~/.config/meta-api/key` there (the code reads that file when no key is set).
 
 ## Setup (Linux or WSL2 with an NVIDIA driver; `nvidia-smi` must work)
 Two virtual environments, because sam3 needs `numpy<2` and the pipeline pins `numpy==2.5.4` (cache bytes):
@@ -108,4 +116,6 @@ the run there.
 
 ## Tests on a machine with local SAM
 The repo's `.env` sets `FISH_SAM`; run the tests with it empty so they see the API settings they were written for:
-`FISH_SAM= FISH_PRIVATE= python3 -m unittest discover -s tests`.
+`FISH_SAM= FISH_PRIVATE= python3 -m unittest discover -s tests`. On a machine with the marker file that is not
+enough (the marker cannot be turned off from the environment), and the tests that assume the API fail rather than
+pass quietly: run the whole suite on the server, or move the marker aside for the run and put it back.

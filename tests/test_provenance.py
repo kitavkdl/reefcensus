@@ -38,6 +38,7 @@ class Provenance(unittest.TestCase):
             self.assertEqual(e["code"]["commit"], head.stdout.strip())
             self.assertIn(e["code"]["dirty"], (True, False))
         self.assertIn("python", e["machine"])
+        self.assertEqual(e["private"], {"on": api.PRIVATE, "by": list(api.PRIVATE_BY)})
         self.assertNotIn("finished", e)
 
     def test_finish_adds_the_result_hash_or_the_error(self):

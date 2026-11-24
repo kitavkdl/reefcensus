@@ -2,7 +2,7 @@
 Every paid call runs inside `reserve(est)`, which refuses to exceed FISH_BUDGET (default $1) for the lifetime of the
 ledger file; the check and the hold are atomic across threads and processes, so parallel calls cannot overshoot it. The API key comes from META_API_KEY (environment or a .env file in the repo root,
 see .env.example) or else ~/.config/meta-api/key, and is never printed."""
-import atexit, base64, hashlib, json, os, select, signal, subprocess, sys, threading, time
+import atexit, base64, hashlib, json, os, pwd, select, signal, subprocess, sys, threading, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -32,8 +32,46 @@ LEDGER = os.environ.get("FISH_LEDGER") or os.path.join(ROOT, "cache", "ledger.js
 # FISH_SAM: "" or "api" = the Meta API (as before), "local" = this machine's GPU (samworker.py, docs/local-sam.md);
 # anything else is refused at the first SAM call. FISH_PRIVATE (any value but "" / "0"): SAM must be local, and no
 # request that carries a clip goes out whatever FISH_SAM says (the desktop .env sets both, D-LOCALSAM).
+# A machine marker file does the same for every checkout on that machine, .env or not (D-LOCALSAM-F1: a checkout
+# without the .env would otherwise run in API mode with a key file or an exported key, and upload clips). No
+# environment value turns a marker off: FISH_PRIVATE= or =0 is inherited too easily (a wrapper, a .env line).
 SAM_BACKEND = os.environ.get("FISH_SAM", "")
-PRIVATE = os.environ.get("FISH_PRIVATE", "") not in ("", "0")
+ETC_MARKER = "/etc/fishcount/private"
+MARKER = os.path.join(".config", "fishcount", "private")
+
+
+def _markers(environ, getpw=pwd.getpwuid):
+    """-> [(label, path)] to look at, or None when this account's home cannot be found (then private: fail-closed)."""
+    try:
+        home = getpw(os.getuid()).pw_dir
+    except KeyError:            # an uid with no account (a container): HOME alone may point anywhere
+        return None
+    out = [("home-marker", os.path.join(home, MARKER))]
+    if environ.get("HOME") and os.path.realpath(environ["HOME"]) != os.path.realpath(home):
+        out.append(("home-marker", os.path.join(environ["HOME"], MARKER)))
+    return out + [("etc-marker", ETC_MARKER)]
+
+
+def _private(environ, markers):
+    """-> (on, why): why lists "env" / "home-marker" / "etc-marker" / "no-home", never a path (provenance.json keeps
+    it, and a path names the account). A marker is there unless lstat says ENOENT / ENOTDIR: a broken link or a
+    folder that cannot be read counts as there."""
+    why = ["env"] if environ.get("FISH_PRIVATE", "") not in ("", "0") else []
+    if markers is None:
+        why.append("no-home")
+    for label, path in markers or ():
+        try:
+            os.lstat(path)
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        except OSError:
+            pass
+        if label not in why:
+            why.append(label)
+    return bool(why), why
+
+
+PRIVATE, PRIVATE_BY = _private(os.environ, _markers(os.environ))
 SAM_PER_FRAME = 0.0 if SAM_BACKEND == "local" else 0.20 / 1000    # local SAM costs nothing: caps count Spark only
 SAM_MIN_FRAMES = 50
 SPARK_IN, SPARK_OUT = 1.25e-6, 4.25e-6
@@ -58,8 +96,17 @@ def sam_backend():
     if b not in ("api", "local"):
         raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r}: use api or local (unset = api)")
     if PRIVATE and b != "local":
-        raise LocalSamError("FISH_PRIVATE is set, so SAM must run here (FISH_SAM=local): clips are not sent to the Meta API")
+        raise LocalSamError(f"{_why()}, so SAM must run here (FISH_SAM=local): clips are not sent to the Meta API, and "
+                            "cached API answers are not replayed on this machine either (replay them where there is no "
+                            "marker, docs/local-sam.md)")
     return b
+
+
+def _why():
+    """What made this machine private, for error messages (paths are fine here: they are the user's own screen)."""
+    said = {"env": "FISH_PRIVATE is set", "home-marker": f"the marker ~/{MARKER} exists",
+            "etc-marker": f"the marker {ETC_MARKER} exists", "no-home": "this account has no home to look for a marker in"}
+    return "; ".join(said[w] for w in PRIVATE_BY) if PRIVATE else "FISH_PRIVATE is not set"
 
 
 def _no_clip_out(url, body=None, raw=False):
@@ -69,7 +116,7 @@ def _no_clip_out(url, body=None, raw=False):
     if SAM_BACKEND in ("", "api") and not PRIVATE:
         return
     if raw or url.rstrip("/").endswith(("/files", "/responses")) or "input_video" in json.dumps(body, default=str):
-        raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r} FISH_PRIVATE={PRIVATE}: refusing to send a clip to {url}")
+        raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r}, {_why()}: refusing to send a clip to {url}")
 
 
 def _key():
