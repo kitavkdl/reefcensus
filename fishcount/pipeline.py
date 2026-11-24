@@ -876,7 +876,7 @@ def run_pipeline(src, rid=None, *a, **kw):
 def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do_zoom=False, prompts=None, max_usd=1.0,
                  do_discover=False, do_motion=None, lowlight="auto", site=None, crowd=False, clean=True, refill=True, camo=False,
                  misslook=False, crowd_look=True, box_window=None, probe_window=None, skip_people=False, refill_ahead=1,
-                 crowd_peak=None, _peak=None, _run=None, haze="off", queue_conf=0.7):
+                 crowd_peak=None, _peak=None, _run=None, haze="off", queue_conf=0.7, unid=False):
     """haze: opt-in "auto" / "on" (video.is_hazy, video.clahe_frame): a clip that is not dark but washed out (median
     L p95-p5 below video.HAZE_WIDTH) is analysed after CLAHE on L alone; the original is kept as clip_original.mp4 and
     the numbers go into result["video"]["lowlight"]["haze"]. A dark clip's brightening already includes CLAHE.
@@ -1295,6 +1295,13 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
     if do_audit and queue_conf < 0.7:
         left = unqueue(trk, verdicts, labels, queue_conf)
         run.stage("audit", f"{len(left)} counted track(s) with a yes of {queue_conf:g}-0.7 left out of the human queue (--queue-conf)")
+    unid_names = unid_groups(run, clip, frames, trk, verdicts, labels, offline, max_usd) if do_audit and unid else {}
+    if unid_names:      # D-UNID: the rows again under the split names; a peak check of the unsplit row carries over
+        labels.update({t: n for t, n in unid_names.items() if labels.get(t)})
+        m = tracks.metrics(frames, trk, inf["n_frames"], inf["fps"], labels)
+        checked = {(c["label"], c["frame"]) for c in checks}
+        for name, mm in m.items():
+            mm["peak_checked"] = peak_checked(name, mm["maxn_frame"], checked)
     live = {}       # frames a track still holds after verify_peaks/drop_nested removed boxes (trk keeps the pre-removal list)
     for f, ks in frames.items():
         for k in ks:
@@ -1313,6 +1320,8 @@ def _run_pipeline(src, rid=None, offline=False, do_scout=True, do_audit=True, do
         result["queue_conf"] = queue_conf
     if splits:          # only when a box was split (fishcount/split.py), so other results keep their exact bytes
         result["splits"] = splits
+    if unid_names:      # only when a category was split (--unid-groups), so other results keep their exact bytes
+        result["unid_names"] = unid_names
     if run.capped:      # only when a stage was skipped at the cap, so other results keep their exact bytes
         result["capped"] = run.capped
     run.save("result.json", result)
@@ -2647,6 +2656,137 @@ def auto_labels(trk, verdicts):
     return out
 
 
+# D-UNID (owner 11/24, opt-in --unid-groups): the tracks no confident name was given are one "<category> (unidentified)"
+# row; partners asked for "unidentified 1, 2, ..." by kind, as a person would sort them. After every other Spark step,
+# Muse Spark sees the category's unnamed tracks on one sheet (three moments each, as the audit shows them) and puts
+# the ones that look like the same kind together. Not measured against human counts; a person names or joins the rows
+# with the review screen's row rename. The steps before it (peak check, crowd check) ran on the unsplit name.
+UNID_RE = re.compile(r" \(unidentified(?: \d+|, ungrouped)?\)$")
+UNID_PER_SHEET = 12             # new tiles per sheet, as the audit
+UNID_MAX_SHEETS = 8             # per category; tracks past it are "<category> (unidentified, ungrouped)"
+UNID_SHEET_USD = 0.02           # a sheet's cost at most (Spark ledger, 11/24: median $0.0043, max $0.019 a call)
+UNID_PROMPT = """You are sorting animals from underwater survey video that an earlier check could not name. Each tile is one tracked object (the detector was asked to find "{label}"), shown at three moments of the clip (early, middle, late; same zoom, the orange box marks the object). Tiles U1, U2, ... are to be sorted.{refs}
+Put tiles that look like the same kind of animal (same body shape, colour pattern, markings, fins) in one group and different kinds in different groups. Size and pose alone are not a reason to split. When unsure whether two tiles are the same kind, keep them apart.
+Return ONLY a JSON list with one object per group: [{{"tiles":["U1","U4"],"looks":"<=8 words"}}]. Every U tile goes in exactly one group."""
+UNID_REFS = (" Tiles R1, R2, ... are one example each of kinds already sorted from earlier tiles: put a U tile in the "
+             "same group as an R tile when it is that kind; never put two R tiles in one group.")
+
+
+def is_unidentified(name):
+    """'fish (unidentified)', 'fish (unidentified 2)', 'fish (unidentified, ungrouped)'."""
+    return bool(name) and UNID_RE.search(name) is not None
+
+
+def unid_base(name):
+    """A row's name before the split: 'fish (unidentified 2)' -> 'fish (unidentified)'; other names unchanged. The
+    peak check looked at every box of the unsplit row in its frame, so a split row with its peak in that frame was
+    checked too (peak_checked)."""
+    return UNID_RE.sub(" (unidentified)", name) if name else name
+
+
+def peak_checked(name, frame, checked):
+    """checked = {(label, frame)} of the peak checks."""
+    return (name, frame) in checked or (unid_base(name), frame) in checked
+
+
+def unid_candidates(trk, verdicts, labels):
+    """{track: category}: counted as '<category> (unidentified)', or queued with no label and no species, so a person's
+    "Yes" counts it so (settle.accept_label)."""
+    out = {}
+    for t, v in verdicts.items():
+        l = labels.get(t)
+        if not l:
+            sp = v.get("species")
+            if not needs_review(v) or (sp and sp != "unknown") or t not in trk:
+                continue
+            l = f"{trk[t]['label']} (unidentified)"
+        if l.endswith(" (unidentified)"):
+            out[t] = l[:-len(" (unidentified)")]
+    return out
+
+
+def unid_groups(run, clip, frames, trk, verdicts, labels, offline, max_usd, frame_fn=None):
+    """-> {track: 'fish (unidentified 2)' | 'fish (unidentified, ungrouped)'} for the unid_candidates of every category
+    Spark split into two or more kinds; {} for a category of one kind (its row keeps its name, owner 11/24).
+    Sheets: tiles in order of first box (then track id), UNID_PER_SHEET new tiles each; a later sheet starts with one
+    example tile (R1, R2, ... the kind's first track) per kind found so far. A track Spark left out, named twice, or
+    put with two kinds, and the tracks past UNID_MAX_SHEETS or the cap, are 'ungrouped'. Kinds are numbered by their
+    first box. A sheet that would pass max_usd is skipped (_live_cap: a replay skips exactly what the live run did);
+    an offline replay of a run made before this step leaves the category as it was. frame_fn: the frames' brightening
+    (a long video's whole clip is not brightened; its segments' clips were)."""
+    paths = _paths(frames)
+    bycat = {}
+    for t, cat in unid_candidates(trk, verdicts, labels).items():
+        if t in paths:
+            bycat.setdefault(cat, []).append(t)
+    out = {}
+    for cat, ts in sorted(bycat.items()):
+        if len(ts) < 2:
+            continue
+        ts.sort(key=lambda t: (paths[t][0][0], t))
+        trios = {}
+        for t in ts:
+            p = paths[t]
+            i = max(range(len(p)), key=lambda j: (p[j][1][2] - p[j][1][0]) * (p[j][1][3] - p[j][1][1]))
+            trios[t] = [(p[j][0], _ibox(p[j][1])) for j in _three_idx(len(p), i, max(1, len(p) // 3))]
+        kinds, left, missed = [], [], False
+        for k in range(0, len(ts), UNID_PER_SHEET):
+            no, chunk = k // UNID_PER_SHEET + 1, ts[k:k + UNID_PER_SHEET]
+            if no > UNID_MAX_SHEETS:
+                left += ts[k:]
+                run.stage("unid", f"{cat}: {len(ts) - k} unnamed track(s) past {UNID_MAX_SHEETS} sheets left ungrouped")
+                break
+            if _live_cap(run, "unid", f"unid:{cat}:{no}", offline,
+                         max_usd is not None and run.status["billed_usd"] + UNID_SHEET_USD > max_usd,
+                         f"{cat}: {len(ts) - k} unnamed track(s) not sorted by look: would pass the cap ${max_usd or 0:.2f}"):
+                left += ts[k:]
+                break
+            tiles = [(f"R{i + 1}", g[0]) for i, g in enumerate(kinds)] + [(f"U{i + 1}", t) for i, t in enumerate(chunk)]
+            imgs = video.frames(clip, {f for _, t in tiles for f, _ in trios[t]})
+            if frame_fn:
+                imgs = {f: frame_fn(im) for f, im in imgs.items()}
+            sheet = motion.layout([motion.trio(imgs, trios[t], n, half=_half(trios[t])) for n, t in tiles])
+            del imgs
+            with open(run.path(f"unid_{api_safe(cat)}_{no}.jpg"), "wb") as f:
+                f.write(sheet)
+            prompt = UNID_PROMPT.format(label=cat, refs=UNID_REFS if kinds else "")
+            try:
+                reply = api.parse_json_list(_counted(run, api.spark, prompt, [sheet], offline=offline, check=api.parse_json_list))
+            except FileNotFoundError as e:      # an offline replay of a run made before this step: as it was
+                run.stage("unid", f"{cat}: not sorted by look ({str(e)[:120]})")
+                missed = True
+                break
+            new = {n: t for n, t in tiles if n[0] == "U"}
+            ref = {f"R{i + 1}": i for i in range(len(kinds))}
+            said = [[x for x in (g.get("tiles") or []) if isinstance(x, str)] for g in reply]
+            seen = {}
+            for xs in said:
+                for x in xs:
+                    seen[x] = seen.get(x, 0) + 1
+            for xs in said:
+                rs = {ref[x] for x in xs if x in ref}
+                us = [new[x] for x in xs if x in new and seen[x] == 1]
+                if len(rs) > 1:         # two kinds already apart said to be one: these tiles are left to a person
+                    continue
+                if rs:
+                    kinds[rs.pop()] += us
+                elif us:
+                    kinds.append(us)
+            placed = {t for g in kinds for t in g}
+            left += [t for t in chunk if t not in placed]
+        if missed or len(kinds) < 2:
+            continue
+        kinds.sort(key=lambda g: min((paths[t][0][0], t) for t in g))
+        for n, g in enumerate(kinds, 1):
+            for t in g:
+                out[t] = f"{cat} (unidentified {n})"
+        for t in left:
+            out[t] = f"{cat} (unidentified, ungrouped)"
+        run.stage("unid", f"{cat}: {len(ts)} unnamed track(s) sorted by look into {len(kinds)} kinds (Muse Spark, not "
+                  f"verified)" + (f", {len(left)} ungrouped" if left else ""))
+    return out
+
+
 def api_safe(s):
     return "".join(ch if ch.isalnum() else "_" for ch in s)
 
@@ -2680,6 +2820,10 @@ if __name__ == "__main__":
                     help="a discovery that names people or a boat and no animal (camera still on deck) is not searched for")
     ap.add_argument("--no-crowd-look", action="store_true", help="skip the unprimed peak-frame count that marks a MaxN a lower bound")
     ap.add_argument("--no-refill", action="store_true", help="do not re-run a SAM pass that used up its 16 object ids (before 11/3)")
+    ap.add_argument("--unid-groups", action="store_true",
+                    help="after the other checks, Muse Spark sorts each category's unnamed tracks by look into "
+                         "'fish (unidentified 1)', '(unidentified 2)', ... (a sheet of up to 12 tracks, about $0.004-0.02 each; "
+                         "not verified: name or join the rows on the review screen)")
     ap.add_argument("--queue-conf", type=float, default=QUEUE_CONF, metavar="C",
                     help=f"a counted yes from a request or discovered word with confidence C-0.7 is not put in the human "
                          f"queue (default {QUEUE_CONF}: one video's sheet found 1 of 53 not a fish; 0.7 = queue every one, "
@@ -2779,14 +2923,14 @@ if __name__ == "__main__":
                                    crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill, camo=a.camo,
                                    misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                                    probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead, skip_empty=a.skip_empty, max_usd_video=a.max_usd_video, probe_every_s=a.probe_every,
-                                   segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume, queue_conf=a.queue_conf,
+                                   segment_workers=a.segment_workers, crowd_peak=a.crowd_peak, haze=a.haze, resume=a.resume, queue_conf=a.queue_conf, unid=a.unid_groups,
                                    upload_ahead=not (a.no_upload_ahead or local))
         else:
             r = run_pipeline(a.video, a.id, a.offline, not (a.no_scout or a.discover), not a.no_audit, a.zoom, a.prompts, short_cap, a.discover,
                              lowlight=a.lowlight, site=a.site, crowd=a.crowd, clean=not a.no_clean, refill=not a.no_refill,
                              camo=a.camo, misslook=a.misslook, crowd_look=not a.no_crowd_look, box_window=a.box_window,
                              probe_window=probe_window, skip_people=a.skip_people, refill_ahead=a.refill_ahead,
-                             crowd_peak=a.crowd_peak, haze=a.haze, queue_conf=a.queue_conf)
+                             crowd_peak=a.crowd_peak, haze=a.haze, queue_conf=a.queue_conf, unid=a.unid_groups)
     except BaseException as e:
         provenance.finish(run_dir, error=f"{type(e).__name__}: {e}")
         raise

@@ -37,7 +37,7 @@ def shot_want(e):
     """What demo/static_shot.js must show for effective() e, by web/app.js's rules: order() and hidden() for the rows,
     countRow() for the big number and the range, the evidence file of the clicked row, and drawQueue()'s first item
     (open and ranked first, else the first open one; server.effective already sorts the queue that way)."""
-    kept = [(n, m) for n, m in e["metrics"].items() if not (m["maxn"] == 0 and n.endswith(" (unidentified)"))]
+    kept = [(n, m) for n, m in e["metrics"].items() if not (m["maxn"] == 0 and server.pipeline.is_unidentified(n))]
     kept.sort(key=lambda kv: (e["origin"].get(kv[0]) != "asked", -kv[1]["maxn"], kv[0]))
     rows = []
     for n, m in kept:
@@ -144,6 +144,29 @@ class StaticReviewMatchesServer(unittest.TestCase):
             server.rename_group(rid, {"undo": server.effective(rid)["renames"][0]["id"]} if "undo" in body else body)
             want.append(snap(rid))
         self.assertTrue(want[1][0]["metrics"][g.ROCK].get("lower_bound"))
+        self.compare(rid, page, actions, want)
+
+    def test_split_unidentified_rows(self):
+        """tests/test_unid_groups.py's run sorted by look (--unid-groups): numbered rows, a peak check carried from the
+        unsplit row, a queued track whose "Yes" gives its kind, the CSV notes; then a split row renamed and joined."""
+        sys.path.insert(0, os.path.join(ROOT, "tests"))
+        import test_unid_groups as u
+        rid = "unid"
+        os.makedirs(os.path.join(self.tmp, rid))
+        with open(os.path.join(self.tmp, rid, "result.json"), "w") as f:
+            json.dump(u.split_run(), f)
+        e0 = server.effective(rid)
+        page = dict(e0, _static=build_static.static_data(rid, e0))
+        want, actions = [snap(rid)], []
+        for t, l in (("__rename__", {"from": u.U2, "to": "cod", "accept": False}), ("u4", "cod"),
+                     ("__rename__", {"from": u.U1, "to": "cod", "accept": True}), ("__rename__", {"undo": 1})):
+            actions.append([t, l])
+            if t == "__rename__":
+                server.rename_group(rid, {"undo": server.effective(rid)["renames"][l["undo"]]["id"]} if "undo" in l else l)
+            else:
+                server._save_review(rid, {t: l})
+            want.append(snap(rid))
+        self.assertTrue(want[0][0]["metrics"][u.U2]["peak_checked"])
         self.compare(rid, page, actions, want)
 
     def run_one(self, src):

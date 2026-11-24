@@ -5,7 +5,7 @@
 // against web/server.py effective() at every review step; draw() only moves their output into the page.
 (function (root) {
   "use strict";
-  const hidden = (n, m) => m.maxn === 0 && n.endsWith(" (unidentified)");      // app.js hidden()
+  const hidden = (n, m) => m.maxn === 0 && / \(unidentified(?: \d+|, ungrouped)?\)$/.test(n);      // app.js hidden()
 
   function rows(run) {                 // app.js order() and countRow(): the same rows, order and numbers as the panels
     return Object.entries(run.metrics).filter(([n, m]) => !hidden(n, m)).sort(([a, x], [b, y]) =>

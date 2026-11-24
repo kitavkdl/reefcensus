@@ -101,8 +101,12 @@ function showScreen(msg) {
 }
 
 // ---------- finished run ----------
+// "fish (unidentified)", and with --unid-groups "fish (unidentified 2)" / "fish (unidentified, ungrouped)" (pipeline.UNID_RE)
+const UNID_RE = / \(unidentified(?: \d+|, ungrouped)?\)$/;
+const isUnid = (name) => UNID_RE.test(name);
 // a row that is both MaxN 0 and "(unidentified)" says nothing: not shown here, not in the CSV (server.export_csv)
-const hidden = (name, m) => m.maxn === 0 && name.endsWith(" (unidentified)");
+// (UNID_RE written out: tests/test_web_js.py lifts this one line)
+const hidden = (name, m) => m.maxn === 0 && / \(unidentified(?: \d+|, ungrouped)?\)$/.test(name);
 
 function order(run) {
   return Object.entries(run.metrics).filter(([n, m]) => !hidden(n, m)).sort(([a, x], [b, y]) =>
@@ -136,7 +140,7 @@ function drawStrip() {
     d += ` L${n} 1 Z`;
     const col = colour(run.origin[name]);
     svg.append(svgEl("rect", { x: 0, y: 0.98, width: n, height: 0.02, fill: "var(--rule)" }));
-    svg.append(svgEl("path", { d, fill: col, "fill-opacity": name.endsWith("(unidentified)") ? 0.35 : 0.8 }));
+    svg.append(svgEl("path", { d, fill: col, "fill-opacity": isUnid(name) ? 0.35 : 0.8 }));
     if (m.maxn_frame != null)
       svg.append(svgEl("rect", { x: m.maxn_frame, y: 0, width: 1, height: 1, fill: "var(--graphite)", "fill-opacity": 0.85 }));
     return el("div", { class: "lane", title: `${name}: MaxN ${m.maxn} at ${secs(m.maxn_time)}` },
@@ -262,10 +266,13 @@ function drawFound() {
     const fromMotion = Object.entries(run.tracks || {}).some(([t, v]) => v.source.startsWith("m") && labelOf(run, t) === name);
     if (fromMotion)
       extra.push(el("div", { class: "ladder" }, "Includes an animal no word found: it moved, Spark said it was alive, and SAM tracked a box drawn on it."));
-    if (name.endsWith("(unidentified)")) {
-      extra.push(el("div", { class: "ladder" }, "Spark could not name these with confidence; they wait in Needs a person."));
+    if (isUnid(name)) {
+      extra.push(el("div", { class: "ladder" }, name.endsWith(" (unidentified)")
+        ? "Spark could not name these with confidence; they wait in Needs a person."
+        : "Spark could not name these; it grouped them by how they look (not verified). Rename the row to name them, or give two rows the same name to join them."));
       const g = groupTotal(rows, name);
-      if (g) extra.push(el("div", { class: "climb" }, `All ${g.head} together: `, el("span", { class: "num" }, g.maxn),
+      // one "all together" line per animal, under the first of its unidentified rows
+      if (g && rows.find(([n]) => isUnid(n) && n.replace(UNID_RE, "") === g.head)[0] === name) extra.push(el("div", { class: "climb" }, `All ${g.head} together: `, el("span", { class: "num" }, g.maxn),
         ` in one frame (${g.parts.join(" + ")}) `,
         el("button", { class: "jump", onclick: () => seek(g.frame) }, `at ${secs(g.frame / state.fps)}`),
         g.low < g.maxn ? `; ${g.low} before the queue is checked` : ""));
@@ -314,12 +321,13 @@ function groupBlock(run) {
 
 // "shrimp (unidentified)" and "caridean shrimp" are both shrimp: one track has one label, so per-frame counts add.
 function groupTotal(rows, name) {
-  const head = name.replace(/\s*\(unidentified\)$/, "");
-  const members = rows.filter(([n]) => n === name || n.split(" ").at(-1) === head);
+  const head = name.replace(UNID_RE, "");
+  const unidOf = (n) => (isUnid(n) && n.replace(UNID_RE, "") === head ? n.slice(head.length + 2, -1) : null);   // "unidentified 2"
+  const members = rows.filter(([n]) => unidOf(n) || n.split(" ").at(-1) === head);
   if (members.length < 2) return null;
   const sum = members[0][1].curve.map((_, i) => members.reduce((s, [, m]) => s + (m.curve[i] || 0), 0));
   const maxn = Math.max(...sum), frame = sum.indexOf(maxn);
-  const parts = members.map(([n, m]) => `${m.curve[frame] || 0} ${n === name ? "unidentified" : n.slice(0, -head.length).trim()}`);
+  const parts = members.map(([n, m]) => `${m.curve[frame] || 0} ${unidOf(n) || n.slice(0, -head.length).trim()}`);
   const conf = (m) => m.curve_confirmed || m.curve;
   const low = Math.max(...sum.map((_, i) => members.reduce((s, [, m]) => s + (conf(m)[i] || 0), 0)));
   return { head, maxn, frame, parts, low };

@@ -158,7 +158,7 @@ def effective(rid):
         mm["maxn_upper"] = max(mm["maxn"], hi.get(name, {}).get("maxn", 0), wide.get(name, 0)) if open_q or wide else mm["maxn"]
         if open_q and lo.get(name, {}).get("curve") != mm["curve"]:
             mm["curve_confirmed"] = lo[name]["curve"] if name in lo else [0] * len(mm["curve"])
-        mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
+        mm["peak_checked"] = pipeline.peak_checked(name, mm["maxn_frame"], checked)
         ev = f"evidence_{pipeline.api_safe(name)}.jpg"
         run_m = res["metrics"].get(name, {})
         if edited and (run_m.get("maxn"), run_m.get("maxn_frame")) != (mm["maxn"], mm["maxn_frame"]):
@@ -348,6 +348,9 @@ def _remember(rid, res, review, body):
             traceback.print_exc()
 
 
+UNID_NOTE = "; grouped by appearance (Muse Spark, not verified)"     # a split row (--unid-groups), for a CSV-only reader
+
+
 def export_csv(rid):
     e = effective(rid)
     buf = io.StringIO()
@@ -358,9 +361,9 @@ def export_csv(rid):
                 "evidence_frame", "source", "human_edits"])
     cell = lambda v: "'" + v if isinstance(v, str) and v[:1] in "=+-@" else v    # no formulas from model text
     for name, m in sorted(e["metrics"].items(), key=lambda kv: -kv[1]["maxn"]):
-        if m["maxn"] == 0 and name.endswith(" (unidentified)"):     # empty "(unidentified)" rows are hidden on screen too
+        if m["maxn"] == 0 and pipeline.is_unidentified(name):     # empty "(unidentified)" rows are hidden on screen too
             continue
-        w.writerow([cell(name), e["origin"].get(name, ""), m["maxn"], m["maxn_confirmed"], m["maxn_upper"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
+        w.writerow([cell(name), e["origin"].get(name, "") + (UNID_NOTE if pipeline.unid_base(name) != name else ""), m["maxn"], m["maxn_confirmed"], m["maxn_upper"], m["maxn_time"], m["maxn_frame"], m["first_time"], m["tracks"],
                     m["peak_checked"], m["evidence"] or "", e["source"], e["n_reviewed"] + e.get("n_renames", 0)])
     # group rows: same-frame totals over the labels listed in origin (e.g. "group: caridean shrimp + shrimp (unidentified)")
     for g, m in sorted(e.get("group_metrics", {}).items(), key=lambda kv: -kv[1]["maxn"]):

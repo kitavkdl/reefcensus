@@ -92,6 +92,12 @@
     return out;
   }
 
+  // pipeline.UNID_RE / unid_base, server.UNID_NOTE, maxn_export.UNID_STATUS (--unid-groups split rows)
+  const UNID_RE = / \(unidentified(?: \d+|, ungrouped)?\)$/;
+  const unidBase = (name) => name.replace(UNID_RE, " (unidentified)");
+  const UNID_NOTE = "; grouped by appearance (Muse Spark, not verified)";
+  const UNID_STATUS = "not verified: unidentified, grouped by appearance by Muse Spark";
+
   function renamed(name, rules) {      // settle.renamed: group renames in order (a -> b then b -> c makes a c)
     for (const r of rules || []) if (name != null && name === r.from) name = r.to;
     return name;
@@ -178,7 +184,7 @@
         ? Math.max(mm.maxn, has(hi, name) ? hi[name].maxn : 0, wide[name] || 0) : mm.maxn;
       if (openQ.length && JSON.stringify(has(lo, name) ? lo[name].curve : null) !== JSON.stringify(mm.curve))
         mm.curve_confirmed = has(lo, name) ? lo[name].curve : new Array(mm.curve.length).fill(0);
-      mm.peak_checked = checked.has(`${name}\u0000${mm.maxn_frame}`);
+      mm.peak_checked = checked.has(`${name}\u0000${mm.maxn_frame}`) || checked.has(`${unidBase(name)}\u0000${mm.maxn_frame}`);
       const ev = `evidence_${apiSafe(name)}.jpg`, runM = S.base_metrics[name] || {};
       if (edited && (runM.maxn !== mm.maxn || runM.maxn_frame !== mm.maxn_frame)) mm.evidence_stale = true;  // no clip here to redraw from
       mm.evidence = S.evidence.includes(ev) ? ev : null;
@@ -253,8 +259,8 @@
     const S = e._static, rows = [["label", "origin", "maxn", "maxn_confirmed", "maxn_upper", "maxn_time_s", "maxn_frame", "first_arrival_s", "tracks",
       "peak_frame_checked", "evidence_frame", "source", "human_edits"]];
     for (const [name, m] of byMaxn(e.metrics)) {
-      if (m.maxn === 0 && name.endsWith(" (unidentified)")) continue;
-      rows.push([noFormula(name), e.origin[name] || "", m.maxn, m.maxn_confirmed, m.maxn_upper, tstr(S, m.maxn_frame), m.maxn_frame,
+      if (m.maxn === 0 && UNID_RE.test(name)) continue;
+      rows.push([noFormula(name), (e.origin[name] || "") + (unidBase(name) !== name ? UNID_NOTE : ""), m.maxn, m.maxn_confirmed, m.maxn_upper, tstr(S, m.maxn_frame), m.maxn_frame,
         tstr(S, m.first_frame), m.tracks, m.peak_checked, m.evidence || "", e.source, e.n_reviewed + (e.n_renames || 0)]);
     }
     for (const [g, m] of byMaxn(e.group_metrics || {}))
@@ -276,7 +282,7 @@
       if (m.maxn <= 0) continue;
       rows.push([noFormula(S.opcode), "", "", "", m.maxn, m.maxn_frame, m.maxn_frame == null ? null : S.mins_str[m.maxn_frame],
         noFormula(name), has(m, "maxn_confirmed") ? m.maxn_confirmed : m.maxn, e.origin[name] || "",
-        "not verified: common name from Muse Spark or a reviewer", noFormula(e.source || ""), e.id || "", (e.n_reviewed || 0) + (e.n_renames || 0), lower(name, m),
+        unidBase(name) !== name ? UNID_STATUS : "not verified: common name from Muse Spark or a reviewer", noFormula(e.source || ""), e.id || "", (e.n_reviewed || 0) + (e.n_renames || 0), lower(name, m),
         has(m, "maxn_upper") ? m.maxn_upper : m.maxn]);
     }
     return csv(rows, "\n");

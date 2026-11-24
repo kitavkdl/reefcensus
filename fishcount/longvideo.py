@@ -48,6 +48,8 @@ def needs_split(inf, segment=None, skip_empty=False):
 CAP_PER_HOUR_SPLIT = 6       # long video default whole-video cap, $ an hour (user, 11/21 22:01)
 CAP_PER_HOUR_SKIP_EMPTY = 4  # --skip-empty default whole-video cap (11/11)
 CAP_MIN_USD = 1              # a long video's default cap is never below this (not --skip-empty: as before)
+UNID_RESERVE = 0.20          # --unid-groups: taken off the video cap before the segments' shares, for the sort by look
+                             # after the merge (pipeline.unid_groups; ~10 sheets at pipeline.UNID_SHEET_USD)
 
 
 def _up(usd):
@@ -212,11 +214,57 @@ def boundary_links(frames, cuts, labels, thr=BOUNDARY_IOU):
     return out
 
 
-def merge(rid, src_name, segs, fps, out_dir=None, n_total=None, carry=None, videos=True):
+def unid_reserve(cap, floors):
+    """--unid-groups: the video cap's part kept for the sort by look after the merge, never what the segments' first
+    passes need (the segments' shares add up to cap minus this)."""
+    return round(min(UNID_RESERVE, max(0.0, cap - sum(floors))), 4)
+
+
+class _VideoRun(pipeline.Run):
+    """The whole video's Run for the sort by look after the merge: its spend is in the ledger under the video's id
+    (video_spent, _budget count it), its log lines go to the video's status (note), not to a second status.json."""
+    def __init__(self, rid, d, note):
+        self.id, self.dir, self._note = rid, d, note
+        self.status = dict(id=rid, log=[], live_calls=0, cached_calls=0, billed_usd=0.0)
+        self._lock, self.capped, self.peak_pass = threading.Lock(), [], False
+        self.live_capped = pipeline._left_unsent(self)     # before the merge writes this folder's result.json
+
+    def stage(self, name, msg=None):
+        if msg:
+            self._note(msg)
+
+
+def _unid_step(rid, d, full, light, reserve, offline, note):
+    """-> (merge's unid callback, its Run). The sort by look on the whole video's 5 fps clip, brightened as the
+    segments' clips were (the audit tiles' look)."""
+    vr = _VideoRun(rid, d, note)
+    fn = (video.brighten_frame if light.get("brightened") else
+          video.clahe_frame if (light.get("haze") or {}).get("applied") else None)
+
+    def step(R, frames):
+        names = pipeline.unid_groups(vr, full, frames, R["tracks"], R["verdicts"], R["auto_labels"], offline, reserve, frame_fn=fn)
+        if vr.capped:
+            R.setdefault("capped", []).extend(vr.capped)
+        return names
+    return step, vr
+
+
+def _unid_evidence(d, full, R):
+    """Evidence frames of the split rows (no segment drew them), boxes only.
+    ponytail: drawn from the unbrightened 5 fps clip, so a dark video's split rows look darker than its other rows;
+    brighten in render.evidence if a person finds them hard to read."""
+    names = set((R.get("unid_names") or {}).values())
+    for name, mm in R["metrics"].items():
+        if name in names and mm["maxn_frame"] is not None:
+            render.evidence(full, {}, R, mm["maxn_frame"], os.path.join(d, f"evidence_{pipeline.api_safe(name)}.jpg"), name)
+
+
+def merge(rid, src_name, segs, fps, out_dir=None, n_total=None, carry=None, videos=True, unid=None):
     """segs: [(segment run dir, start_frame, n_frames)] in order. Writes <out_dir or runs/rid>/result.json etc.
     --skip-empty only: n_total = the video's length (the last stretch may not have been sent); carry = [(a, b)]
     skipped stretches, each given frame a-1's boxes (the last analysed frame), marked carried, listed in
-    result["skipped"]; videos=False leaves the review videos to the caller (it adds the skipped pieces)."""
+    result["skipped"]; videos=False leaves the review videos to the caller (it adds the skipped pieces).
+    unid (--unid-groups): unid(R, frames) -> {track: split name} (_unid_step), applied before the metrics."""
     d = out_dir or os.path.join(pipeline.RUNS, rid)
     os.makedirs(os.path.join(d, "thumbs"), exist_ok=True)
     R = dict(id=rid, source=src_name, prompts=[], jobs=[], scout=[], tracks={}, verdicts={}, auto_labels={},
@@ -275,11 +323,15 @@ def merge(rid, src_name, segs, fps, out_dir=None, n_total=None, carry=None, vide
                 t = R["tracks"][k["track"]]
                 t.update(last=max(t["last"], b - 1), n=t.get("n", 0) + b - a)
             R["skipped"].append(dict(start_frame=a, end_frame=b, start_s=round(a / fps, 2), end_s=round(b / fps, 2), carried=len(src)))
+    names = unid(R, frames) if unid else {}
+    if names:
+        R["unid_names"] = names
+        R["auto_labels"].update({t: n for t, n in names.items() if R["auto_labels"].get(t)})
     R["boundary_links"] = boundary_links(frames, [start for _, start, _ in segs[1:]], R["auto_labels"])
     m = tracks.metrics(frames, R["tracks"], total, fps, R["auto_labels"])
     checked = {(c["label"], c["frame"]) for c in R["peak_checks"]}
     for name, mm in m.items():
-        mm["peak_checked"] = (name, mm["maxn_frame"]) in checked
+        mm["peak_checked"] = pipeline.peak_checked(name, mm["maxn_frame"], checked)
     R["metrics"] = m
     # a segment's crowd check counted its own peak; judged again against the whole video's row (labels, MaxN)
     rows = {r[0]: r for r in pipeline.crowd_rows(m, fps)}
@@ -479,17 +531,19 @@ def _run_long(src, rid=None, seg_s=None, skip_empty=False, max_usd_video=None, p
         light["haze"] = hz
         kw["haze"] = "on" if hz["applied"] else "off"
     inf["lowlight"] = light
+    unid = kw.pop("unid", False)    # the whole video's sort by look after the merge, not each segment's
     if skip_empty:
         if segment_workers > 1:
             st["log"].append(f"{time.strftime('%H:%M:%S')} segment_workers={segment_workers} not used with skip_empty "
                              "(the video cap is paid out segment by segment): one segment at a time")
-        return _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, max_usd_video, probe_every_s, kw)
+        return _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, max_usd_video, probe_every_s, kw, unid)
     segs = plan(inf["n_frames"], inf["fps"], seg_s)
     workers = max(1, min(int(segment_workers or 1), len(segs)))
     floors = [first_pass_floor(n, kw.get("prompts")) for _, n in segs]
     default = max(CAP_MIN_USD, round(inf["n_frames"] / inf["fps"] / 3600 * CAP_PER_HOUR_SPLIT, 2))
     cap, raised = video_cap(floors, max_usd_video, default, kw.get("offline"))
-    share = shares(floors, cap, kw.pop("max_usd", None), kw.get("offline"))
+    reserve = unid_reserve(cap, floors) if unid else 0.0
+    share = shares(floors, cap - reserve, kw.pop("max_usd", None), kw.get("offline"))
     bp, vfp = os.path.join(d, "budget.json"), _fingerprint(None, kw)
     try:    # t0 carries over only from a try that died half-way with the same options and code (H3)
         old = json.load(open(bp)) if resume and prev not in (None, "done") else {}
@@ -501,6 +555,7 @@ def _run_long(src, rid=None, seg_s=None, skip_empty=False, max_usd_video=None, p
     st["log"].append(f"{time.strftime('%H:%M:%S')} video cap ${cap:.2f} "
                      + ("(--max-usd-video)" if max_usd_video is not None else f"(default ${CAP_PER_HOUR_SPLIT} an hour)")
                      + f", each segment ${share[0]:.2f}" + (f"; {raised}" if raised else "")
+                     + (f"; ${reserve:.2f} kept for the sort by look (--unid-groups)" if unid else "")
                      + (f"; discovered words probed on +-{kw['probe_window']} frames first" if kw.get("probe_window") else ""))
     if not kw.get("offline"):
         warn = api.budget_warning(sum(floors))
@@ -633,7 +688,12 @@ def _run_long(src, rid=None, seg_s=None, skip_empty=False, max_usd_video=None, p
                     f.cancel()
                 raise
     live, cached, billed = tally["live"], tally["cached"], tally["billed"]
-    R = merge(rid, os.path.basename(src), done, inf["fps"])
+    step, vr = _unid_step(rid, d, full, light, reserve, kw.get("offline"), note) if unid else (None, None)
+    R = merge(rid, os.path.basename(src), done, inf["fps"], unid=step)
+    if vr:
+        _unid_evidence(d, full, R)
+        live, cached, billed = live + vr.status["live_calls"], cached + vr.status["cached_calls"], billed + vr.status["billed_usd"]
+        parts["spark"] += vr.status.get("spark_usd", 0.0)
     R["video"]["lowlight"] = light
     if inf.get("source_warnings"):
         R["video"]["source_warnings"] = inf["source_warnings"]
@@ -705,7 +765,7 @@ def _filler(full, d, a, b, R, brightened):
     return fd
 
 
-def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every_s, kw):
+def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every_s, kw, unid=False):
     """run_long with --skip-empty: send what screen.scan picks; probes that disagree with the carried boxes re-send the
     stretch before them once. A cap set with --max-usd-video is a hard stop: each run gets what is left of it, and a
     cap or FISH_BUDGET stop keeps what was done and lists the rest as unsent. The default cap ($4 an hour, raised to
@@ -726,16 +786,18 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
         raise api.BudgetExceeded(f"per-segment cap --max-usd ${per:.2f} is below the first pass of the --prompts words "
                                  f"on a stretch, ${max(floors):.2f}: give --max-usd {_up(max(floors)):.2f} or more, or leave it out")
     if hard:        # each run gets what is left of the video cap (a $1 per-run cap stops a 600 s run at its first estimate)
+        reserve = unid_reserve(cap, floors) if unid else 0.0
         note = f"video cap ${cap:.2f} (--max-usd-video: a hard stop; per-segment --max-usd {per} not used)"
     else:
         cap, raised = video_cap(floors, None, round(N / fps / 3600 * CAP_PER_HOUR_SKIP_EMPTY, 2), kw.get("offline"))
-        even = cap / max(1, len(wins)) if per is None else min(cap / max(1, len(wins)), per)
+        reserve = unid_reserve(cap, floors) if unid else 0.0
+        even = (cap - reserve) / max(1, len(wins)) if per is None else min((cap - reserve) / max(1, len(wins)), per)
         note = (f"video cap ${cap:.2f} (default ${CAP_PER_HOUR_SKIP_EMPTY} an hour), each send ${even:.2f}"
                 + (f"; {raised}" if raised else ""))
     n_send = sum(w["n"] for w in wins if w["kind"] != "probe")
     log(f"--skip-empty: {len(wins)} stretch(es) to send, {n_send} of {N} frames ({100 * n_send / max(1, N):.1f}%) + "
         f"{sum(1 for w in wins if w['kind'] == 'probe')} probe(s): " + ", ".join(f"{w['kind']} {w['start']}+{w['n']}" for w in wins)
-        + f"; {note}", video=inf)
+        + f"; {note}" + (f"; ${reserve:.2f} kept for the sort by look (--unid-groups)" if unid else ""), video=inf)
     if not kw.get("offline"):
         warn = api.budget_warning(sum(floors))
         if warn:
@@ -752,7 +814,7 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
             raise api.BudgetExceeded(f"{tag}: per-segment cap --max-usd ${per:.2f} is below its first pass ${fl:.2f}")
         sp = os.path.join(d, f"{tag}.mp4")
         cut(full, sp, start, n)
-        mu = max(0.0, cap - acc["spent"]) if hard else round(max(fl, even), 4)
+        mu = max(0.0, cap - reserve - acc["spent"]) if hard else round(max(fl, even), 4)
         try:
             pipeline.run_pipeline(sp, srid, **dict(kw, max_usd=mu))
             _drop_cut(sp)
@@ -801,7 +863,13 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
         pos = s + n
     if pos < end:
         gaps.append((pos, end))
-    R = merge(rid, os.path.basename(src), done, fps, n_total=N, carry=gaps, videos=False)
+    step, vr = _unid_step(rid, d, full, light, reserve, kw.get("offline"), log) if unid else (None, None)
+    R = merge(rid, os.path.basename(src), done, fps, n_total=N, carry=gaps, videos=False, unid=step)
+    if vr:
+        _unid_evidence(d, full, R)
+        acc.update(spent=acc["spent"] + vr.status["billed_usd"], live=acc["live"] + vr.status["live_calls"],
+                   cached=acc["cached"] + vr.status["cached_calls"])
+        parts["spark"] += vr.status.get("spark_usd", 0.0)
     R["unsent"] = [] if unsent is None else [dict(start_frame=unsent, end_frame=N, start_s=round(unsent / fps, 2), end_s=round(N / fps, 2))]
     R["probes"] = probes
     sent = sum(n for _, _, n in done)

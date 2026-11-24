@@ -18,12 +18,15 @@ from fishcount import pipeline
 def accept_label(res, t):
     """The label a queued track is counted under if a person says yes: its current label if counted, else the name the
     review screen's "Yes" button gives, as pipeline.auto_labels names it (Spark's species if any, else "<category>
-    (unidentified)", so a restored track joins the row of the same kind)."""
+    (unidentified)", so a restored track joins the row of the same kind; with --unid-groups the kind Spark sorted it
+    into by look, result["unid_names"])."""
     if res.get("auto_labels", {}).get(t):
         return res["auto_labels"][t]
     v = res.get("verdicts", {}).get(t) or {}
     sp = v.get("species")
-    return sp.lower() if sp and sp != "unknown" else f"{res['tracks'][t]['label']} (unidentified)"
+    if sp and sp != "unknown":
+        return sp.lower()
+    return (res.get("unid_names") or {}).get(t) or f"{res['tracks'][t]['label']} (unidentified)"
 
 
 def renamed(name, rules):

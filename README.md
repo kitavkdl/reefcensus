@@ -51,6 +51,10 @@ boxes and follows each animal through the video.
   takes the new name and MaxN is counted again frame by frame, so 5 rockfish and 3 unidentified that peak in different
   frames can make 7, not 8. Its queued tracks stay in the queue unless a box is ticked; Undo takes the rename back
   (the rule is kept in the run folder's `renames.json`; `review.json` is not touched).
+- Opt-in `--unid-groups` (11/24, after the evaluation; no paper number uses it): after the other checks, Muse Spark sorts
+  each category's unnamed tracks by look into "fish (unidentified 1)", "(unidentified 2)", ... (one sheet of up to 12
+  tracks, about $0.004 to $0.02). The sort is not verified: both CSVs say so on those rows (`origin`, `taxonomy_status`),
+  "all fish" is the same as without it, and "Rename all" names a row or joins two (give them the same name).
 
 **What the scientist who filmed the nautilus footage said.** Gregory J. Barord is first author of the 2014 nautilus
 survey whose videos S1 to S4 we used (Barord et al., *PLOS ONE* e100799). He wrote back the same afternoon he saw the results:

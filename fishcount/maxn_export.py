@@ -14,10 +14,14 @@ is not a taxon).
 import csv, io, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fishcount.pipeline import unid_base      # noqa: E402
 
 COLUMNS = ["OpCode", "Family", "Genus", "Species", "MaxN", "Frame", "Time_mins",
            "spark_common_name", "maxn_confirmed", "origin", "taxonomy_status", "source_file", "run_id", "human_edits",
            "maxn_lower_bound", "maxn_upper"]
+
+
+UNID_STATUS = "not verified: unidentified, grouped by appearance by Muse Spark"    # a split row (--unid-groups)
 
 
 def default_opcode(e):
@@ -39,7 +43,8 @@ def rows(e, opcode=None):
         mins = None if m.get("maxn_time") is None else round(m["maxn_time"] / 60, 3)
         out.append([_cell(opcode), "", "", "", m["maxn"], m["maxn_frame"], mins,
                     _cell(name), m.get("maxn_confirmed", m["maxn"]), e.get("origin", {}).get(name, ""),
-                    "not verified: common name from Muse Spark or a reviewer", _cell(e.get("source") or ""), e.get("id", ""),
+                    UNID_STATUS if unid_base(name) != name else "not verified: common name from Muse Spark or a reviewer",
+                    _cell(e.get("source") or ""), e.get("id", ""),
                     e.get("n_reviewed", 0) + e.get("n_renames", 0), _lower_bound(e, name, m), m.get("maxn_upper", m["maxn"])])
     return out
 
