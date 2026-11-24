@@ -207,6 +207,13 @@ class Parking(unittest.TestCase):
         self.assertIs(twice["obj_ptr"], o["obj_ptr"])
         samworker._park(state, 99)          # nothing stored there: nothing happens
 
+    def test_other_output_shape_is_a_plain_error(self):
+        for s2 in ({"output_dict_per_obj": {}},                                  # no output_dict
+                   {"output_dict": {"cond_frame_outputs": {}}},                  # no non_cond_frame_outputs
+                   {"output_dict": {"non_cond_frame_outputs": {}}, "output_dict_per_obj": {0: {}}}):
+            with self.subTest(s2), self.assertRaisesRegex(RuntimeError, "docs/local-sam.md"):
+                samworker._park({"sam2_inference_states": [s2]}, 3)
+
 
 class RemovedMark(unittest.TestCase):
     def test_negative_prob_is_dropped(self):

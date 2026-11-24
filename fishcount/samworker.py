@@ -240,8 +240,12 @@ def _park(state, past):
     features, which only the next K frames read (:1467), dropped. obj_ptr (read much further back) and the
     maskmem_pos_enc all frames share stay. On the GPU the output bytes were the same, 600 of 600 frames (step 0)."""
     for s2 in state["sam2_inference_states"]:       # sam3 replaces this list as objects come and go: read it each time
-        for d in [s2["output_dict"], *s2.get("output_dict_per_obj", {}).values()]:
-            nc = d["non_cond_frame_outputs"]
+        try:
+            ncs = [d["non_cond_frame_outputs"] for d in [s2["output_dict"], *s2.get("output_dict_per_obj", {}).values()]]
+        except (KeyError, TypeError):
+            raise RuntimeError("this sam3's tracking outputs are not the ones moved to RAM (output_dict, "
+                               "non_cond_frame_outputs): install the sam3 commit in docs/local-sam.md") from None
+        for nc in ncs:
             o = nc.get(past)
             if o is not None:
                 nc[past] = {k: v.cpu() if k in PARK_RAM and hasattr(v, "cpu") else v
