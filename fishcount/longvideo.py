@@ -243,8 +243,8 @@ def _unid_step(rid, d, full, light, reserve, offline, note):
 
     def step(R, frames):
         names = pipeline.unid_groups(vr, full, frames, R["tracks"], R["verdicts"], R["auto_labels"], offline, reserve, frame_fn=fn)
-        if vr.capped:
-            R.setdefault("capped", []).extend(vr.capped)
+        if vr.capped:       # the whole video's, not a segment's: --resume runs no segment for it (_budget_line)
+            R.setdefault("capped", []).extend(dict(c, segment="video") for c in vr.capped)
         return names
     return step, vr
 
@@ -344,7 +344,7 @@ def merge(rid, src_name, segs, fps, out_dir=None, n_total=None, carry=None, vide
     heads = {}
     for name in m:
         h = pipeline._head(name)
-        if h:
+        if h and name == pipeline.unid_base(name):     # split rows (--unid-groups) were told apart on purpose: no pair
             heads.setdefault(h, []).append(name)
     R["name_variants"] = [sorted(v) for v in heads.values() if len(v) > 1]
     for b in R["boundary_links"]:       # one animal across a cut, named differently on each side: a person picks
@@ -714,14 +714,17 @@ def _run_long(src, rid=None, seg_s=None, skip_empty=False, max_usd_video=None, p
 
 
 def _budget_line(bud, R):
-    segs = sorted({c.get("segment", "?") for c in R.get("capped", [])}, key=lambda x: (len(x), x))
+    segs = sorted({c.get("segment", "?") for c in R.get("capped", [])} - {"video"}, key=lambda x: (len(x), x))
+    whole = any(c.get("segment") == "video" for c in R.get("capped", []))
     p = bud["parts"]
     return (f"{time.strftime('%H:%M:%S')} WARNING: budget: spent ${bud['spent']:.2f} of the ${bud['cap']:.2f} video cap"
             + (f" (${bud['over']:.2f} over)" if bud["over"] else "")
             + f"; first-pass SAM ${p['first_sam']:.2f}, later SAM ${p['later_sam']:.2f}, Spark ${p['spark']:.2f}"
             + (f"; {bud['billed_no_result']} SAM call(s) billed with no answer (stream broke)" if bud["billed_no_result"] else "")
             + (f"; stages left out in {', '.join(segs)} (result capped; raise --max-usd-video and run again with "
-               "--resume: only those segments run)" if segs else ""))
+               "--resume: only those segments run)" if segs else "")
+            + ("; the sort by look (--unid-groups) left out for some unnamed tracks (rows 'unidentified, ungrouped' or "
+               "unsplit; raise --max-usd-video or FISH_BUDGET and run the video again)" if whole else ""))
 
 
 def _agree(probe_dir, src_dir, src_frame, thr=BOUNDARY_IOU):
@@ -890,7 +893,7 @@ def _run_skipping(src, rid, d, full, inf, light, st, t0, seg_s, cap, probe_every
         json.dump(R, f)
     os.remove(full)
     t1 = time.time()
-    n_cap = len({c["segment"] for c in R.get("capped", [])})
+    n_cap = len({c["segment"] for c in R.get("capped", [])} - {"video"})
     st["log"].append(f"{time.strftime('%H:%M:%S')} merged {len(done)} sent segment(s), {len(gaps)} skipped stretch(es) carried, "
                      f"{len(probes)} probe(s) ({sum(not p['match'] for p in probes)} disagreed): "
                      + ", ".join(f"{m} MaxN {v['maxn']} at {v['maxn_time']} s" for m, v in R["metrics"].items())

@@ -44,6 +44,12 @@ class Regex(unittest.TestCase):
             self.assertFalse(pipeline.is_unidentified(n), n)
         self.assertEqual(pipeline.unid_base("rockfish"), "rockfish")
 
+    def test_every_copy_of_the_pattern_is_the_same(self):
+        self.assertEqual(maxn_export.UNID_RE.pattern, pipeline.UNID_RE.pattern)
+        for f in ("web/app.js", "demo/static_review.js"):
+            js = open(os.path.join(ROOT, f)).read()
+            self.assertEqual(re.search(r"const UNID_RE = /(.*)/;", js).group(1), pipeline.UNID_RE.pattern, f)
+
     def test_a_peak_check_of_the_unsplit_row_carries_to_the_frame_it_checked(self):
         checked = {(UNID, 6)}
         self.assertTrue(pipeline.peak_checked(U2, 6, checked))
@@ -132,6 +138,29 @@ class Sort(unittest.TestCase):
         replay.live_capped = {c["item"]: c["msg"] for c in run.capped}
         got2, _ = self.sort(sp, offline=True, run=replay)
         self.assertEqual((got2, sp.calls, [c["item"] for c in replay.capped]), ({}, [], ["unid:fish:1"]))
+
+    def two_sheets_then(self, err):
+        def kinds(k):
+            if k == 2:
+                raise err
+            return [[f"U{i}" for i in range(1, 13, 2)], [f"U{i}" for i in range(2, 13, 2)]]
+        return self.sort(Spark(kinds), n_fish=16)
+
+    def test_fish_budget_on_a_later_sheet_is_a_cap_skip_and_a_replay_makes_it_too(self):
+        got, run = self.two_sheets_then(api.BudgetExceeded("would spend $1.02 > budget $1.00"))
+        self.assertEqual((got["a"], got["b"], got["m"], got["p"]), (U1, U2, UG, UG))      # sheet 1's kinds kept
+        self.assertEqual([(c["item"], c["reason"]) for c in run.capped], [("unid:fish:2", "fish")])
+        replay = pipeline.Run("r2")
+        replay.live_capped = {c["item"]: c["msg"] for c in run.capped}
+        got2, _ = self.sort(Spark(lambda k: [[f"U{i}" for i in range(1, 13, 2)], [f"U{i}" for i in range(2, 13, 2)]]),
+                            n_fish=16, offline=True, run=replay)
+        self.assertEqual(got2, got)
+
+    def test_a_spark_failure_leaves_the_category_as_it_was_and_the_run_goes_on(self):
+        for err in (ValueError("Spark sent an unreadable reply twice"), RuntimeError("Spark HTTP 500"), ConnectionError("reset")):
+            got, run = self.two_sheets_then(err)
+            self.assertEqual((got, run.capped), ({}, []), err)       # a replay (not cached) gives the same
+            self.assertIn("not sorted by look", run.status["log"][-1])
 
     def test_past_the_sheet_limit_tracks_are_ungrouped(self):
         with mock.patch.object(pipeline, "UNID_MAX_SHEETS", 1):
@@ -285,6 +314,86 @@ class Long(unittest.TestCase):
         self.assertAlmostEqual(sum(kw["max_usd"] for kw in got), 2.0 - 0.2, places=3)
         self.assertEqual(sorted(set(R["unid_names"].values())), [U1, U2])
         self.assertEqual(sorted(drawn), [U1, U2])        # the split rows' evidence frames, drawn from the whole clip
+
+    def test_the_tiles_are_brightened_as_the_segments_clips_were(self):
+        got = []
+        with mock.patch.object(pipeline, "unid_groups", lambda *a, frame_fn=None, **k: got.append(frame_fn) or {}):
+            for light in (dict(brightened=True), dict(brightened=False, haze=dict(applied=True)),
+                          dict(brightened=False, haze=dict(applied=False)), {}):
+                with tempfile.TemporaryDirectory() as tmp:
+                    step, _ = longvideo._unid_step("vid", tmp, "full.mp4", light, 0.2, True, print)
+                    step(dict(tracks={}, verdicts={}, auto_labels={}), {})
+        self.assertEqual(got, [video.brighten_frame, video.clahe_frame, None, None])
+
+
+class LongCap(unittest.TestCase):
+    """A sheet past the reserve on a long video (② 418dbe1: --skip-empty --unid-groups failed with KeyError 'segment'
+    after writing result.json): 2 segments x 13 unnamed fish = 26 tracks, 3 sheets. The reserve ($0.03) pays sheet 1
+    ($0.015); sheet 2 is capped as the whole video's, sheet 3 is not asked; the run ends done, Spark in the budget."""
+    N, SEG = 1000, 500
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.cuts, self.got = {}, []
+        self.floor = longvideo.first_pass_floor(self.SEG, None)
+        self.cap = round(2 * self.floor + 0.03, 4)
+
+        def cut(clip, dst, start, n):
+            self.cuts[dst] = (start, n)
+            open(dst, "w").close()
+
+        def run_pipeline(sp, srid, **kw):
+            self.got.append(kw["max_usd"])
+            long_seg(os.path.join(self.tmp, srid), self.cuts[sp][0], [1] * 13, self.cuts[sp][1])
+            json.dump(dict(live_calls=1, cached_calls=0, billed_usd=0.0), open(os.path.join(self.tmp, srid, "status.json"), "w"))
+
+        from fishcount import screen
+        for p in (mock.patch.object(pipeline, "RUNS", self.tmp), mock.patch.object(video, "ingest", lambda s, d, **k: open(d, "w").close()),
+                  mock.patch.object(api, "LEDGER", os.path.join(self.tmp, "ledger.jsonl")),
+                  mock.patch.object(video, "info", lambda p: dict(n_frames=self.N, fps=5.0, width=160, height=120)),
+                  mock.patch.object(video, "light_stats", lambda p: dict(median_l=100, mean_l=100)),
+                  mock.patch.object(video, "frames", fake_frames), mock.patch.object(longvideo, "cut", cut),
+                  mock.patch.object(longvideo, "_filler", lambda full, d, a, *k: os.path.join(d, f"skip{a}")),
+                  mock.patch.object(render, "evidence", lambda *a, **k: None),
+                  mock.patch.object(pipeline, "run_pipeline", run_pipeline),
+                  mock.patch.object(screen, "scan", lambda clip, fps, **k: [dict(start=0, n=self.SEG, kind="head"),
+                                                                            dict(start=self.SEG, n=self.SEG, kind="change", triggers=[600])])):
+            p.start()
+            self.addCleanup(p.stop)
+        self.spark = Spark(lambda k: [[f"U{i}" for i in range(1, 7)], [f"U{i}" for i in range(7, 13)]], usd=0.015)
+
+    def run_(self, skip, offline=False):
+        with mock.patch.object(api, "spark", self.spark):
+            return longvideo.run_long("v.mp4", "vid", seg_s=100, skip_empty=skip, max_usd_video=self.cap, unid=True, offline=offline)
+
+    def check(self, skip):
+        R = self.run_(skip)
+        self.assertEqual(len(self.spark.calls), 1)
+        each = 2 * self.floor if skip else self.floor       # skip: each run gets what is left (none spent); else shares
+        self.assertEqual([round(x, 4) for x in self.got], [round(each, 4)] * 2)         # the reserve held back either way
+        self.assertEqual([(c["item"], c["segment"]) for c in R["capped"]], [("unid:fish:2", "video")])
+        names = R["unid_names"]
+        self.assertEqual(sorted(t for t, n in names.items() if n in (U1, U2)), sorted(f"S1:t{i}" for i in range(13))[:12])
+        self.assertEqual([sum(n == x for n in names.values()) for x in (U1, U2, UG)], [6, 6, 14])
+        self.assertAlmostEqual(R["budget"]["parts"]["spark"], 0.015)
+        self.assertAlmostEqual(R["budget"]["spent"], 0.015)       # the ledger, under the video's id
+        st = json.load(open(os.path.join(self.tmp, "vid", "status.json")))
+        self.assertEqual(st["stage"], "done")
+        self.assertEqual(json.load(open(os.path.join(self.tmp, "vid", "result.json")))["capped"], R["capped"])
+        line = next(l for l in st["log"] if "WARNING: budget" in l)
+        self.assertIn("the sort by look (--unid-groups) left out", line)
+        self.assertNotIn("stages left out in", line)            # no segment to --resume for it
+        if skip:
+            self.assertIn("0 segment(s) with stages skipped", st["log"][-1])
+        R2 = self.run_(skip, offline=True)                        # a replay skips the same sheet
+        self.assertEqual((R2["unid_names"], R2["capped"], len(self.spark.calls)), (names, R["capped"], 2))
+
+    def test_run_long(self):
+        self.check(False)
+
+    def test_skip_empty(self):
+        self.check(True)
 
 
 @unittest.skipUnless(shutil.which("node"), "node missing")

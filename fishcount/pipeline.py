@@ -2709,7 +2709,8 @@ def unid_groups(run, clip, frames, trk, verdicts, labels, offline, max_usd, fram
     """-> {track: 'fish (unidentified 2)' | 'fish (unidentified, ungrouped)'} for the unid_candidates of every category
     Spark split into two or more kinds; {} for a category of one kind (its row keeps its name, owner 11/24).
     Sheets: tiles in order of first box (then track id), UNID_PER_SHEET new tiles each; a later sheet starts with one
-    example tile (R1, R2, ... the kind's first track) per kind found so far. A track Spark left out, named twice, or
+    example tile per kind found so far (R1, R2, ... in the order found; each the first track Spark put in it, so the
+    cached replies fix them). A track Spark left out, named twice, or
     put with two kinds, and the tracks past UNID_MAX_SHEETS or the cap, are 'ungrouped'. Kinds are numbered by their
     first box. A sheet that would pass max_usd is skipped (_live_cap: a replay skips exactly what the live run did);
     an offline replay of a run made before this step leaves the category as it was. frame_fn: the frames' brightening
@@ -2754,6 +2755,15 @@ def unid_groups(run, clip, frames, trk, verdicts, labels, offline, max_usd, fram
                 reply = api.parse_json_list(_counted(run, api.spark, prompt, [sheet], offline=offline, check=api.parse_json_list))
             except FileNotFoundError as e:      # an offline replay of a run made before this step: as it was
                 run.stage("unid", f"{cat}: not sorted by look ({str(e)[:120]})")
+                missed = True
+                break
+            except api.BudgetExceeded as e:     # FISH_BUDGET: as the cap (with its item, so a replay skips the same sheet)
+                _capped(run, "unid", f"{cat}: {len(ts) - k} unnamed track(s) not sorted by look: {str(e)[:120]}",
+                        item=f"unid:{cat}:{no}", reason="fish")
+                left += ts[k:]
+                break
+            except (ValueError, RuntimeError, OSError) as e:    # Spark failed: an optional step, the category as it was
+                run.stage("unid", f"{cat}: not sorted by look ({type(e).__name__}: {str(e)[:120]})")    # (a replay: not cached, the same)
                 missed = True
                 break
             new = {n: t for n, t in tiles if n[0] == "U"}
