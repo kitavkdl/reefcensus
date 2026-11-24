@@ -102,21 +102,24 @@ def sam_backend():
     return b
 
 
-def _why():
+def _why(by=None):
     """What made this machine private, for error messages (paths are fine here: they are the user's own screen)."""
     said = {"env": "FISH_PRIVATE is set", "home-marker": f"the marker ~/{MARKER} exists",
             "etc-marker": f"the marker {ETC_MARKER} exists", "no-home": "this account has no home to look for a marker in"}
-    return "; ".join(said[w] for w in PRIVATE_BY) if PRIVATE else "FISH_PRIVATE is not set"
+    by = PRIVATE_BY if by is None else by
+    return "; ".join(said[w] for w in by) if by else "FISH_PRIVATE is not set"
 
 
 def _no_clip_out(url, body=None, raw=False):
     """Raise before a request that would carry a clip leaves this machine (an upload, a SAM call, any body with an
-    input_video, any raw body or file: raw) unless SAM is the API and FISH_PRIVATE is not set. Fail-closed: a
-    misspelt FISH_SAM blocks too."""
-    if SAM_BACKEND in ("", "api") and not PRIVATE:
+    input_video, any raw body or file: raw) unless SAM is the API and the machine is not private. Fail-closed: a
+    misspelt FISH_SAM blocks too. The markers are looked at again here, every time: PRIVATE was worked out at import,
+    and a marker made after that (or PRIVATE set to False by a test or a tool) must not let a clip out."""
+    now, by = _private(os.environ, _markers(os.environ))
+    if SAM_BACKEND in ("", "api") and not PRIVATE and not now:
         return
     if raw or url.rstrip("/").endswith(("/files", "/responses")) or "input_video" in json.dumps(body, default=str):
-        raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r}, {_why()}: refusing to send a clip to {url}")
+        raise LocalSamError(f"FISH_SAM={SAM_BACKEND!r}, {_why(by if now else None)}: refusing to send a clip to {url}")
 
 
 def _key():

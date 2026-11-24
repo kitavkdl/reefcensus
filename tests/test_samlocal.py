@@ -200,6 +200,18 @@ class PrivateMarker(unittest.TestCase):
         with self.assertRaisesRegex(api.LocalSamError, "/etc/fishcount/private exists: refusing"):
             api._no_clip_out(f"{api.BASE}/files")
 
+    def test_a_marker_made_after_import_still_blocks(self):
+        """PRIVATE is worked out at import; the last gate looks at the markers again (or at a PRIVATE a test set)."""
+        for p in (mock.patch.object(api, "SAM_BACKEND", ""), mock.patch.object(api, "PRIVATE", False),
+                  mock.patch.object(api, "_markers", lambda environ: [("home-marker", self.m)])):
+            p.start()
+            self.addCleanup(p.stop)
+        api._no_clip_out(f"{api.BASE}/files")          # no marker yet: the API as before
+        open(self.m, "w").close()
+        with self.assertRaisesRegex(api.LocalSamError, "marker ~/.config/fishcount/private exists: refusing"):
+            api._no_clip_out(f"{api.BASE}/files")
+        api._no_clip_out(f"{api.BASE}/chat/completions", {"messages": []})    # Spark still goes
+
     def test_provenance_keeps_the_labels_and_survives_a_refused_backend(self):
         for p in (mock.patch.object(api, "SAM_BACKEND", ""), mock.patch.object(api, "PRIVATE", True),
                   mock.patch.object(api, "PRIVATE_BY", ["home-marker"])):
